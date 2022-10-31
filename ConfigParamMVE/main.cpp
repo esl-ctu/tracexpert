@@ -1,4 +1,5 @@
 #include <QCoreApplication>
+#include <QBuffer>
 
 #include "tconfigparam.h"
 
@@ -46,4 +47,24 @@ int main(int argc, char *argv[])
         stream << "    Name: " << newParams.getSubParams()[i].getName() << ", value: " << newParams.getSubParams()[i].getValue() << ", hint: " << newParams.getSubParams()[i].getHint() << Qt::endl;
     }
 
+    // Serializace
+    QByteArray array;
+    QBuffer buf(&array);
+    buf.open(QIODevice::ReadWrite);
+    QDataStream dstream(&buf);
+
+    dstream << newParams;
+
+    // Deserializace
+    buf.seek(0);
+    TConfigParam deserParam;
+    dstream >> deserParam;
+
+    // Vypis deserializovane tridy parametru
+    stream << "Name: " << deserParam.getName() << ", value: " << deserParam.getValue() << ", hint: " << deserParam.getHint() << Qt::endl;
+    // Vypis novych podparametru
+    stream << "    Number of subparameters: " << deserParam.getSubParams().size() << Qt::endl;
+    for(int i = 0; i < deserParam.getSubParams().size(); i++){
+        stream << "    Name: " << deserParam.getSubParams()[i].getName() << ", value: " << deserParam.getSubParams()[i].getValue() << ", hint: " << deserParam.getSubParams()[i].getHint() << Qt::endl;
+    }
 }
