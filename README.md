@@ -1,6 +1,6 @@
 # TraceXpert
 
-Repozitář aktuálně obsahuje minimum working example třídy TConfigParam, která slouží pro předávání parametrů mezi frontendem a plug-iny.
+Repozitář aktuálně obsahuje minimal working example třídy TConfigParam, která slouží pro předávání parametrů mezi frontendem a plug-iny.
 
 Vytvořeno v Qt Creatoru, kompilováno přes Qt Creator pomocí MSVC 2019.
 
