@@ -86,7 +86,7 @@ public:
     QList<TConfigParam> & getSubParams();
     void addSubParam(const TConfigParam &param, bool *ok = nullptr);
     void removeSubParam(const QString &name, bool *ok = nullptr);
-    TConfigParam * getSubParamByName(const QString &name, bool *ok = nullptr);  // pozor, pokud nenajde parametr podle jmena, zpusobi core dump
+    TConfigParam * getSubParamByName(const QString &name, bool *ok = nullptr); 
 
 protected:
     QString m_name;
