@@ -1,7 +1,7 @@
 #include "tconfigparam.h"
 
 QDataStream & operator<<(QDataStream &out, const TConfigParam &x) {
-    out << TCONFIGPARAMVER;
+    out << QString(TCONFIGPARAMVER);
     out << x.m_name;
     out << x.m_defaultValue;
     out << x.m_value;
@@ -17,7 +17,7 @@ QDataStream & operator<<(QDataStream &out, const TConfigParam &x) {
 QDataStream & operator>>(QDataStream &in, TConfigParam &x) {
     QString verString;
     in >> verString;
-    if(Q_LIKELY(verString == TCONFIGPARAMVER)){
+    if(Q_LIKELY(verString == QString(TCONFIGPARAMVER))){
         in >> x.m_name;
         in >> x.m_defaultValue;
         in >> x.m_value;
