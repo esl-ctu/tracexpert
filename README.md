@@ -1,6 +1,9 @@
 # TraceXpert
 
+Repozitář aktuálně obsahuje minimum working example třídy TConfigParam, která slouží pro předávání parametrů mezi frontendem a plug-iny.
 
+
+# Puvodni README
 
 ## Getting started
 
