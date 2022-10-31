@@ -2,7 +2,7 @@
 
 Repozitář aktuálně obsahuje minimum working example třídy TConfigParam, která slouží pro předávání parametrů mezi frontendem a plug-iny.
 
-Vytvořeno v Qt Creatoru, kompilováno MSVC 2019.
+Vytvořeno v Qt Creatoru, kompilováno přes Qt Creator pomocí MSVC 2019.
 
 # Puvodni README
 
