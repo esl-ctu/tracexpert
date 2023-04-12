@@ -38,14 +38,23 @@ public:
         TUShort,
         TLongLong,
         TULongLong,
-        TDouble,
+        TReal,
         TBool,
         TDummy,
-        TEnum
+        TEnum,
+        TFileName,
+        TTime
+    };
+
+    enum class TState {
+        TOk,
+        TInfo,
+        TWarning,
+        TError
     };
 
     TConfigParam();
-    TConfigParam(const QString &name, const QString &defaultValue, enum TType type, const QString &hint);
+    TConfigParam(const QString &name, const QString &defaultValue, enum TType type, const QString &hint, bool readonly);
     TConfigParam(const TConfigParam &x);
 
     TConfigParam & operator=(const TConfigParam &x);
@@ -69,15 +78,18 @@ public:
     quint16 setValue(quint16 value, bool *ok = nullptr);
     qint64 setValue(qint64 value, bool *ok = nullptr);
     quint64 setValue(quint64 value, bool *ok = nullptr);
-    double setValue(double value, bool *ok = nullptr);
+    qreal setValue(qreal value, bool *ok = nullptr);
     bool setBool(bool value, bool *ok = nullptr);
 
     void resetDefaultValue();
 
-    void setWarning(const QString &value);
-    void resetWarning();
-    bool isWarning() const;
-    const QString & getWarning() const;
+    void setState(TState state);
+    void setState(TState state, const QString &message);
+    void resetState();
+    TConfigParam::TState getState() const;
+    const QString & getStateMessage() const;
+
+    bool isReadonly() const;
 
     const QList<QString> & getEnumValues() const;
     void addEnumValue(const QString &value, bool *ok = nullptr);
@@ -86,7 +98,7 @@ public:
     QList<TConfigParam> & getSubParams();
     void addSubParam(const TConfigParam &param, bool *ok = nullptr);
     void removeSubParam(const QString &name, bool *ok = nullptr);
-    TConfigParam * getSubParamByName(const QString &name, bool *ok = nullptr); 
+    TConfigParam * getSubParamByName(const QString &name, bool *ok = nullptr);
 
 protected:
     QString m_name;
@@ -94,8 +106,9 @@ protected:
     QString m_value;
     TType m_type;
     QString m_hint;
-    bool m_warning;
-    QString m_warningVal;
+    TState m_state;
+    QString m_stateMessage;
+    bool m_readonly;    
     QList<QString> m_enums;
     QList<TConfigParam> m_subParams;
 
