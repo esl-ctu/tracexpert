@@ -1,0 +1,11 @@
+TConfigParam changelog 12.4.2023
+  Readonly parameters
+      - isReadonly method
+  TType changes:
+      - TDouble renamed as TReal; double changed to qreal (Typedef for double unless Qt is configured with the -qreal float option.)
+      - New type TFileName, alias for TString
+      - New type TTime, alias for TReal
+  Warning changes:
+      - Warning methods (and members) deleted
+      - TState enum
+      - setState, resetState, getState, getStateMessage methods added
