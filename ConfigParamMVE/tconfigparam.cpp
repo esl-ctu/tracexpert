@@ -7,8 +7,9 @@ QDataStream & operator<<(QDataStream &out, const TConfigParam &x) {
     out << x.m_value;
     out << x.m_type;
     out << x.m_hint;
-    out << x.m_warning;
-    out << x.m_warningVal;
+    out << x.m_state;
+    out << x.m_stateMessage;
+    out << x.m_readonly;
     out << x.m_enums;
     out << x.m_subParams;
     return out;
@@ -23,8 +24,9 @@ QDataStream & operator>>(QDataStream &in, TConfigParam &x) {
         in >> x.m_value;
         in >> x.m_type;
         in >> x.m_hint;
-        in >> x.m_warning;
-        in >> x.m_warningVal;
+        in >> x.m_state;
+        in >> x.m_stateMessage;
+        in >> x.m_readonly;
         in >> x.m_enums;
         in >> x.m_subParams;
     } else {
@@ -35,11 +37,11 @@ QDataStream & operator>>(QDataStream &in, TConfigParam &x) {
 
 TConfigParam::TConfigParam() {}
 
-TConfigParam::TConfigParam(const QString &name, const QString &defaultValue, enum TType type, const QString &hint): m_name(name), m_defaultValue(defaultValue), m_value(defaultValue), m_type(type), m_hint(hint), m_warning(false), m_warningVal(), m_enums(), m_subParams() {
+TConfigParam::TConfigParam(const QString &name, const QString &defaultValue, enum TType type, const QString &hint, bool readonly): m_name(name), m_defaultValue(defaultValue), m_value(defaultValue), m_type(type), m_hint(hint), m_state(TState::TOk), m_stateMessage(), m_readonly(readonly), m_enums(), m_subParams() {
 
 }
 
-TConfigParam::TConfigParam(const TConfigParam &x): m_name(x.m_name), m_defaultValue(x.m_defaultValue), m_value(x.m_value), m_type(x.m_type), m_hint(x.m_hint), m_warning(x.m_warning), m_warningVal(x.m_warningVal), m_enums(x.m_enums), m_subParams(x.m_subParams) {
+TConfigParam::TConfigParam(const TConfigParam &x): m_name(x.m_name), m_defaultValue(x.m_defaultValue), m_value(x.m_value), m_type(x.m_type), m_hint(x.m_hint), m_state(x.m_state), m_stateMessage(x.m_stateMessage), m_readonly(x.m_readonly), m_enums(x.m_enums), m_subParams(x.m_subParams) {
 
 }
 
@@ -50,8 +52,9 @@ TConfigParam & TConfigParam::operator=(const TConfigParam &x){
         m_value = x.m_value;
         m_type = x.m_type;
         m_hint = x.m_hint;
-        m_warning = x.m_warning;
-        m_warningVal = x.m_warningVal;
+        m_state = x.m_state;
+        m_stateMessage = x.m_stateMessage;
+        m_readonly = x.m_readonly;
         m_enums = x.m_enums;
         m_subParams = x.m_subParams;
     }
@@ -82,21 +85,30 @@ const QString & TConfigParam::getHint() const {
     return m_hint;
 }
 
-void TConfigParam::setWarning(const QString &value){
-    m_warning = true;
-    m_warningVal = value;
+void TConfigParam::setState(TState state){
+    m_state = state;
 }
 
-void TConfigParam::resetWarning(){
-    m_warning = false;
+void TConfigParam::setState(TState state, const QString &message){
+    m_state = state;
+    m_stateMessage = message;
 }
 
-bool TConfigParam::isWarning() const {
-    return m_warning;
+void TConfigParam::resetState(){
+    m_state = TState::TOk;
+    m_stateMessage = "";
 }
 
-const QString & TConfigParam::getWarning() const {
-    return m_warningVal;
+TConfigParam::TState TConfigParam::getState() const {
+    return m_state;
+}
+
+const QString & TConfigParam::getStateMessage() const {
+    return m_stateMessage;
+}
+
+bool TConfigParam::isReadonly() const {
+    return m_readonly;
 }
 
 const QString & TConfigParam::setValue(const QString &value, bool *ok){
@@ -105,6 +117,7 @@ const QString & TConfigParam::setValue(const QString &value, bool *ok){
 
     switch(m_type) {
         case TType::TString:
+        case TType::TFileName:
             iok = true;
             break;
         case TType::TInt:
@@ -125,7 +138,8 @@ const QString & TConfigParam::setValue(const QString &value, bool *ok){
         case TType::TULongLong:
             value.toULongLong(&iok);
             break;
-        case TType::TDouble:
+        case TType::TReal:
+        case TType::TTime:
             value.toDouble(&iok);
             break;
         case TType::TBool:
@@ -204,9 +218,9 @@ quint64 TConfigParam::setValue(quint64 value, bool *ok){
     }
     return ret;
 }
-double TConfigParam::setValue(double value, bool *ok){
+qreal TConfigParam::setValue(qreal value, bool *ok){
     bool iok;
-    double ret = this->setValue(QString::number(value), ok).toDouble(&iok);
+    qreal ret = this->setValue(QString::number(value), ok).toDouble(&iok);
     if(ok != nullptr){
         *ok = *ok && iok;
     }
