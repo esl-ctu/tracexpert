@@ -1,6 +1,6 @@
 # TraceXpert
 
-Repozitář aktuálně obsahuje minimal working example třídy TConfigParam, která slouží pro předávání parametrů mezi frontendem a plug-iny.
+Repozitář aktuálně obsahuje sdílené hlavičkové soubory (/common), první plugin (/plugins/serialport) a programy sloužící k testování (/testing)
 
 Vytvořeno v Qt Creatoru, kompilováno přes Qt Creator pomocí MSVC 2019.
 
