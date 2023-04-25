@@ -1,0 +1,12 @@
+#ifndef SERIALPORT_GLOBAL_H
+#define SERIALPORT_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(TSERIALPORT_LIBRARY)
+#  define TSERIALPORT_EXPORT Q_DECL_EXPORT
+#else
+#  define TSERIALPORT_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // SERIALPORT_GLOBAL_H

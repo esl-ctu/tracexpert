@@ -1,0 +1,1 @@
+do slozky s kompilatem je treba prekopirovat knihovnu s pluginem (TSerialPort.dll)
