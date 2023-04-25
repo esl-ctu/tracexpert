@@ -5,6 +5,8 @@
 #include "tplugin.h"
 #include "tserialportdevice.h"
 
+#include <QSerialPortInfo>
+
 
 class TSERIALPORT_EXPORT TSerialPort : public QObject, TPlugin
 {
