@@ -2,9 +2,10 @@
 #ifndef NEWAE_H
 #define NEWAE_H
 
+#include "tnewae_global.h"
 #include "tplugin.h"
 
-#include "tnewae_global.h"
+
 
 
 class TNEWAE_EXPORT TNewae : public QObject, TPlugin

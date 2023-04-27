@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
 
-find_package(Qt6 REQUIRED COMPONENTS newae)
+#find_package(Qt6 REQUIRED COMPONENTS newae)
 
 include_directories(../../common)
 
@@ -24,6 +24,6 @@ add_library(newae SHARED
 
 target_link_libraries(newae PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 
-target_link_libraries(TSerialPort PRIVATE Qt6::newae)
+#target_link_libraries(Tnewae PRIVATE Qt6::newae)
 
-target_compile_definitions(newae PRIVATE NEWAE_LIBRARY)
+target_compile_definitions(newae PRIVATE TNEWAE_LIBRARY)
