@@ -10,19 +10,25 @@ TnewaeDevice::~TnewaeDevice(){
 }
 
 QString TnewaeDevice::getIODeviceName() const{
-
+    return m_name;
 }
 
 QString TnewaeDevice::getIODeviceInfo() const{
-
+    return m_info;
 }
 
 TConfigParam TnewaeDevice::getPreInitParams() const{
-
+    return m_preInitParams;
 }
 
 TConfigParam TnewaeDevice::setPreInitParams(TConfigParam params){
-
+    if(m_initialized){
+        m_preInitParams.setState(TConfigParam::TState::TError, "Cannot change pre-init parameters on an initialized device.");
+    } else {
+        m_preInitParams = params;
+        m_preInitParams.resetState();
+    }
+    return m_preInitParams;
 }
 
 void TnewaeDevice::init(bool *ok/* = nullptr*/){
