@@ -4,7 +4,7 @@
 
 #include "tnewae_global.h"
 #include "tplugin.h"
-
+#include "tnewaedevice.h"
 
 
 

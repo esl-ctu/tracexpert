@@ -47,7 +47,7 @@ TConfigParam TNewae::setPostInitParams(TConfigParam params) {
 }
 
 void TNewae::addIODevice(QString name, QString info, bool *ok) {
-    m_ports.append(new TNewaeDevice(name, info));
+    m_ports.append(new TnewaeDevice(name, info));
     if(ok != nullptr) *ok = true;
 }
 
