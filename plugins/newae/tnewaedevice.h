@@ -2,7 +2,16 @@
 #ifndef TNEWAEDEVICE_H
 #define TNEWAEDEVICE_H
 
+#include <QSharedMemory>
+#include <QWaitCondition>
+#include <QProcess>
+
 #include "tiodevice.h"
+
+const QString PLUGIN_ID = "TraceXpert.NewAE";
+
+const std::size_t SM_SIZE_ADDR = 0;
+const std::size_t SM_DATA_ADDR = SM_SIZE_ADDR + sizeof(SM_SIZE_ADDR);
 
 class TnewaeDevice : public TIODevice {
 
@@ -44,6 +53,12 @@ protected:
     qint32 m_readTimeout;
     qint32 m_writeTimeout;
     bool m_initialized;
+
+    QSharedMemory shm;
+    QProcess *pythonProcess;
+
+    QString shmKey = PLUGIN_ID + "shm";
+    const size_t shmSize = 512;
 
 };
 
