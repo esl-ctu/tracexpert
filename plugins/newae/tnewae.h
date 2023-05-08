@@ -6,6 +6,12 @@
 #include "tplugin.h"
 #include "tnewaedevice.h"
 
+#include <QSharedMemory>
+#include <QWaitCondition>
+#include <QProcess>
+#include <QList>
+#include <QTextStream>
+
 
 
 class TNEWAE_EXPORT TNewae : public QObject, TPlugin
@@ -46,9 +52,17 @@ public:
     virtual QList<TScope *> getScopes() override;
 
 protected:
+    void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
+
     QList<TIODevice *> m_ports;
     TConfigParam m_preInitParams;
     TConfigParam m_postInitParams;
+
+    QSharedMemory shm;
+    QProcess *pythonProcess;
+
+    QString shmKey = PLUGIN_ID + "shm";
+    const size_t shmSize = 512;
 };
 
 
