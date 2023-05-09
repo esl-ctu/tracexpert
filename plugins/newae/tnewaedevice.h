@@ -3,12 +3,13 @@
 #define TNEWAEDEVICE_H
 
 #include "tiodevice.h"
+#include "tnewae.h"
 
-class TnewaeDevice : public TIODevice {
+class TnewaeDevice : public TIODevice, protected TNewae {
 
 public:
 
-    TnewaeDevice(const QString & name, const QString & sn);
+    TnewaeDevice(const QString & name_in, const QString & sn_in, uint8_t id_in);
     //TnewaeDevice(const QSerialPortInfo &portInfo);
 
     virtual ~TnewaeDevice() override;
@@ -30,7 +31,8 @@ public:
 
 protected:
     QString sn;
-    int cwId;
+    uint8_t cwId;
+    QString name;
 
     /*void _openPort(bool *ok = nullptr);
     void _createPostInitParams();

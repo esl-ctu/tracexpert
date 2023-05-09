@@ -20,6 +20,9 @@ const char lineSeparator = '\r';
 //All interprocess communication is ASCII
 //All shared memory binary (size is size_t, data are uint8_t)
 
+//Special functions implemented (to implement) in python - HALT, INIT_DEVICE
+//Special codes to be received from python - STARTED, (DONE)
+
 class TNEWAE_EXPORT TNewae : public QObject, TPlugin
 {
     Q_OBJECT
@@ -62,6 +65,9 @@ protected:
 
     void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
     bool getDataFromShm(size_t &size, QList<uint8_t> &data);
+
+    uint8_t numDevices;
+    bool pythonReady;
 
     QList<TIODevice *> m_ports;
     TConfigParam m_preInitParams;

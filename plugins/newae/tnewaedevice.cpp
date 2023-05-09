@@ -1,7 +1,9 @@
 #include "tnewaedevice.h"
 
-TnewaeDevice::TnewaeDevice(const QString & name, const QString & sn){
-    //TODO
+TnewaeDevice::TnewaeDevice(const QString & name_in, const QString & sn_in, uint8_t id_in){
+    cwId = id_in;
+    sn = sn_in;
+    name = name_in;
 }
 
 
@@ -33,6 +35,8 @@ TConfigParam TnewaeDevice::setPreInitParams(TConfigParam params){
 
 void TnewaeDevice::init(bool *ok/* = nullptr*/){
     //TODO intialize device
+    pythonProcess->write("HALT");
+    pythonProcess->waitForBytesWritten();
 }
 
 void TnewaeDevice::deInit(bool *ok/* = nullptr*/){

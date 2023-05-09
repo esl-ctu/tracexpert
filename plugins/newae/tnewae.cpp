@@ -1,7 +1,9 @@
 #include "tnewae.h"
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
-   m_preInitParams  = TConfigParam("Auto-detect", "true", TConfigParam::TType::TBool, "Automatically detect available NewAE devices", false);
+    m_preInitParams  = TConfigParam("Auto-detect", "true", TConfigParam::TType::TBool, "Automatically detect available NewAE devices", false);
+    numDevices = 0;
+    pythonReady = false;
 }
 
 TNewae::~TNewae() {
@@ -51,6 +53,8 @@ void TNewae::init(bool *ok) {
         pythonProcess->kill();
         return;
     }
+
+    pythonReady = true;
 
     //Create and attach the memory that's shared between C++ and the python process
     shm.setKey(shmKey);
@@ -118,7 +122,8 @@ void TNewae::init(bool *ok) {
 
         //Append available devices to m_ports
         for(size_t i = 0; i < dataLen; ++i) {
-            m_ports.append(new TnewaeDevice(devices.at(i).first, devices.at(i).second));
+            m_ports.append(new TnewaeDevice(devices.at(i).first, devices.at(i).second), numDevices);
+            numDevices++;
         }
     }
 }
@@ -141,6 +146,8 @@ void TNewae::deInit(bool *ok) {
         pythonProcess->kill();
     }
 
+    pythonReady = false;
+
     //Detach shm
     succ = shm.detach();
     if (!succ){
@@ -158,12 +165,14 @@ TConfigParam TNewae::setPostInitParams(TConfigParam params) {
 }
 
 void TNewae::addIODevice(QString name, QString sn, bool *ok) {
-    m_ports.append(new TnewaeDevice(name, sn));
+    m_ports.append(new TnewaeDevice(name, sn, numDevices));
+    numDevices++;
     if(ok != nullptr) *ok = true;
 }
 
 void TNewae::addScope(QString name, QString info, bool *ok) {
     if(ok != nullptr) *ok = false;
+    //TODO!!
 }
 
 QList<TIODevice *> TNewae::getIODevices() {
