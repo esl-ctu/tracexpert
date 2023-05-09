@@ -1,5 +1,7 @@
 #include "tnewae.h"
 
+//TODO Exposing io devices but need to expose scopes
+
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     m_preInitParams  = TConfigParam("Auto-detect", "true", TConfigParam::TType::TBool, "Automatically detect available NewAE devices", false);
     numDevices = 0;
@@ -122,7 +124,7 @@ void TNewae::init(bool *ok) {
 
         //Append available devices to m_ports
         for(size_t i = 0; i < dataLen; ++i) {
-            m_ports.append(new TnewaeDevice(devices.at(i).first, devices.at(i).second), numDevices);
+            m_ports.append(new TnewaeDevice(devices.at(i).first, devices.at(i).second, numDevices));
             numDevices++;
         }
     }

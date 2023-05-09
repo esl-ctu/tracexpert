@@ -4,17 +4,17 @@
 #pragma once
 
 #include "tnewae_global.h"
+#include "tplugin.h"
 #include "tnewae.h"
 
 #include "tiodevice.h"
 
 
-class TnewaeDevice : public TIODevice, protected TNewae {
+class TnewaeDevice : public TIODevice {
 
 public:
 
     TnewaeDevice(const QString & name_in, const QString & sn_in, uint8_t id_in);
-    //TnewaeDevice(const QSerialPortInfo &portInfo);
 
     virtual ~TnewaeDevice() override;
 
