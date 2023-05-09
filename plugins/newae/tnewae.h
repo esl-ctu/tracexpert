@@ -1,6 +1,7 @@
 
-#ifndef NEWAE_H
-#define NEWAE_H
+//#ifndef NEWAE_H
+//#define NEWAE_H
+#pragma once
 
 #include "tnewae_global.h"
 #include "tplugin.h"
@@ -81,4 +82,4 @@ protected:
 };
 
 
-#endif // NEWAE_H
+//#endif // NEWAE_H

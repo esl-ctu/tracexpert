@@ -1,9 +1,13 @@
 
-#ifndef TNEWAEDEVICE_H
-#define TNEWAEDEVICE_H
+//#ifndef TNEWAEDEVICE_H
+//#define TNEWAEDEVICE_H
+#pragma once
+
+#include "tnewae_global.h"
+#include "tnewae.h"
 
 #include "tiodevice.h"
-#include "tnewae.h"
+
 
 class TnewaeDevice : public TIODevice, protected TNewae {
 
@@ -51,4 +55,4 @@ protected:
 
 };
 
-#endif // TNEWAEDEVICE_H
+//#endif // TNEWAEDEVICE_H
