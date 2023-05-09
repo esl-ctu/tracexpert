@@ -12,7 +12,13 @@
 #include <QList>
 #include <QTextStream>
 
+const std::size_t SM_SIZE_ADDR = 0;
+const std::size_t SM_DATA_ADDR = SM_SIZE_ADDR + sizeof(SM_SIZE_ADDR);
+const char fieldSeparator = ',';
+const char lineSeparator = '\r';
 
+//All interprocess communication is ASCII
+//All shared memory binary (size is size_t, data are uint8_t)
 
 class TNEWAE_EXPORT TNewae : public QObject, TPlugin
 {
@@ -52,7 +58,10 @@ public:
     virtual QList<TScope *> getScopes() override;
 
 protected:
+    const QString PLUGIN_ID = "TraceXpert.NewAE";
+
     void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
+    bool getDataFromShm(size_t &size, QList<uint8_t> &data);
 
     QList<TIODevice *> m_ports;
     TConfigParam m_preInitParams;

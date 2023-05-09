@@ -4,16 +4,11 @@
 
 #include "tiodevice.h"
 
-const QString PLUGIN_ID = "TraceXpert.NewAE";
-
-const std::size_t SM_SIZE_ADDR = 0;
-const std::size_t SM_DATA_ADDR = SM_SIZE_ADDR + sizeof(SM_SIZE_ADDR);
-
 class TnewaeDevice : public TIODevice {
 
 public:
 
-    TnewaeDevice(QString & name, QString & info);
+    TnewaeDevice(const QString & name, const QString & sn);
     //TnewaeDevice(const QSerialPortInfo &portInfo);
 
     virtual ~TnewaeDevice() override;
@@ -34,6 +29,8 @@ public:
     virtual size_t readData(uint8_t * buffer, size_t len) override;
 
 protected:
+    QString sn;
+    int cwId;
 
     /*void _openPort(bool *ok = nullptr);
     void _createPostInitParams();

@@ -1,12 +1,12 @@
 #include "tnewaedevice.h"
 
-TnewaeDevice::TnewaeDevice(QString & name, QString & info){
-
+TnewaeDevice::TnewaeDevice(const QString & name, const QString & sn){
+    //TODO
 }
 
 
 TnewaeDevice::~TnewaeDevice(){
-
+    //TODO
 }
 
 QString TnewaeDevice::getIODeviceName() const{
