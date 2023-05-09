@@ -76,8 +76,45 @@ void TNewae::init(bool *ok) {
         QList<uint8_t> data;
         getDataFromShm(dataLen, data);
 
-        QList<QPair<QString, QString>> devices;
-        //TODO Parse the devices
+        //Parse the devices
+        QList<std::pair<QString, QString>> devices;
+        size_t i = 0;
+        while (i != dataLen){
+            QString name;
+            QString sn;
+
+            //Fill the name
+            while((i != dataLen) &&
+                   (data.at(i) != lineSeparator)){
+                name.append((char) data.at(i));
+                ++i;
+            }
+
+            //Eat the separator
+            if ((i != dataLen) &&
+                (data.at(i) != lineSeparator)){
+                ++i;
+            } else {
+                *ok = false;
+                qWarning("A device was incompletely defined. All loaded devices are invalid.");
+            }
+
+            //Fill the sn
+            while((i != dataLen) &&
+                   (data.at(i) != lineSeparator)){
+                sn.append((char) data.at(i));
+                ++i;
+            }
+
+            //Is there a separator? Eat it
+            if ((i != dataLen) &&
+                (data.at(i) != lineSeparator)){
+                ++i;
+            }
+
+            //Insert the device into the list for allocation
+            devices.append(std::make_pair(name, sn));
+        }
 
         //Append available devices to m_ports
         for(size_t i = 0; i < dataLen; ++i) {
