@@ -36,8 +36,8 @@ TConfigParam TnewaeScope::setPreInitParams(TConfigParam params){
 
 void TnewaeScope::init(bool *ok/* = nullptr*/){
     //TODO intialize device
-    pythonProcess->write("HALT");
-    pythonProcess->waitForBytesWritten();
+    //pythonProcess->write("HALT");
+    //pythonProcess->waitForBytesWritten();
 
     //Pozor, inicializovat jen jednou! Bacha na IOdevice
 }
@@ -50,6 +50,6 @@ TConfigParam TnewaeScope::getPostInitParams() const{
     return m_postInitParams;
 }
 
-TConfigParam TnewaeDevice::setPostInitParams(TConfigParam params){
+TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){
 
 }
