@@ -6,6 +6,8 @@ TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     m_preInitParams  = TConfigParam("Auto-detect", "true", TConfigParam::TType::TBool, "Automatically detect available NewAE devices", false);
     numDevices = 0;
     pythonReady = false;
+    deviceWaitingForRead = false;
+    waitingForReadDeviceId = -1;
 }
 
 TNewae::~TNewae() {
@@ -76,6 +78,7 @@ void TNewae::init(bool *ok) {
         QList<QString> params;
         packageDataForPython(-1, "DETECT_DEVICES", 0, params, toSend);
         pythonProcess->write(toSend.toLocal8Bit().constData());
+        succ = pythonProcess->waitForBytesWritten();
 
         //Read data from pyton
         size_t dataLen;
@@ -192,6 +195,70 @@ void TNewae::packageDataForPython(uint8_t cwId, QString functionName, uint8_t nu
     for (int i = 0; i < numParams; ++i){
         QTextStream(&out) << fieldSeparator << params.at(i);
     }
+}
+
+bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpected/* = true*/, bool wait/* = true*/){
+    if (!pythonReady){
+        return false;
+    }
+    pythonReady = false;
+    wait = true; //!!!!!
+
+    int succ;
+
+    succ = pythonProcess->write(data.toLocal8Bit().constData());
+
+    if (succ == -1){
+        return false;
+    }
+
+    if (wait){
+        succ = pythonProcess->waitForBytesWritten();
+        pythonReady = true;
+    }
+
+    if (succ == -1){
+        return false;
+    }
+
+    if (responseExpected){
+        deviceWaitingForRead = true;
+        waitingForReadDeviceId = cwId;
+    }
+
+    return true;
+}
+
+bool TNewae::checkForPythonReady(){
+    QString buff;
+    pythonProcess->peek(6);
+    return buff.contains("DONE");
+}
+
+bool TNewae::checkForPythonError(){
+    QString buff;
+    pythonProcess->peek(6);
+    if (buff.contains("ERROR")) {
+        pythonProcess->readAllStandardOutput();
+        pythonReady = true;
+        deviceWaitingForRead = false;
+        waitingForReadDeviceId = -1;
+        return true;
+    }
+
+    return false;
+}
+
+//Call check for ready first!
+bool TNewae::readFromPython(uint8_t cwId, QString &data, bool wait/* = true*/){
+    if (!pythonReady || !deviceWaitingForRead || cwId != waitingForReadDeviceId){
+        return false;
+    }
+
+    data = pythonProcess->readAllStandardOutput();
+    deviceWaitingForRead = false;
+
+    return true;
 }
 
 bool TNewae::getDataFromShm(size_t &size, QList<uint8_t> &data){

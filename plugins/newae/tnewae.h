@@ -61,14 +61,23 @@ public:
     /// Get available Scopes, available only after init()
     virtual QList<TScope *> getScopes() override;
 
+    //cwId is only used for identification if the correct CW is being accessed
+    bool writeToPython(uint8_t cwId, const QString &data, bool responseExpected = true, bool wait = true);
+    bool readFromPython(uint8_t cwId, QString &data, bool wait = true);
+    bool checkForPythonReady();
+    bool checkForPythonError(); //All output is discarded on error
+
+    void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
+
 protected:
     const QString PLUGIN_ID = "TraceXpert.NewAE";
 
-    void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
     bool getDataFromShm(size_t &size, QList<uint8_t> &data);
 
     uint8_t numDevices;
     bool pythonReady;
+    bool deviceWaitingForRead;
+    uint8_t waitingForReadDeviceId;
 
     QList<TIODevice *> m_ports;
     TConfigParam m_preInitParams;

@@ -22,6 +22,8 @@ add_library(Tnewae SHARED
   tnewae.h
   tnewaedevice.h
   tnewaedevice.cpp
+  tnewaescope.h
+  tnewaescope.cpp
 )
 
 target_link_libraries(Tnewae PRIVATE Qt${QT_VERSION_MAJOR}::Core)

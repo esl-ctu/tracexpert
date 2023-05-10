@@ -13,8 +13,8 @@ public:
     TnewaeScope(const QString & name_in, const QString & sn_in, uint8_t id_in);
     ~TnewaeScope();
 
-    QString getIODeviceName() const;
-    QString getIODeviceInfo() const;
+    QString getScopeName() const;
+    QString getScopeInfo() const;
 
     TConfigParam getPreInitParams() const;
     TConfigParam setPreInitParams(TConfigParam params);

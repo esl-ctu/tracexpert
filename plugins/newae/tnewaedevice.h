@@ -34,10 +34,6 @@ public:
     virtual size_t readData(uint8_t * buffer, size_t len) override;
 
 protected:
-    QString sn;
-    uint8_t cwId;
-    QString name;
-
     /*void _openPort(bool *ok = nullptr);
     void _createPostInitParams();
     bool _validatePostInitParamsStructure(TConfigParam & params);*/
