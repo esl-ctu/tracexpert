@@ -8,6 +8,7 @@ TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     pythonReady = false;
     deviceWaitingForRead = false;
     waitingForReadDeviceId = -1;
+    qDebug("Constructor finished");
 }
 
 TNewae::~TNewae() {
@@ -33,6 +34,7 @@ TConfigParam TNewae::setPreInitParams(TConfigParam params) {
 }
 
 void TNewae::init(bool *ok) {
+    qDebug("Init called");
     bool succ;
 
     //Create and run the python process
@@ -45,14 +47,15 @@ void TNewae::init(bool *ok) {
     pythonProcess->start(program, arguments);
     succ = pythonProcess->waitForStarted(30000); //wait max 30 seconds
     if (!succ){
-        *ok = false;
+        if(ok != nullptr) *ok = false;
         qWarning("Failed to start the python component.");
         return;
     }
+
     QByteArray data = pythonProcess->readAllStandardOutput();
     succ = data.contains("STARTED");
     if (!succ){
-        *ok = false;
+        if(ok != nullptr) *ok = false;
         qWarning("The python component does not communicate. It will be killed.");
         pythonProcess->kill();
         return;
@@ -66,7 +69,7 @@ void TNewae::init(bool *ok) {
     if (!succ && shm.error() == QSharedMemory::AlreadyExists){
         shm.attach();
     } else {
-        *ok = false;
+        if(ok != nullptr) *ok = false;
         qWarning("Failed to set up shared memory.");
         return;
     }
@@ -79,6 +82,11 @@ void TNewae::init(bool *ok) {
         packageDataForPython(-1, "DETECT_DEVICES", 0, params, toSend);
         pythonProcess->write(toSend.toLocal8Bit().constData());
         succ = pythonProcess->waitForBytesWritten();
+        if (!succ){
+            if(ok != nullptr) *ok = false;
+            qWarning("Failed to send the DETECT DEVICES command to python.");
+            return;
+        }
 
         //Read data from pyton
         size_t dataLen;
@@ -104,7 +112,7 @@ void TNewae::init(bool *ok) {
                 (data.at(i) != lineSeparator)){
                 ++i;
             } else {
-                *ok = false;
+                if(ok != nullptr) *ok = false;
                 qWarning("A device was incompletely defined. All loaded devices are invalid.");
             }
 
@@ -131,6 +139,7 @@ void TNewae::init(bool *ok) {
             numDevices++;
         }
     }
+    qDebug("Init finished successfully");
 }
 
 void TNewae::deInit(bool *ok) {
