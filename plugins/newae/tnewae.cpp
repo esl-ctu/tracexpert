@@ -8,7 +8,6 @@ TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     pythonReady = false;
     deviceWaitingForRead = false;
     waitingForReadDeviceId = -1;
-    qDebug("Constructor finished");
 }
 
 TNewae::~TNewae() {
@@ -34,7 +33,6 @@ TConfigParam TNewae::setPreInitParams(TConfigParam params) {
 }
 
 void TNewae::init(bool *ok) {
-    qDebug("Init called");
     bool succ;
 
     //Create and run the python process
@@ -45,15 +43,20 @@ void TNewae::init(bool *ok) {
     pythonProcess = new QProcess;
     pythonProcess->setProcessChannelMode(QProcess::MergedChannels);
     pythonProcess->start(program, arguments);
-    succ = pythonProcess->waitForStarted(30000); //wait max 30 seconds
+    succ = pythonProcess->waitForStarted(PROCESS_WAIT_MSCECS); //wait max 30 seconds
     if (!succ){
         if(ok != nullptr) *ok = false;
         qWarning("Failed to start the python component.");
         return;
     }
 
-    QByteArray data = pythonProcess->readAllStandardOutput();
-    succ = data.contains("STARTED");
+    QTime dieTime= QTime::currentTime().addMSecs(PROCESS_WAIT_MSCECS);
+    while (QTime::currentTime() < dieTime){
+        QByteArray data = pythonProcess->readAllStandardOutput();
+        succ = data.contains("STARTED");
+        if (succ) break;
+    }
+
     if (!succ){
         if(ok != nullptr) *ok = false;
         qWarning("The python component does not communicate. It will be killed.");
@@ -139,7 +142,6 @@ void TNewae::init(bool *ok) {
             numDevices++;
         }
     }
-    qDebug("Init finished successfully");
 }
 
 void TNewae::deInit(bool *ok) {
@@ -154,7 +156,7 @@ void TNewae::deInit(bool *ok) {
     pythonProcess->waitForBytesWritten();
     pythonProcess->closeWriteChannel();
 
-    succ = pythonProcess->waitForFinished(30000);
+    succ = pythonProcess->waitForFinished(PROCESS_WAIT_MSCECS);
     if (!succ){
         qWarning("Python component for NewAE devices did not exit gracefully. Killing...");
         pythonProcess->kill();

@@ -15,6 +15,7 @@
 
 const std::size_t SM_SIZE_ADDR = 0;
 const std::size_t SM_DATA_ADDR = SM_SIZE_ADDR + sizeof(SM_SIZE_ADDR);
+const int PROCESS_WAIT_MSCECS = 10000;
 const char fieldSeparator = ',';
 const char lineSeparator = '\r';
 
