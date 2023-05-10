@@ -1,9 +1,8 @@
 #include "tnewaedevice.h"
 
 TnewaeDevice::TnewaeDevice(const QString & name_in, const QString & sn_in, uint8_t id_in){
-    cwId = id_in;
-    sn = sn_in;
-    name = name_in;
+    m_initialized = false;
+    //TODO
 }
 
 
@@ -37,10 +36,12 @@ void TnewaeDevice::init(bool *ok/* = nullptr*/){
     //TODO intialize device
     pythonProcess->write("HALT");
     pythonProcess->waitForBytesWritten();
+
+    //Pozor, inicializovat jen jednou! Bacha na Scope
 }
 
 void TnewaeDevice::deInit(bool *ok/* = nullptr*/){
-
+    //TODO
 }
 
 TConfigParam TnewaeDevice::getPostInitParams() const{
@@ -48,13 +49,16 @@ TConfigParam TnewaeDevice::getPostInitParams() const{
 }
 
 TConfigParam TnewaeDevice::setPostInitParams(TConfigParam params){
-
+    //TODO
+    return TConfigParam();
 }
 
 size_t TnewaeDevice::writeData(const uint8_t * buffer, size_t len){
-
+    //TODO
+    return 0;
 }
 
 size_t TnewaeDevice::readData(uint8_t * buffer, size_t len){
-
+    //TODO
+    return 0;
 }
