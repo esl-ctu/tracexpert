@@ -36,30 +36,57 @@ void TNewae::init(bool *ok) {
     bool succ;
 
     //Create and run the python process
-    QString program = "python3";
+    QString runDir(QCoreApplication::instance()->applicationDirPath());
+
+    #ifdef Q_OS_WIN
+        QString program = runDir + "/python/python.exe";
+    #else
+        QString program = "python";
+    #endif
+
     QStringList arguments;
-    arguments << "executable.py";
+    arguments << runDir + "/executable.py";
+
+    qDebug(program.toLocal8Bit().constData());
+    qDebug(arguments[0].toLocal8Bit().constData());
 
     pythonProcess = new QProcess;
-    pythonProcess->setProcessChannelMode(QProcess::MergedChannels);
-    pythonProcess->start(program, arguments);
+    pythonProcess->setProcessChannelMode(QProcess::ForwardedErrorChannel);
+    pythonProcess->setProgram(program);
+    pythonProcess->setArguments(arguments);
+    pythonProcess->start();
+    pythonProcess->setReadChannel(QProcess::StandardOutput);
     succ = pythonProcess->waitForStarted(PROCESS_WAIT_MSCECS); //wait max 30 seconds
     if (!succ){
         if(ok != nullptr) *ok = false;
-        qWarning("Failed to start the python component.");
+
+        #ifdef Q_OS_WIN
+            qWarning("Failed to start the python component.");
+        #else
+            qWarning("Failed to start the python component. Do you have python3 installed and symlinked as \"python\"?");
+        #endif
+
         return;
     }
 
-    QTime dieTime= QTime::currentTime().addMSecs(PROCESS_WAIT_MSCECS);
-    while (QTime::currentTime() < dieTime){
-        QByteArray data = pythonProcess->readAllStandardOutput();
-        succ = data.contains("STARTED");
-        if (succ) break;
-    }
+    pythonProcess->waitForReadyRead(PROCESS_WAIT_MSCECS);
+    QByteArray data = pythonProcess->readAllStandardOutput();;
+    succ = data.contains("STARTED");
 
     if (!succ){
         if(ok != nullptr) *ok = false;
-        qWarning("The python component does not communicate. It will be killed.");
+        qWarning((QString("The python component does not communicate. It will be killed. This is its output:") + QString(data)).toLocal8Bit().constData());
+        switch (pythonProcess->state()){
+            case QProcess::NotRunning:
+                qWarning((("Error state: Not running " + pythonProcess->errorString())).toLocal8Bit().constData());
+                break;
+            case QProcess::Running:
+                qWarning((("Error state: Running " + pythonProcess->errorString())).toLocal8Bit().constData());
+                break;
+            case QProcess::Starting:
+                qWarning((("Error state: Starting " + pythonProcess->errorString())).toLocal8Bit().constData());
+                break;
+        }
         pythonProcess->kill();
         return;
     }
@@ -71,7 +98,7 @@ void TNewae::init(bool *ok) {
     succ = shm.create(shmSize); //this also attaches the segment on success
     if (!succ && shm.error() == QSharedMemory::AlreadyExists){
         shm.attach();
-    } else {
+    } else if (!succ) {
         if(ok != nullptr) *ok = false;
         qWarning("Failed to set up shared memory.");
         return;
@@ -141,7 +168,13 @@ void TNewae::init(bool *ok) {
             m_ports.append(new TnewaeDevice(devices.at(i).first, devices.at(i).second, numDevices));
             numDevices++;
         }
+
+        if (!numDevices){
+            qWarning("No devices autodetected.");
+        }
     }
+
+    if(ok != nullptr) *ok = true;
 }
 
 void TNewae::deInit(bool *ok) {

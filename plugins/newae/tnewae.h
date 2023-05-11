@@ -7,11 +7,15 @@
 #include "tplugin.h"
 #include "tnewaedevice.h"
 
+#include <QCoreApplication>
 #include <QSharedMemory>
 #include <QWaitCondition>
 #include <QProcess>
 #include <QList>
 #include <QTextStream>
+#include <QDir>
+#include <QtDebug>
+#include <QFile>
 
 const std::size_t SM_SIZE_ADDR = 0;
 const std::size_t SM_DATA_ADDR = SM_SIZE_ADDR + sizeof(SM_SIZE_ADDR);
