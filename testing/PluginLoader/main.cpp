@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
     qInstallMessageHandler(myMessageHandler);
-    qWarning("Start program");
+    qDebug("Start program");
 
     QTextStream stream(stdout);
     stream << "* Started plugin loader" << Qt::endl;
@@ -121,6 +121,8 @@ int main(int argc, char *argv[])
                     newaePlug->init(&ok);
                     if (!ok) {
                         stream << "** Load failed" << Qt::endl;
+                    } else {
+                        stream << "** Load ok" << Qt::endl;
                     }
                 }
 
