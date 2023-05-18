@@ -1,6 +1,7 @@
 #include "tnewae.h"
 
 //TODO Exposing io devices but need to expose scopes
+//TODO handle signals from process
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     m_preInitParams  = TConfigParam("Auto-detect", "true", TConfigParam::TType::TBool, "Automatically detect available NewAE devices", false);
@@ -61,9 +62,9 @@ void TNewae::init(bool *ok) {
         if(ok != nullptr) *ok = false;
 
         #ifdef Q_OS_WIN
-            qWarning("Failed to start the python component.");
+            qCritical("Failed to start the python component.");
         #else
-            qWarning("Failed to start the python component. Do you have python3 installed and symlinked as \"python\"?");
+            qCritical("Failed to start the python component. Do you have python3 installed and symlinked as \"python\"?");
         #endif
 
         return;
@@ -75,16 +76,16 @@ void TNewae::init(bool *ok) {
 
     if (!succ){
         if(ok != nullptr) *ok = false;
-        qWarning((QString("The python component does not communicate. It will be killed. This is its output:") + QString(data)).toLocal8Bit().constData());
+        qCritical((QString("The python component does not communicate. It will be killed. This is its output:") + QString(data)).toLocal8Bit().constData());
         switch (pythonProcess->state()){
             case QProcess::NotRunning:
-                qWarning((("Error state: Not running " + pythonProcess->errorString())).toLocal8Bit().constData());
+                qCritical((("Error state: Not running " + pythonProcess->errorString())).toLocal8Bit().constData());
                 break;
             case QProcess::Running:
-                qWarning((("Error state: Running " + pythonProcess->errorString())).toLocal8Bit().constData());
+                qCritical((("Error state: Running " + pythonProcess->errorString())).toLocal8Bit().constData());
                 break;
             case QProcess::Starting:
-                qWarning((("Error state: Starting " + pythonProcess->errorString())).toLocal8Bit().constData());
+                qCritical((("Error state: Starting " + pythonProcess->errorString())).toLocal8Bit().constData());
                 break;
         }
         pythonProcess->kill();
@@ -100,7 +101,7 @@ void TNewae::init(bool *ok) {
         shm.attach();
     } else if (!succ) {
         if(ok != nullptr) *ok = false;
-        qWarning("Failed to set up shared memory.");
+        qCritical("Failed to set up shared memory.");
         return;
     }
 
@@ -275,7 +276,7 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpec
 
 bool TNewae::checkForPythonReady(){
     QString buff;
-    pythonProcess->peek(6);
+    buff = pythonProcess->peek(6);
     return buff.contains("DONE");
 }
 
