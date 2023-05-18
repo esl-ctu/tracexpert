@@ -2,6 +2,7 @@
 
 //TODO Exposing io devices but need to expose scopes
 //TODO handle signals from process
+//TODO handle line separators
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     m_preInitParams  = TConfigParam("Auto-detect", "true", TConfigParam::TType::TBool, "Automatically detect available NewAE devices", false);
@@ -161,14 +162,14 @@ void TNewae::init(bool *ok) {
 
             //Fill the name
             while((i != dataLen) &&
-                   (data.at(i) != lineSeparator)){
+                   (data.at(i) != fieldSeparator)){
                 name.append((char) data.at(i));
                 ++i;
             }
 
             //Eat the separator
             if ((i != dataLen) &&
-                (data.at(i) != lineSeparator)){
+                (data.at(i) != fieldSeparator)){
                 ++i;
             } else {
                 if(ok != nullptr) *ok = false;
@@ -268,6 +269,7 @@ void TNewae::packageDataForPython(uint8_t cwId, QString functionName, uint8_t nu
     for (int i = 0; i < numParams; ++i){
         QTextStream(&out) << fieldSeparator << params.at(i);
     }
+    QTextStream(&out) << lineSeparator;
 }
 
 bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpected/* = true*/, bool wait/* = true*/){
