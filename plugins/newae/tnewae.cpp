@@ -2,6 +2,7 @@
 
 //TODO Exposing io devices but need to expose scopes
 //TODO handle signals from process
+//TODO handle line separators
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     m_preInitParams  = TConfigParam("Auto-detect", "true", TConfigParam::TType::TBool, "Automatically detect available NewAE devices", false);
@@ -105,6 +106,34 @@ void TNewae::init(bool *ok) {
         return;
     }
 
+    //Test shared memory
+    quint32 tmpval = QRandomGenerator::global()->generate();
+    QString tmpstr = QString::number(tmpval);
+    succ = writeToPython(-1, "SMTEST:" + tmpstr);
+    if (!succ){
+        if(ok != nullptr) *ok = false;
+        qCritical("Failed to send data to Python when setting up the shared memory.");
+        return;
+    }
+
+    succ = waitForPythonDone(-1);
+    if (!succ){
+        if(ok != nullptr) *ok = false;
+        qCritical("Python did not respond to SHM read request.");
+        return;
+    }
+
+    size_t dataLen;
+    QList<uint8_t> data2;
+    getDataFromShm(dataLen, data2);
+    succ = data2.contains(tmpstr);
+    if (!succ){
+        if(ok != nullptr) *ok = false;
+        qCritical("Failed to test the shared memory that was already set up.");
+        return;
+    }
+
+
     //Auto detect devices
     if(m_preInitParams.getName() == "Auto-detect" && m_preInitParams.getValue() == "true") {
         //Send data to python
@@ -133,14 +162,14 @@ void TNewae::init(bool *ok) {
 
             //Fill the name
             while((i != dataLen) &&
-                   (data.at(i) != lineSeparator)){
+                   (data.at(i) != fieldSeparator)){
                 name.append((char) data.at(i));
                 ++i;
             }
 
             //Eat the separator
             if ((i != dataLen) &&
-                (data.at(i) != lineSeparator)){
+                (data.at(i) != fieldSeparator)){
                 ++i;
             } else {
                 if(ok != nullptr) *ok = false;
@@ -240,6 +269,7 @@ void TNewae::packageDataForPython(uint8_t cwId, QString functionName, uint8_t nu
     for (int i = 0; i < numParams; ++i){
         QTextStream(&out) << fieldSeparator << params.at(i);
     }
+    QTextStream(&out) << lineSeparator;
 }
 
 bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpected/* = true*/, bool wait/* = true*/){
@@ -274,7 +304,10 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpec
     return true;
 }
 
-bool TNewae::checkForPythonReady(){
+bool TNewae::checkForPythonReady(int wait /*= 30000*/){
+    if (wait){
+        pythonProcess->waitForReadyRead(wait);
+    }
     QString buff;
     buff = pythonProcess->peek(6);
     return buff.contains("DONE");
@@ -282,7 +315,7 @@ bool TNewae::checkForPythonReady(){
 
 bool TNewae::checkForPythonError(){
     QString buff;
-    pythonProcess->peek(6);
+    buff = pythonProcess->peek(6);
     if (buff.contains("ERROR")) {
         pythonProcess->readAllStandardOutput();
         pythonReady = true;
@@ -304,6 +337,18 @@ bool TNewae::readFromPython(uint8_t cwId, QString &data, bool wait/* = true*/){
     deviceWaitingForRead = false;
 
     return true;
+}
+
+bool TNewae::waitForPythonDone(uint8_t cwId, int timeout/* = 30000*/){
+    checkForPythonReady(timeout);
+
+    QString buff;
+    buff = pythonProcess->peek(6);
+    if (buff.contains("DONE") ) {
+        return readFromPython(cwId, buff);;
+    }
+
+    return false;
 }
 
 bool TNewae::getDataFromShm(size_t &size, QList<uint8_t> &data){

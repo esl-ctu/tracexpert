@@ -16,6 +16,7 @@
 #include <QDir>
 #include <QtDebug>
 #include <QFile>
+#include <QRandomGenerator>
 
 const std::size_t SM_SIZE_ADDR = 0;
 const std::size_t SM_DATA_ADDR = SM_SIZE_ADDR + sizeof(SM_SIZE_ADDR);
@@ -69,8 +70,9 @@ public:
     //cwId is only used for identification if the correct CW is being accessed
     bool writeToPython(uint8_t cwId, const QString &data, bool responseExpected = true, bool wait = true);
     bool readFromPython(uint8_t cwId, QString &data, bool wait = true);
-    bool checkForPythonReady();
+    bool checkForPythonReady(int wait = 30000);
     bool checkForPythonError(); //All output is discarded on error
+    bool waitForPythonDone(uint8_t cwId, int timeout = 30000);
 
     void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
 
