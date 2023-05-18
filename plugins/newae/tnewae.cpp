@@ -72,7 +72,7 @@ void TNewae::init(bool *ok) {
     }
 
     pythonProcess->waitForReadyRead(PROCESS_WAIT_MSCECS);
-    QByteArray data = pythonProcess->readAllStandardOutput();;
+    QString data = pythonProcess->readAllStandardOutput();
     succ = data.contains("STARTED");
 
     if (!succ){
@@ -124,9 +124,9 @@ void TNewae::init(bool *ok) {
     }
 
     size_t dataLen;
-    QList<uint8_t> data2;
-    getDataFromShm(dataLen, data2);
-    succ = data2.contains(tmpstr);
+    data = "";
+    getDataFromShm(dataLen, data);
+    succ = data.contains(tmpstr);
     if (!succ){
         if(ok != nullptr) *ok = false;
         qCritical("Failed to test the shared memory that was already set up.");
@@ -150,7 +150,7 @@ void TNewae::init(bool *ok) {
 
         //Read data from pyton
         size_t dataLen;
-        QList<uint8_t> data;
+        QString data;
         getDataFromShm(dataLen, data);
 
         //Parse the devices
@@ -163,7 +163,7 @@ void TNewae::init(bool *ok) {
             //Fill the name
             while((i != dataLen) &&
                    (data.at(i) != fieldSeparator)){
-                name.append((char) data.at(i));
+                name.append(data.at(i));
                 ++i;
             }
 
@@ -179,7 +179,7 @@ void TNewae::init(bool *ok) {
             //Fill the sn
             while((i != dataLen) &&
                    (data.at(i) != lineSeparator)){
-                sn.append((char) data.at(i));
+                sn.append(data.at(i));
                 ++i;
             }
 
@@ -351,14 +351,14 @@ bool TNewae::waitForPythonDone(uint8_t cwId, int timeout/* = 30000*/){
     return false;
 }
 
-bool TNewae::getDataFromShm(size_t &size, QList<uint8_t> &data){
+bool TNewae::getDataFromShm(size_t &size, QString &data){
     size_t* dataLenAddr;
     bool succ;
 
     succ = shm.lock();
 
     //Get data pointer and data size
-    uint8_t * shmData = (uint8_t *) (shm.data());
+    char * shmData = (char *) (shm.data());
     dataLenAddr = (size_t *) (shmData + SM_SIZE_ADDR);
     size = (*dataLenAddr);
     shmData += SM_DATA_ADDR;

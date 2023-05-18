@@ -79,7 +79,7 @@ public:
 protected:
     const QString PLUGIN_ID = "TraceXpert.NewAE";
 
-    bool getDataFromShm(size_t &size, QList<uint8_t> &data);
+    bool getDataFromShm(size_t &size, QString &data);
 
     uint8_t numDevices;
     bool pythonReady;
