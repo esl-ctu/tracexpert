@@ -167,6 +167,8 @@ void TConfigParamWidget::drawInput(const TConfigParam & param, QTreeWidgetItem *
             QValidator * validator = nullptr;
             if (type == TConfigParam::TType::TReal) {
                 validator = new QDoubleValidator(edit);
+                edit->setValidator(validator);
+                edit->setText(edit->validator()->locale().toString(param.getValue().toDouble()));
             }
             else if (type == TConfigParam::TType::TInt || type == TConfigParam::TType::TLongLong || type == TConfigParam::TType::TShort || type == TConfigParam::TType::TUInt || type == TConfigParam::TType::TULongLong ||type == TConfigParam::TType::TUShort) {
                 int digits = 0;
@@ -193,9 +195,12 @@ void TConfigParamWidget::drawInput(const TConfigParam & param, QTreeWidgetItem *
                     isSigned = true;
                 }
                 validator = new QRegularExpressionValidator(QRegularExpression(QString("[+%1]{0,1}0*\\d{1,%2}").arg(isSigned?"-":"", QString::number(digits))), edit);
+                edit->setValidator(validator);
+                edit->setText(param.getValue());
             }
-            edit->setValidator(validator);
-            edit->setText(param.getValue());
+            else {
+                edit->setText(param.getValue());
+            }
             connect(edit, &QLineEdit::textEdited, this, lightenIcon);
             input = edit;
         }
@@ -235,8 +240,11 @@ bool TConfigParamWidget::checkInput(TConfigParam & param, QTreeWidgetItem * pare
         else {
             QLineEdit * edit = static_cast<QLineEdit *>(input);
             if (type == TConfigParam::TType::TReal) {
-                param.setValue(edit->text(), &ok);
                 message = tr("Floating point value expected!");
+                bool iOk;
+                qreal value = edit->validator()->locale().toDouble(edit->text(), &iOk);
+                param.setValue(QString::number(value), &ok);
+                ok = ok && iOk;
             }
             else if (type == TConfigParam::TType::TInt || type == TConfigParam::TType::TLongLong || type == TConfigParam::TType::TShort || type == TConfigParam::TType::TUInt || type == TConfigParam::TType::TULongLong ||type == TConfigParam::TType::TUShort) {
                 QString top;
@@ -265,8 +273,11 @@ bool TConfigParamWidget::checkInput(TConfigParam & param, QTreeWidgetItem * pare
                     top = QString::number(std::numeric_limits<qint64>::max());
                     bottom = QString::number(std::numeric_limits<qint64>::min());
                 }
-                param.setValue(edit->text(), &ok);
                 message = tr("Integer value from %1 to %2 expected!").arg(bottom, top);
+                param.setValue(edit->text(), &ok);
+            }
+            else {
+                param.setValue(edit->text(), &ok);
             }
         }
         if (!ok) {
