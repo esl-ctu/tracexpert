@@ -3,6 +3,8 @@
 #include <QDir>
 #include "tplugin.h"
 
+using namespace Qt;
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
@@ -17,13 +19,13 @@ int main(int argc, char *argv[])
 
         QObject *plugin = pluginLoader.instance();
 
-        if (plugin) {
+		if (plugin) {
 
-            TPlugin * filePlugin = qobject_cast<TPlugin *>(plugin);
-            if (filePlugin){
+			TPlugin * filePlugin = qobject_cast<TPlugin *>(plugin);
+			if (filePlugin) {
 
-                QString pluginId = fileName;
-                if(pluginId.startsWith("lib")) pluginId.remove(0, 3);
+				QString pluginId = fileName;
+				if(pluginId.startsWith("lib")) pluginId.remove(0, 3);
                 if(pluginId.startsWith("sicak")) pluginId.remove(0, 5);
                 if(pluginId.endsWith(".so")) pluginId.chop(3);
                 if(pluginId.endsWith(".dll")) pluginId.chop(4);
@@ -44,40 +46,41 @@ int main(int argc, char *argv[])
                 stream << "Pre-init param names: " << "\n";
                 for(int i = 0; i < subParams.size(); i++){
                     stream << subParams[i].getName() << "\n";
-                }
-                stream << "\n\n";
+				}
+				stream << "\n\n";
 
-                preParams.getSubParamByName("Read/Write mode")->setValue("ReadWrite");
-                preParams.getSubParamByName("Write behaviour")->setValue("Truncate");
-                preParams.getSubParamByName("Type of file")->setValue("Text");
+				preParams.getSubParamByName("Read/Write mode")->setValue("ReadWrite");
+				preParams.getSubParamByName("Write behaviour")->setValue("Truncate");
+				preParams.getSubParamByName("Type of file")->setValue("Text");
 
-                dummyFile->setPreInitParams(preParams);
+				dummyFile->setPreInitParams(preParams);
 
-                bool iok = false;
-                dummyFile->init(&iok);
+				bool iok = false;
+				dummyFile->init(&iok);
 
-                stream << "File init: " << (iok ? "ok" : "not ok") << "\n\n";
-                stream.flush();
+				stream << "File init: " << (iok ? "ok" : "not ok") << endl << endl;
+				stream.flush();
 
-                uint8_t writeBuffer[64] = "Mary had a little lamb...";
-                size_t writtenBytes = dummyFile->writeData(writeBuffer, 64);
-                stream << "Wrote " << writtenBytes << " bytes. \n\n";
+				uint8_t writeBuffer[64] = "Mary had a little lamb...";
+				size_t writtenBytes = dummyFile->writeData(writeBuffer, 10);
+				stream << "Wrote " << writtenBytes << " bytes." << endl << endl;
 
+				TConfigParam postParams = dummyFile->getPostInitParams();
+				postParams.getSubParamByName("Seek to position")->setValue(0);
 
-                TConfigParam postParams = dummyFile->getPostInitParams();
-                postParams.getSubParamByName("Seek to position")->setValue(0);
+				dummyFile->setPostInitParams(postParams);
 
-                dummyFile->setPostInitParams(postParams);
+				uint8_t readBuffer[64] = {0, };
+				size_t readBytes = dummyFile->readData(readBuffer, 63);
 
+				stream << "Read " << readBytes << " bytes: '" << (char *) readBuffer << "'" << endl;
 
-                uint8_t readBuffer[64] = {0, };
-                size_t readBytes = dummyFile->readData(readBuffer, 63);
-                stream << "Read " << readBytes << " bytes: '" << (char *)readBuffer << "'\n\n";
+				postParams = dummyFile->getPostInitParams();
+				stream << "Current position in file is: " << postParams.getSubParamByName("Seek to position")->getValue() << endl;
+			}
+		}
+		pluginLoader.unload();
+	}
 
-            }
-        }
-        pluginLoader.unload();
-    }
-
-    return 0;
+	return 0;
 }

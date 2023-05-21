@@ -3,9 +3,10 @@
 TFileDevice::TFileDevice(QString & name, QString & info):
     m_createdManually(true), m_openMode(QIODevice::ReadWrite | QIODevice::Append | QIODevice::Text), m_file(), m_fileInfo(), m_name(name), m_info(info), m_initialized(false)
 {
-    // Pre-init parameters with system location (pre-filled with port name)
+
+    // Pre-init parameter File path is editable and pre-filled with passed "name" variable
     m_preInitParams = TConfigParam(m_name + " pre-init configuration", "", TConfigParam::TType::TDummy, "");
-    m_preInitParams.addSubParam(TConfigParam("File path", m_name, TConfigParam::TType::TString, "File path (e.g. C:\\Users\\novak\\Documents\\data.csv)", false));
+    m_preInitParams.addSubParam(TConfigParam("File path", m_name, TConfigParam::TType::TString, "File path (e.g. C:/Users/novak/Documents/data.csv)", false));
 
     _createPreInitParams();
 }
@@ -16,9 +17,9 @@ TFileDevice::TFileDevice(const QFileInfo &fileInfo):
     m_info(fileInfo.filePath() + ", file is " + (fileInfo.isReadable() ? "readable" : "NOT readable") + " and " + (fileInfo.isWritable() ? "writable" : "NOT writable")), m_initialized(false)
 {
 
-    // Pre-init parameters are all read-only for automatically detected devices
+    // Pre-init parameter File path is read-only for files passed as QFileInfo
     m_preInitParams = TConfigParam(m_name + " pre-init configuration", "", TConfigParam::TType::TDummy, "");
-    m_preInitParams.addSubParam(TConfigParam("File path", m_name, TConfigParam::TType::TString, "File path (e.g. C:\\Users\\novak\\Documents\\data.csv)", true));
+    m_preInitParams.addSubParam(TConfigParam("File path", m_name, TConfigParam::TType::TString, "File path (e.g. C:/Users/novak/Documents/data.csv)", true));
 
     _createPreInitParams();
 }
@@ -86,23 +87,17 @@ TConfigParam TFileDevice::getPreInitParams() const {
 TConfigParam TFileDevice::setPreInitParams(TConfigParam params) {
 
     if(m_initialized){
-        QString error = "Cannot change pre-init parameters on an initialized device.";
-        params.setState(TConfigParam::TState::TError, error);
-        qCritical(error.toLatin1());
+        params.setState(TConfigParam::TState::TError, "Cannot change pre-init parameters on an initialized device.");
         return params;
     }
 
     if(!_validatePreInitParamsStructure(params)){
-        QString error = "Wrong structure of the pre-init params for FileDevice";
-        qCritical(error.toLatin1());
-        params.setState(TConfigParam::TState::TError, error);
+        params.setState(TConfigParam::TState::TError, "Wrong structure of the pre-init params for FileDevice");
         return params;
     }
 
     m_preInitParams = params;
     m_preInitParams.resetState();
-
-    bool iok = true;
 
     QFlags<QIODevice::OpenModeFlag> newOpenMode;
 
@@ -117,10 +112,7 @@ TConfigParam TFileDevice::setPreInitParams(TConfigParam params) {
     } else if(rwmodeParam == "ReadWrite") {
         newOpenMode |= QIODevice::ReadWrite;
     } else {
-        QString error = "Invalid enum value for Read/Write mode.";
-        qCritical(error.toLatin1());
-        m_preInitParams.getSubParamByName("Read/Write mode")->setState(TConfigParam::TState::TError, error);
-        iok = false;
+        m_preInitParams.getSubParamByName("Read/Write mode")->setState(TConfigParam::TState::TError, "Invalid enum value for Read/Write mode.");
     }
 
     // Set Write behaviour
@@ -132,10 +124,7 @@ TConfigParam TFileDevice::setPreInitParams(TConfigParam params) {
     } else if(wbehavParam == "Truncate") {
         newOpenMode |= QIODevice::Truncate;
     } else {
-        QString error = "Invalid enum value for Write behaviour.";
-        qCritical(error.toLatin1());
-        m_preInitParams.getSubParamByName("Write behaviour")->setState(TConfigParam::TState::TError, error);
-        iok = false;
+        m_preInitParams.getSubParamByName("Write behaviour")->setState(TConfigParam::TState::TError, "Invalid enum value for Write behaviour.");
     }
 
     // Set Type of file
@@ -147,19 +136,10 @@ TConfigParam TFileDevice::setPreInitParams(TConfigParam params) {
     } else if(ftypeParam == "Binary") {
         // binary mode is default behaviour, no need to set any OpenMode flag
     } else {
-        QString error = "Invalid enum value for Type of file.";
-        qCritical(error.toLatin1());
-        m_preInitParams.getSubParamByName("Type of file")->setState(TConfigParam::TState::TError, error);
-        iok = false;
+        m_preInitParams.getSubParamByName("Type of file")->setState(TConfigParam::TState::TError, "Invalid enum value for Type of file.");
     }
 
-    if(iok) {
-        m_openMode = newOpenMode;
-    } else {
-        QString error = "One or more pre-init parameters have invalid values.";
-        qCritical(error.toLatin1());
-        m_preInitParams.setState(TConfigParam::TState::TError, error);
-    }
+    m_openMode = newOpenMode;
 
     return m_preInitParams;
 }
@@ -174,7 +154,7 @@ void TFileDevice::init(bool *ok) {
         qWarning("Failed to open the file");
     }
 
-    if(iok){
+    if(iok) {
         _createPostInitParams();
         if(ok != nullptr) *ok = true;
     } else {
@@ -189,11 +169,10 @@ void TFileDevice::_openFile(bool *ok) {
 
     bool iok = false;
 
-    // Select serial port
     if(m_createdManually){
 
         TConfigParam * locationParam = m_preInitParams.getSubParamByName("File path", &iok);
-        if(!iok){
+        if(!iok) {
             qWarning("File path parameter not found in the pre-init config.");
             if(ok != nullptr) *ok = false;
             return;
@@ -221,8 +200,8 @@ void TFileDevice::_openFile(bool *ok) {
 void TFileDevice::_createPostInitParams(){
 
     m_postInitParams = TConfigParam(m_name + " configuration", "", TConfigParam::TType::TDummy, "");
-
     m_postInitParams.addSubParam(TConfigParam("Seek to position", "-1", TConfigParam::TType::TInt, "Position to seek to (-1 for no seek)."));
+
 }
 
 bool TFileDevice::_validatePostInitParamsStructure(TConfigParam & params) {
@@ -252,22 +231,26 @@ TConfigParam TFileDevice::getPostInitParams() const {
 
 TConfigParam TFileDevice::setPostInitParams(TConfigParam params) {
 
-    if(!m_initialized){
-        QString error = "Cannot set post-init parameters on an uninitialized device.";
-        params.setState(TConfigParam::TState::TError, error);
-        qCritical(error.toLatin1());
+    if(!m_initialized) {
+        params.setState(TConfigParam::TState::TError, "Cannot set post-init parameters on an uninitialized device.");
         return params;
     }
 
-    if(!_validatePostInitParamsStructure(params)){
-        qCritical("Wrong structure of the post-init params for FileDevice");
+    if(!_validatePostInitParamsStructure(params)) {
+        params.setState(TConfigParam::TState::TError, "Wrong structure of the post-init params for FileDevice");
         return params;
     }
 
     m_postInitParams = params;
 
     qint64 posToSeek = params.getSubParamByName("Seek to position")->getValue().toInt();
-    if(posToSeek > -1) m_file.seek(posToSeek);
+    if(posToSeek > -1) {
+        if(!m_file.seek(posToSeek)) {
+            m_postInitParams.getSubParamByName("Seek to position")->setState(TConfigParam::TState::TError, "Failed to seek to supplied position.");
+        }
+
+        m_postInitParams.getSubParamByName("Seek to position")->setValue(m_file.pos());
+    }
 
     return m_postInitParams;
 
@@ -275,9 +258,16 @@ TConfigParam TFileDevice::setPostInitParams(TConfigParam params) {
 
 size_t TFileDevice::writeData(const uint8_t * buffer, size_t len){
 
-    size_t writtenToBuffer;
-    writtenToBuffer = m_file.write((const char *) buffer, len);
-    return writtenToBuffer;
+    size_t writtenLen;
+    writtenLen = m_file.write((const char *) buffer, len);
+
+    if(writtenLen != len) {
+        qWarning("Failed to write as much data as requested to the file.");
+    }
+
+    m_postInitParams.getSubParamByName("Seek to position")->setValue(m_file.pos());
+
+    return writtenLen;
 
 }
 
@@ -285,6 +275,13 @@ size_t TFileDevice::readData(uint8_t * buffer, size_t len) {
 
     size_t readLen;
     readLen = m_file.read((char *) buffer, len);
+
+    if(readLen != len) {
+        qWarning("Failed to read as much data as requested from the file.");
+    }
+
+    m_postInitParams.getSubParamByName("Seek to position")->setValue(m_file.pos());
+
     return readLen;
 
 }

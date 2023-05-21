@@ -1,5 +1,5 @@
-#ifndef SERIALPORT_H
-#define SERIALPORT_H
+#ifndef FILE_H
+#define FILE_H
 
 #include "TFile_global.h"
 #include "tplugin.h"
@@ -55,4 +55,4 @@ protected:
 
 };
 
-#endif // SERIALPORT_H
+#endif // FILE_H
