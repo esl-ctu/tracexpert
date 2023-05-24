@@ -146,6 +146,13 @@ TConfigParam TFileDevice::setPreInitParams(TConfigParam params) {
 
 void TFileDevice::init(bool *ok) {
 
+    if(m_initialized) {
+        qWarning("TFileDevice was already initialized when init was called!");
+
+        if(ok != nullptr) *ok = false;
+        return;
+    }
+
     bool iok = false;
 
     _openFile(&iok);
@@ -156,12 +163,14 @@ void TFileDevice::init(bool *ok) {
 
     if(iok) {
         _createPostInitParams();
-        if(ok != nullptr) *ok = true;
+
+        m_initialized = true;
+
+        if(ok != nullptr) *ok = true;      
+
     } else {
         if(ok != nullptr) *ok = false;
-    }
-
-    m_initialized = true;
+    }    
 
 }
 
@@ -220,9 +229,18 @@ bool TFileDevice::_validatePostInitParamsStructure(TConfigParam & params) {
 
 void TFileDevice::deInit(bool *ok) {
 
-    m_file.close();
-    m_initialized = true;
+    if(!m_initialized) {
+        qWarning("TFileDevice was not initialized when deInit was called!");
 
+        if(ok != nullptr) *ok = false;
+        return;
+    }
+
+    m_file.close();
+
+    m_initialized = false;
+
+    if(ok != nullptr) *ok = true;
 }
 
 TConfigParam TFileDevice::getPostInitParams() const {
