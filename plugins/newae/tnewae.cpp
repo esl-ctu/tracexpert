@@ -129,7 +129,7 @@ void TNewae::init(bool *ok) {
     succ = data.contains(tmpstr);
     if (!succ){
         if(ok != nullptr) *ok = false;
-        qCritical("Failed to test the shared memory that was already set up.");
+        qCritical("Failed to test the shared memory that was already set up. Do you have Qt for Python installed?");
         return;
     }
 
@@ -364,6 +364,7 @@ bool TNewae::getDataFromShm(size_t &size, QString &data){
     shmData += SM_DATA_ADDR;
 
     //Get data
+    data = "";
     data.reserve(size + 1);
     for(size_t i = 0; i < size; ++i){
         data.append(shmData[i]);
