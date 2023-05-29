@@ -37,20 +37,28 @@ TConfigParam TNewae::setPreInitParams(TConfigParam params) {
 void TNewae::init(bool *ok) {
     bool succ;
 
+    //Create and attach the memory that's shared between C++ and the python process
+    shm.setKey(shmKey);
+    qDebug("%s\n%s", shm.key().toLocal8Bit().constData(), shm.nativeKey().toLocal8Bit().constData());
+    succ = shm.create(shmSize); //this also attaches the segment on success
+    if (!succ && shm.error() == QSharedMemory::AlreadyExists){
+        shm.attach();
+    } else if (!succ) {
+        if(ok != nullptr) *ok = false;
+        qCritical("Failed to set up shared memory.");
+        return;
+    }
+
     //Create and run the python process
     QString runDir(QCoreApplication::instance()->applicationDirPath());
-
-    #ifdef Q_OS_WIN
-        QString program = runDir + "/python/python.exe";
-    #else
-        QString program = "python";
-    #endif
+    QString program = "python";
 
     QStringList arguments;
     arguments << runDir + "/executable.py";
 
-    qDebug(program.toLocal8Bit().constData());
-    qDebug(arguments[0].toLocal8Bit().constData());
+    qDebug("%s", program.toLocal8Bit().constData());
+    qDebug("%s", arguments[0].toLocal8Bit().constData());
+    qDebug("QT version %s", arguments[0].toLocal8Bit().constData());
 
     pythonProcess = new QProcess;
     pythonProcess->setProcessChannelMode(QProcess::ForwardedErrorChannel);
@@ -61,32 +69,26 @@ void TNewae::init(bool *ok) {
     succ = pythonProcess->waitForStarted(PROCESS_WAIT_MSCECS); //wait max 30 seconds
     if (!succ){
         if(ok != nullptr) *ok = false;
-
-        #ifdef Q_OS_WIN
-            qCritical("Failed to start the python component.");
-        #else
             qCritical("Failed to start the python component. Do you have python3 installed and symlinked as \"python\"?");
-        #endif
-
         return;
     }
 
-    pythonProcess->waitForReadyRead(PROCESS_WAIT_MSCECS);
+    succ = pythonProcess->waitForReadyRead(PROCESS_WAIT_MSCECS);
     QString data = pythonProcess->readAllStandardOutput();
-    succ = data.contains("STARTED");
+    succ &= data.contains("STARTED");
 
     if (!succ){
         if(ok != nullptr) *ok = false;
-        qCritical((QString("The python component does not communicate. It will be killed. This is its output:") + QString(data)).toLocal8Bit().constData());
+        qCritical("%s", (QString("The python component does not communicate. It will be killed. This is its output:") + QString(data)).toLocal8Bit().constData());
         switch (pythonProcess->state()){
             case QProcess::NotRunning:
-                qCritical((("Error state: Not running " + pythonProcess->errorString())).toLocal8Bit().constData());
+            qCritical("%s", (("Error state: Not running " + pythonProcess->errorString())).toLocal8Bit().constData());
                 break;
             case QProcess::Running:
-                qCritical((("Error state: Running " + pythonProcess->errorString())).toLocal8Bit().constData());
+                qCritical("%s", (("Error state: Running " + pythonProcess->errorString())).toLocal8Bit().constData());
                 break;
             case QProcess::Starting:
-                qCritical((("Error state: Starting " + pythonProcess->errorString())).toLocal8Bit().constData());
+                qCritical("%s", (("Error state: Starting " + pythonProcess->errorString())).toLocal8Bit().constData());
                 break;
         }
         pythonProcess->kill();
@@ -95,21 +97,10 @@ void TNewae::init(bool *ok) {
 
     pythonReady = true;
 
-    //Create and attach the memory that's shared between C++ and the python process
-    shm.setKey(shmKey);
-    succ = shm.create(shmSize); //this also attaches the segment on success
-    if (!succ && shm.error() == QSharedMemory::AlreadyExists){
-        shm.attach();
-    } else if (!succ) {
-        if(ok != nullptr) *ok = false;
-        qCritical("Failed to set up shared memory.");
-        return;
-    }
-
     //Test shared memory
     quint32 tmpval = QRandomGenerator::global()->generate();
     QString tmpstr = QString::number(tmpval);
-    succ = writeToPython(-1, "SMTEST:" + tmpstr);
+    succ = writeToPython(-1, "SMTEST:" + tmpstr + lineSeparator);
     if (!succ){
         if(ok != nullptr) *ok = false;
         qCritical("Failed to send data to Python when setting up the shared memory.");
@@ -125,13 +116,16 @@ void TNewae::init(bool *ok) {
 
     size_t dataLen;
     data = "";
-    getDataFromShm(dataLen, data);
-    succ = data.contains(tmpstr);
+    succ = getDataFromShm(dataLen, data);
+    if (!succ) qCritical("no data from mem");
+    succ &= data.contains(tmpstr);
     if (!succ){
         if(ok != nullptr) *ok = false;
         qCritical("Failed to test the shared memory that was already set up. Do you have Qt for Python installed?");
+        qDebug("generated: %s, read: %s, read size: %zu", tmpstr.toLocal8Bit().constData(), data.toLocal8Bit().constData(), dataLen);
         return;
     }
+
 
 
     //Auto detect devices
@@ -340,7 +334,8 @@ bool TNewae::readFromPython(uint8_t cwId, QString &data, bool wait/* = true*/){
 }
 
 bool TNewae::waitForPythonDone(uint8_t cwId, int timeout/* = 30000*/){
-    checkForPythonReady(timeout);
+    if (!(checkForPythonReady(timeout)))
+        return false;
 
     QString buff;
     buff = pythonProcess->peek(6);
@@ -352,25 +347,38 @@ bool TNewae::waitForPythonDone(uint8_t cwId, int timeout/* = 30000*/){
 }
 
 bool TNewae::getDataFromShm(size_t &size, QString &data){
-    size_t* dataLenAddr;
-    bool succ;
+    char* dataLenAddr;
+    bool succ, succ2;
 
     succ = shm.lock();
+    qDebug("%d", succ);
 
     //Get data pointer and data size
     char * shmData = (char *) (shm.data());
-    dataLenAddr = (size_t *) (shmData + SM_SIZE_ADDR);
-    size = (*dataLenAddr);
+    dataLenAddr = shmData + SM_SIZE_ADDR;
+    QString sizeStr = "";
+    for (int i = 0; i < ADDR_SIZE; ++i){
+        sizeStr += dataLenAddr[i];
+    }
     shmData += SM_DATA_ADDR;
+    size = sizeStr.toULongLong(&succ2, 16);
+    succ &= succ2;
+    qDebug("%d %zu %s %p", succ, size, sizeStr.toLocal8Bit().constData(), shm.data());
 
     //Get data
     data = "";
-    data.reserve(size + 1);
+    try {
+        data.reserve(size + 1);
+    } catch (const std::bad_alloc& e) {
+        qCritical("Unable to reserve enough memory to read from SHM. Wanted to reserve: %zu", size);
+    }
+
     for(size_t i = 0; i < size; ++i){
         data.append(shmData[i]);
     }
 
     succ = succ & shm.unlock();
+    qDebug("%d", succ);
 
     return succ;
 }

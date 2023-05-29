@@ -18,11 +18,12 @@
 #include <QFile>
 #include <QRandomGenerator>
 
+const std::size_t ADDR_SIZE = 16;
 const std::size_t SM_SIZE_ADDR = 0;
-const std::size_t SM_DATA_ADDR = SM_SIZE_ADDR + sizeof(SM_SIZE_ADDR);
+const std::size_t SM_DATA_ADDR = SM_SIZE_ADDR + ADDR_SIZE;
 const int PROCESS_WAIT_MSCECS = 10000;
 const char fieldSeparator = ',';
-const char lineSeparator = '\r';
+const char lineSeparator = '\n';
 
 //All interprocess communication is ASCII
 //All shared memory binary (size is size_t, data are uint8_t)
@@ -94,7 +95,7 @@ protected:
     QProcess *pythonProcess;
 
     QString shmKey = PLUGIN_ID + "shm";
-    const size_t shmSize = 512;
+    const size_t shmSize = 1024*1024*1024;
 };
 
 
