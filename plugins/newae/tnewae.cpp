@@ -359,6 +359,7 @@ bool TNewae::getDataFromShm(size_t &size, QString &data){
     QString sizeStr = "";
     for (int i = 0; i < ADDR_SIZE; ++i){
         sizeStr += dataLenAddr[i];
+        qDebug("I:%d: %x ", i, dataLenAddr[i]);
     }
     shmData += SM_DATA_ADDR;
     size = sizeStr.toULongLong(&succ2, 16);

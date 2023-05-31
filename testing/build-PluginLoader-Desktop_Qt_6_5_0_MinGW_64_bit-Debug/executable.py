@@ -26,19 +26,19 @@ for line in sys.stdin:
         line = line[7:]
         line = line.rstrip('\r\n')
         line = "{:016x}".format(4) + line
-        print(line, file=sys.stderr)
 
         buffer = QBuffer()
         buffer.open(QIODeviceBase.WriteOnly)
         out = QDataStream(buffer)
-        out << line
+        out << line.encode(encoding = 'ascii')
         buffer.close()
         size = buffer.size()
 
+
         shm.lock()
-        print(shm.data(), file=sys.stderr)
         _to = memoryview(shm.data())
         _from = buffer.data().data()
+        print(_from, file=sys.stderr)
         _to[0:size] = _from[0:size]
         shm.unlock()
 
