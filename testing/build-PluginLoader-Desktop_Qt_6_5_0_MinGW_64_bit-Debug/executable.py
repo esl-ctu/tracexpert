@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 import sys, time, ctypes
-from PySide6.QtCore import QSharedMemory, QBuffer, QIODeviceBase, QDataStream, QByteArray
+from PySide6.QtCore import QSharedMemory, QByteArray
+import chipwhisperer as cw
 
 print("STARTED", flush=True)
 
@@ -19,31 +20,40 @@ if not shm.isAttached():
 
 for line in sys.stdin:
     if line.startswith("SMTEST:"):
-        print("SMTEST", file=sys.stderr)
         line = line[7:]
         line = line.rstrip('\r\n')
         line = "{:016x}".format(len(line)) + line
 
         buffer = QByteArray(line)
-        #buffer = QBuffer()
-        #buffer.open(QIODeviceBase.WriteOnly)
-        #out = QDataStream(buffer)
-        #out << line.encode(encoding = 'ascii')
-        #buffer.close()
         size = buffer.size()
-
 
         shm.lock()
         _to = memoryview(shm.data()).cast('c')
-        _from = buffer#.data().data()
-        print(_from[0:size], file=sys.stderr)
+        _from = buffer
         _to[0:size] = _from[0:size]
         shm.unlock()
 
-        
-
         print("DONE", flush=True)
     if line.startswith("DETECT_DEVICES"):
-        print("DETECTDEVICES", flush=True)
+        print("DETECTDEVICES", flush=True, file=sys.stderr)
+        devices = cw.list_devices()
+        line = ""
+        for i in devices:
+            line += i['name']
+            line += ','
+            line += i['sn']
+            line += '\n'
+
+        buffer = QByteArray(line)
+        size = buffer.size()
+        
+        shm.lock()
+        _to = memoryview(shm.data()).cast('c')
+        _from = buffer
+        _to[0:size] = _from[0:size]
+        shm.unlock()
+
+        print("DONE", flush=True)
+
     if line.startswith("HALT"):
         sys.exit()

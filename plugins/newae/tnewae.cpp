@@ -39,7 +39,6 @@ void TNewae::init(bool *ok) {
 
     //Create and attach the memory that's shared between C++ and the python process
     shm.setKey(shmKey);
-    qDebug("%s\n%s", shm.key().toLocal8Bit().constData(), shm.nativeKey().toLocal8Bit().constData());
     succ = shm.create(shmSize); //this also attaches the segment on success
     if (!succ && shm.error() == QSharedMemory::AlreadyExists){
         shm.attach();
@@ -56,9 +55,8 @@ void TNewae::init(bool *ok) {
     QStringList arguments;
     arguments << runDir + "/executable.py";
 
-    qDebug("%s", program.toLocal8Bit().constData());
-    qDebug("%s", arguments[0].toLocal8Bit().constData());
-    qDebug("QT version %s", arguments[0].toLocal8Bit().constData());
+    qDebug("Python executable: %s", program.toLocal8Bit().constData());
+    qDebug("Python script to run: %s", arguments[0].toLocal8Bit().constData());
 
     pythonProcess = new QProcess;
     pythonProcess->setProcessChannelMode(QProcess::ForwardedErrorChannel);
@@ -119,7 +117,6 @@ void TNewae::init(bool *ok) {
     succ = getDataFromShm(dataLen, data);
     if (!succ) qCritical("no data from mem");
     succ &= data.contains(tmpstr);
-    qDebug("generated: %s, read: %s, read size: %zu", tmpstr.toLocal8Bit().constData(), data.toLocal8Bit().constData(), dataLen);
     if (!succ){
         if(ok != nullptr) *ok = false;
         qCritical("Failed to test the shared memory that was already set up. Do you have Qt for Python installed? If you do, please reboot your computer.");
@@ -357,7 +354,6 @@ bool TNewae::getDataFromShm(size_t &size, QString &data){
     bool succ, succ2;
 
     succ = shm.lock();
-    qDebug("%d", succ);
 
     //Get data pointer and data size
     char * shmData = (char *) (shm.data());
@@ -369,7 +365,6 @@ bool TNewae::getDataFromShm(size_t &size, QString &data){
     shmData += SM_DATA_ADDR;
     size = sizeStr.toULongLong(&succ2, 16);
     succ &= succ2;
-    qDebug("%d %zu %s %p", succ, size, sizeStr.toLocal8Bit().constData(), shm.data());
 
     //Get data
     data = "";
@@ -384,7 +379,6 @@ bool TNewae::getDataFromShm(size_t &size, QString &data){
     }
 
     succ = succ & shm.unlock();
-    qDebug("%d", succ);
 
     return succ;
 }
