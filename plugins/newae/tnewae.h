@@ -94,7 +94,7 @@ protected:
     QSharedMemory shm;
     QProcess *pythonProcess;
 
-    QString shmKey = PLUGIN_ID + "shm";
+    QString shmKey = PLUGIN_ID + "shm2";
     const size_t shmSize = 1024*1024*1024;
 };
 

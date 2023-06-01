@@ -119,10 +119,10 @@ void TNewae::init(bool *ok) {
     succ = getDataFromShm(dataLen, data);
     if (!succ) qCritical("no data from mem");
     succ &= data.contains(tmpstr);
+    qDebug("generated: %s, read: %s, read size: %zu", tmpstr.toLocal8Bit().constData(), data.toLocal8Bit().constData(), dataLen);
     if (!succ){
         if(ok != nullptr) *ok = false;
-        qCritical("Failed to test the shared memory that was already set up. Do you have Qt for Python installed?");
-        qDebug("generated: %s, read: %s, read size: %zu", tmpstr.toLocal8Bit().constData(), data.toLocal8Bit().constData(), dataLen);
+        qCritical("Failed to test the shared memory that was already set up. Do you have Qt for Python installed? If you do, please reboot your computer.");
         return;
     }
 
@@ -145,6 +145,12 @@ void TNewae::init(bool *ok) {
         //Read data from pyton
         size_t dataLen;
         QString data;
+        succ &= waitForPythonDone(-1);
+        if (!succ){
+            if(ok != nullptr) *ok = false;
+            qWarning("Failed to receive response for the DETECT DEVICES command.");
+            return;
+        }
         getDataFromShm(dataLen, data);
 
         //Parse the devices
@@ -359,7 +365,6 @@ bool TNewae::getDataFromShm(size_t &size, QString &data){
     QString sizeStr = "";
     for (int i = 0; i < ADDR_SIZE; ++i){
         sizeStr += dataLenAddr[i];
-        qDebug("I:%d: %x ", i, dataLenAddr[i]);
     }
     shmData += SM_DATA_ADDR;
     size = sizeStr.toULongLong(&succ2, 16);
