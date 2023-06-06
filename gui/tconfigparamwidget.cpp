@@ -194,7 +194,7 @@ void TConfigParamWidget::drawInput(const TConfigParam & param, QTreeWidgetItem *
                     digits = QString::number(std::numeric_limits<qint64>::max()).length();
                     isSigned = true;
                 }
-                validator = new QRegularExpressionValidator(QRegularExpression(QString("[+%1]{0,1}0*\\d{1,%2}").arg(isSigned?"-":"", QString::number(digits))), edit);
+                validator = new QRegularExpressionValidator(QRegularExpression(QString("[+%1]{0,1}0*\\d{1,%2} *").arg(isSigned?"-":"", QString::number(digits))), edit);
                 edit->setValidator(validator);
                 edit->setText(param.getValue());
             }
