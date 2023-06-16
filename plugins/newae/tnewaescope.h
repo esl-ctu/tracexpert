@@ -6,9 +6,9 @@
 #include "tplugin.h"
 #include "tnewae.h"
 
+//Todo správně dědit z TScope
 
-class TnewaeScope
-{
+class TnewaeScope: TScope {
 public:
     TnewaeScope(const QString & name_in, const QString & sn_in, uint8_t id_in);
     ~TnewaeScope();

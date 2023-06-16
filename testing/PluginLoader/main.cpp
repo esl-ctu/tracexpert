@@ -27,10 +27,11 @@ void myMessageHandler(QtMsgType type, const QMessageLogContext &, const QString 
     default:
         txt = QString("%1").arg(msg);
     }
+    QTextStream stream(stdout);
     QFile outFile("log");
     outFile.open(QIODevice::WriteOnly | QIODevice::Append);
     QTextStream ts(&outFile);
-    ts << txt << Qt::endl;
+    stream << txt << Qt::endl;
 }
 
 int main(int argc, char *argv[])

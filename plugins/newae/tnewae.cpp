@@ -98,14 +98,14 @@ void TNewae::init(bool *ok) {
     //Test shared memory
     quint32 tmpval = QRandomGenerator::global()->generate();
     QString tmpstr = QString::number(tmpval);
-    succ = writeToPython(-1, "SMTEST:" + tmpstr + lineSeparator);
+    succ = writeToPython(NO_CW_ID, "SMTEST:" + tmpstr + lineSeparator);
     if (!succ){
         if(ok != nullptr) *ok = false;
         qCritical("Failed to send data to Python when setting up the shared memory.");
         return;
     }
 
-    succ = waitForPythonDone(-1);
+    succ = waitForPythonDone(NO_CW_ID);
     if (!succ){
         if(ok != nullptr) *ok = false;
         qCritical("Python did not respond to SHM read request.");
@@ -130,9 +130,8 @@ void TNewae::init(bool *ok) {
         //Send data to python
         QString toSend;
         QList<QString> params;
-        packageDataForPython(-1, "DETECT_DEVICES", 0, params, toSend);
-        pythonProcess->write(toSend.toLocal8Bit().constData());
-        succ = pythonProcess->waitForBytesWritten();
+        packageDataForPython(NO_CW_ID, "DETECT_DEVICES", 0, params, toSend);
+        succ = writeToPython(NO_CW_ID, toSend);
         if (!succ){
             if(ok != nullptr) *ok = false;
             qWarning("Failed to send the DETECT DEVICES command to python.");
@@ -142,7 +141,7 @@ void TNewae::init(bool *ok) {
         //Read data from pyton
         size_t dataLen;
         QString data;
-        succ &= waitForPythonDone(-1);
+        succ &= waitForPythonDone(NO_CW_ID);
         if (!succ){
             if(ok != nullptr) *ok = false;
             qWarning("Failed to receive response for the DETECT DEVICES command.");
@@ -191,8 +190,8 @@ void TNewae::init(bool *ok) {
         }
 
         //Append available devices to m_ports
-        for(size_t i = 0; i < dataLen; ++i) {
-            m_ports.append(new TnewaeDevice(devices.at(i).first, devices.at(i).second, numDevices));
+        for(size_t i = 0; i < devices.size(); ++i) {
+            m_scopes.append(new TnewaeScope(devices.at(i).first, devices.at(i).second, numDevices));
             numDevices++;
         }
 

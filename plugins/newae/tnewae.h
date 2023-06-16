@@ -6,6 +6,7 @@
 #include "tnewae_global.h"
 #include "tplugin.h"
 #include "tnewaedevice.h"
+#include "tnewaescope.h"
 
 #include <QCoreApplication>
 #include <QSharedMemory>
@@ -24,6 +25,7 @@ const std::size_t SM_DATA_ADDR = SM_SIZE_ADDR + ADDR_SIZE;
 const int PROCESS_WAIT_MSCECS = 10000;
 const char fieldSeparator = ',';
 const char lineSeparator = '\n';
+const uint8_t NO_CW_ID = 255;
 
 //All interprocess communication is ASCII
 //All shared memory binary (size is size_t, data are uint8_t)
@@ -88,6 +90,7 @@ protected:
     uint8_t waitingForReadDeviceId;
 
     QList<TIODevice *> m_ports;
+    QList<TScope *> m_scopes;
     TConfigParam m_preInitParams;
     TConfigParam m_postInitParams;
 
