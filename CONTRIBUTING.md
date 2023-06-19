@@ -8,10 +8,11 @@ Vojtěch Miškovský
  - GUI
 
 Tomáš Přeučil
- - Chipwhisperer plugin
+ - NewAE Chipwhisperer plugin
 
 Adam Švehla
- - File and RNG plugins
+ - File plugin
+ - RNG plugin
 
 David Pokorný
  - Testing
