@@ -13,6 +13,7 @@ Tomáš Přeučil
 Adam Švehla
  - File plugin
  - RNG plugin
+ - IO Protocols support
 
 David Pokorný
  - Testing
