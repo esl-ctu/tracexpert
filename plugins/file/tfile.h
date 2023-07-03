@@ -47,8 +47,12 @@ public:
     /// Get available Scopes, available only after init()
     virtual QList<TScope *> getScopes() override;
 
+    bool registerOpenFile(std::filesystem::path path);
+    void unregisterOpenFile(std::filesystem::path path);
+
 protected:
 
+    QList<std::filesystem::path> m_openFilePaths;
     QList<TIODevice *> m_files;
     TConfigParam m_preInitParams;
     TConfigParam m_postInitParams;

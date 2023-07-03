@@ -35,7 +35,8 @@ int main(int argc, char *argv[])
                 stream.flush();
 
 
-                filePlugin->addIODevice("dummy.txt", "a test file");
+                filePlugin->addIODevice("dummy.txt", "the test file");
+                filePlugin->addIODevice("dummy.txt", "the test file");
 
                 TIODevice * dummyFile = filePlugin->getIODevices().at(0);
 
@@ -49,7 +50,7 @@ int main(int argc, char *argv[])
 				}
 				stream << "\n\n";
 
-				preParams.getSubParamByName("Read/Write mode")->setValue("ReadWrite");
+                preParams.getSubParamByName("Read/Write mode")->setValue("ReadOnly");
 				preParams.getSubParamByName("Write behaviour")->setValue("Truncate");
 				preParams.getSubParamByName("Type of file")->setValue("Text");
 
@@ -77,6 +78,31 @@ int main(int argc, char *argv[])
 
 				postParams = dummyFile->getPostInitParams();
 				stream << "Current position in file is: " << postParams.getSubParamByName("Seek to position")->getValue() << endl;
+
+
+                TIODevice * dummyFile2 = filePlugin->getIODevices().at(1);
+
+                preParams = dummyFile2->getPreInitParams();
+                stream << "File path: " << preParams.getSubParamByName("File path")->getValue() << "\n\n";
+
+                subParams = preParams.getSubParams();
+                stream << "Pre-init param names: " << "\n";
+                for(int i = 0; i < subParams.size(); i++){
+                    stream << subParams[i].getName() << "\n";
+                }
+                stream << "\n\n";
+
+                preParams.getSubParamByName("Read/Write mode")->setValue("WriteOnly");
+                preParams.getSubParamByName("Write behaviour")->setValue("Truncate");
+                preParams.getSubParamByName("Type of file")->setValue("Text");
+
+                dummyFile2->setPreInitParams(preParams);
+
+                iok = false;
+                dummyFile2->init(&iok);
+
+                stream << "File init: " << (iok ? "ok" : "not ok") << endl << endl;
+                stream.flush();
 			}
 		}
 		pluginLoader.unload();

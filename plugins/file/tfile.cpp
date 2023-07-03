@@ -3,7 +3,6 @@
 TFile::TFile(): m_files(), m_preInitParams(), m_postInitParams() { }
 
 TFile::~TFile() {
-
     (*this).TFile::deInit();
 }
 
@@ -45,7 +44,7 @@ TConfigParam TFile::setPostInitParams(TConfigParam params) {
 }
 
 void TFile::addIODevice(QString name, QString info, bool *ok) {
-    m_files.append(new TFileDevice(name, info));
+    m_files.append(new TFileDevice(name, info, *this));
     if(ok != nullptr) *ok = true;
 }
 
@@ -60,3 +59,18 @@ QList<TIODevice *> TFile::getIODevices() {
 QList<TScope *> TFile::getScopes() {
     return QList<TScope *>();
 }
+
+bool TFile::registerOpenFile(std::filesystem::path path) {
+    if(m_openFilePaths.contains(path)) {
+        return false;
+    }
+    else {
+        m_openFilePaths.append(path);
+        return true;
+    }
+}
+
+void TFile::unregisterOpenFile(std::filesystem::path path) {
+    m_openFilePaths.removeAll(path);
+}
+

@@ -6,12 +6,13 @@
 #include <QElapsedTimer>
 #include "tiodevice.h"
 
+class TFile;
+
 class TFileDevice : public TIODevice {
 
 public:
 
-    TFileDevice(QString & name, QString & info);
-    TFileDevice(const QFileInfo &fileInfo);
+    TFileDevice(QString & name, QString & info, TFile & tFile);
 
     virtual ~TFileDevice() override;
 
@@ -48,6 +49,7 @@ protected:
     TConfigParam m_postInitParams;
     bool m_initialized;
 
+    TFile & m_tFile;
 };
 
 #endif // FILEDEVICE_H

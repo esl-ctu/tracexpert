@@ -1,25 +1,13 @@
 #include "tfiledevice.h"
+#include "tfile.h"
 
-TFileDevice::TFileDevice(QString & name, QString & info):
-    m_createdManually(true), m_openMode(QIODevice::ReadWrite | QIODevice::Append | QIODevice::Text), m_file(), m_fileInfo(), m_name(name), m_info(info), m_initialized(false)
+TFileDevice::TFileDevice(QString & name, QString & info, TFile & tFile):
+    m_createdManually(true), m_openMode(QIODevice::ReadWrite | QIODevice::Append | QIODevice::Text), m_file(), m_fileInfo(), m_name(name), m_info(info), m_initialized(false), m_tFile(tFile)
 {
 
     // Pre-init parameter File path is editable and pre-filled with passed "name" variable
     m_preInitParams = TConfigParam(m_name + " pre-init configuration", "", TConfigParam::TType::TDummy, "");
     m_preInitParams.addSubParam(TConfigParam("File path", m_name, TConfigParam::TType::TString, "File path (e.g. C:/Users/novak/Documents/data.csv)", false));
-
-    _createPreInitParams();
-}
-
-// Probably does not make sense to have this constructor as files will not be auto-detected
-TFileDevice::TFileDevice(const QFileInfo &fileInfo):
-    m_createdManually(false), m_openMode(QIODevice::ReadWrite | QIODevice::Append | QIODevice::Text), m_file(), m_fileInfo(fileInfo), m_name(fileInfo.filePath()),
-    m_info(fileInfo.filePath() + ", file is " + (fileInfo.isReadable() ? "readable" : "NOT readable") + " and " + (fileInfo.isWritable() ? "writable" : "NOT writable")), m_initialized(false)
-{
-
-    // Pre-init parameter File path is read-only for files passed as QFileInfo
-    m_preInitParams = TConfigParam(m_name + " pre-init configuration", "", TConfigParam::TType::TDummy, "");
-    m_preInitParams.addSubParam(TConfigParam("File path", m_name, TConfigParam::TType::TString, "File path (e.g. C:/Users/novak/Documents/data.csv)", true));
 
     _createPreInitParams();
 }
@@ -67,8 +55,9 @@ bool TFileDevice::_validatePreInitParamsStructure(TConfigParam & params) {
 }
 
 TFileDevice::~TFileDevice() {
-    // QFile destructor closes the file, if necessary, and then destroys object.
-    // Nothing to do.
+    if(m_initialized) {
+        this->deInit();
+    }
 }
 
 QString TFileDevice::getIODeviceName() const {
@@ -193,6 +182,14 @@ void TFileDevice::_openFile(bool *ok) {
         m_file.setFileName(m_fileInfo.fileName());
     }
 
+    if(m_openMode.testFlag(QIODevice::ReadWrite) || m_openMode.testFlag(QIODevice::WriteOnly)) {
+        if(!m_tFile.registerOpenFile(m_file.filesystemFileName())) {
+            qWarning("Failed to open file; is it already open for writing?");
+            if(ok != nullptr) *ok = false;
+            return;
+        }
+    }
+
     // Open file
     iok = m_file.open(m_openMode);
 
@@ -236,6 +233,8 @@ void TFileDevice::deInit(bool *ok) {
         return;
     }
 
+    m_tFile.unregisterOpenFile(m_file.filesystemFileName());
+
     m_file.close();
 
     m_initialized = false;
@@ -276,7 +275,7 @@ TConfigParam TFileDevice::setPostInitParams(TConfigParam params) {
 
 size_t TFileDevice::writeData(const uint8_t * buffer, size_t len){
 
-    size_t writtenLen;
+    qsizetype writtenLen;
     writtenLen = m_file.write((const char *) buffer, len);
 
     if(writtenLen != len) {
@@ -285,13 +284,13 @@ size_t TFileDevice::writeData(const uint8_t * buffer, size_t len){
 
     m_postInitParams.getSubParamByName("Seek to position")->setValue(m_file.pos());
 
-    return writtenLen;
+    return writtenLen < 0 ? 0 : writtenLen;
 
 }
 
 size_t TFileDevice::readData(uint8_t * buffer, size_t len) {
 
-    size_t readLen;
+    qsizetype readLen;
     readLen = m_file.read((char *) buffer, len);
 
     if(readLen != len) {
@@ -300,6 +299,6 @@ size_t TFileDevice::readData(uint8_t * buffer, size_t len) {
 
     m_postInitParams.getSubParamByName("Seek to position")->setValue(m_file.pos());
 
-    return readLen;
+    return readLen < 0 ? 0 : readLen;
 
 }
