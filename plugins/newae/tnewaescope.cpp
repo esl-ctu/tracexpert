@@ -12,11 +12,11 @@ TnewaeScope::~TnewaeScope() {
 
 }
 
-QString TnewaeScope::getScopeName() const{
+QString TnewaeScope::getIODeviceName() const{
     return m_name;
 }
 
-QString TnewaeScope::getScopeInfo() const{
+QString TnewaeScope::getIODeviceInfo() const{
     return m_info;
 }
 
@@ -51,5 +51,16 @@ TConfigParam TnewaeScope::getPostInitParams() const{
 }
 
 TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){
+
+}
+
+void TnewaeScope::run(){
+
+}
+void TnewaeScope::stop(){
+
+}
+
+size_t TnewaeScope::getValues(int channel, int16_t * buffer, size_t len){
 
 }

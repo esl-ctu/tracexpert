@@ -4,37 +4,40 @@
 
 #include "tnewae_global.h"
 #include "tplugin.h"
-#include "tnewae.h"
+//#include "tnewae.h"
 
 //Todo správně dědit z TScope
 
-class TnewaeScope: TScope {
+class TnewaeScope: public TScope {
 public:
     TnewaeScope(const QString & name_in, const QString & sn_in, uint8_t id_in);
-    ~TnewaeScope();
+    virtual ~TnewaeScope();
 
-    QString getScopeName() const;
-    QString getScopeInfo() const;
+    virtual QString getIODeviceName() const;
+    virtual QString getIODeviceInfo() const;
 
-    TConfigParam getPreInitParams() const;
-    TConfigParam setPreInitParams(TConfigParam params);
+    virtual TConfigParam getPreInitParams() const;
+    virtual TConfigParam setPreInitParams(TConfigParam params);
 
-    void init(bool *ok = nullptr);
-    void deInit(bool *ok = nullptr);
+    virtual void init(bool *ok = nullptr);
+    virtual void deInit(bool *ok = nullptr);
 
-    TConfigParam getPostInitParams() const;
-    TConfigParam setPostInitParams(TConfigParam params);
+    virtual TConfigParam getPostInitParams() const;
+    virtual TConfigParam setPostInitParams(TConfigParam params);
 
-    //scope functions:
+    /// Run the oscilloscope: wait for trigger when triggered, otherwise capture immediately
+    virtual void run();
+    /// Stop the oscilloscope
+    virtual void stop();
+
+    /// Downloads values from the oscilloscope, first waits for the aquisition to complete
+   virtual size_t getValues(int channel, int16_t * buffer, size_t len); // CHAR8 TODO
 
 
 protected:
     QString sn;
     uint8_t cwId;
     QString name;
-
-    /*void _createPostInitParams();
-    bool _validatePostInitParamsStructure(TConfigParam & params);*/
 
     bool m_createdManually;
 

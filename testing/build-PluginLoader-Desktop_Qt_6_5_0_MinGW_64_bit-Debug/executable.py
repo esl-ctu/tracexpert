@@ -52,7 +52,7 @@ for line in sys.stdin:
             line += '\n'
 
         line = "{:016x}".format(len(line)) + line
-
+        print(line, flush=True, file=sys.stderr)
         writeToSHM(line, shm)
 
         print("DONE", flush=True)

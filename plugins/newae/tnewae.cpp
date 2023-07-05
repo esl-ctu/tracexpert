@@ -160,12 +160,12 @@ void TNewae::init(bool *ok) {
             while((i != dataLen) &&
                    (data.at(i) != fieldSeparator)){
                 name.append(data.at(i));
-                ++i;
+                i++;
             }
 
             //Eat the separator
             if ((i != dataLen) &&
-                (data.at(i) != fieldSeparator)){
+                (data.at(i) == fieldSeparator)){
                 ++i;
             } else {
                 if(ok != nullptr) *ok = false;
@@ -176,17 +176,18 @@ void TNewae::init(bool *ok) {
             while((i != dataLen) &&
                    (data.at(i) != lineSeparator)){
                 sn.append(data.at(i));
-                ++i;
+                i++;
             }
 
             //Is there a separator? Eat it
             if ((i != dataLen) &&
-                (data.at(i) != lineSeparator)){
+                (data.at(i) == lineSeparator)){
                 ++i;
             }
 
             //Insert the device into the list for allocation
             devices.append(std::make_pair(name, sn));
+            qDebug("%s, %s\n", name.toLocal8Bit().constData(), sn.toLocal8Bit().constData());
         }
 
         //Append available devices to m_ports

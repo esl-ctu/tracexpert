@@ -84,7 +84,7 @@ protected:
 
     bool getDataFromShm(size_t &size, QString &data);
 
-    uint8_t numDevices;
+    uint8_t numDevices; //This counts the number of **seen** devices, not the number of connected devices. Use m_scopes.lenght() for that
     bool pythonReady;
     bool deviceWaitingForRead;
     uint8_t waitingForReadDeviceId;

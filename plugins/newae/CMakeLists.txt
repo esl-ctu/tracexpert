@@ -18,12 +18,12 @@ include_directories(../../common)
 
 add_library(Tnewae SHARED
   tnewae_global.h
-  tnewae.cpp
-  tnewae.h
   tnewaedevice.h
   tnewaedevice.cpp
   tnewaescope.h
   tnewaescope.cpp
+  tnewae.cpp
+  tnewae.h
 )
 
 target_link_libraries(Tnewae PRIVATE Qt${QT_VERSION_MAJOR}::Core)
