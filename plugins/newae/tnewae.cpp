@@ -34,29 +34,24 @@ TConfigParam TNewae::setPreInitParams(TConfigParam params) {
     return m_preInitParams;
 }
 
-void TNewae::init(bool *ok) {
-    bool succ;
-
-    //Create and attach the memory that's shared between C++ and the python process
+bool TNewae::setUpSHM(){
     shm.setKey(shmKey);
-    succ = shm.create(shmSize); //this also attaches the segment on success
+    bool succ = shm.create(shmSize); //this also attaches the segment on success
     if (!succ && shm.error() == QSharedMemory::AlreadyExists){
         shm.attach();
     } else if (!succ) {
-        if(ok != nullptr) *ok = false;
         qCritical("Failed to set up shared memory.");
-        return;
+        return false;
     }
+    return true;
+}
 
-    //Create and run the python process
+bool TNewae::setUpPythonProcess(){
     QString runDir(QCoreApplication::instance()->applicationDirPath());
     QString program = "python";
 
     QStringList arguments;
     arguments << runDir + "/executable.py";
-
-    qDebug("Python executable: %s", program.toLocal8Bit().constData());
-    qDebug("Python script to run: %s", arguments[0].toLocal8Bit().constData());
 
     pythonProcess = new QProcess;
     pythonProcess->setProcessChannelMode(QProcess::ForwardedErrorChannel);
@@ -64,11 +59,10 @@ void TNewae::init(bool *ok) {
     pythonProcess->setArguments(arguments);
     pythonProcess->start();
     pythonProcess->setReadChannel(QProcess::StandardOutput);
-    succ = pythonProcess->waitForStarted(PROCESS_WAIT_MSCECS); //wait max 30 seconds
+    bool succ = pythonProcess->waitForStarted(PROCESS_WAIT_MSCECS); //wait max 30 seconds
     if (!succ){
-        if(ok != nullptr) *ok = false;
-            qCritical("Failed to start the python component. Do you have python3 installed and symlinked as \"python\"?");
-        return;
+        qCritical("Failed to start the python component. Do you have python3 installed and symlinked as \"python\"?");
+        return false;
     }
 
     succ = pythonProcess->waitForReadyRead(PROCESS_WAIT_MSCECS);
@@ -76,66 +70,63 @@ void TNewae::init(bool *ok) {
     succ &= data.contains("STARTED");
 
     if (!succ){
-        if(ok != nullptr) *ok = false;
         qCritical("%s", (QString("The python component does not communicate. It will be killed. This is its output:") + QString(data)).toLocal8Bit().constData());
         switch (pythonProcess->state()){
-            case QProcess::NotRunning:
+        case QProcess::NotRunning:
             qCritical("%s", (("Error state: Not running " + pythonProcess->errorString())).toLocal8Bit().constData());
-                break;
-            case QProcess::Running:
-                qCritical("%s", (("Error state: Running " + pythonProcess->errorString())).toLocal8Bit().constData());
-                break;
-            case QProcess::Starting:
-                qCritical("%s", (("Error state: Starting " + pythonProcess->errorString())).toLocal8Bit().constData());
-                break;
+            break;
+        case QProcess::Running:
+            qCritical("%s", (("Error state: Running " + pythonProcess->errorString())).toLocal8Bit().constData());
+            break;
+        case QProcess::Starting:
+            qCritical("%s", (("Error state: Starting " + pythonProcess->errorString())).toLocal8Bit().constData());
+            break;
         }
         pythonProcess->kill();
-        return;
+        return false;
     }
 
-    pythonReady = true;
+    return true;
+}
 
-    //Test shared memory
+bool TNewae::testSHM() {
     quint32 tmpval = QRandomGenerator::global()->generate();
     QString tmpstr = QString::number(tmpval);
-    succ = writeToPython(NO_CW_ID, "SMTEST:" + tmpstr + lineSeparator);
+    bool succ = writeToPython(NO_CW_ID, "SMTEST:" + tmpstr + lineSeparator);
     if (!succ){
-        if(ok != nullptr) *ok = false;
         qCritical("Failed to send data to Python when setting up the shared memory.");
-        return;
+        return false;
     }
 
     succ = waitForPythonDone(NO_CW_ID);
     if (!succ){
-        if(ok != nullptr) *ok = false;
         qCritical("Python did not respond to SHM read request.");
-        return;
+        return false;
     }
 
     size_t dataLen;
-    data = "";
+    QString data = "";
     succ = getDataFromShm(dataLen, data);
     if (!succ) qCritical("no data from mem");
     succ &= data.contains(tmpstr);
     if (!succ){
-        if(ok != nullptr) *ok = false;
         qCritical("Failed to test the shared memory that was already set up. Do you have Qt for Python installed? If you do, please reboot your computer.");
-        return;
+        return false;
     }
 
+    return true;
+}
 
-
-    //Auto detect devices
+bool TNewae::autodetectDevices(QList<std::pair<QString, QString>> & devices) {
     if(m_preInitParams.getName() == "Auto-detect" && m_preInitParams.getValue() == "true") {
         //Send data to python
         QString toSend;
         QList<QString> params;
         packageDataForPython(NO_CW_ID, "DETECT_DEVICES", 0, params, toSend);
-        succ = writeToPython(NO_CW_ID, toSend);
+        bool succ = writeToPython(NO_CW_ID, toSend);
         if (!succ){
-            if(ok != nullptr) *ok = false;
             qWarning("Failed to send the DETECT DEVICES command to python.");
-            return;
+            return false;
         }
 
         //Read data from pyton
@@ -143,14 +134,12 @@ void TNewae::init(bool *ok) {
         QString data;
         succ &= waitForPythonDone(NO_CW_ID);
         if (!succ){
-            if(ok != nullptr) *ok = false;
             qWarning("Failed to receive response for the DETECT DEVICES command.");
-            return;
+            return false;
         }
         getDataFromShm(dataLen, data);
 
         //Parse the devices
-        QList<std::pair<QString, QString>> devices;
         size_t i = 0;
         while (i != dataLen){
             QString name;
@@ -168,8 +157,8 @@ void TNewae::init(bool *ok) {
                 (data.at(i) == fieldSeparator)){
                 ++i;
             } else {
-                if(ok != nullptr) *ok = false;
                 qWarning("A device was incompletely defined. All loaded devices are invalid.");
+                return false;
             }
 
             //Fill the sn
@@ -187,18 +176,58 @@ void TNewae::init(bool *ok) {
 
             //Insert the device into the list for allocation
             devices.append(std::make_pair(name, sn));
-            qDebug("%s, %s\n", name.toLocal8Bit().constData(), sn.toLocal8Bit().constData());
         }
+    }
+    return true;
+}
 
-        //Append available devices to m_ports
-        for(size_t i = 0; i < devices.size(); ++i) {
+void TNewae::init(bool *ok) {
+    bool succ;
+
+    //Create and attach the memory that's shared between C++ and the python process
+    succ = setUpSHM();
+    if(!succ) {
+        if(ok != nullptr) *ok = false;
+        return;
+    }
+
+    //Create and run the python process
+    succ = setUpPythonProcess();
+    if(!succ) {
+        if(ok != nullptr) *ok = false;
+        return;
+    }
+
+    pythonReady = true;
+
+    //Test shared memory
+    succ = testSHM();
+    if(!succ) {
+        if(ok != nullptr) *ok = false;
+        return;
+    }
+
+
+    //Auto detect devices
+    QList<std::pair<QString, QString>> devices;
+    succ = autodetectDevices(devices);
+    if(!succ) {
+        if(ok != nullptr) *ok = false;
+        return;
+    }
+
+    //Append available devices to m_ports
+    for(size_t i = 0; i < devices.size(); ++i) {
+        if (numDevices != NO_CW_ID) {
             m_scopes.append(new TnewaeScope(devices.at(i).first, devices.at(i).second, numDevices));
             numDevices++;
+        } else {
+            qCritical("Number of available Chipwhisperer slots exceeded. Please de-init and re-init the plugin to continue.");
         }
+    }
 
-        if (!numDevices){
-            qWarning("No devices autodetected.");
-        }
+    if (!numDevices){
+        qWarning("No devices autodetected.");
     }
 
     if(ok != nullptr) *ok = true;

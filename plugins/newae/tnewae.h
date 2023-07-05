@@ -82,6 +82,12 @@ public:
 protected:
     const QString PLUGIN_ID = "TraceXpert.NewAE";
 
+    //Methods for setup:
+    bool setUpSHM();
+    bool setUpPythonProcess();
+    bool testSHM();
+    bool autodetectDevices(QList<std::pair<QString, QString>> & devices);
+
     bool getDataFromShm(size_t &size, QString &data);
 
     uint8_t numDevices; //This counts the number of **seen** devices, not the number of connected devices. Use m_scopes.lenght() for that
