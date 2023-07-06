@@ -1,8 +1,11 @@
 #include "tnewae.h"
 
 //TODO Exposing io devices but need to expose scopes
-//TODO handle signals from process - next
 //TODO handle line separators - test - waht did I mean?
+
+//Next:
+//TODO rozdíl mezi checkForPythonReady a waitForPythonDone??
+//TODO vyřešit co když python vrátí fail
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     m_preInitParams  = TConfigParam("Auto-detect", "true", TConfigParam::TType::TBool, "Automatically detect available NewAE devices", false);
@@ -37,7 +40,7 @@ TConfigParam TNewae::setPreInitParams(TConfigParam params) {
 void handlePythonError(QProcess::ProcessError error){
     switch (error){
     case QProcess::FailedToStart:
-        qCritical("Python process error: Python process failed to start. Restart the program.");
+        qCritical("Python process error: Python process failed to start. Restart the program and make sure you have python installed.");
         break;
     case QProcess::Crashed:
         qCritical("Python process error: Python process crashed. Restart the program.");

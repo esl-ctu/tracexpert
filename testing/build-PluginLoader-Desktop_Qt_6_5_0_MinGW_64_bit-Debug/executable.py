@@ -19,6 +19,7 @@ print("STARTED", flush=True)
 
 PLUGIN_ID = "TraceXpert.NewAE"
 NO_CW_ID = 255
+cwDict = dict()
 
 shmKey = PLUGIN_ID + "shm2"
 shmSize = 1024*1024*1024
@@ -41,6 +42,7 @@ for line in sys.stdin:
         writeToSHM(line, shm)
 
         print("DONE", flush=True)
+
     if line.startswith(str(NO_CW_ID) + ",DETECT_DEVICES"):
         print("DETECTDEVICES", flush=True, file=sys.stderr)
         devices = cw.list_devices()
@@ -52,10 +54,21 @@ for line in sys.stdin:
             line += '\n'
 
         line = "{:016x}".format(len(line)) + line
-        print(line, flush=True, file=sys.stderr)
+        
         writeToSHM(line, shm)
 
         print("DONE", flush=True)
+
+    if line.startswith("SETUP", 4, 10):
+        cwID = line[0:2]
+        cwSN = line.split(',')[2]
+
+        cwDict[cwID] = cw.scope(sn=cwSN)
+
+        if cwDict[cwID] != None:
+            print("DONE", flush=True)
+        else:
+            print("FAIL", flush=True)
 
     if line.startswith("HALT"):
         sys.exit()
