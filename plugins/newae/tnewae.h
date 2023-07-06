@@ -82,6 +82,8 @@ public:
 protected:
     const QString PLUGIN_ID = "TraceXpert.NewAE";
 
+    void handlePythonError(QProcess::ProcessError error);
+
     //Methods for setup:
     bool setUpSHM();
     bool setUpPythonProcess();

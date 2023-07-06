@@ -1,8 +1,8 @@
 #include "tnewae.h"
 
 //TODO Exposing io devices but need to expose scopes
-//TODO handle signals from process
-//TODO handle line separators
+//TODO handle signals from process - next
+//TODO handle line separators - test - waht did I mean?
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     m_preInitParams  = TConfigParam("Auto-detect", "true", TConfigParam::TType::TBool, "Automatically detect available NewAE devices", false);
@@ -34,6 +34,29 @@ TConfigParam TNewae::setPreInitParams(TConfigParam params) {
     return m_preInitParams;
 }
 
+void handlePythonError(QProcess::ProcessError error){
+    switch (error){
+    case QProcess::FailedToStart:
+        qCritical("Python process error: Python process failed to start. Restart the program.");
+        break;
+    case QProcess::Crashed:
+        qCritical("Python process error: Python process crashed. Restart the program.");
+        break;
+    case QProcess::Timedout:
+        qWarning("Python process error: An operation timed out and no more info is available. This may or may not be recoverable.");
+        break;
+    case QProcess::WriteError:
+        qWarning("Python process error: Write error. This may or may not be recoverable.");
+        break;
+    case QProcess::ReadError:
+        qWarning("Python process error: Read error. This may or may not be recoverable.");
+        break;
+    case QProcess::UnknownError:
+        qWarning("Python process error: Unknown error. Please prepare a hammer and call Chuck Norris. Or restart the program.");
+        break;
+    }
+}
+
 bool TNewae::setUpSHM(){
     shm.setKey(shmKey);
     bool succ = shm.create(shmSize); //this also attaches the segment on success
@@ -59,6 +82,7 @@ bool TNewae::setUpPythonProcess(){
     pythonProcess->setArguments(arguments);
     pythonProcess->start();
     pythonProcess->setReadChannel(QProcess::StandardOutput);
+    QObject::connect(pythonProcess, SIGNAL(errorOccurred(QProcess::ProcessError)), this,  SLOT(handlePythonError(QProcess::ProcessError)));
     bool succ = pythonProcess->waitForStarted(PROCESS_WAIT_MSCECS); //wait max 30 seconds
     if (!succ){
         qCritical("Failed to start the python component. Do you have python3 installed and symlinked as \"python\"?");
