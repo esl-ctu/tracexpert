@@ -10,7 +10,7 @@
 
 class TnewaeScope: public TScope {
 public:
-    TnewaeScope(const QString & name_in, const QString & sn_in, uint8_t id_in);
+    TnewaeScope(const QString & name_in, const QString & sn_in, uint8_t id_in, TNewae * plugin_in);
     virtual ~TnewaeScope();
 
     virtual QString getIODeviceName() const;
