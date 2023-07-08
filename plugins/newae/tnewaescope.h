@@ -1,7 +1,7 @@
 
-#ifndef TNEWAESCOPE_H
-#define TNEWAESCOPE_H
+#pragma once
 
+#include "tnewae.h"
 #include "tnewae_global.h"
 #include "tplugin.h"
 //#include "tnewae.h"
@@ -38,6 +38,7 @@ protected:
     QString sn;
     uint8_t cwId;
     QString name;
+    TNewae * plugin;
 
     bool m_createdManually;
 
@@ -50,4 +51,3 @@ protected:
     bool m_initialized;
 };
 
-#endif // TNEWAESCOPE_H

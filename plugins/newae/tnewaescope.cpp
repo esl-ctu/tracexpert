@@ -1,11 +1,12 @@
 
 #include "tnewaescope.h"
 
-TnewaeScope::TnewaeScope(const QString & name_in, const QString & sn_in, uint8_t id_in) {
+TnewaeScope::TnewaeScope(const QString & name_in, const QString & sn_in, uint8_t id_in, TNewae * plugin_in) {
     cwId = id_in;
     sn = sn_in;
     name = name_in;
     m_initialized = false;
+    plugin = plugin_in;
 }
 
 TnewaeScope::~TnewaeScope() {
@@ -35,11 +36,18 @@ TConfigParam TnewaeScope::setPreInitParams(TConfigParam params){
 }
 
 void TnewaeScope::init(bool *ok/* = nullptr*/){
-    //TODO intialize device
-    //pythonProcess->write("HALT");
-    //pythonProcess->waitForBytesWritten();
+    QString toSend;
+    QList<QString> params;
+    params.append(sn);
+    plugin->packageDataForPython(cwId, "SETUP", 1, params, toSend);
+    bool succ = plugin->writeToPython(cwId, toSend);
 
-    //Pozor, inicializovat jen jednou! Bacha na IOdevice
+    if(!succ) {
+        if(ok != nullptr) *ok = false;
+        return;
+    }
+
+    if(ok != nullptr) *ok = true;
 }
 
 void TnewaeScope::deInit(bool *ok/* = nullptr*/){
