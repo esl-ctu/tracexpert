@@ -246,7 +246,7 @@ void TNewae::init(bool *ok) {
     //Append available devices to m_ports
     for(size_t i = 0; i < devices.size(); ++i) {
         if (numDevices != NO_CW_ID) {
-            m_scopes.append(new TnewaeScope(devices.at(i).first, devices.at(i).second, numDevices));
+            m_scopes.append(new TnewaeScope(devices.at(i).first, devices.at(i).second, numDevices, this));
             numDevices++;
         } else {
             qCritical("Number of available Chipwhisperer slots exceeded. Please de-init and re-init the plugin to continue.");

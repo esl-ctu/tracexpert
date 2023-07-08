@@ -6,6 +6,7 @@
 #include "tplugin.h"
 //#include "tnewae.h"
 
+class TNewae;
 //Todo správně dědit z TScope
 
 class TnewaeScope: public TScope {
