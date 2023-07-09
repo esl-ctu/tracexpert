@@ -6,6 +6,7 @@
 //Next:
 //TODO rozdíl mezi checkForPythonReady a waitForPythonDone??
 //TODO vyřešit co když python vrátí fail
+//TODO STDERR od Pythonu musí vyhodit QWarning
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     m_preInitParams  = TConfigParam("Auto-detect", "true", TConfigParam::TType::TBool, "Automatically detect available NewAE devices", false);
@@ -37,7 +38,7 @@ TConfigParam TNewae::setPreInitParams(TConfigParam params) {
     return m_preInitParams;
 }
 
-void handlePythonError(QProcess::ProcessError error){
+void TNewae::handlePythonError(QProcess::ProcessError error){
     switch (error){
     case QProcess::FailedToStart:
         qCritical("Python process error: Python process failed to start. Restart the program and make sure you have python installed.");
@@ -358,6 +359,7 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpec
         deviceWaitingForRead = true;
         waitingForReadDeviceId = cwId;
     }
+
 
     return true;
 }

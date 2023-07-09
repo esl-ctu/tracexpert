@@ -34,8 +34,8 @@ const uint8_t NO_CW_ID = 255;
 //All interprocess communication is ASCII
 //All shared memory binary (size is size_t, data are uint8_t)
 
-//Special functions implemented (to implement) in python - HALT, SETUP, DETECTDEVICES, SMTEST
-//Special codes to be received from python - STARTED, DONE, (FAIL), ERROR
+//Special functions implemented (to implement) in python - HALT, SETUP, DETECTDEVICES, SMTEST. FUNC-<pythonFunctionName>
+//Special codes to be received from python - STARTED, DONE, ERROR
 
 class TNEWAE_EXPORT TNewae : public QObject, TPlugin
 {
@@ -85,10 +85,11 @@ public:
     void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
     void packagePythonFunction(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
 
+public slots:
+    static void handlePythonError(QProcess::ProcessError error);
+
 protected:
     const QString PLUGIN_ID = "TraceXpert.NewAE";
-
-    void handlePythonError(QProcess::ProcessError error);
 
     //Methods for setup:
     bool setUpSHM();
