@@ -12,7 +12,7 @@ TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     numDevices = 0;
     pythonReady = false;
     deviceWaitingForRead = false;
-    waitingForReadDeviceId = -1;
+    waitingForReadDeviceId = NO_CW_ID;
 }
 
 TNewae::~TNewae() {
@@ -245,7 +245,7 @@ void TNewae::init(bool *ok) {
 
     //Append available devices to m_ports
     for(size_t i = 0; i < devices.size(); ++i) {
-        if (numDevices != NO_CW_ID) {
+        if (numDevices + 1 != NO_CW_ID) {
             m_scopes.append(new TnewaeScope(devices.at(i).first, devices.at(i).second, numDevices, this));
             numDevices++;
         } else {
@@ -325,6 +325,11 @@ void TNewae::packageDataForPython(uint8_t cwId, QString functionName, uint8_t nu
     QTextStream(&out) << lineSeparator;
 }
 
+void TNewae::packagePythonFunction(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out){
+    QString newFunctionName = "FUNC-" + functionName;
+    packageDataForPython(cwId, newFunctionName, numParams, params, out);
+}
+
 bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpected/* = true*/, bool wait/* = true*/){
     if (!pythonReady){
         return false;
@@ -363,7 +368,7 @@ bool TNewae::checkForPythonReady(int wait /*= 30000*/){
     }
     QString buff;
     buff = pythonProcess->peek(6);
-    return buff.contains("DONE");
+    return (buff.contains("DONE") || buff.contains("STARTED") || buff.contains("ERROR"));
 }
 
 bool TNewae::checkForPythonError(){

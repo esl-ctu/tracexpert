@@ -19,6 +19,10 @@
 #include <QFile>
 #include <QRandomGenerator>
 
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//! THIS CLASS IS NOT THREAD SAFE !
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 const std::size_t ADDR_SIZE = 16;
 const std::size_t SM_SIZE_ADDR = 0;
 const std::size_t SM_DATA_ADDR = SM_SIZE_ADDR + ADDR_SIZE;
@@ -30,8 +34,8 @@ const uint8_t NO_CW_ID = 255;
 //All interprocess communication is ASCII
 //All shared memory binary (size is size_t, data are uint8_t)
 
-//Special functions implemented (to implement) in python - HALT, INIT_DEVICE
-//Special codes to be received from python - STARTED, (DONE)
+//Special functions implemented (to implement) in python - HALT, SETUP, DETECTDEVICES, SMTEST
+//Special codes to be received from python - STARTED, DONE, (FAIL), ERROR
 
 class TNEWAE_EXPORT TNewae : public QObject, TPlugin
 {
@@ -70,14 +74,16 @@ public:
     /// Get available Scopes, available only after init()
     virtual QList<TScope *> getScopes() override;
 
-    //cwId is only used for identification if the correct CW is being accessed
+    //In this block, cwId is only used for identification if the correct CW is being accessed
     bool writeToPython(uint8_t cwId, const QString &data, bool responseExpected = true, bool wait = true);
     bool readFromPython(uint8_t cwId, QString &data, bool wait = true);
     bool checkForPythonReady(int wait = 30000);
     bool checkForPythonError(); //All output is discarded on error
     bool waitForPythonDone(uint8_t cwId, int timeout = 30000);
 
+    //In this block, CW is super important
     void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
+    void packagePythonFunction(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
 
 protected:
     const QString PLUGIN_ID = "TraceXpert.NewAE";
