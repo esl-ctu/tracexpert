@@ -21,6 +21,9 @@ def cwToStr(tmp):
     else:
         return str(tmp)
 
+
+#####EXEXUTABLE START######
+
 print("STARTED", flush=True)
 
 PLUGIN_ID = "TraceXpert.NewAE"
@@ -69,7 +72,13 @@ for line in sys.stdin:
         cwID = line[0:2]
         cwSN = line.split(',')[2]
 
-        cwDict[cwID] = cw.scope(sn=cwSN)
+        try:
+            cwDict[cwID] = cw.scope(sn=cwSN)
+        except:
+            print("Connection to CW unsuccessful. Is it plugged in?", flush=True, file=sys.stderr)
+            print("ERROR", flush=True)
+
+        cwDict[cwID].default_setup()
 
         if cwDict[cwID] != None:
             print("DONE", flush=True)
@@ -90,7 +99,7 @@ for line in sys.stdin:
            continue
 
         try:
-            function = getattr(cw, functionName)
+            function = getattr(scope, functionName)
         except AttributeError:
             print("ERROR", flush=True) 
             print("Invalid Python CW function called (this method of the CW object does not exist)", flush=True, file=sys.stderr)
