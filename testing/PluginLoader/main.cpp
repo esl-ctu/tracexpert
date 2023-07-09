@@ -124,6 +124,8 @@ int main(int argc, char *argv[])
                         stream << "** Load failed" << Qt::endl;
                     } else {
                         stream << "** Load ok" << Qt::endl;
+                        QList<TScope *> a = newaePlug->getScopes();
+                        stream << "*** Num devices: " << a.length() << Qt::endl;
                     }
                 }
 
