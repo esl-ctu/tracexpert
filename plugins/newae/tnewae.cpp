@@ -246,11 +246,10 @@ void TNewae::init(bool *ok) {
 
     //Append available devices to m_ports
     for(size_t i = 0; i < devices.size(); ++i) {
-        if (numDevices + 1 != NO_CW_ID) {
-            m_scopes.append(new TnewaeScope(devices.at(i).first, devices.at(i).second, numDevices, this));
-            numDevices++;
-        } else {
-            qCritical("Number of available Chipwhisperer slots exceeded. Please de-init and re-init the plugin to continue.");
+        addScope(devices.at(i).first, devices.at(i).second, &succ);
+        if(!succ) {
+            if(ok != nullptr) *ok = false;
+            return;
         }
     }
 
@@ -297,15 +296,22 @@ TConfigParam TNewae::setPostInitParams(TConfigParam params) {
     return m_postInitParams;
 }
 
-void TNewae::addIODevice(QString name, QString sn, bool *ok) {
-    m_ports.append(new TnewaeDevice(name, sn, numDevices));
-    numDevices++;
+void TNewae::addIODevice(QString name, QString info, bool *ok) {
+    //m_ports.append(new TnewaeDevice(name, info, numDevices));
+    //numDevices++;
     if(ok != nullptr) *ok = true;
+    //TODO
 }
 
 void TNewae::addScope(QString name, QString info, bool *ok) {
-    if(ok != nullptr) *ok = false;
-    //TODO!!
+    if (numDevices + 1 != NO_CW_ID) {
+        m_scopes.append(new TnewaeScope(name, info, numDevices, this));
+        numDevices++;
+        if(ok != nullptr) *ok = true;
+    } else {
+        qCritical("Number of available Chipwhisperer slots exceeded. Please de-init and re-init the plugin to continue.");
+        if(ok != nullptr) *ok = false;
+    }
 }
 
 QList<TIODevice *> TNewae::getIODevices() {
@@ -313,7 +319,7 @@ QList<TIODevice *> TNewae::getIODevices() {
 }
 
 QList<TScope *> TNewae::getScopes() {
-    return QList<TScope *>();
+    return m_scopes;
 }
 
 void TNewae::packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString & out){

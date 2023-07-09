@@ -126,6 +126,14 @@ int main(int argc, char *argv[])
                         stream << "** Load ok" << Qt::endl;
                         QList<TScope *> a = newaePlug->getScopes();
                         stream << "*** Num devices: " << a.length() << Qt::endl;
+                        if (a.length()){
+                            a[0]->init(&ok);
+                            if (!ok) {
+                                stream << "** Scope ID 0 init failed" << Qt::endl;
+                            } else {
+                                stream << "** Scope ID 0 init ok" << Qt::endl;
+                            }
+                        }
                     }
                 }
 

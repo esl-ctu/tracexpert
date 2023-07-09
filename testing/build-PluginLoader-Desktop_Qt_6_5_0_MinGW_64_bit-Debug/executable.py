@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, time, ctypes
+import sys, time, ctypes, traceback
 from PySide6.QtCore import QSharedMemory, QByteArray
 import chipwhisperer as cw
 import numpy as np
@@ -58,7 +58,7 @@ for line in sys.stdin:
         line = ""
         for i in devices:
             line += i['name']
-            line += ','
+            line += FIELD_SEPARATOR
             line += i['sn']
             line += '\n'
 
@@ -70,20 +70,25 @@ for line in sys.stdin:
 
     if line.startswith("SETUP", 4, 10):
         cwID = line[0:2]
-        cwSN = line.split(',')[2]
+        cwSN = line.split(',')[2].strip()
+
+        if cwID == "" or cwSN == "":
+            print("ERROR", flush=True)
+            continue
 
         try:
-            cwDict[cwID] = cw.scope(sn=cwSN)
+            cwDict[cwID] = cw.scope(sn=str(cwSN))
         except:
-            print("Connection to CW unsuccessful. Is it plugged in?", flush=True, file=sys.stderr)
+            print("Connection to CW unsuccessful. Is it plugged in? Error: " + traceback.format_exc(), flush=True, file=sys.stderr)
             print("ERROR", flush=True)
-
-        cwDict[cwID].default_setup()
+            continue
 
         if cwDict[cwID] != None:
+            cwDict[cwID].default_setup()
             print("DONE", flush=True)
         else:
             print("ERROR", flush=True)
+            continue
 
     if line.startswith("FUNC-", 4, 10):
         cwID = line[0:2]
@@ -103,49 +108,55 @@ for line in sys.stdin:
         except AttributeError:
             print("ERROR", flush=True) 
             print("Invalid Python CW function called (this method of the CW object does not exist)", flush=True, file=sys.stderr)
-           continue
+            continue
 
         parameters = []
         numParams = 0
-        while (numParams < 10 && lineParameters != ""):
+        while (numParams < 10 and lineParameters != ""):
             parameters[numParams] = lineParameters.split(FIELD_SEPARATOR, 1)[0]
             lineParameters = functionName.split(FIELD_SEPARATOR, 1)[1]
-            numParams++
+            numParams += 1
 
         ret = ""
-        if numParams == 0:
-            tmp = function()
-            ret = cwToStr(tmp)
-        elif numParams == 1:
-            tmp = function(parameters[0])
-            ret = cwToStr(tmp)
-        elif numParams == 2:
-            tmp = function(parameters[0], parameters[1])
-            ret = cwToStr(tmp)
-        elif numParams == 3:
-            tmp = function(parameters[0], parameters[1], parameters[2])
-            ret = cwToStr(tmp)
-        elif numParams == 4:
-            tmp = function(parameters[0], parameters[1], parameters[2], parameters[3])
-            ret = cwToStr(tmp)
-        elif numParams == 5:
-            tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4])
-            ret = cwToStr(tmp)
-        elif numParams == 6:
-            tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5])
-            ret = cwToStr(tmp)
-        elif numParams == 7:
-            tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6])
-            ret = cwToStr(tmp)
-        elif numParams == 8:
-            tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7])
-            ret = cwToStr(tmp)
-        elif numParams == 9:
-            tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7], parameters[8])
-            ret = cwToStr(tmp)
-        else:
+        try:
+            if numParams == 0:
+                tmp = function()
+                ret = cwToStr(tmp)
+            elif numParams == 1:
+                tmp = function(parameters[0])
+                ret = cwToStr(tmp)
+            elif numParams == 2:
+                tmp = function(parameters[0], parameters[1])
+                ret = cwToStr(tmp)
+            elif numParams == 3:
+                tmp = function(parameters[0], parameters[1], parameters[2])
+                ret = cwToStr(tmp)
+            elif numParams == 4:
+                tmp = function(parameters[0], parameters[1], parameters[2], parameters[3])
+                ret = cwToStr(tmp)
+            elif numParams == 5:
+                tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4])
+                ret = cwToStr(tmp)
+            elif numParams == 6:
+                tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5])
+                ret = cwToStr(tmp)
+            elif numParams == 7:
+                tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6])
+                ret = cwToStr(tmp)
+            elif numParams == 8:
+                tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7])
+                ret = cwToStr(tmp)
+            elif numParams == 9:
+                tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7], parameters[8])
+                ret = cwToStr(tmp)
+            else:
+                print("ERROR", flush=True) 
+                print("Too many parameters passed to a Python function", flush=True, file=sys.stderr)
+        except:
             print("ERROR", flush=True) 
-            print("Too many parameters passed to a Python function", flush=True, file=sys.stderr)
+            errorMessage = "The Python CW function raised this exception: " + traceback.format_exc()
+            print(errorMessage, flush=True, file=sys.stderr)
+
 
         ret = "{:016x}".format(len(ret)) + ret
         
