@@ -122,7 +122,7 @@ public:
     }
 
     bool isEmpty() const {
-        if(m_type == TType::TDummy && m_subParams.isEmpty()){
+        if(m_name.isEmpty() && m_subParams.isEmpty()){
             return true;
         }
         return false;
