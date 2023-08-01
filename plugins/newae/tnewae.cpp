@@ -1,17 +1,14 @@
 #include "tnewae.h"
-
-//TODO Exposing io devices but need to expose scopes
 //TODO handle line separators - test - waht did I mean?
 
 //Next:
-//TODO rozdíl mezi checkForPythonReady a waitForPythonDone??
-//TODO vyřešit co když python vrátí fail
 //TODO STDERR od Pythonu musí vyhodit QWarning
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     m_preInitParams  = TConfigParam("Auto-detect", "true", TConfigParam::TType::TBool, "Automatically detect available NewAE devices", false);
     numDevices = 0;
     pythonReady = false;
+    pythonError = false;
     deviceWaitingForRead = false;
     waitingForReadDeviceId = NO_CW_ID;
 }
@@ -87,6 +84,7 @@ bool TNewae::setUpPythonProcess(){
     pythonProcess->start();
     pythonProcess->setReadChannel(QProcess::StandardOutput);
     QObject::connect(pythonProcess, SIGNAL(errorOccurred(QProcess::ProcessError)), this,  SLOT(handlePythonError(QProcess::ProcessError)));
+    QObject::connect(pythonProcess, SIGNAL(readyReadStandardOutput()), this,  SLOT(checkForPythonState()));
     bool succ = pythonProcess->waitForStarted(PROCESS_WAIT_MSCECS); //wait max 30 seconds
     if (!succ){
         qCritical("Failed to start the python component. Do you have python3 installed and symlinked as \"python\"?");
@@ -126,7 +124,8 @@ bool TNewae::testSHM() {
         return false;
     }
 
-    succ = waitForPythonDone(NO_CW_ID);
+    succ = waitForPythonDone(NO_CW_ID, true);
+    //succ &= !pythonError;
     if (!succ){
         qCritical("Python did not respond to SHM read request.");
         return false;
@@ -135,10 +134,13 @@ bool TNewae::testSHM() {
     size_t dataLen;
     QString data = "";
     succ = getDataFromShm(dataLen, data);
-    if (!succ) qCritical("no data from mem");
+    if (!succ) qCritical("Error reading from shared memory");
+    if (!dataLen) qCritical("No data from shared memory");
     succ &= data.contains(tmpstr);
     if (!succ){
-        qCritical("Failed to test the shared memory that was already set up. Do you have Qt for Python installed? If you do, please reboot your computer.");
+        qCritical("%s", (("Failed to test the shared memory that was already set up. Do you have Qt for Python installed? "
+                          "If you do, please reboot your computer. SM data: " + data)).toLocal8Bit().constData());
+
         return false;
     }
 
@@ -160,9 +162,10 @@ bool TNewae::autodetectDevices(QList<std::pair<QString, QString>> & devices) {
         //Read data from pyton
         size_t dataLen;
         QString data;
-        succ &= waitForPythonDone(NO_CW_ID);
+        succ &= waitForPythonDone(NO_CW_ID, true);
+        succ &= !pythonError;
         if (!succ){
-            qWarning("Failed to receive response for the DETECT DEVICES command.");
+            qWarning("Failed to receive response for the DETECT DEVICES command or received an invalid one.");
             return false;
         }
         getDataFromShm(dataLen, data);
@@ -244,7 +247,7 @@ void TNewae::init(bool *ok) {
         return;
     }
 
-    //Append available devices to m_ports
+    //Append available devices to m_scopes
     for(size_t i = 0; i < devices.size(); ++i) {
         addScope(devices.at(i).first, devices.at(i).second, &succ);
         if(!succ) {
@@ -309,7 +312,7 @@ void TNewae::addScope(QString name, QString info, bool *ok) {
         numDevices++;
         if(ok != nullptr) *ok = true;
     } else {
-        qCritical("Number of available Chipwhisperer slots exceeded. Please de-init and re-init the plugin to continue.");
+        qCritical("Number of available Chipwhisperer slots exceeded. Please de-init and re-init the plugin/component to continue.");
         if(ok != nullptr) *ok = false;
     }
 }
@@ -370,16 +373,33 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpec
     return true;
 }
 
-bool TNewae::checkForPythonReady(int wait /*= 30000*/){
-    if (wait){
-        pythonProcess->waitForReadyRead(wait);
-    }
+void TNewae::checkForPythonState(){
     QString buff;
-    buff = pythonProcess->peek(6);
-    return (buff.contains("DONE") || buff.contains("STARTED") || buff.contains("ERROR"));
+    buff = pythonProcess->peek(1024*1024);
+
+    if (pythonReady)
+        return;
+
+    if (buff.contains("DONE")){
+        pythonReady = true;
+        pythonError = false;
+    } else if (buff.contains("STARTED")){
+        pythonReady = true;
+        pythonError = false;
+    } else if (buff.contains("ERROR")){
+        pythonReady = true;
+        pythonError = true;
+
+        //pythonProcess->readAllStandardOutput();
+        //deviceWaitingForRead = false;
+        //waitingForReadDeviceId = -1;
+    } else {
+        pythonReady = false;
+        pythonError = false;
+    }
 }
 
-bool TNewae::checkForPythonError(){
+/*bool TNewae::checkForPythonError(){
     QString buff;
     buff = pythonProcess->peek(6);
     if (buff.contains("ERROR")) {
@@ -391,9 +411,8 @@ bool TNewae::checkForPythonError(){
     }
 
     return false;
-}
+}*/
 
-//Call check for ready first!
 bool TNewae::readFromPython(uint8_t cwId, QString &data, bool wait/* = true*/){
     if (!pythonReady || !deviceWaitingForRead || cwId != waitingForReadDeviceId){
         return false;
@@ -405,17 +424,24 @@ bool TNewae::readFromPython(uint8_t cwId, QString &data, bool wait/* = true*/){
     return true;
 }
 
-bool TNewae::waitForPythonDone(uint8_t cwId, int timeout/* = 30000*/){
-    if (!(checkForPythonReady(timeout)))
-        return false;
-
-    QString buff;
-    buff = pythonProcess->peek(6);
-    if (buff.contains("DONE") ) {
-        return readFromPython(cwId, buff);;
+bool TNewae::waitForPythonDone(uint8_t cwId, bool discardOutput, int timeout/* = 30000*/){
+    for (int i = 0; i < 15; ++i) {
+        if (pythonReady){
+            break;
+        }
+        pythonProcess->waitForReadyRead(timeout/15);
     }
 
-    return false;
+    if (!pythonReady || !deviceWaitingForRead || cwId != waitingForReadDeviceId){
+        return false;
+    }
+
+    if (discardOutput) {
+        QString tmp;
+        readFromPython(cwId, tmp);
+    }
+
+    return true;
 }
 
 bool TNewae::getDataFromShm(size_t &size, QString &data){

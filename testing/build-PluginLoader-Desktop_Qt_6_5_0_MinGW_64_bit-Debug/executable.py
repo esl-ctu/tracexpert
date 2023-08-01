@@ -44,6 +44,7 @@ if not shm.isAttached():
 
 for line in sys.stdin:
     print(line, flush=True, file=sys.stderr) # TODO!!! Remove!!
+    ## Test shared memory
     if line.startswith("SMTEST:"):
         line = line[7:]
         line = line.rstrip('\r\n')
@@ -53,6 +54,7 @@ for line in sys.stdin:
 
         print("DONE", flush=True)
 
+    ## Detect available CWs
     if line.startswith(str(NO_CW_ID) + ",DETECT_DEVICES"):
         devices = cw.list_devices()
         line = ""
@@ -68,6 +70,7 @@ for line in sys.stdin:
 
         print("DONE", flush=True)
 
+    ## Initialize one CW
     if line.startswith("SETUP", 4, 10):
         cwID = line[0:2]
         cwSN = line.split(',')[2].strip()
@@ -90,13 +93,14 @@ for line in sys.stdin:
             print("ERROR", flush=True)
             continue
 
+    ## Call a method from the CW package
     if line.startswith("FUNC-", 4, 10):
         cwID = line[0:2]
         scope = cwDict[cwID]
 
         functionName = line[8:]
         functionName = functionName.split(FIELD_SEPARATOR, 1)[0]
-        lineParameters = functionName.split(FIELD_SEPARATOR, 1)[1]
+        lineParameters = functionName.split(FIELD_SEPARATOR, 1)[1].strip()
 
         if functionName == "":
            print("ERROR", flush=True) 

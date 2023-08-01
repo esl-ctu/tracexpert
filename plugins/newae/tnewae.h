@@ -77,9 +77,8 @@ public:
     //In this block, cwId is only used for identification if the correct CW is being accessed
     bool writeToPython(uint8_t cwId, const QString &data, bool responseExpected = true, bool wait = true);
     bool readFromPython(uint8_t cwId, QString &data, bool wait = true);
-    bool checkForPythonReady(int wait = 30000);
-    bool checkForPythonError(); //All output is discarded on error
-    bool waitForPythonDone(uint8_t cwId, int timeout = 30000);
+    //bool checkForPythonError(); //All output is discarded on error
+    bool waitForPythonDone(uint8_t cwId, bool discardOutput, int timeout = 30000);
 
     //In this block, CW is super important
     void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
@@ -87,6 +86,7 @@ public:
 
 public slots:
     static void handlePythonError(QProcess::ProcessError error);
+    void checkForPythonState();
 
 protected:
     const QString PLUGIN_ID = "TraceXpert.NewAE";
@@ -101,6 +101,7 @@ protected:
 
     uint8_t numDevices; //This counts the number of **seen** devices, not the number of connected devices. Use m_scopes.lenght() for that
     bool pythonReady;
+    bool pythonError;
     bool deviceWaitingForRead;
     uint8_t waitingForReadDeviceId;
 
