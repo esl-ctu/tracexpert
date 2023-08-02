@@ -83,9 +83,13 @@ public:
     //In this block, CW is super important
     void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
     void packagePythonFunction(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
+    void packagePythonParam(uint8_t cwId, QString paramName, QString value, QString &out);
+    void packagePythonSubparam(uint8_t cwId, QString paramName, QString subParamName, QString value, QString &out);
     bool runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out);
-    bool getSetPythonParameter(int8_t cwId, QString paramName, QString value, QString &out); //Set value gets stored in &out. If the parameter value is empty, existing value is read
-    bool getSetPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString value, QString &out); //Set value gets stored in &out. If the subparameter value is empty, existing value is read
+    bool getPythonParameter(int8_t cwId, QString paramName, QString &out);
+    bool getPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString &out);
+    bool setPythonParameter(int8_t cwId, QString paramName, QString value, QString &out); //Out is the new value of the parameter, can be discarded
+    bool setPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString value, QString &out); //Out is the new value of the subparameter, can be discarded
 
 public slots:
     static void handlePythonError(QProcess::ProcessError error);

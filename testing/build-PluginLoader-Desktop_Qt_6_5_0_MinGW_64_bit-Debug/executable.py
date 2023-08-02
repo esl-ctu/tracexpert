@@ -12,6 +12,7 @@ import numpy as np
 PLUGIN_ID = "TraceXpert.NewAE"
 NO_CW_ID = 255
 FIELD_SEPARATOR = ','
+LINE_SEPARATOR = '\n'
 shmKey = PLUGIN_ID + "shm2"
 shmSize = 1024*1024*1024
 
@@ -82,172 +83,222 @@ def cwSetup(line, shm, cwDict):
         print("DONE", flush=True)
     else:
         print("ERROR", flush=True)
-        return	
+        return  
 
 ##Call a method from the CW package
 ##Takes: cwID, "FUNC-", function name, [parameters]
 ##Outputs: DONE/ERROR, data to shm
 def callCwFunc(line, shm, cwDict):
-	cwID = line[0:2]
-	scope = cwDict[cwID]
-	noParams = False
+    cwID = line[0:2]
+    scope = cwDict[cwID]
+    noParams = False
 
-	functionName = line[9:]
-	functionName = functionName.split(FIELD_SEPARATOR, 1)[0]
-	functionName = functionName.rstrip('\r\n')
-	lineParameters = ""
-	try:
-	    lineParameters = functionName.split(FIELD_SEPARATOR, 1)[1].strip()
-	    lineParameters = lineParameters.rstrip('\r\n')
-	except:
-	    noParams = True
+    functionName = line[9:]
+    try:
+        functionName = functionName.split(FIELD_SEPARATOR, 1)[0]
+        functionName = functionName.rstrip('\r\n')
+    except:
+        print("ERROR", flush=True) 
+        print("Invalid Python CW function called (name is empty) (1)", flush=True, file=sys.stderr)
 
-	if functionName == "":
-	   print("ERROR", flush=True) 
-	   print("Invalid Python CW function called (name is empty)", flush=True, file=sys.stderr)
-	   return
+    lineParameters = ""
+    try:
+        lineParameters = functionName.split(FIELD_SEPARATOR, 1)[1].strip()
+        lineParameters = lineParameters.rstrip('\r\n')
+    except:
+        noParams = True
 
-	try:
-	    function = getattr(scope, functionName)
-	except AttributeError:
-	    print("ERROR", flush=True) 
-	    print("Invalid Python CW function called (this method of the CW object does not exist)", flush=True, file=sys.stderr)
-	    return
+    if functionName == "":
+       print("ERROR", flush=True) 
+       print("Invalid Python CW function called (name is empty) (2)", flush=True, file=sys.stderr)
+       return
 
-	parameters = []
-	numParams = 0
-	while (numParams < 10 and lineParameters != "" and (not noParams)):
-	    parameter = lineParameters.split(FIELD_SEPARATOR, 1)[0]
-	    parameter = parameters[numParams].rstrip('\r\n')
-	    if isnumeric(parameter):
-	        parameters[numParams] = int(parameter)
-	    elif isnumeric(parameter[1:] and parameter[0] == "-"):
-	        parameters[numParams] = int(parameter) * -1
-	    elif parameter.lower() == "true":
-	        parameters[numParams] = True
-	    elif parameter.lower() == "false":	
-	        parameters[numParams] = False
-	    else:
-	        try:
-	            tmp = float(parameters)
-	            parameters[numParams] = tmp
-	        except ValueError:
-	            parameters[numParams] = parameter
+    try:
+        function = getattr(scope, functionName)
+    except AttributeError:
+        print("ERROR", flush=True) 
+        print("Invalid Python CW function called (this method of the CW object does not exist)", flush=True, file=sys.stderr)
+        return
 
-	    lineParameters = functionName.split(FIELD_SEPARATOR, 1)[1]
-	    numParams += 1
+    parameters = []
+    numParams = 0
+    while (numParams < 10 and lineParameters != "" and (not noParams)):
+        try:
+            parameter = lineParameters.split(FIELD_SEPARATOR, 1)[0]
+            parameter = parameters[numParams].rstrip('\r\n')
+        except:
+            try:
+                parameter = lineParameters.split(LINE_SEPARATOR, 1)[0]
+                parameter = parameters[numParams].rstrip('\r\n')
+            except:
+                print("ERROR", flush=True) 
+                print("Error processing fucntion parameters", flush=True, file=sys.stderr)
+        if isnumeric(parameter):
+            parameters[numParams] = int(parameter)
+        elif isnumeric(parameter[1:] and parameter[0] == "-"):
+            parameters[numParams] = int(parameter) * -1
+        elif parameter.lower() == "true":
+            parameters[numParams] = True
+        elif parameter.lower() == "false":  
+            parameters[numParams] = False
+        else:
+            try:
+                tmp = float(parameters)
+                parameters[numParams] = tmp
+            except ValueError:
+                parameters[numParams] = parameter
+        
+        numParams += 1
 
-	ret = ""
-	try:
-	    if numParams == 0:
-	        tmp = function()
-	        ret = cwToStr(tmp)
-	    elif numParams == 1:
-	        tmp = function(parameters[0])
-	        ret = cwToStr(tmp)
-	    elif numParams == 2:
-	        tmp = function(parameters[0], parameters[1])
-	        ret = cwToStr(tmp)
-	    elif numParams == 3:
-	        tmp = function(parameters[0], parameters[1], parameters[2])
-	        ret = cwToStr(tmp)
-	    elif numParams == 4:
-	        tmp = function(parameters[0], parameters[1], parameters[2], parameters[3])
-	        ret = cwToStr(tmp)
-	    elif numParams == 5:
-	        tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4])
-	        ret = cwToStr(tmp)
-	    elif numParams == 6:
-	        tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5])
-	        ret = cwToStr(tmp)
-	    elif numParams == 7:
-	        tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6])
-	        ret = cwToStr(tmp)
-	    elif numParams == 8:
-	        tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7])
-	        ret = cwToStr(tmp)
-	    elif numParams == 9:
-	        tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7], parameters[8])
-	        ret = cwToStr(tmp)
-	    else:
-	        print("ERROR", flush=True) 
-	        print("Too many parameters passed to a Python function", flush=True, file=sys.stderr)
-	except:
-	    print("ERROR", flush=True) 
-	    errorMessage = "The Python CW function raised this exception: " + traceback.format_exc()
-	    print(errorMessage, flush=True, file=sys.stderr)
+        try:
+            lineParameters = functionName.split(FIELD_SEPARATOR, 1)[1]
+        except:
+            break
+        
+    ret = ""
+    try:
+        if numParams == 0:
+            tmp = function()
+            ret = cwToStr(tmp)
+        elif numParams == 1:
+            tmp = function(parameters[0])
+            ret = cwToStr(tmp)
+        elif numParams == 2:
+            tmp = function(parameters[0], parameters[1])
+            ret = cwToStr(tmp)
+        elif numParams == 3:
+            tmp = function(parameters[0], parameters[1], parameters[2])
+            ret = cwToStr(tmp)
+        elif numParams == 4:
+            tmp = function(parameters[0], parameters[1], parameters[2], parameters[3])
+            ret = cwToStr(tmp)
+        elif numParams == 5:
+            tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4])
+            ret = cwToStr(tmp)
+        elif numParams == 6:
+            tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5])
+            ret = cwToStr(tmp)
+        elif numParams == 7:
+            tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6])
+            ret = cwToStr(tmp)
+        elif numParams == 8:
+            tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7])
+            ret = cwToStr(tmp)
+        elif numParams == 9:
+            tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7], parameters[8])
+            ret = cwToStr(tmp)
+        else:
+            print("ERROR", flush=True) 
+            print("Too many parameters passed to a Python function", flush=True, file=sys.stderr)
+    except:
+        print("ERROR", flush=True) 
+        errorMessage = "The Python CW function raised this exception: " + traceback.format_exc()
+        print(errorMessage, flush=True, file=sys.stderr)
 
 
-	ret = "{:016x}".format(len(ret)) + ret
-	
-	writeToSHM(ret, shm)
+    ret = "{:016x}".format(len(ret)) + ret
+    
+    writeToSHM(ret, shm)
 
-	print("DONE", flush=True)
+    print("DONE", flush=True)
 
 ##Set or read a scope object parameter
 ##If No value is provided, read is performed
 ##Takes: cwID, command name, parameter, [value]
 ##Outputs: DONE/ERROR, parameter value (to shm)
 def cwParam(line, shm, cwDict):
-    pass
-    #TODO
+    cwID = line[0:2]
+    scope = cwDict[cwID]
+    noValue = False
+
+    params = functionName = line[9:]
+    try:
+        paramName = params.split(FIELD_SEPARATOR, 1)[0]
+    except:
+        print("ERROR", flush=True) 
+        print("Invalid Python CW attribute reqested (1)", flush=True, file=sys.stderr) 
+        return     
+    paramName = paramName.rstrip('\r\n')
+
+    try:
+        paramValue = params.split(FIELD_SEPARATOR, 1)[1]
+    except:
+        noValue = True
+
+    try:
+        param = getattr(scope, paramName)
+    except AttributeError:
+        print("ERROR", flush=True) 
+        print("Invalid Python CW attribute reqested (2)", flush=True, file=sys.stderr)
+        return
+
+    if not noValue:
+        param = paramValue.rstrip('\r\n')
+
+    realParamValue = param
+    realParamValue = "{:016x}".format(len(realParamValue)) + realParamValue
+    writeToSHM(realParamValue, shm)
+
+    print("DONE", flush=True)
 
 ##Set or read a scope object subparameter
 ##If No value is provided, read is performed
 ##Takes: cwID, command name, parameter, subparameter, [value]
 ##Outputs: DONE/ERROR, subparameter value (to shm)
 def cwSubParam(line, shm, cwDict):
+    cwID = line[0:2]
+    scope = cwDict[cwID]
     pass
     #TODO
 
 #####EXEXUTABLE START######
 def main():
-	print("STARTED", flush=True)
+    print("STARTED", flush=True)
 
-	cwDict = dict()
+    cwDict = dict()
 
-	shm = QSharedMemory()
-	shm.setKey(shmKey)
-	shm.attach()
-	 
-	if not shm.isAttached():
-	    print("Had to create SHM, the program may not work correctly.", file=sys.stderr)
-	    if not shm.create(shmSize):
-	        print("Unable to attach or even create SHM.", file=sys.stderr)
+    shm = QSharedMemory()
+    shm.setKey(shmKey)
+    shm.attach()
+     
+    if not shm.isAttached():
+        print("Had to create SHM, the program may not work correctly.", file=sys.stderr)
+        if not shm.create(shmSize):
+            print("Unable to attach or even create SHM.", file=sys.stderr)
 
-	for line in sys.stdin:
-	    print(line, flush=True, file=sys.stderr) # TODO!!! Remove!!
-	    ## Test shared memory
-	    if line.startswith("SMTEST:"):
-	        smTest(line, shm)
+    for line in sys.stdin:
+        print(line, flush=True, file=sys.stderr) # TODO!!! Remove!!
+        ## Test shared memory
+        if line.startswith("SMTEST:"):
+            smTest(line, shm)
 
-	    ## Detect available CWs
-	    elif line.startswith(str(NO_CW_ID) + ",DETECT_DEVICES"):
-	        detectDevices(line, shm)
+        ## Detect available CWs
+        elif line.startswith(str(NO_CW_ID) + ",DETECT_DEVICES"):
+            detectDevices(line, shm)
 
-	    ## Initialize one CW
-	    elif line.startswith("SETUP", 4, 10):
-	    	cwSetup(line, shm, cwDict)
+        ## Initialize one CW
+        elif line.startswith("SETUP", 4, 10):
+            cwSetup(line, shm, cwDict)
 
-	    ## Call a method from the CW package
-	    elif line.startswith("FUNC-", 4, 10):
-	    	callCwFunc(line, shm, cwDict)
+        ## Call a method from the CW package
+        elif line.startswith("FUNC-", 4, 10):
+            callCwFunc(line, shm, cwDict)
 
-	    ## Set or read a scope parameter
-	    elif line.startswith("PARM-", 4, 10):
-	        cwParam(line, shm, cwDict)
+        ## Set or read a scope parameter
+        elif line.startswith("PARM-", 4, 10):
+            cwParam(line, shm, cwDict)
 
-	    ## Set or read a scope subparameter	
-	    elif line.startswith("SPAR-", 4, 10):
-	        cwSubParam(line, shm, cwDict)
+        ## Set or read a scope subparameter 
+        elif line.startswith("SPAR-", 4, 10):
+            cwSubParam(line, shm, cwDict)
 
-	    ## Exit
-	    elif line.startswith("HALT"):
-	        sys.exit()
-	    
-	    ## Something went wrong
-	    else:
-	    	print("ERROR", flush=True) 
+        ## Exit
+        elif line.startswith("HALT"):
+            sys.exit()
+        
+        ## Something went wrong
+        else:
+            print("ERROR", flush=True) 
 
 if __name__ == "__main__":
     main()
