@@ -84,6 +84,8 @@ public:
     void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
     void packagePythonFunction(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
     bool runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out);
+    bool getSetPythonParameter(int8_t cwId, QString paramName, QString value, QString &out); //Set value gets stored in &out. If the parameter value is empty, existing value is read
+    bool getSetPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString value, QString &out); //Set value gets stored in &out. If the subparameter value is empty, existing value is read
 
 public slots:
     static void handlePythonError(QProcess::ProcessError error);

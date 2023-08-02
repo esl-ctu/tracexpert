@@ -3,6 +3,8 @@
 
 //Next:
 //TODO STDERR od Pythonu musí vyhodit QWarning
+//(sub)paramaters setting
+//bool values in parameter list - are they correctly cast?
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     m_preInitParams  = TConfigParam("Auto-detect", "true", TConfigParam::TType::TBool, "Automatically detect available NewAE devices", false);
@@ -364,6 +366,14 @@ bool TNewae::runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionNa
     }
 
     return true;
+}
+
+bool TNewae::getSetPythonParameter(int8_t cwId, QString paramName, QString value, QString &out){
+
+}
+
+bool TNewae::getSetPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString value, QString &out){
+
 }
 
 bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpected/* = true*/, bool wait/* = true*/){
