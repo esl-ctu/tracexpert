@@ -41,6 +41,7 @@ void TnewaeScope::init(bool *ok/* = nullptr*/){
     params.append(sn);
     plugin->packageDataForPython(cwId, "SETUP", 1, params, toSend);
     bool succ = plugin->writeToPython(cwId, toSend);
+    succ &= plugin->waitForPythonDone(cwId, true);
 
     if(!succ) {
         if(ok != nullptr) *ok = false;
@@ -48,6 +49,17 @@ void TnewaeScope::init(bool *ok/* = nullptr*/){
     }
 
     if(ok != nullptr) *ok = true;
+
+    //DEBUG - todo move to its own function
+    size_t dataLen;
+    QString response;
+    succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "get_name", 0, params, dataLen, response);
+
+    if (succ) {
+        qDebug("%s", (QString("Name of connected scope: ") + QString(response)).toLocal8Bit().constData());
+    }
+
+
 }
 
 void TnewaeScope::deInit(bool *ok/* = nullptr*/){

@@ -229,15 +229,12 @@ void TNewae::init(bool *ok) {
         return;
     }
 
-    //pythonReady = true;
-
     //Test shared memory
     succ = testSHM();
     if(!succ) {
         if(ok != nullptr) *ok = false;
         return;
     }
-
 
     //Auto detect devices
     QList<std::pair<QString, QString>> devices;
@@ -340,6 +337,35 @@ void TNewae::packagePythonFunction(uint8_t cwId, QString functionName, uint8_t n
     packageDataForPython(cwId, newFunctionName, numParams, params, out);
 }
 
+bool TNewae::runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out){
+    QString toSend;
+    bool succ;
+
+    packagePythonFunction(cwId, functionName, numParams,params , toSend);
+    succ = writeToPython(cwId, toSend);
+    if(!succ) {
+        return false;
+    }
+
+    succ &= waitForPythonDone(cwId, true);
+    if(!succ) {
+        return false;
+    }
+
+    succ = getDataFromShm(dataLen, out);
+    if (!succ) {
+        qCritical("Error reading from shared memory");
+        return false;
+    }
+
+    if (!dataLen) {
+        qCritical("No data from shared memory");
+        return false;
+    }
+
+    return true;
+}
+
 bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpected/* = true*/, bool wait/* = true*/){
     if (!pythonReady){
         return false;
@@ -366,8 +392,9 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpec
     if (responseExpected){
         deviceWaitingForRead = true;
         waitingForReadDeviceId = cwId;
+    } else {
+        pythonReady = true;
     }
-
 
     return true;
 }

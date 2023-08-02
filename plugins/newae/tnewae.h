@@ -83,6 +83,7 @@ public:
     //In this block, CW is super important
     void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
     void packagePythonFunction(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
+    bool runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out);
 
 public slots:
     static void handlePythonError(QProcess::ProcessError error);

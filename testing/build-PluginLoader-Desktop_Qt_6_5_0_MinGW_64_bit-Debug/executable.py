@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+#TODO:
+##Otestovat parsování parametrů
+##Nastavování properties/subproperties
 import sys, time, ctypes, traceback
 from PySide6.QtCore import QSharedMemory, QByteArray
 import chipwhisperer as cw
@@ -16,8 +19,8 @@ def writeToSHM(line, shm):
     shm.unlock()
 
 def cwToStr(tmp):
-    if isinstance(tmp, numpy.ndarray):
-        return numpy.array2string(tmp)
+    if isinstance(tmp, np.ndarray):
+        return np.array2string(tmp)
     else:
         return str(tmp)
 
@@ -97,10 +100,17 @@ for line in sys.stdin:
     if line.startswith("FUNC-", 4, 10):
         cwID = line[0:2]
         scope = cwDict[cwID]
+        noParams = False
 
-        functionName = line[8:]
+        functionName = line[9:]
         functionName = functionName.split(FIELD_SEPARATOR, 1)[0]
-        lineParameters = functionName.split(FIELD_SEPARATOR, 1)[1].strip()
+        functionName = functionName.rstrip('\r\n')
+        lineParameters = ""
+        try:
+        	lineParameters = functionName.split(FIELD_SEPARATOR, 1)[1].strip()
+        	lineParameters = lineParameters.rstrip('\r\n')
+        except:
+        	noParams = True
 
         if functionName == "":
            print("ERROR", flush=True) 
@@ -116,8 +126,24 @@ for line in sys.stdin:
 
         parameters = []
         numParams = 0
-        while (numParams < 10 and lineParameters != ""):
-            parameters[numParams] = lineParameters.split(FIELD_SEPARATOR, 1)[0]
+        while (numParams < 10 and lineParameters != "" and (not noParams)):
+            parameter = lineParameters.split(FIELD_SEPARATOR, 1)[0]
+            parameter = parameters[numParams].rstrip('\r\n')
+            if isnumeric(parameter):
+            	parameters[numParams] = int(parameter)
+            elif isnumeric(parameter[1:] and parameter[0] == "-"):
+            	parameters[numParams] = int(parameter) * -1
+            elif parameter.lower() == "true":
+				parameters[numParams] = True
+            elif parameter.lower() == "false":	
+            	parameters[numParams] = False
+            else:
+            	try:
+        			tmp = float(parameters)
+        			parameters[numParams] = tmp
+    			except ValueError:
+        			parameters[numParams] = parameter
+
             lineParameters = functionName.split(FIELD_SEPARATOR, 1)[1]
             numParams += 1
 
