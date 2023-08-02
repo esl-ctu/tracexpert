@@ -125,7 +125,7 @@ bool TNewae::testSHM() {
     }
 
     succ = waitForPythonDone(NO_CW_ID, true);
-    //succ &= !pythonError;
+    succ &= !pythonError;
     if (!succ){
         qCritical("Python did not respond to SHM read request.");
         return false;
@@ -229,7 +229,7 @@ void TNewae::init(bool *ok) {
         return;
     }
 
-    pythonReady = true;
+    //pythonReady = true;
 
     //Test shared memory
     succ = testSHM();
@@ -357,7 +357,6 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpec
 
     if (wait){
         succ = pythonProcess->waitForBytesWritten();
-        pythonReady = true;
     }
 
     if (succ == -1){
