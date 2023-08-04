@@ -59,6 +59,11 @@ void TnewaeScope::init(bool *ok/* = nullptr*/){
         qDebug("%s", (QString("Name of connected scope: ") + QString(response)).toLocal8Bit().constData());
     }
 
+    succ = plugin->getPythonParameter(cwId, "gain", response);
+    if (succ) {
+        qDebug("%s", (QString("Gain: ") + QString(response)).toLocal8Bit().constData());
+    }
+
 
 }
 

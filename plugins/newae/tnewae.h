@@ -77,14 +77,10 @@ public:
     //In this block, cwId is only used for identification if the correct CW is being accessed
     bool writeToPython(uint8_t cwId, const QString &data, bool responseExpected = true, bool wait = true);
     bool readFromPython(uint8_t cwId, QString &data, bool wait = true);
-    //bool checkForPythonError(); //All output is discarded on error
     bool waitForPythonDone(uint8_t cwId, bool discardOutput, int timeout = 30000);
 
     //In this block, CW is super important
     void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
-    void packagePythonFunction(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
-    void packagePythonParam(uint8_t cwId, QString paramName, QString value, QString &out);
-    void packagePythonSubparam(uint8_t cwId, QString paramName, QString subParamName, QString value, QString &out);
     bool runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out);
     bool getPythonParameter(int8_t cwId, QString paramName, QString &out);
     bool getPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString &out);
@@ -105,6 +101,11 @@ protected:
     bool autodetectDevices(QList<std::pair<QString, QString>> & devices);
 
     bool getDataFromShm(size_t &size, QString &data);
+
+    //In this block, CW is super important
+    void packagePythonFunction(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
+    void packagePythonParam(uint8_t cwId, QString paramName, QString value, QString &out);
+    void packagePythonSubparam(uint8_t cwId, QString paramName, QString subParamName, QString value, QString &out);
 
     uint8_t numDevices; //This counts the number of **seen** devices, not the number of connected devices. Use m_scopes.lenght() for that
     bool pythonReady;

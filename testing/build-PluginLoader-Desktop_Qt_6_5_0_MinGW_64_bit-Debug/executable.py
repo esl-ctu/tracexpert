@@ -211,7 +211,7 @@ def cwParam(line, shm, cwDict):
     scope = cwDict[cwID]
     noValue = False
 
-    params = functionName = line[9:]
+    params = line[9:]
     try:
         paramName = params.split(FIELD_SEPARATOR, 1)[0]
     except:
@@ -225,6 +225,11 @@ def cwParam(line, shm, cwDict):
     except:
         noValue = True
 
+    if not noValue:
+        paramValue = paramValue.rstrip('\r\n')
+        if len(paramValue) == 0:
+            noValue = True
+
     try:
         param = getattr(scope, paramName)
     except AttributeError:
@@ -232,10 +237,7 @@ def cwParam(line, shm, cwDict):
         print("Invalid Python CW attribute reqested (2)", flush=True, file=sys.stderr)
         return
 
-    if not noValue:
-        param = paramValue.rstrip('\r\n')
-
-    realParamValue = param
+    realParamValue = str(param)
     realParamValue = "{:016x}".format(len(realParamValue)) + realParamValue
     writeToSHM(realParamValue, shm)
 
@@ -285,7 +287,7 @@ def main():
             callCwFunc(line, shm, cwDict)
 
         ## Set or read a scope parameter
-        elif line.startswith("PARM-", 4, 10):
+        elif line.startswith("PARA-", 4, 10):
             cwParam(line, shm, cwDict)
 
         ## Set or read a scope subparameter 
