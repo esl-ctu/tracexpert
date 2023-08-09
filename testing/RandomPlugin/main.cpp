@@ -5,6 +5,29 @@
 
 using namespace Qt;
 
+void generateFrequency(TIODevice * Generator, QTextStream &stream, int maxValue){
+    int values[65536] = {0};
+    const int nBytes = 2;
+
+    for(int i = 0; i < 65536*10; i++)  {
+        uint8_t readBuffer[nBytes];
+        size_t readBytes = Generator->readData(readBuffer, nBytes);
+        if(readBytes != nBytes) stream << "error during generation" << endl;
+
+        uint8_t value;
+        memcpy(&value, readBuffer, nBytes);
+        if(value > maxValue) continue;
+        values[value]++;
+    }
+
+    for(int i = 0; i < maxValue; i++)  {
+        stream << values[i] << ",";
+    }
+    stream << endl;
+    stream.flush();
+}
+
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
@@ -33,6 +56,77 @@ int main(int argc, char *argv[])
                 stream << "* Plug-in ID: '" << pluginId << "', name: '" << filePlugin->getPluginName() << "'\n";
                 stream << "    Description: '" << filePlugin->getPluginInfo() << "'\n\n";
                 stream.flush();
+
+
+                //testing distribution on uint16
+                filePlugin->addIODevice("Random", "");
+                TIODevice * Generator = filePlugin->getIODevices().at(0);
+                TConfigParam preParams = Generator->getPreInitParams();
+                preParams.getSubParamByName("Result data type")->setValue("uint16");
+                //preParams.getSubParamByName("Seed")->setValue("0");
+
+
+/*                preParams.getSubParamByName("Random number distribution")->setValue("uniform_int_distribution");
+                Generator->setPreInitParams(preParams);
+                bool iok = false;
+                Generator->init(&iok);
+                stream << " init:" << (iok ? "ok" : "not ok") << endl;
+                TConfigParam postParams = Generator->getPostInitParams();
+                postParams.getSubParamByName("Minimum value (a)")->setValue("-2");
+                postParams.getSubParamByName("Maximum value (b)")->setValue("3");
+                Generator->setPostInitParams(postParams);
+                generateFrequency(Generator, stream, 65536);
+                Generator->deInit();
+*/
+
+
+                preParams.getSubParamByName("Random number distribution")->setValue("binomial_distribution");
+                Generator->setPreInitParams(preParams);
+                bool iok = false;
+                Generator->init(&iok);
+                stream << " init:" << (iok ? "ok" : "not ok") << endl;
+                stream.flush();
+                TConfigParam postParams = Generator->getPostInitParams();
+                postParams.getSubParamByName("Number of trials (t)")->setValue("150");
+                postParams.getSubParamByName("Probability of trial generating true (p)")->setValue("0.3");
+                Generator->setPostInitParams(postParams);
+                generateFrequency(Generator, stream, 100);
+                Generator->deInit();
+
+/*                preParams.getSubParamByName("Random number distribution")->setValue("geometric_distribution");
+                Generator->setPreInitParams(preParams);
+                bool iok = false;
+                Generator->init(&iok);
+                stream << " init:" << (iok ? "ok" : "not ok") << endl;
+                TConfigParam postParams = Generator->getPostInitParams();
+                postParams.getSubParamByName("Probability of trial generating true (p)")->setValue("0.3");
+                Generator->setPostInitParams(postParams);
+                generateFrequency(Generator, stream, 35);
+                Generator->deInit();
+*/
+/*
+                preParams.getSubParamByName("Random number distribution")->setValue("poisson_distribution");
+                Generator->setPreInitParams(preParams);
+                bool iok = false;
+                Generator->init(&iok);
+                stream << " init:" << (iok ? "ok" : "not ok") << endl;
+                TConfigParam postParams = Generator->getPostInitParams();
+                postParams.getSubParamByName("Mean of the distribution (Mu)")->setValue("18");
+                Generator->setPostInitParams(postParams);
+                generateFrequency(Generator, stream, 40);
+                Generator->deInit();
+ */
+
+/*                //bit-by-bit mode
+                preParams.getSubParamByName("Result data type")->setValue("bit-by-bit mode");
+                Generator->setPreInitParams(preParams);
+                bool iok = false;
+                Generator->init(&iok);
+                stream << " init:" << (iok ? "ok" : "not ok") << endl;
+                generateFrequency(Generator, stream, 260);
+                Generator->deInit();
+*/
+/*
 
                 stream << endl << "First generator: (bit-by-bit mode)" << endl;
 
@@ -121,7 +215,7 @@ int main(int argc, char *argv[])
                 }
 
                 stream << endl << endl;
-
+*/
 			}
 		}
 		pluginLoader.unload();
