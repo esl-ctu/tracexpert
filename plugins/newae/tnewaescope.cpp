@@ -74,6 +74,14 @@ void TnewaeScope::init(bool *ok/* = nullptr*/){
         qDebug("%s", (QString("Last trace: ") + QString(response)).toLocal8Bit().constData());
     }
 
+    params.clear();
+    params.append("both");
+    params.append("true");
+    succ &= plugin->runPythonFunctionAndGetStringOutput(cwId, "vglitch_setup", params.count(), params, dataLen, response);
+    if (succ) {
+        qDebug("%s", (QString("Succ vglitch ") + QString(response)).toLocal8Bit().constData());
+    }
+
     succ = plugin->getPythonParameter(cwId, "gain", response);
     if (succ) {
         qDebug("%s", (QString("Gain: ") + QString(response)).toLocal8Bit().constData());

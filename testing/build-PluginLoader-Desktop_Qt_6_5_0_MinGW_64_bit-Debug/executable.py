@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 #TODO:
-##Otestovat parsování parametrů
 ##Nastavování properties/subproperties
+##Invalid Python CW subattribute reqested (2)
 import sys, time, ctypes, traceback
 from PySide6.QtCore import QSharedMemory, QByteArray
 import chipwhisperer as cw
@@ -33,6 +33,25 @@ def cwToStr(tmp):
         return np.array2string(tmp)
     else:
         return str(tmp)
+
+##Helper for pasing parameters from a string input
+## Takes: Parameter in a form of a string
+## Returns: Correctly typed parameter
+def parseParameter(parameter):
+    if parameter.isnumeric():
+        return int(parameter)
+    elif (parameter[1:]).isnumeric() and parameter[0] == "-":
+        return int(parameter) * -1
+    elif parameter.lower() == "true":
+        return True
+    elif parameter.lower() == "false":  
+        return False
+    else:
+        try:
+            tmp = float(parameter)
+            return tmp
+        except ValueError:
+            return parameter
 
 ##Test shared memory##
 def smTest(line, shm):
@@ -136,21 +155,8 @@ def callCwFunc(line, shm, cwDict):
                 print("ERROR", flush=True) 
                 print("Error processing fucntion parameters", flush=True, file=sys.stderr)
                 return
-        if parameter.isnumeric():
-            parameters[numParams] = int(parameter)
-        elif (parameter[1:]).isnumeric() and parameter[0] == "-":
-            parameters[numParams] = int(parameter) * -1
-        elif parameter.lower() == "true":
-            parameters[numParams] = True
-        elif parameter.lower() == "false":  
-            parameters[numParams] = False
-        else:
-            try:
-                tmp = float(parameter)
-                parameters[numParams] = tmp
-            except ValueError:
-                parameters[numParams] = parameter
         
+        parameters[numParams] = parseParameter(parameter)
         numParams += 1
 
         try:
@@ -215,6 +221,8 @@ def cwParam(line, shm, cwDict):
     noValue = False
 
     params = line[9:]
+    paramName = ""
+    paramValue = ""
     try:
         paramName = params.split(FIELD_SEPARATOR, 1)[0]
     except:
@@ -240,6 +248,11 @@ def cwParam(line, shm, cwDict):
         print("Invalid Python CW attribute reqested (2)", flush=True, file=sys.stderr)
         return
 
+    if not noValue:
+        convParamValue = parseParameter(paramValue)
+        setattr(scope, paramName, convParamValue)
+
+    param = getattr(scope, paramName)
     realParamValue = str(param)
     realParamValue = "{:016x}".format(len(realParamValue)) + realParamValue
     writeToSHM(realParamValue, shm)
@@ -253,8 +266,71 @@ def cwParam(line, shm, cwDict):
 def cwSubParam(line, shm, cwDict):
     cwID = line[0:2]
     scope = cwDict[cwID]
-    pass
-    #TODO
+    noValue = False
+    
+    params = line[9:]
+    paramName = ""
+    subParamName = ""
+    subParamValue = ""
+    try:
+        paramName = params.split(FIELD_SEPARATOR, 1)[0]
+    except:
+        print("ERROR", flush=True) 
+        print("Invalid Python CW attribute reqested (1)", flush=True, file=sys.stderr) 
+        return     
+    paramName = paramName.rstrip('\r\n')
+
+    try:
+        subParamName = params.split(FIELD_SEPARATOR, 2)[1]
+    except:
+        print("ERROR", flush=True) 
+        print("Invalid Python CW subattribute reqested (1)", flush=True, file=sys.stderr) 
+        return     
+    subParamName = subParamName.rstrip('\r\n')
+
+    try:
+        subParamValue = params.split(FIELD_SEPARATOR, 2)[2]
+    except:
+        noValue = True
+
+    if not noValue:
+        subParamValue = subParamValue.rstrip('\r\n')
+        if len(subParamValue) == 0:
+            noValue = True
+
+    print(paramName, flush=True, file=sys.stderr) # TODO!!! Remove!!
+    print(subParamName, flush=True, file=sys.stderr) # TODO!!! Remove!!
+    print(subParamValue, flush=True, file=sys.stderr) # TODO!!! Remove!!
+
+    try:
+        param = getattr(scope, paramName)
+    except AttributeError:
+        print("ERROR", flush=True) 
+        print("Invalid Python CW attribute reqested (2)", flush=True, file=sys.stderr)
+        return
+
+    try:
+        subParam = getattr(param, subParamName)
+    except AttributeError:
+        print("ERROR", flush=True) 
+        print("Invalid Python CW subattribute reqested (2)", flush=True, file=sys.stderr)
+        return
+
+    if not noValue:
+        convSubParamValue = parseParameter(subParamValue)
+        setattr(getattr(scope, paramName), subParamName, convSubParamValue)
+
+        param = getattr(scope, paramName)
+        subParam = getattr(param, subParamName)
+        realSubParamValue = str(subParam)
+        realSubParamValue = "{:016x}".format(len(realSubParamValue)) + realSubParamValue
+        writeToSHM(realSubParamValue, shm)
+    else:
+        subParamValue = str(subParam)
+        subParamValue = "{:016x}".format(len(subParamValue)) + subParamValue
+        writeToSHM(subParamValue, shm)
+
+    print("DONE", flush=True)
 
 #####EXEXUTABLE START######
 def main():

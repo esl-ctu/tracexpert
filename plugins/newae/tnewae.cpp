@@ -4,7 +4,6 @@
 //Next:
 //TODO STDERR od Pythonu musí vyhodit QWarning
 //(sub)paramaters setting
-//bool values in parameter list - are they correctly cast?
 //Handle connected but unavailable CW
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
@@ -343,16 +342,24 @@ void TNewae::packagePythonFunction(uint8_t cwId, QString functionName, uint8_t n
 void TNewae::packagePythonParam(uint8_t cwId, QString paramName, QString value, QString &out){
     QString newParamName = "PARA-" + paramName;
     QList<QString> params;
-    params.append(value);
-    packageDataForPython(cwId, newParamName, 1, params, out);
+    if (value == "") {
+        packageDataForPython(cwId, newParamName, 0, params, out);
+    } else {
+        params.append(value);
+        packageDataForPython(cwId, newParamName, 1, params, out);
+    }
 }
 
 void TNewae::packagePythonSubparam(uint8_t cwId, QString paramName, QString subParamName, QString value, QString &out){
     QString newParamName = "SPAR-" + paramName;
     QList<QString> params;
     params.append(subParamName);
-    params.append(value);
-    packageDataForPython(cwId, newParamName, 2, params, out);
+    if (value == "") {
+        packageDataForPython(cwId, newParamName, 1, params, out);
+    } else {
+        params.append(value);
+        packageDataForPython(cwId, newParamName, 2, params, out);
+    }
 }
 
 bool TNewae::runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out){
