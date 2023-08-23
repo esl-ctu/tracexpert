@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-#TODO:
-##Nastavování properties/subproperties
-##Invalid Python CW subattribute reqested (2)
 import sys, time, ctypes, traceback
 from PySide6.QtCore import QSharedMemory, QByteArray
 import chipwhisperer as cw
@@ -298,10 +295,6 @@ def cwSubParam(line, shm, cwDict):
         if len(subParamValue) == 0:
             noValue = True
 
-    print(paramName, flush=True, file=sys.stderr) # TODO!!! Remove!!
-    print(subParamName, flush=True, file=sys.stderr) # TODO!!! Remove!!
-    print(subParamValue, flush=True, file=sys.stderr) # TODO!!! Remove!!
-
     try:
         param = getattr(scope, paramName)
     except AttributeError:
@@ -348,7 +341,7 @@ def main():
             print("Unable to attach or even create SHM.", file=sys.stderr)
 
     for line in sys.stdin:
-        print(line, flush=True, file=sys.stderr) # TODO!!! Remove!!
+        #print(line, flush=True, file=sys.stderr) # TODO!!! Remove!!
         ## Test shared memory
         if line.startswith("SMTEST:"):
             smTest(line, shm)
