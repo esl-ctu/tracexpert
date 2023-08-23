@@ -94,20 +94,21 @@ def callCwFunc(line, shm, cwDict):
     noParams = False
 
     functionName = line[9:]
+    lineParameters = ""
+    splitLine = ""
     try:
-        functionName = functionName.split(FIELD_SEPARATOR, 1)[0]
+        splitLine = functionName.split(FIELD_SEPARATOR, 1)
+        functionName = splitLine[0]
         functionName = functionName.rstrip('\r\n')
     except:
         print("ERROR", flush=True) 
         print("Invalid Python CW function called (name is empty) (1)", flush=True, file=sys.stderr)
 
-    lineParameters = line[9:]
     try:
-        lineParameters = lineParameters.split(FIELD_SEPARATOR, 1)[1].strip()
+        lineParameters = splitLine[1]
         lineParameters = lineParameters.rstrip('\r\n')
     except:
         noParams = True
-    print(noParams, flush=True, file=sys.stderr) # TODO!!! Remove!!
 
     if functionName == "":
        print("ERROR", flush=True) 
@@ -124,10 +125,9 @@ def callCwFunc(line, shm, cwDict):
     parameters = [None] * 10
     numParams = 0
     while (numParams < 10 and lineParameters != "" and (not noParams)):
-        print("a", flush=True, file=sys.stderr) # TODO!!! Remove!!
         try:
             parameter = lineParameters.split(FIELD_SEPARATOR, 1)[0]
-            parameter = parameters[numParams].rstrip('\r\n')
+            parameter = parameter.rstrip('\r\n')
         except:
             try:
                 parameter = lineParameters.split(LINE_SEPARATOR, 1)[0]
@@ -159,7 +159,6 @@ def callCwFunc(line, shm, cwDict):
             break
         
     ret = ""
-    print(numParams, flush=True, file=sys.stderr) # TODO!!! Remove!!
     try:
         if numParams == 0:
             tmp = function()
