@@ -53,15 +53,45 @@ void TnewaeScope::init(bool *ok/* = nullptr*/){
     //DEBUG - todo move to its own function
     size_t dataLen;
     QString response;
+    params.clear();
     succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "get_name", 0, params, dataLen, response);
 
     if (succ) {
         qDebug("%s", (QString("Name of connected scope: ") + QString(response)).toLocal8Bit().constData());
     }
 
+    succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "capture", 0, params, dataLen, response);
+    params.clear();
+    params.append("false");
+    succ &= plugin->runPythonFunctionAndGetStringOutput(cwId, "get_last_trace", params.count(), params, dataLen, response);
+    if (succ) {
+        qDebug("%s", (QString("Last trace: ") + QString(response)).toLocal8Bit().constData());
+    }
+    params.clear();
+    params.append("true");
+    succ &= plugin->runPythonFunctionAndGetStringOutput(cwId, "get_last_trace", params.count(), params, dataLen, response);
+    if (succ) {
+        qDebug("%s", (QString("Last trace: ") + QString(response)).toLocal8Bit().constData());
+    }
+
     succ = plugin->getPythonParameter(cwId, "gain", response);
     if (succ) {
         qDebug("%s", (QString("Gain: ") + QString(response)).toLocal8Bit().constData());
+    }
+
+    succ = plugin->getPythonSubparameter(cwId, "adc", "timeout", response);
+    if (succ) {
+        qDebug("%s", (QString("Timeout: ") + QString(response)).toLocal8Bit().constData());
+    }
+
+    succ = plugin->setPythonSubparameter(cwId, "adc", "timeout", "20", response);
+    if (succ) {
+        qDebug("%s", (QString("Timeout: ") + QString(response)).toLocal8Bit().constData());
+    }
+
+    succ = plugin->getPythonSubparameter(cwId, "adc", "timeout", response);
+    if (succ) {
+        qDebug("%s", (QString("Timeout: ") + QString(response)).toLocal8Bit().constData());
     }
 
 

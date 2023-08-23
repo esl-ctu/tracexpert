@@ -101,12 +101,13 @@ def callCwFunc(line, shm, cwDict):
         print("ERROR", flush=True) 
         print("Invalid Python CW function called (name is empty) (1)", flush=True, file=sys.stderr)
 
-    lineParameters = ""
+    lineParameters = line[9:]
     try:
-        lineParameters = functionName.split(FIELD_SEPARATOR, 1)[1].strip()
+        lineParameters = lineParameters.split(FIELD_SEPARATOR, 1)[1].strip()
         lineParameters = lineParameters.rstrip('\r\n')
     except:
         noParams = True
+    print(noParams, flush=True, file=sys.stderr) # TODO!!! Remove!!
 
     if functionName == "":
        print("ERROR", flush=True) 
@@ -120,9 +121,10 @@ def callCwFunc(line, shm, cwDict):
         print("Invalid Python CW function called (this method of the CW object does not exist)", flush=True, file=sys.stderr)
         return
 
-    parameters = []
+    parameters = [None] * 10
     numParams = 0
     while (numParams < 10 and lineParameters != "" and (not noParams)):
+        print("a", flush=True, file=sys.stderr) # TODO!!! Remove!!
         try:
             parameter = lineParameters.split(FIELD_SEPARATOR, 1)[0]
             parameter = parameters[numParams].rstrip('\r\n')
@@ -133,9 +135,10 @@ def callCwFunc(line, shm, cwDict):
             except:
                 print("ERROR", flush=True) 
                 print("Error processing fucntion parameters", flush=True, file=sys.stderr)
-        if isnumeric(parameter):
+                return
+        if parameter.isnumeric():
             parameters[numParams] = int(parameter)
-        elif isnumeric(parameter[1:] and parameter[0] == "-"):
+        elif (parameter[1:]).isnumeric() and parameter[0] == "-":
             parameters[numParams] = int(parameter) * -1
         elif parameter.lower() == "true":
             parameters[numParams] = True
@@ -156,6 +159,7 @@ def callCwFunc(line, shm, cwDict):
             break
         
     ret = ""
+    print(numParams, flush=True, file=sys.stderr) # TODO!!! Remove!!
     try:
         if numParams == 0:
             tmp = function()

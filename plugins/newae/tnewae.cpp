@@ -366,7 +366,7 @@ bool TNewae::runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionNa
     }
 
     succ &= waitForPythonDone(cwId, true);
-    if(!succ) {
+    if(!succ || pythonError) {
         return false;
     }
 
