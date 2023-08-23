@@ -146,7 +146,7 @@ def callCwFunc(line, shm, cwDict):
             parameters[numParams] = False
         else:
             try:
-                tmp = float(parameters)
+                tmp = float(parameter)
                 parameters[numParams] = tmp
             except ValueError:
                 parameters[numParams] = parameter
@@ -154,7 +154,7 @@ def callCwFunc(line, shm, cwDict):
         numParams += 1
 
         try:
-            lineParameters = functionName.split(FIELD_SEPARATOR, 1)[1]
+            lineParameters = lineParameters.split(FIELD_SEPARATOR, 1)[1]
         except:
             break
         
