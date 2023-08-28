@@ -53,13 +53,24 @@ TConfigParam TSerialPort::setPostInitParams(TConfigParam params) {
     return m_postInitParams;
 }
 
-void TSerialPort::addIODevice(QString name, QString info, bool *ok) {
-    m_ports.append(new TSerialPortDevice(name, info));
+TIODevice * TSerialPort::addIODevice(QString name, QString info, bool *ok) {
+    TIODevice * ret = new TSerialPortDevice(name, info);
+    m_ports.append(ret);
     if(ok != nullptr) *ok = true;
+    return ret;
 }
 
-void TSerialPort::addScope(QString name, QString info, bool *ok) {
+TScope * TSerialPort::addScope(QString name, QString info, bool *ok) {
     if(ok != nullptr) *ok = false;
+    return nullptr;
+}
+
+bool TSerialPort::canAddIODevice() {
+    return true;
+}
+
+bool TSerialPort::canAddScope() {
+    return false;
 }
 
 QList<TIODevice *> TSerialPort::getIODevices() {

@@ -73,8 +73,8 @@ int main(int argc, char *argv[])
                     TPlugin * serialPorts = aPlugin;
 
                     //TConfigParam test = serialPorts->getPreInitParams();
-                   // test.setValue("69, 420");
-                   // serialPorts->setPreInitParams(test);
+                    // test.setValue("69, 420");
+                    // serialPorts->setPreInitParams(test);
 
                     serialPorts->init();
 

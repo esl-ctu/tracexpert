@@ -1,0 +1,12 @@
+#ifndef TEMPTYPLUGIN_GLOBAL_H
+#define TEMPTYPLUGIN_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(TEMPTYPLUGIN_LIBRARY)
+#  define TEMPTYPLUGIN_EXPORT Q_DECL_EXPORT
+#else
+#  define TEMPTYPLUGIN_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // TEMPTYPLUGIN_GLOBAL_H
