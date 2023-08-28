@@ -97,6 +97,9 @@ public slots:
     void checkForPythonState();
 
 protected:
+    void _createPreInitParams();
+    bool _validatePreInitParamsStructure(TConfigParam & params);
+
     const QString PLUGIN_ID = "TraceXpert.NewAE";
 
     //Methods for setup:
@@ -117,11 +120,13 @@ protected:
     bool pythonError;
     bool deviceWaitingForRead;
     uint8_t waitingForReadDeviceId;
+    QString pythonPath;
 
     QList<TIODevice *> m_ports;
     QList<TScope *> m_scopes;
     TConfigParam m_preInitParams;
     TConfigParam m_postInitParams;
+    bool m_initialized;
 
     QSharedMemory shm;
     QProcess *pythonProcess;

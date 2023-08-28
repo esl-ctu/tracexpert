@@ -13,6 +13,35 @@ TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     pythonError = false;
     deviceWaitingForRead = false;
     waitingForReadDeviceId = NO_CW_ID;
+    pythonPath = "";
+    m_initialized = false;
+}
+
+void TNewae::_createPreInitParams(){
+    m_preInitParams.addSubParam(TConfigParam("Path to python executable", QString(""), TConfigParam::TType::TString,
+                                             "Path at which the python executable is located. At least python 3.11 is needed. \
+                                             Leve blank to use python that us already installed and can be found in PATH. QT for python must also be installed",
+                                             false));
+}
+
+bool TNewae::_validatePreInitParamsStructure(TConfigParam & params){
+    bool iok;
+
+    TConfigParam * par = params.getSubParamByName("Path to python executable", &iok);
+    if(!iok) return false;
+
+    QString path = par->getValue();
+    if (path == "") {
+        pythonPath = "python";
+        return true;
+    }
+
+    if (QFile::exists(path)) {
+        pythonPath = path;
+        return true;
+    }
+
+    return false;
 }
 
 TNewae::~TNewae() {
@@ -40,6 +69,16 @@ TConfigParam TNewae::getPreInitParams() const {
 }
 
 TConfigParam TNewae::setPreInitParams(TConfigParam params) {
+    if(m_initialized){
+        m_preInitParams.setState(TConfigParam::TState::TError, "Cannot change pre-init parameters on an initialized device.");
+        return m_preInitParams;
+    }
+
+    if(!_validatePreInitParamsStructure(params)) {
+        qCritical("Wrong structure of the pre-init params for TNewAE");
+        return m_preInitParams;
+    }
+
     m_preInitParams = params;
     return m_preInitParams;
 }
@@ -81,7 +120,7 @@ bool TNewae::setUpSHM(){
 
 bool TNewae::setUpPythonProcess(){
     QString runDir(QCoreApplication::instance()->applicationDirPath());
-    QString program = "python";
+    QString program = pythonPath;
 
     QStringList arguments;
     arguments << runDir + "/executable.py";
@@ -96,7 +135,7 @@ bool TNewae::setUpPythonProcess(){
     QObject::connect(pythonProcess, SIGNAL(readyReadStandardOutput()), this,  SLOT(checkForPythonState()));
     bool succ = pythonProcess->waitForStarted(PROCESS_WAIT_MSCECS); //wait max 30 seconds
     if (!succ){
-        qCritical("Failed to start the python component. Do you have python3 installed and symlinked as \"python\"?");
+        qCritical("Failed to start the python component. Did you provide a path to the correct executable? Or do you have python3 installed and symlinked as \"python\"?");
         return false;
     }
 
@@ -267,9 +306,11 @@ void TNewae::init(bool *ok) {
     }
 
     if(ok != nullptr) *ok = true;
+    m_initialized = true;
 }
 
 void TNewae::deInit(bool *ok) {
+    m_initialized = false;
     qDeleteAll(m_ports.begin(), m_ports.end());
     m_ports.clear();
     if(ok != nullptr) *ok = true;

@@ -50,5 +50,8 @@ protected:
     qint32 m_readTimeout;
     qint32 m_writeTimeout;
     bool m_initialized;
+
+    void _createPreInitParams();
+    bool _validatePreInitParamsStructure(TConfigParam & params);
 };
 

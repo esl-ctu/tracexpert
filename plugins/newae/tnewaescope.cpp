@@ -9,8 +9,16 @@ TnewaeScope::TnewaeScope(const QString & name_in, const QString & sn_in, uint8_t
     plugin = plugin_in;
 }
 
-TnewaeScope::~TnewaeScope() {
+void TnewaeScope::_createPreInitParams(){
+    //TODO
+}
 
+bool TnewaeScope::_validatePreInitParamsStructure(TConfigParam & params){
+    //TODO
+}
+
+TnewaeScope::~TnewaeScope() {
+    //TODO
 }
 
 QString TnewaeScope::getScopeName() const{
@@ -52,7 +60,7 @@ void TnewaeScope::init(bool *ok/* = nullptr*/){
 }
 
 void TnewaeScope::deInit(bool *ok/* = nullptr*/){
-
+    //TODO
 }
 
 TConfigParam TnewaeScope::getPostInitParams() const{
@@ -60,7 +68,7 @@ TConfigParam TnewaeScope::getPostInitParams() const{
 }
 
 TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){
-
+    //TODO
 }
 
 void TnewaeScope::run(bool *ok){
