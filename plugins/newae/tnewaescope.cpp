@@ -13,11 +13,11 @@ TnewaeScope::~TnewaeScope() {
 
 }
 
-QString TnewaeScope::getIODeviceName() const{
+QString TnewaeScope::getScopeName() const{
     return m_name;
 }
 
-QString TnewaeScope::getIODeviceInfo() const{
+QString TnewaeScope::getScopeInfo() const{
     return m_info;
 }
 
@@ -63,13 +63,16 @@ TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){
 
 }
 
-void TnewaeScope::run(){
-
+void TnewaeScope::run(bool *ok){
+    int a = 0;
+    plugin->checkForPythonState();
 }
-void TnewaeScope::stop(){
-
+void TnewaeScope::stop(bool *ok){
+    int a = 0;
+    plugin->checkForPythonState();
 }
 
-size_t TnewaeScope::getValues(int channel, int16_t * buffer, size_t len){
+size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t bufferSize,
+                                    TSampleType & samplesType, size_t & samplesPerTraceDownloaded, size_t & tracesDownloaded){
 
 }

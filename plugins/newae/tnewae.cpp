@@ -27,6 +27,13 @@ QString TNewae::getPluginInfo() const {
     return QString("Provides access to NewAE devices.");
 }
 
+bool TNewae::canAddIODevice(){
+    return true;
+}
+
+bool TNewae::canAddScope(){
+    return true;
+}
 
 TConfigParam TNewae::getPreInitParams() const {
     return m_preInitParams;
@@ -298,21 +305,24 @@ TConfigParam TNewae::setPostInitParams(TConfigParam params) {
     return m_postInitParams;
 }
 
-void TNewae::addIODevice(QString name, QString info, bool *ok) {
+TIODevice * TNewae::addIODevice(QString name, QString info, bool *ok) {
     //m_ports.append(new TnewaeDevice(name, info, numDevices));
     //numDevices++;
     if(ok != nullptr) *ok = true;
     //TODO
 }
 
-void TNewae::addScope(QString name, QString info, bool *ok) {
+TScope * TNewae::addScope(QString name, QString info, bool *ok) {
     if (numDevices + 1 != NO_CW_ID) {
-        m_scopes.append(new TnewaeScope(name, info, numDevices, this));
+        TnewaeScope * sc = new TnewaeScope(name, info, numDevices, this);
+        m_scopes.append(sc);
         numDevices++;
         if(ok != nullptr) *ok = true;
+        return sc;
     } else {
         qCritical("Number of available Chipwhisperer slots exceeded. Please de-init and re-init the plugin/component to continue.");
         if(ok != nullptr) *ok = false;
+        return NULL;
     }
 }
 

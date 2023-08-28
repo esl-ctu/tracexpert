@@ -66,13 +66,18 @@ public:
     /// Set the post-initialization parameters, returns the current params after set
     virtual TConfigParam setPostInitParams(TConfigParam params) override;
 
-    virtual void addIODevice(QString name, QString info, bool *ok = nullptr) override;
-    virtual void addScope(QString name, QString info, bool *ok = nullptr) override;
+    virtual TIODevice * addIODevice(QString name, QString info, bool *ok = nullptr) override;
+    virtual TScope * addScope(QString name, QString info, bool *ok = nullptr) override;
 
     /// Get available IO devices, available only after init()
     virtual QList<TIODevice *> getIODevices() override;
     /// Get available Scopes, available only after init()
     virtual QList<TScope *> getScopes() override;
+
+    /// Returns true, when it is possible to add an IO Device manually
+    virtual bool canAddIODevice() override;
+    /// Returns true, when it is possible to add a Scope manually
+    virtual bool canAddScope() override;
 
     //In this block, cwId is only used for identification if the correct CW is being accessed
     bool writeToPython(uint8_t cwId, const QString &data, bool responseExpected = true, bool wait = true);

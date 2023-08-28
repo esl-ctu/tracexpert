@@ -7,32 +7,32 @@
 //#include "tnewae.h"
 
 class TNewae;
-//Todo správně dědit z TScope
 
 class TnewaeScope: public TScope {
 public:
     TnewaeScope(const QString & name_in, const QString & sn_in, uint8_t id_in, TNewae * plugin_in);
     virtual ~TnewaeScope();
 
-    virtual QString getIODeviceName() const;
-    virtual QString getIODeviceInfo() const;
+    virtual QString getScopeName() const override;
+    virtual QString getScopeInfo() const override;
 
-    virtual TConfigParam getPreInitParams() const;
-    virtual TConfigParam setPreInitParams(TConfigParam params);
+    virtual TConfigParam getPreInitParams() const override;
+    virtual TConfigParam setPreInitParams(TConfigParam params) override;
 
-    virtual void init(bool *ok = nullptr);
-    virtual void deInit(bool *ok = nullptr);
+    virtual void init(bool *ok = nullptr) override;
+    virtual void deInit(bool *ok = nullptr) override;
 
-    virtual TConfigParam getPostInitParams() const;
-    virtual TConfigParam setPostInitParams(TConfigParam params);
+    virtual TConfigParam getPostInitParams() const override;
+    virtual TConfigParam setPostInitParams(TConfigParam params) override;
 
     /// Run the oscilloscope: wait for trigger when triggered, otherwise capture immediately
-    virtual void run();
+    virtual void run(bool *ok = nullptr) override;
     /// Stop the oscilloscope
-    virtual void stop();
+    virtual void stop(bool *ok = nullptr) override;
 
     /// Downloads values from the oscilloscope, first waits for the aquisition to complete
-   virtual size_t getValues(int channel, int16_t * buffer, size_t len); // CHAR8 TODO
+    virtual size_t downloadSamples(int channel, uint8_t * buffer, size_t bufferSize,
+                                   TSampleType & samplesType, size_t & samplesPerTraceDownloaded, size_t & tracesDownloaded) override;
 
 
 protected:
