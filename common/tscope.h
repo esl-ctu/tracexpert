@@ -8,12 +8,23 @@ class TScope {
 
 public:
 
+    enum class TSampleType {
+        TUInt8,
+        TInt8,
+        TUInt16,
+        TInt16,
+        TUInt32,
+        TInt32,
+        TReal32,
+        TReal64
+    };
+
     virtual ~TScope() {}
 
-    /// IODevice name
-    virtual QString getIODeviceName() const = 0;
-    /// IODevice info
-    virtual QString getIODeviceInfo() const = 0;
+    /// Scope name
+    virtual QString getScopeName() const = 0;
+    /// Scope info
+    virtual QString getScopeInfo() const = 0;
 
     /// Get the current pre-initialization parameters
     virtual TConfigParam getPreInitParams() const = 0;
@@ -30,13 +41,13 @@ public:
     /// Set the post-initialization parameters, returns the current params after set
     virtual TConfigParam setPostInitParams(TConfigParam params) = 0;
 
-    /// Run the oscilloscope: wait for trigger when triggered, otherwise capture immediately
-    virtual void run() = 0;
+    /// Run the oscilloscope: wait for trigger when set, otherwise capture immediately
+    virtual void run(bool *ok = nullptr) = 0;
     /// Stop the oscilloscope
-    virtual void stop() = 0;
+    virtual void stop(bool *ok = nullptr) = 0;
 
-    /// Downloads values from the oscilloscope, first waits for the aquisition to complete
-    virtual size_t getValues(int channel, int16_t * buffer, size_t len) = 0; // CHAR8 TODO
+    /// Downloads samples from the oscilloscope, first waits for the aquisition to complete. Works with a char memory buffer, fills it with an array of samplesType values (typically will need a recast!). Returns size in bytes.
+    virtual size_t downloadSamples(int channel, uint8_t * buffer, size_t bufferSize, TSampleType & samplesType, size_t & samplesPerTraceDownloaded, size_t & tracesDownloaded) = 0;
 
 };
 

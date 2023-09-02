@@ -8,10 +8,12 @@ Vojtěch Miškovský
  - GUI
 
 Tomáš Přeučil
- - Chipwhisperer plugin
+ - NewAE Chipwhisperer plugin
 
 Adam Švehla
- - File and RNG plugins
+ - File plugin
+ - RNG plugin
+ - IO Protocols support
 
 David Pokorný
  - Testing
