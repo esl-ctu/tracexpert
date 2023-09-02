@@ -1,7 +1,20 @@
-Petr Socha, backend and API architect, developer
+Petr Socha
+ - Backend/plugins architecture (API)
+ - Serialport plugin
+ - Picoscope plugin
 
-Vojtěch Miškovský, frontend and GUI architect, developer
+Vojtěch Miškovský
+ - Frontend architecture
+ - GUI
 
-Tomáš Přeučil, developer
+Tomáš Přeučil
+ - NewAE Chipwhisperer plugin
 
-David Pokorný, tester
+Adam Švehla
+ - File plugin
+ - RNG plugin
+ - IO Protocols support
+
+David Pokorný
+ - Testing
+

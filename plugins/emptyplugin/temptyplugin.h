@@ -1,23 +1,20 @@
-#ifndef SERIALPORT_H
-#define SERIALPORT_H
+#ifndef TEMPTYPLUGIN_H
+#define TEMPTYPLUGIN_H
 
-#include "TSerialPort_global.h"
+#include "TEmptyPlugin_global.h"
 #include "tplugin.h"
-#include "tserialportdevice.h"
-
-#include <QSerialPortInfo>
 
 
-class TSERIALPORT_EXPORT TSerialPort : public QObject, TPlugin
+class TEMPTYPLUGIN_EXPORT TEmptyPlugin : public QObject, TPlugin
 {
 
     Q_OBJECT
-    Q_PLUGIN_METADATA(IID "org.cvut.fit.TraceXpert.PluginInterface/1.0" FILE "tserialport.json")
+    Q_PLUGIN_METADATA(IID "org.cvut.fit.TraceXpert.PluginInterface/1.0" FILE "temptyplugin.json")
     Q_INTERFACES(TPlugin)
 
 public:
-    TSerialPort();
-    virtual ~TSerialPort() override;
+    TEmptyPlugin();
+    virtual ~TEmptyPlugin() override;
 
     /// Plugin name
     virtual QString getPluginName() const override;
@@ -52,10 +49,8 @@ public:
 
 protected:
 
-    QList<TIODevice *> m_ports;
-    TConfigParam m_preInitParams;
-    TConfigParam m_postInitParams;
+
 
 };
 
-#endif // SERIALPORT_H
+#endif // TEMPTYPLUGIN_H

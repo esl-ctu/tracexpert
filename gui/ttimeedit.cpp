@@ -28,7 +28,7 @@ TTimeEdit::TTimeEdit(QWidget * parent)
 
 QString TTimeEdit::text() const
 {
-    qreal value = lineEdit->text().toDouble();
+    qreal value = lineEdit->validator()->locale().toDouble(lineEdit->text());
     value *= qPow(10, -3 * comboBox->currentIndex());
     return QString::number(value);
 }
@@ -41,7 +41,7 @@ void TTimeEdit::setText(const QString &text)
         value *= 1000;
         unit++;
     }
-    lineEdit->setText(QString::number(value));
+    lineEdit->setText(lineEdit->validator()->locale().toString(value));
     comboBox->setCurrentIndex(unit);
 }
 

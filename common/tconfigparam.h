@@ -47,10 +47,10 @@ public:
     };
 
     enum class TState {
-        TOk,
-        TInfo,
-        TWarning,
-        TError
+        TOk = 0,
+        TInfo = 10,
+        TWarning = 20,
+        TError = 30
     };
 
     TConfigParam(){
@@ -119,6 +119,13 @@ public:
             qCritical("Failed deserializing TConfigParam: Wrong version or wrong data.");
         }
         return in;
+    }
+
+    bool isEmpty() const {
+        if(m_name.isEmpty() && m_subParams.isEmpty()){
+            return true;
+        }
+        return false;
     }
 
     const QString & getName() const {
@@ -287,12 +294,26 @@ public:
         m_state = state;
         m_stateMessage = message;
     }
-    void resetState(){
+    void resetState(bool includeSubParams = false){
         m_state = TState::TOk;
         m_stateMessage = "";
+        if(includeSubParams == true){
+            for(int i = 0; i < m_subParams.count(); i++){
+                m_subParams[i].resetState(true);
+            }
+        }
     }
-    TConfigParam::TState getState() const{
-        return m_state;
+    TConfigParam::TState getState(bool includeSubParams = false) const{
+        TConfigParam::TState retState = m_state;
+        if(includeSubParams == true){
+            for(int i = 0; i < m_subParams.count(); i++){
+                TConfigParam::TState subParamState = m_subParams[i].getState(true);
+                if(subParamState > retState){
+                    retState = subParamState;
+                }
+            }
+        }
+        return retState;
     }
     const QString & getStateMessage() const {
         return m_stateMessage;
