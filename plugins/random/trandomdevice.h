@@ -37,6 +37,7 @@ protected:
     void _createPostInitParams();
     bool _validatePreInitParamsStructure(TConfigParam & params);
     bool _validatePostInitParamsStructure(TConfigParam & params);
+    bool _validatePostInitParamsValues(TConfigParam & params);
 
     bool _setDistribution(QString distributionName, TConfigParam::TType dataType, QString parameter1 = "", QString  parameter2 = "");
 

@@ -8,7 +8,7 @@ TRandom::~TRandom() {
 }
 
 QString TRandom::getPluginName() const {
-    return QString("Random");
+    return QString("Random number generator");
 }
 
 QString TRandom::getPluginInfo() const {
@@ -43,13 +43,24 @@ TConfigParam TRandom::setPostInitParams(TConfigParam params) {
     return m_postInitParams;
 }
 
-void TRandom::addIODevice(QString name, QString info, bool *ok) {
-    m_randomGenerators.append(new TRandomDevice(name, info));
+TIODevice * TRandom::addIODevice(QString name, QString info, bool *ok) {
+    TIODevice * ret = new TRandomDevice(name, info);
+    m_randomGenerators.append(ret);
     if(ok != nullptr) *ok = true;
+    return ret;
 }
 
-void TRandom::addScope(QString name, QString info, bool *ok) {
+TScope * TRandom::addScope(QString name, QString info, bool *ok) {
     if(ok != nullptr) *ok = false;
+    return nullptr;
+}
+
+bool TRandom::canAddIODevice() {
+    return true;
+}
+
+bool TRandom::canAddScope() {
+    return false;
 }
 
 QList<TIODevice *> TRandom::getIODevices() {

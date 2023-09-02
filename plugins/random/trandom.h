@@ -37,8 +37,11 @@ public:
     /// Set the post-initialization parameters, returns the current params after set
     virtual TConfigParam setPostInitParams(TConfigParam params) override;
 
-    virtual void addIODevice(QString name, QString info, bool *ok = nullptr) override;
-    virtual void addScope(QString name, QString info, bool *ok = nullptr) override;
+    virtual TIODevice * addIODevice(QString name, QString info, bool *ok = nullptr) override;
+    virtual TScope * addScope(QString name, QString info, bool *ok = nullptr) override;
+
+    virtual bool canAddIODevice() override;
+    virtual bool canAddScope() override;
 
     /// Get available IO devices, available only after init()
     virtual QList<TIODevice *> getIODevices() override;
