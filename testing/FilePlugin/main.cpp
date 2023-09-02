@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 				}
 				stream << "\n\n";
 
-                preParams.getSubParamByName("Read/Write mode")->setValue("ReadOnly");
+                preParams.getSubParamByName("Read/Write mode")->setValue("ReadWrite");
 				preParams.getSubParamByName("Write behaviour")->setValue("Truncate");
 				preParams.getSubParamByName("Type of file")->setValue("Text");
 
@@ -72,13 +72,14 @@ int main(int argc, char *argv[])
 				dummyFile->setPostInitParams(postParams);
 
 				uint8_t readBuffer[64] = {0, };
-				size_t readBytes = dummyFile->readData(readBuffer, 63);
+                size_t readBytes = dummyFile->readData(readBuffer, 10);
 
 				stream << "Read " << readBytes << " bytes: '" << (char *) readBuffer << "'" << endl;
 
 				postParams = dummyFile->getPostInitParams();
 				stream << "Current position in file is: " << postParams.getSubParamByName("Seek to position")->getValue() << endl;
 
+                dummyFile->deInit();
 
                 TIODevice * dummyFile2 = filePlugin->getIODevices().at(1);
 

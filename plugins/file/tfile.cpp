@@ -43,13 +43,25 @@ TConfigParam TFile::setPostInitParams(TConfigParam params) {
     return m_postInitParams;
 }
 
-void TFile::addIODevice(QString name, QString info, bool *ok) {
-    m_files.append(new TFileDevice(name, info, *this));
+TIODevice * TFile::addIODevice(QString name, QString info, bool *ok) {
+    TIODevice * ret = new TFileDevice(name, info, *this);
+    m_files.append(ret);
     if(ok != nullptr) *ok = true;
+    return ret;
 }
 
-void TFile::addScope(QString name, QString info, bool *ok) {
+TScope * TFile::addScope(QString name, QString info, bool *ok) {
     if(ok != nullptr) *ok = false;
+    return nullptr;
+}
+
+
+bool TFile::canAddIODevice() {
+    return true;
+}
+
+bool TFile::canAddScope() {
+    return false;
 }
 
 QList<TIODevice *> TFile::getIODevices() {
