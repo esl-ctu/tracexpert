@@ -3,8 +3,8 @@
 
 //Next:
 //TODO STDERR od Pythonu musí vyhodit QWarning
-//(sub)paramaters setting
-//Handle connected but unavailable CW
+//DEINI
+//NOTCN
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     m_preInitParams  = TConfigParam("Auto-detect", "true", TConfigParam::TType::TBool, "Automatically detect available NewAE devices", false);
@@ -75,7 +75,7 @@ TConfigParam TNewae::setPreInitParams(TConfigParam params) {
     }
 
     if(!_validatePreInitParamsStructure(params)) {
-        qCritical("Wrong structure of the pre-init params for TNewAE");
+        qCritical("Wrong structure of the pre-init params for TNewAE. If you provided a path to the python executable, please check whether the file exists.");
         return m_preInitParams;
     }
 
@@ -354,6 +354,18 @@ TIODevice * TNewae::addIODevice(QString name, QString info, bool *ok) {
 }
 
 TScope * TNewae::addScope(QString name, QString info, bool *ok) {
+    //Check if the scope exists
+    for (int i = 0; i < m_scopes.length(); ++i){
+        auto sc = m_scopes.at(i);
+        QString scId = sc->getScopeInfo();
+        if (scId == info) {
+            //Don't do anything, scope already exists
+            //No need to throw a warning
+            if(ok != nullptr) *ok = true;
+            return sc;
+        }
+    }
+
     if (numDevices + 1 != NO_CW_ID) {
         TnewaeScope * sc = new TnewaeScope(name, info, numDevices, this);
         m_scopes.append(sc);

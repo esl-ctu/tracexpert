@@ -31,6 +31,14 @@ def cwToStr(tmp):
     else:
         return str(tmp)
 
+##Handle error when CW is not connected
+def sendCWNotConnected():
+    cwID = line[0:2]
+    cwDict[cwID] = None
+
+    print("NOTCN", flush=True)
+    print("Connection to CW unsuccessful. Is it plugged in? CW object was destroyed, please re-intialize the CW scope!", flush=True, file=sys.stderr)
+
 ##Helper for pasing parameters from a string input
 ## Takes: Parameter in a form of a string
 ## Returns: Correctly typed parameter
@@ -95,7 +103,14 @@ def cwSetup(line, shm, cwDict):
         return
 
     if cwDict[cwID] != None:
-        cwDict[cwID].default_setup()
+        try:
+            cwDict[cwID].default_setup()
+        except:
+            print("Connection to CW unsuccessful. Is it plugged in? Error: " + traceback.format_exc(), flush=True, file=sys.stderr)
+            print("ERROR", flush=True)
+            cwDict[cwID] = None
+            return
+
         print("DONE", flush=True)
     else:
         print("ERROR", flush=True)
@@ -107,6 +122,10 @@ def cwSetup(line, shm, cwDict):
 def callCwFunc(line, shm, cwDict):
     cwID = line[0:2]
     scope = cwDict[cwID]
+    if scope == None:
+        sendCWNotConnected(line)
+        return
+
     noParams = False
 
     functionName = line[9:]
@@ -215,6 +234,10 @@ def callCwFunc(line, shm, cwDict):
 def cwParam(line, shm, cwDict):
     cwID = line[0:2]
     scope = cwDict[cwID]
+    if scope == None:
+        sendCWNotConnected(line)
+        return
+
     noValue = False
 
     params = line[9:]
@@ -262,7 +285,11 @@ def cwParam(line, shm, cwDict):
 ##Outputs: DONE/ERROR, subparameter value (to shm)
 def cwSubParam(line, shm, cwDict):
     cwID = line[0:2]
-    scope = cwDict[cwID]
+    scope == cwDict[cwID]
+    if scope = None:
+        sendCWNotConnected(line)
+        return
+
     noValue = False
     
     params = line[9:]
@@ -354,17 +381,35 @@ def main():
         elif line.startswith("SETUP", 4, 10):
             cwSetup(line, shm, cwDict)
 
+        ## Deinitialize one CW
+        elif line.startswith("DEINI", 4, 10):
+            cwID = line[0:2]
+            cwDict[cwID] = None
+            print("DONE", flush=True)
+
         ## Call a method from the CW package
         elif line.startswith("FUNC-", 4, 10):
-            callCwFunc(line, shm, cwDict)
+            tmpline = line
+            try:
+                callCwFunc(line, shm, cwDict)
+            except(USBError):
+                sendCWNotConnected(tmpline)
 
         ## Set or read a scope parameter
         elif line.startswith("PARA-", 4, 10):
-            cwParam(line, shm, cwDict)
+            tmpline = line
+            try:
+                cwParam(line, shm, cwDict)
+            except(USBError):
+                sendCWNotConnected(tmpline)
 
         ## Set or read a scope subparameter 
         elif line.startswith("SPAR-", 4, 10):
-            cwSubParam(line, shm, cwDict)
+            tmpline = line
+            try:
+                cwSubParam(line, shm, cwDict)
+            except(USBError):
+                sendCWNotConnected(tmpline)
 
         ## Exit
         elif line.startswith("HALT"):
