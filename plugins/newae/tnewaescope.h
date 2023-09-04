@@ -1,4 +1,5 @@
-
+#ifndef NEWAESCOPE_H
+#define NEWAESCOPE_H
 #pragma once
 
 #include "tnewae.h"
@@ -34,6 +35,8 @@ public:
     virtual size_t downloadSamples(int channel, uint8_t * buffer, size_t bufferSize,
                                    TSampleType & samplesType, size_t & samplesPerTraceDownloaded, size_t & tracesDownloaded) override;
 
+    uint8_t getId();
+    void notConnectedError();
 
 protected:
     QString sn;
@@ -54,4 +57,6 @@ protected:
     void _createPreInitParams();
     bool _validatePreInitParamsStructure(TConfigParam & params);
 };
+
+#endif //NEWAESCOPE_H
 

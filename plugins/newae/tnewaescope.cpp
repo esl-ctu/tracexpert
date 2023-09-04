@@ -9,6 +9,14 @@ TnewaeScope::TnewaeScope(const QString & name_in, const QString & sn_in, uint8_t
     plugin = plugin_in;
 }
 
+uint8_t TnewaeScope::getId(){
+    return cwId;
+}
+
+void TnewaeScope::notConnectedError() {
+    deInit();
+}
+
 void TnewaeScope::_createPreInitParams(){
     //TODO
 }
@@ -18,7 +26,11 @@ bool TnewaeScope::_validatePreInitParamsStructure(TConfigParam & params){
 }
 
 TnewaeScope::~TnewaeScope() {
-    //TODO
+    QString toSend;
+    QList<QString> params;
+    plugin->packageDataForPython(cwId, "DEINI", 0, params, toSend);
+    bool succ = plugin->writeToPython(cwId, toSend);
+    succ &= plugin->waitForPythonDone(cwId, true);
 }
 
 QString TnewaeScope::getScopeName() const{

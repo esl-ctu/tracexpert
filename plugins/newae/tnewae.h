@@ -1,6 +1,6 @@
 
-//#ifndef NEWAE_H
-//#define NEWAE_H
+#ifndef NEWAE_H
+#define NEWAE_H
 #pragma once
 
 #include "tnewae_global.h"
@@ -79,6 +79,8 @@ public:
     /// Returns true, when it is possible to add a Scope manually
     virtual bool canAddScope() override;
 
+    TnewaeScope * getCWScopeObjectById(uint8_t id);
+
     //In this block, cwId is only used for identification if the correct CW is being accessed
     bool writeToPython(uint8_t cwId, const QString &data, bool responseExpected = true, bool wait = true);
     bool readFromPython(uint8_t cwId, QString &data, bool wait = true);
@@ -120,6 +122,7 @@ protected:
     bool pythonError;
     bool deviceWaitingForRead;
     uint8_t waitingForReadDeviceId;
+    uint8_t lastCWActive;
     QString pythonPath;
 
     QList<TIODevice *> m_ports;
@@ -136,4 +139,4 @@ protected:
 };
 
 
-//#endif // NEWAE_H
+#endif // NEWAE_H

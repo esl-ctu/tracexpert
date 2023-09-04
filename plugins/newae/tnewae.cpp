@@ -4,7 +4,6 @@
 //Next:
 //TODO STDERR od Pythonu musí vyhodit QWarning
 //DEINI
-//NOTCN
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     m_preInitParams  = TConfigParam("Auto-detect", "true", TConfigParam::TType::TBool, "Automatically detect available NewAE devices", false);
@@ -15,6 +14,17 @@ TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     waitingForReadDeviceId = NO_CW_ID;
     pythonPath = "";
     m_initialized = false;
+}
+
+TnewaeScope * TNewae::getCWScopeObjectById(uint8_t id){
+    for (int i = 0; i < m_scopes.length(); ++i) {
+        TnewaeScope * sc = (TnewaeScope *) m_scopes.at(i);
+        uint8_t scId = sc->getId();
+        if (scId == id) {
+            return sc;
+        }
+    }
+    return NULL;
 }
 
 void TNewae::_createPreInitParams(){
@@ -532,6 +542,7 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpec
     }
     pythonReady = false;
     wait = true; //!!!!!
+    lastCWActive = cwId;
 
     int succ;
 
@@ -572,7 +583,12 @@ void TNewae::checkForPythonState(){
     } else if (buff.contains("STARTED")){
         pythonReady = true;
         pythonError = false;
-    } else if (buff.contains("ERROR")){
+    }else if (buff.contains("NOTCN")){
+        pythonReady = true;
+        pythonError = true;
+        TnewaeScope * sc = getCWScopeObjectById(lastCWActive);
+        sc->notConnectedError();
+    }else if (buff.contains("ERROR")){
         pythonReady = true;
         pythonError = true;
 

@@ -1,6 +1,6 @@
 
-//#ifndef TNEWAEDEVICE_H
-//#define TNEWAEDEVICE_H
+#ifndef TNEWAEDEVICE_H
+#define TNEWAEDEVICE_H
 #pragma once
 
 #include "tnewae_global.h"
@@ -51,4 +51,4 @@ protected:
 
 };
 
-//#endif // TNEWAEDEVICE_H
+#endif // TNEWAEDEVICE_H
