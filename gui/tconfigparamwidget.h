@@ -23,7 +23,7 @@ class TConfigParamWidget : public QTreeWidget
     Q_OBJECT
 
 public:
-    TConfigParamWidget(const TConfigParam & param, QWidget * parent = nullptr);
+    explicit TConfigParamWidget(const TConfigParam & param, QWidget * parent = nullptr);
     ~TConfigParamWidget();
 
 public slots:

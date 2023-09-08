@@ -6,19 +6,19 @@
 const QStringList TTimeEdit::TUnitNames = {"s", "ms", "μs", "ns", "ps"};
 
 TTimeEdit::TTimeEdit(QWidget * parent)
-    : QWidget{parent}
+    : QWidget(parent)
 {
-    lineEdit = new QLineEdit(this);
-    lineEdit->setValidator(new QDoubleValidator(this));
-    connect(lineEdit, &QLineEdit::textEdited, this, &TTimeEdit::emitTextEdited);
-
-    comboBox = new QComboBox(this);
-    comboBox->addItems(TUnitNames);
-    connect(comboBox, &QComboBox::currentIndexChanged, this, &TTimeEdit::emitTextEdited);
+    m_lineEdit = new QLineEdit(this);
+    m_lineEdit->setValidator(new QDoubleValidator(this));
+    connect(m_lineEdit, &QLineEdit::textEdited, this, &TTimeEdit::emitTextEdited);
+    
+    m_comboBox = new QComboBox(this);
+    m_comboBox->addItems(TUnitNames);
+    connect(m_comboBox, &QComboBox::currentIndexChanged, this, &TTimeEdit::emitTextEdited);
 
     QHBoxLayout * layout = new QHBoxLayout(this);
-    layout->addWidget(lineEdit);
-    layout->addWidget(comboBox);
+    layout->addWidget(m_lineEdit);
+    layout->addWidget(m_comboBox);
 
     layout->setSpacing(0);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -28,12 +28,12 @@ TTimeEdit::TTimeEdit(QWidget * parent)
 
 QString TTimeEdit::text() const
 {
-    qreal value = lineEdit->validator()->locale().toDouble(lineEdit->text());
-    value *= qPow(10, -3 * comboBox->currentIndex());
+    qreal value = m_lineEdit->validator()->locale().toDouble(m_lineEdit->text());
+    value *= qPow(10, -3 * m_comboBox->currentIndex());
     return QString::number(value);
 }
 
-void TTimeEdit::setText(const QString &text)
+void TTimeEdit::setText(const QString & text)
 {
     qreal value = text.toDouble();
     int unit = 0;
@@ -41,8 +41,8 @@ void TTimeEdit::setText(const QString &text)
         value *= 1000;
         unit++;
     }
-    lineEdit->setText(lineEdit->validator()->locale().toString(value));
-    comboBox->setCurrentIndex(unit);
+    m_lineEdit->setText(m_lineEdit->validator()->locale().toString(value));
+    m_comboBox->setCurrentIndex(unit);
 }
 
 void TTimeEdit::emitTextEdited()

@@ -14,23 +14,55 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
-include_directories(../common ads/src)
-
 add_subdirectory(ads)
 
-add_library(gui OBJECT
+add_library(${PROJECT_NAME} OBJECT
+  tdockmanager.cpp
+  tdockmanager.h
   tmainwindow.cpp
   tmainwindow.h
-  toscilloscopewidget.cpp
-  toscilloscopewidget.h
+  tscopewidget.cpp
+  tscopewidget.h
   tconfigparamwidget.cpp
   tconfigparamwidget.h
   tfilenameedit.cpp
   tfilenameedit.h
   ttimeedit.cpp
   ttimeedit.h
+  tiodevicewidget.cpp
+  tiodevicewidget.h
+  tdevicewizard.cpp
+  tdevicewizard.h
+  tdialog.cpp
+  tdialog.h
+  tiodevicemodel.cpp
+  tiodevicemodel.h
+  tcomponentmodel.cpp
+  tcomponentmodel.h
+  tscopemodel.cpp
+  tscopemodel.h
+  tpluginunitmodel.cpp
+  tpluginunitmodel.h
+  tpluginunitcontainer.cpp
+  tpluginunitcontainer.h
+  tpluginunitcontainerview.cpp
+  tpluginunitcontainerview.h
+  tcomponentcontainer.cpp
+  tcomponentcontainer.h
+  tiodevicecontainer.cpp
+  tiodevicecontainer.h
+  tscopecontainer.cpp
+  tscopecontainer.h
+  tprojectmodel.cpp
+  tprojectmodel.h
+  tprojectview.cpp
+  tprojectview.h
+  tprojectitem.cpp
+  tprojectitem.h
 )
 
-target_link_libraries(gui PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_include_directories(${PROJECT_NAME} PUBLIC ads/src)
 
-target_link_libraries(gui PRIVATE qt${QT_VERSION_MAJOR}advanceddocking)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE qt${QT_VERSION_MAJOR}advanceddocking)

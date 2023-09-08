@@ -102,7 +102,7 @@ void TConfigParamWidget::addParam(TConfigParam & param, QTreeWidgetItem * parent
     }
 }
 
-void TConfigParamWidget::drawLabel(const TConfigParam &param, QTreeWidgetItem *parent)
+void TConfigParamWidget::drawLabel(const TConfigParam & param, QTreeWidgetItem *parent)
 {
     QLabel * label = new QLabel(param.getName(), this);
     label->setToolTip(param.getHint());
@@ -212,6 +212,10 @@ void TConfigParamWidget::drawInput(const TConfigParam & param, QTreeWidgetItem *
 
 bool TConfigParamWidget::checkInput(TConfigParam & param, QTreeWidgetItem * parent)
 {
+    if (param.isReadonly()) {
+        return true;
+    }
+
     bool ok = true;
 
     TConfigParam::TType type = param.getType();
