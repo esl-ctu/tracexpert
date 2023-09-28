@@ -1,7 +1,10 @@
 
 #include "tnewaescope.h"
 
-TnewaeScope::TnewaeScope(const QString & name_in, const QString & sn_in, uint8_t id_in, TNewae * plugin_in) {
+TnewaeScope::TnewaeScope(const QString & name_in, const QString & sn_in, uint8_t id_in, TNewae * plugin_in, bool createdManually_in) {
+    m_createdManually = createdManually_in;
+    m_preInitParams = TConfigParam("NewAE SN: " + name_in + " config", "", TConfigParam::TType::TDummy, "");
+    _createPreInitParams();
     cwId = id_in;
     sn = sn_in;
     name = name_in;
@@ -14,15 +17,28 @@ uint8_t TnewaeScope::getId(){
 }
 
 void TnewaeScope::notConnectedError() {
-    deInit();
+    qWarning("%s", (QString("NewAE device with serial number ") + QString(sn) + QString(" was disconnected. Please de-init and re-init the scope and device.")).toLocal8Bit().constData());
 }
 
 void TnewaeScope::_createPreInitParams(){
-    //TODO
+    m_preInitParams.addSubParam(TConfigParam("Serial number", QString(""), TConfigParam::TType::TString,
+                                             "Serian number of the NewAE device. RO for autodetected devices.",
+                                             !m_createdManually));
 }
 
 bool TnewaeScope::_validatePreInitParamsStructure(TConfigParam & params){
-    //TODO
+    if (m_createdManually){
+        bool iok;
+        auto tmp = params.getSubParamByName("Serial number", &iok);
+        if(!iok) return false;
+
+        if (tmp->getValue().size() <= 0){
+            params.setState(TConfigParam::TState::TError, "Wrong structure of the pre-init params for NewAE scope.");
+            return false;
+        }
+    }
+
+    return true;
 }
 
 TnewaeScope::~TnewaeScope() {
@@ -56,11 +72,17 @@ TConfigParam TnewaeScope::setPreInitParams(TConfigParam params){
 }
 
 void TnewaeScope::init(bool *ok/* = nullptr*/){
+    bool succ = _validatePreInitParamsStructure(m_preInitParams);
+    if(!succ) {
+        if(ok != nullptr) *ok = false;
+        return;
+    }
+
     QString toSend;
     QList<QString> params;
     params.append(sn);
     plugin->packageDataForPython(cwId, "SETUP", 1, params, toSend);
-    bool succ = plugin->writeToPython(cwId, toSend);
+    succ = plugin->writeToPython(cwId, toSend);
     succ &= plugin->waitForPythonDone(cwId, true);
 
     if(!succ) {

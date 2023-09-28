@@ -18,6 +18,10 @@ def writeToSHM(line, shm):
     buffer = QByteArray(line)
     size = buffer.size()
 
+    if size > shmSize:
+        print("SHM is not large enough. Data would not fit!", flush=True, file=sys.stderr)
+        return
+
     shm.lock()
     _to = memoryview(shm.data()).cast('c')
     _from = buffer
@@ -37,7 +41,7 @@ def sendCWNotConnected():
     cwDict[cwID] = None
 
     print("NOTCN", flush=True)
-    print("Connection to CW unsuccessful. Is it plugged in? CW object was destroyed, please re-intialize the CW scope!", flush=True, file=sys.stderr)
+    print("Connection to CW unsuccessful. Is it plugged in? Was it initialized? Careful: The CW object was destroyed on this error, please re-intialize the CW scope!", flush=True, file=sys.stderr)
 
 ##Helper for pasing parameters from a string input
 ## Takes: Parameter in a form of a string
@@ -66,6 +70,20 @@ def smTest(line, shm):
 
     writeToSHM(line, shm)
     print("DONE", flush=True)
+
+def smSet(line):
+    global shmSize;
+    line = line[7:]
+    line = line.rstrip('\r\n')
+    try:
+        shmSize = int(line)
+    except:
+        print("Invalid SM size", flush=True, file=sys.stderr)
+        print("ERROR", flush=True)
+
+
+    print("DONE", flush=True)    
+
 
 ##Detect connected CW devices##
 ##Takes: <nothing>
@@ -286,7 +304,7 @@ def cwParam(line, shm, cwDict):
 def cwSubParam(line, shm, cwDict):
     cwID = line[0:2]
     scope == cwDict[cwID]
-    if scope = None:
+    if scope == None:
         sendCWNotConnected(line)
         return
 
@@ -363,15 +381,16 @@ def main():
     shm.attach()
      
     if not shm.isAttached():
-        print("Had to create SHM, the program may not work correctly.", file=sys.stderr)
-        if not shm.create(shmSize):
-            print("Unable to attach or even create SHM.", file=sys.stderr)
+        print("Unable to attach SHM.", file=sys.stderr)
 
     for line in sys.stdin:
         #print(line, flush=True, file=sys.stderr) # TODO!!! Remove!!
         ## Test shared memory
         if line.startswith("SMTEST:"):
             smTest(line, shm)
+
+        if line.startswith("SMSET:"):
+            smSet(line)
 
         ## Detect available CWs
         elif line.startswith(str(NO_CW_ID) + ",DETECT_DEVICES"):

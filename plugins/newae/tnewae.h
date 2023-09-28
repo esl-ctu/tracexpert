@@ -97,6 +97,7 @@ public:
 public slots:
     static void handlePythonError(QProcess::ProcessError error);
     void checkForPythonState();
+    void callbackPythonError();
 
 protected:
     void _createPreInitParams();
@@ -118,6 +119,7 @@ protected:
     void packagePythonSubparam(uint8_t cwId, QString paramName, QString subParamName, QString value, QString &out);
 
     uint8_t numDevices; //This counts the number of **seen** devices, not the number of connected devices. Use m_scopes.lenght() for that
+    uint8_t numActiveDevices;
     bool pythonReady;
     bool pythonError;
     bool deviceWaitingForRead;
@@ -135,7 +137,7 @@ protected:
     QProcess *pythonProcess;
 
     QString shmKey = PLUGIN_ID + "shm2";
-    const size_t shmSize = 1024*1024*1024;
+    size_t shmSize;
 };
 
 

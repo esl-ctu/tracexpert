@@ -1,12 +1,13 @@
 #include "tnewae.h"
-//TODO handle line separators - test - waht did I mean?
-
 //Next:
 //TODO STDERR od Pythonu musí vyhodit QWarning
-//DEINI
+//sériovka k targetu
+//počítadlo aktivních zařízení
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
-    m_preInitParams  = TConfigParam("Auto-detect", "true", TConfigParam::TType::TBool, "Automatically detect available NewAE devices", false);
+    _createPreInitParams();
+    m_preInitParams  = TConfigParam("NewAE pre-init configuration", "", TConfigParam::TType::TDummy, "");
+
     numDevices = 0;
     pythonReady = false;
     pythonError = false;
@@ -14,6 +15,7 @@ TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     waitingForReadDeviceId = NO_CW_ID;
     pythonPath = "";
     m_initialized = false;
+    numActiveDevices = 0;
 }
 
 TnewaeScope * TNewae::getCWScopeObjectById(uint8_t id){
@@ -28,6 +30,13 @@ TnewaeScope * TNewae::getCWScopeObjectById(uint8_t id){
 }
 
 void TNewae::_createPreInitParams(){
+    m_preInitParams.addSubParam(TConfigParam("Auto-detect", "true", TConfigParam::TType::TBool, "Automatically detect available NewAE devices", false));
+
+    TConfigParam tmp = TConfigParam("Shared memory size", "true", TConfigParam::TType::TInt, "Size of the memory shared between the python NewAE libraries and TraceXpert. \
+                                             In kilobytes. Keep in mind that all numbers are transmetted as strings and as decimals. One int micht need up to 11 bytes of SHM.", false);
+    tmp.setValue("1024");
+    m_preInitParams.addSubParam(tmp);
+
     m_preInitParams.addSubParam(TConfigParam("Path to python executable", QString(""), TConfigParam::TType::TString,
                                              "Path at which the python executable is located. At least python 3.11 is needed. \
                                              Leve blank to use python that us already installed and can be found in PATH. QT for python must also be installed",
@@ -43,15 +52,24 @@ bool TNewae::_validatePreInitParamsStructure(TConfigParam & params){
     QString path = par->getValue();
     if (path == "") {
         pythonPath = "python";
-        return true;
-    }
-
-    if (QFile::exists(path)) {
+    } else if (QFile::exists(path)) {
         pythonPath = path;
-        return true;
+    } else {
+        params.setState(TConfigParam::TState::TError, "Wrong structure of the pre-init params for NewAE plugin/component.");
+        return false;
     }
 
-    return false;
+    auto tmp = m_preInitParams.getSubParamByName("Shared memory size", &iok);
+    if(!iok) return false;
+
+    shmSize = 1024 * tmp->getValue().toInt();
+
+    if (shmSize == 0) {
+        params.setState(TConfigParam::TState::TError, "Wrong structure of the pre-init params for NewAE plugin/component.");
+        return false;
+    }
+
+    return true;
 }
 
 TNewae::~TNewae() {
@@ -125,6 +143,20 @@ bool TNewae::setUpSHM(){
         qCritical("Failed to set up shared memory.");
         return false;
     }
+
+    succ = writeToPython(NO_CW_ID, "SMSET:" + QString::number(shmSize) + lineSeparator);
+    if (!succ){
+        qCritical("Failed to send data to Python when setting up the shared memory.");
+        return false;
+    }
+
+    succ = waitForPythonDone(NO_CW_ID, true);
+    succ &= !pythonError;
+    if (!succ){
+        qCritical("Python was not able to set SHM size.");
+        return false;
+    }
+
     return true;
 }
 
@@ -136,13 +168,14 @@ bool TNewae::setUpPythonProcess(){
     arguments << runDir + "/executable.py";
 
     pythonProcess = new QProcess;
-    pythonProcess->setProcessChannelMode(QProcess::ForwardedErrorChannel);
+    pythonProcess->setProcessChannelMode(QProcess::SeparateChannels);
     pythonProcess->setProgram(program);
     pythonProcess->setArguments(arguments);
     pythonProcess->start();
     pythonProcess->setReadChannel(QProcess::StandardOutput);
     QObject::connect(pythonProcess, SIGNAL(errorOccurred(QProcess::ProcessError)), this,  SLOT(handlePythonError(QProcess::ProcessError)));
     QObject::connect(pythonProcess, SIGNAL(readyReadStandardOutput()), this,  SLOT(checkForPythonState()));
+    QObject::connect(pythonProcess, SIGNAL(readyReadStandardError()), this,  SLOT(callbackPythonError()));
     bool succ = pythonProcess->waitForStarted(PROCESS_WAIT_MSCECS); //wait max 30 seconds
     if (!succ){
         qCritical("Failed to start the python component. Did you provide a path to the correct executable? Or do you have python3 installed and symlinked as \"python\"?");
@@ -272,6 +305,13 @@ bool TNewae::autodetectDevices(QList<std::pair<QString, QString>> & devices) {
 
 void TNewae::init(bool *ok) {
     bool succ;
+    bool autodetect = m_preInitParams.getSubParamByName("Auto-detect")->getValue() == "true";
+
+    succ = _validatePreInitParamsStructure(m_preInitParams);
+    if(!succ) {
+        if(ok != nullptr) *ok = false;
+        return;
+    }
 
     //Create and attach the memory that's shared between C++ and the python process
     succ = setUpSHM();
@@ -294,25 +334,27 @@ void TNewae::init(bool *ok) {
         return;
     }
 
-    //Auto detect devices
-    QList<std::pair<QString, QString>> devices;
-    succ = autodetectDevices(devices);
-    if(!succ) {
-        if(ok != nullptr) *ok = false;
-        return;
-    }
-
-    //Append available devices to m_scopes
-    for(size_t i = 0; i < devices.size(); ++i) {
-        addScope(devices.at(i).first, devices.at(i).second, &succ);
+    if(autodetect){
+        //Auto detect devices
+        QList<std::pair<QString, QString>> devices;
+        succ = autodetectDevices(devices);
         if(!succ) {
             if(ok != nullptr) *ok = false;
             return;
         }
-    }
 
-    if (!numDevices){
-        qWarning("No devices autodetected.");
+        //Append available devices to m_scopes
+        for(size_t i = 0; i < devices.size(); ++i) {
+            addScope(devices.at(i).first, devices.at(i).second, &succ);
+            if(!succ) {
+                if(ok != nullptr) *ok = false;
+                return;
+            }
+        }
+
+        if (!numDevices){
+            qWarning("No devices autodetected.");
+        }
     }
 
     if(ok != nullptr) *ok = true;
@@ -377,7 +419,7 @@ TScope * TNewae::addScope(QString name, QString info, bool *ok) {
     }
 
     if (numDevices + 1 != NO_CW_ID) {
-        TnewaeScope * sc = new TnewaeScope(name, info, numDevices, this);
+        TnewaeScope * sc = new TnewaeScope(name, info, numDevices, this, false);
         m_scopes.append(sc);
         numDevices++;
         if(ok != nullptr) *ok = true;
@@ -568,6 +610,11 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpec
     }
 
     return true;
+}
+
+void TNewae::callbackPythonError() {
+    QString data = pythonProcess->readAllStandardError();
+    qWarning("%s", (("NewAE python component returned the following error (this might or might not be recoverable): " + data)).toLocal8Bit().constData());
 }
 
 void TNewae::checkForPythonState(){

@@ -11,7 +11,7 @@ class TNewae;
 
 class TnewaeScope: public TScope {
 public:
-    TnewaeScope(const QString & name_in, const QString & sn_in, uint8_t id_in, TNewae * plugin_in);
+    TnewaeScope(const QString & name_in, const QString & sn_in, uint8_t id_in, TNewae * plugin_in, bool createdManually_in = true);
     virtual ~TnewaeScope();
 
     virtual QString getScopeName() const override;
