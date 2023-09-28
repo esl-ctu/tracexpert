@@ -1,6 +1,5 @@
 #include "tnewae.h"
 //Next:
-//TODO STDERR od Pythonu musí vyhodit QWarning
 //sériovka k targetu
 //počítadlo aktivních zařízení
 
