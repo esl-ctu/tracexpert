@@ -162,6 +162,8 @@ TConfigParam TnewaeScope::getPostInitParams() const{
 }
 
 TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){
+    //TODO!!
+    //Natsavení osciloskopu!
     m_postInitParams = params;
     return m_postInitParams;
 }
