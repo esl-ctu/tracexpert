@@ -405,11 +405,26 @@ TIODevice * TNewae::addIODevice(QString name, QString info, bool *ok) {
 }
 
 TScope * TNewae::addScope(QString name, QString info, bool *ok) {
+    if (numDevices + 1 != NO_CW_ID) {
+        TnewaeScope * sc;
+        sc = new TnewaeScope(name, info, numDevices, this, true);
+        m_scopes.append(sc);
+        numDevices++;
+        if(ok != nullptr) *ok = true;
+        return sc;
+    } else {
+        qCritical("Number of available Chipwhisperer slots exceeded. Please de-init and re-init the plugin/component to continue.");
+        if(ok != nullptr) *ok = false;
+        return NULL;
+    }
+}
+
+TScope * TNewae::addScopeAutomatically(QString name, QString info, bool *ok) {
     //Check if the scope exists
     for (int i = 0; i < m_scopes.length(); ++i){
-        auto sc = m_scopes.at(i);
-        QString scId = sc->getScopeInfo();
-        if (scId == info) {
+        TnewaeScope * sc = (TnewaeScope *) m_scopes.at(i);
+        QString scSn = sc->getScopeSn();
+        if (scSn == info) {
             //Don't do anything, scope already exists
             //No need to throw a warning
             if(ok != nullptr) *ok = true;
@@ -418,7 +433,8 @@ TScope * TNewae::addScope(QString name, QString info, bool *ok) {
     }
 
     if (numDevices + 1 != NO_CW_ID) {
-        TnewaeScope * sc = new TnewaeScope(name, info, numDevices, this, false);
+        TnewaeScope * sc;
+        sc = new TnewaeScope(name, info, numDevices, this, false);
         m_scopes.append(sc);
         numDevices++;
         if(ok != nullptr) *ok = true;
@@ -678,6 +694,48 @@ bool TNewae::waitForPythonDone(uint8_t cwId, bool discardOutput, int timeout/* =
     return true;
 }
 
+bool TNewae::getTracesFromShm(size_t &numTraces, size_t &traceSize, QList<double> &data){
+    char* numTracesAddr;
+    char* traceSizeAddr;
+    bool succ, succ2;
+
+    succ = shm.lock();
+
+    char * shmData = (char *) (shm.data());
+    numTracesAddr = shmData + SM_NUM_TRACES_ADDR;
+    QString numTracesStr = "";
+    for (int i = 0; i < ADDR_SIZE; ++i){
+        numTracesStr += numTracesAddr[i];
+    }
+    numTraces = numTracesStr.toULongLong(&succ2, 16);
+    succ &= succ2;
+
+    traceSizeAddr = shmData + SM_TRACE_SIZE_ADDR;
+    QString traceSizeStr = "";
+    for (int i = 0; i < ADDR_SIZE; ++i){
+        traceSizeStr += traceSizeAddr[i];
+    }
+    traceSize = traceSizeStr.toULongLong(&succ2, 16);
+    succ &= succ2;
+
+    double* traceData = (double*) shmData + SM_TRACES_ADDR;
+
+    //Get data
+    data.clear();
+    try {
+        data.reserve(traceSize * numTraces + 1);
+    } catch (const std::bad_alloc& e) {
+        qCritical("Unable to reserve enough memory to read from SHM. Wanted to reserve: %zu", traceSize * numTraces + 1);
+        return false;
+    }
+    for (int i = 0; i < traceSize * numTraces; ++i){
+        data.append(shmData[i]);
+    }
+
+    succ = succ & shm.unlock();
+    return succ;
+}
+
 bool TNewae::getDataFromShm(size_t &size, QString &data){
     char* dataLenAddr;
     bool succ, succ2;
@@ -701,6 +759,7 @@ bool TNewae::getDataFromShm(size_t &size, QString &data){
         data.reserve(size + 1);
     } catch (const std::bad_alloc& e) {
         qCritical("Unable to reserve enough memory to read from SHM. Wanted to reserve: %zu", size);
+        return false;
     }
 
     for(size_t i = 0; i < size; ++i){

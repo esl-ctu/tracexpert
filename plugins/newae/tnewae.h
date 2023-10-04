@@ -23,9 +23,14 @@
 //! THIS CLASS IS NOT THREAD SAFE !
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+class TnewaeScope;
+
 const std::size_t ADDR_SIZE = 16;
 const std::size_t SM_SIZE_ADDR = 0;
 const std::size_t SM_DATA_ADDR = SM_SIZE_ADDR + ADDR_SIZE;
+const std::size_t SM_NUM_TRACES_ADDR = 0;
+const std::size_t SM_TRACE_SIZE_ADDR = SM_NUM_TRACES_ADDR + ADDR_SIZE;
+const std::size_t SM_TRACES_ADDR = SM_TRACE_SIZE_ADDR + ADDR_SIZE;
 const int PROCESS_WAIT_MSCECS = 10000;
 const char fieldSeparator = ',';
 const char lineSeparator = '\n';
@@ -68,6 +73,8 @@ public:
 
     virtual TIODevice * addIODevice(QString name, QString info, bool *ok = nullptr) override;
     virtual TScope * addScope(QString name, QString info, bool *ok = nullptr) override;
+    //Never call this manually!
+    TScope * addScopeAutomatically(QString name, QString info, bool *ok = nullptr);
 
     /// Get available IO devices, available only after init()
     virtual QList<TIODevice *> getIODevices() override;
@@ -94,6 +101,8 @@ public:
     bool setPythonParameter(int8_t cwId, QString paramName, QString value, QString &out); //Out is the new value of the parameter, can be discarded
     bool setPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString value, QString &out); //Out is the new value of the subparameter, can be discarded
 
+    bool getTracesFromShm(size_t &numTraces, size_t &traceSize, QList<double> &data);
+
 public slots:
     static void handlePythonError(QProcess::ProcessError error);
     void checkForPythonState();
@@ -112,6 +121,7 @@ protected:
     bool autodetectDevices(QList<std::pair<QString, QString>> & devices);
 
     bool getDataFromShm(size_t &size, QString &data);
+
 
     //In this block, CW is super important
     void packagePythonFunction(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);

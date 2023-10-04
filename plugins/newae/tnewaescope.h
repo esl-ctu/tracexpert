@@ -11,11 +11,13 @@ class TNewae;
 
 class TnewaeScope: public TScope {
 public:
-    TnewaeScope(const QString & name_in, const QString & sn_in, uint8_t id_in, TNewae * plugin_in, bool createdManually_in = true);
+    //Should never be called directly. If you need to create a scope manually, use the addScope() function from Tnewae and make sure that the info string is empty!
+    TnewaeScope(const QString & name_in, const QString & info_in, uint8_t id_in, TNewae * plugin_in, bool createdManually_in = true);
     virtual ~TnewaeScope();
 
     virtual QString getScopeName() const override;
     virtual QString getScopeInfo() const override;
+    QString getScopeSn() const;
 
     virtual TConfigParam getPreInitParams() const override;
     virtual TConfigParam setPreInitParams(TConfigParam params) override;
@@ -37,11 +39,13 @@ public:
 
     uint8_t getId();
     void notConnectedError();
+    bool isInitialized();
 
 protected:
     QString sn;
     uint8_t cwId;
     QString name;
+    QString info;
     TNewae * plugin;
 
     bool m_createdManually;
@@ -54,7 +58,7 @@ protected:
     qint32 m_writeTimeout;
     bool m_initialized;
 
-    void _createPreInitParams();
+    //void _createPreInitParams();
     bool _validatePreInitParamsStructure(TConfigParam & params);
 };
 
