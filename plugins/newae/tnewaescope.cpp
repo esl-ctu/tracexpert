@@ -122,7 +122,6 @@ TConfigParam TnewaeScope::setPreInitParams(TConfigParam params){
 void TnewaeScope::init(bool *ok/* = nullptr*/){
     bool succ = _validatePreInitParamsStructure(m_preInitParams);
     if(!succ) {
-        qWarning("a");
         if(ok != nullptr) *ok = false;
         return;
     }
@@ -130,7 +129,6 @@ void TnewaeScope::init(bool *ok/* = nullptr*/){
 
     auto tmpSn = m_preInitParams.getSubParamByName("Serial number", &succ);
     if(!succ) {
-        qWarning("b");
         if(ok != nullptr) *ok = false;
         return;
     }
@@ -144,7 +142,6 @@ void TnewaeScope::init(bool *ok/* = nullptr*/){
     succ &= plugin->waitForPythonDone(cwId, true);
 
     if(!succ) {
-        qWarning("c");
         if(ok != nullptr) *ok = false;
         return;
     }

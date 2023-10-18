@@ -31,9 +31,8 @@ TnewaeScope * TNewae::getCWScopeObjectById(uint8_t id){
 void TNewae::_createPreInitParams(){
     m_preInitParams.addSubParam(TConfigParam("Auto-detect", "true", TConfigParam::TType::TBool, "Automatically detect available NewAE devices", false));
 
-    TConfigParam tmp = TConfigParam("Shared memory size", "true", TConfigParam::TType::TInt, "Size of the memory shared between the python NewAE libraries and TraceXpert. \
+    TConfigParam tmp = TConfigParam("Shared memory size", "1024", TConfigParam::TType::TInt, "Size of the memory shared between the python NewAE libraries and TraceXpert. \
                                              In kilobytes. Keep in mind that all numbers are transmetted as strings and as decimals. One int micht need up to 11 bytes of SHM.", false);
-    tmp.setValue("1024");
     m_preInitParams.addSubParam(tmp);
 
     m_preInitParams.addSubParam(TConfigParam("Path to python executable", QString(""), TConfigParam::TType::TString,
@@ -594,7 +593,6 @@ bool TNewae::setPythonSubparameter(int8_t cwId, QString paramName, QString subPa
 
 bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpected/* = true*/, bool wait/* = true*/){
     if (!pythonReady){
-        qDebug("c");
         return false;
     }
     pythonReady = false;
@@ -606,7 +604,6 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpec
     succ = pythonProcess->write(data.toLocal8Bit().constData());
 
     if (succ == -1){
-        qDebug("a");
         return false;
     }
 
@@ -615,7 +612,6 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpec
     }
 
     if (succ == -1){
-        qDebug("b");
         return false;
     }
 
@@ -753,8 +749,6 @@ bool TNewae::getDataFromShm(size_t &size, QString &data){
     }
     shmData += SM_DATA_ADDR;
     size = sizeStr.toULongLong(&succ2, 16);
-    if (!succ2) qDebug("Je to ulong");
-    qDebug("%zu", size);
     succ &= succ2;
 
     //Get data
