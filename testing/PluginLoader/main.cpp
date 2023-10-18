@@ -132,6 +132,18 @@ int main(int argc, char *argv[])
                                 stream << "** Scope ID 0 init failed" << Qt::endl;
                             } else {
                                 stream << "** Scope ID 0 init ok" << Qt::endl;
+                                size_t samplesPerTraceDownloaded, tracesDownloaded, bufferSize;
+                                uint8_t buf[50000];
+                                TScope::TSampleType stype;
+
+                                a[0]->downloadSamples(0, buf, 50000, stype, samplesPerTraceDownloaded, tracesDownloaded);
+
+                                double * buf2 = (double *) buf;
+
+                                for(int i = 0; i < samplesPerTraceDownloaded*tracesDownloaded; i++){
+                                    stream << buf2[i];
+                                }
+                                stream << Qt::endl;
                             }
                         }
                     }

@@ -4,8 +4,8 @@
 //počítadlo aktivních zařízení
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
-    _createPreInitParams();
     m_preInitParams  = TConfigParam("NewAE pre-init configuration", "", TConfigParam::TType::TDummy, "");
+    _createPreInitParams();
 
     numDevices = 0;
     pythonReady = false;
@@ -143,19 +143,6 @@ bool TNewae::setUpSHM(){
         return false;
     }
 
-    succ = writeToPython(NO_CW_ID, "SMSET:" + QString::number(shmSize) + lineSeparator);
-    if (!succ){
-        qCritical("Failed to send data to Python when setting up the shared memory.");
-        return false;
-    }
-
-    succ = waitForPythonDone(NO_CW_ID, true);
-    succ &= !pythonError;
-    if (!succ){
-        qCritical("Python was not able to set SHM size.");
-        return false;
-    }
-
     return true;
 }
 
@@ -238,7 +225,6 @@ bool TNewae::testSHM() {
 }
 
 bool TNewae::autodetectDevices(QList<std::pair<QString, QString>> & devices) {
-    if(m_preInitParams.getName() == "Auto-detect" && m_preInitParams.getValue() == "true") {
         //Send data to python
         QString toSend;
         QList<QString> params;
@@ -298,7 +284,6 @@ bool TNewae::autodetectDevices(QList<std::pair<QString, QString>> & devices) {
             //Insert the device into the list for allocation
             devices.append(std::make_pair(name, sn));
         }
-    }
     return true;
 }
 
@@ -326,6 +311,20 @@ void TNewae::init(bool *ok) {
         return;
     }
 
+    //Finish setting up the SHM
+    succ = writeToPython(NO_CW_ID, "SMSET:" + QString::number(shmSize) + lineSeparator);
+    if (!succ){
+        if(ok != nullptr) *ok = false;
+        return;
+    }
+
+    succ = waitForPythonDone(NO_CW_ID, true);
+    succ &= !pythonError;
+    if (!succ){
+        if(ok != nullptr) *ok = false;
+        return;
+    }
+
     //Test shared memory
     succ = testSHM();
     if(!succ) {
@@ -344,7 +343,7 @@ void TNewae::init(bool *ok) {
 
         //Append available devices to m_scopes
         for(size_t i = 0; i < devices.size(); ++i) {
-            addScope(devices.at(i).first, devices.at(i).second, &succ);
+            addScopeAutomatically(devices.at(i).first, devices.at(i).second, &succ);
             if(!succ) {
                 if(ok != nullptr) *ok = false;
                 return;
@@ -595,6 +594,7 @@ bool TNewae::setPythonSubparameter(int8_t cwId, QString paramName, QString subPa
 
 bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpected/* = true*/, bool wait/* = true*/){
     if (!pythonReady){
+        qDebug("c");
         return false;
     }
     pythonReady = false;
@@ -606,6 +606,7 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpec
     succ = pythonProcess->write(data.toLocal8Bit().constData());
 
     if (succ == -1){
+        qDebug("a");
         return false;
     }
 
@@ -614,6 +615,7 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpec
     }
 
     if (succ == -1){
+        qDebug("b");
         return false;
     }
 
@@ -694,7 +696,7 @@ bool TNewae::waitForPythonDone(uint8_t cwId, bool discardOutput, int timeout/* =
     return true;
 }
 
-bool TNewae::getTracesFromShm(size_t &numTraces, size_t &traceSize, QList<double> &data){
+/*bool TNewae::getTracesFromShm(size_t &numTraces, size_t &traceSize, QList<double> &data){
     char* numTracesAddr;
     char* traceSizeAddr;
     bool succ, succ2;
@@ -734,7 +736,7 @@ bool TNewae::getTracesFromShm(size_t &numTraces, size_t &traceSize, QList<double
 
     succ = succ & shm.unlock();
     return succ;
-}
+}*/
 
 bool TNewae::getDataFromShm(size_t &size, QString &data){
     char* dataLenAddr;
@@ -751,6 +753,8 @@ bool TNewae::getDataFromShm(size_t &size, QString &data){
     }
     shmData += SM_DATA_ADDR;
     size = sizeStr.toULongLong(&succ2, 16);
+    if (!succ2) qDebug("Je to ulong");
+    qDebug("%zu", size);
     succ &= succ2;
 
     //Get data

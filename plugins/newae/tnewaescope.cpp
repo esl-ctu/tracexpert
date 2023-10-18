@@ -18,6 +18,7 @@ TnewaeScope::TnewaeScope(const QString & name_in, const QString & info_in, uint8
     m_initialized = false;
     plugin = plugin_in;
     info = info_in;
+    traceWaitingForRead = false;
 }
 
 uint8_t TnewaeScope::getId(){
@@ -36,9 +37,13 @@ bool TnewaeScope::_validatePreInitParamsStructure(TConfigParam & params){
     if (m_createdManually){
         bool iok;
         auto tmp = params.getSubParamByName("Serial number", &iok);
-        if(!iok) return false;
+        if(!iok) {
+            qDebug("Parameter does not exist");
+            return false;
+        }
 
         if (tmp->getValue().size() <= 0){
+            qDebug("Wrong structure of the pre-init params for NewAE scope.");
             params.setState(TConfigParam::TState::TError, "Wrong structure of the pre-init params for NewAE scope.");
             return false;
         }
@@ -59,7 +64,8 @@ bool TnewaeScope::_validatePreInitParamsStructure(TConfigParam & params){
             }
 
             if (notInitializedScopesCounter != 1) {
-                qWarning("All other uninitalized devices need to be initialize first. Please initialize all autodetected devices and add only one manual device at a time.");
+                qWarning("All other uninitalized devices need to be initialized first. Please initialize all autodetected devices and add only one manual device at a time.");
+                return false;
             }
 
             sn = tmp->getValue();
@@ -116,6 +122,7 @@ TConfigParam TnewaeScope::setPreInitParams(TConfigParam params){
 void TnewaeScope::init(bool *ok/* = nullptr*/){
     bool succ = _validatePreInitParamsStructure(m_preInitParams);
     if(!succ) {
+        qWarning("a");
         if(ok != nullptr) *ok = false;
         return;
     }
@@ -123,6 +130,7 @@ void TnewaeScope::init(bool *ok/* = nullptr*/){
 
     auto tmpSn = m_preInitParams.getSubParamByName("Serial number", &succ);
     if(!succ) {
+        qWarning("b");
         if(ok != nullptr) *ok = false;
         return;
     }
@@ -136,6 +144,7 @@ void TnewaeScope::init(bool *ok/* = nullptr*/){
     succ &= plugin->waitForPythonDone(cwId, true);
 
     if(!succ) {
+        qWarning("c");
         if(ok != nullptr) *ok = false;
         return;
     }
@@ -169,15 +178,50 @@ TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){
 }
 
 void TnewaeScope::run(bool *ok){
-    //TODO
+    //Comment: This function could probably use capture_segmented from the CW docs. However, the timeout is not handled on the CW side yet
+    //         It would be a good idea to use that function once newae fixes that
+    bool succ;
+    QList<QString> params;
+    size_t dataLen;
+    QString response;
+
+    params.clear();
+    succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "capture", 0, params, dataLen, response);
+
+    if (!succ) {
+        qDebug("Error sending the capture command. This does not necessarily mean a timeout.");
+        if(ok != nullptr) *ok = false;
+    }
+
+    if (response != "False") {
+        qDebug("%s", (QString("Capture timed out. CW reponse to timeot querry: ") + QString(response)).toLocal8Bit().constData());
+        if(ok != nullptr) *ok = false;
+    }
+
+    traceWaitingForRead = true;
+
+    if(ok != nullptr) *ok = true;
+
 }
 void TnewaeScope::stop(bool *ok){
-    //TODO
+    qDebug("The run method for newae is blocking. This stop() method does not do anything. The capture cannot be running when calling this.");
+    if(ok != nullptr) *ok = true;
 }
 
 size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t bufferSize,
                                     TSampleType & samplesType, size_t & samplesPerTraceDownloaded, size_t & tracesDownloaded){
-    QList<double> traces;
+    samplesType = TSampleType::TReal64;
+    samplesPerTraceDownloaded = 0;
+    tracesDownloaded = 0;
+
+    if (channel != 0) {
+        qWarning("Wriong channel!");
+        return 0;
+    }
+
+    //The following is future code for downloading multiple traces - it relies on getTracesFromShm() which is done
+    //and on support in python which is very much not done
+    /*QList<double> traces;
     bool ok = plugin->getTracesFromShm(tracesDownloaded, samplesPerTraceDownloaded, traces);
     if (!ok) {
         return 0;
@@ -188,9 +232,38 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
     size_t i = 0;
     for (; (i < internalSize) && (i < tracesDownloaded * samplesPerTraceDownloaded); ++i){
         internalBuffer[i] = traces.at(i);
+    }*/
+
+    if (!traceWaitingForRead) {
+        run();
     }
 
-    samplesType = TSampleType::TReal64;
+    if (!traceWaitingForRead) {
+        return 0;
+    }
 
-    return i;
+    bool succ;
+    QList<QString> params;
+    size_t dataLen;
+    QString response;
+
+    params.clear();
+    params.append("false"); //Get traces as doubles
+    succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "get_last_trace", params.count(), params, dataLen, response);
+
+    if (!succ) {
+        qDebug("Error sending the get_last_trace command.");
+        return 0;
+    }
+
+    traceWaitingForRead = false;
+
+    tracesDownloaded = 1;
+    samplesPerTraceDownloaded = dataLen/8;
+
+    size_t maxSize = dataLen > bufferSize ? bufferSize : dataLen;
+
+    memcpy(buffer, response.toLocal8Bit().constData(), maxSize);
+
+    return maxSize;
 }

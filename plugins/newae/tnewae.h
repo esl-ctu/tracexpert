@@ -101,7 +101,7 @@ public:
     bool setPythonParameter(int8_t cwId, QString paramName, QString value, QString &out); //Out is the new value of the parameter, can be discarded
     bool setPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString value, QString &out); //Out is the new value of the subparameter, can be discarded
 
-    bool getTracesFromShm(size_t &numTraces, size_t &traceSize, QList<double> &data);
+    //bool getTracesFromShm(size_t &numTraces, size_t &traceSize, QList<double> &data);
 
 public slots:
     static void handlePythonError(QProcess::ProcessError error);

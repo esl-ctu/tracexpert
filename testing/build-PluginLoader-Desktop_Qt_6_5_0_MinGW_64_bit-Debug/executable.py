@@ -12,6 +12,7 @@ FIELD_SEPARATOR = ','
 LINE_SEPARATOR = '\n'
 shmKey = PLUGIN_ID + "shm2"
 shmSize = 1024*1024*1024
+shm = QSharedMemory()
 
 ##Write to shared memory##
 def writeToSHM(line, shm):
@@ -31,7 +32,10 @@ def writeToSHM(line, shm):
 ##Helper to potentially convert a numpy array to string##
 def cwToStr(tmp):
     if isinstance(tmp, np.ndarray):
-        return np.array2string(tmp)
+        np.set_printoptions(threshold=sys.maxsize)
+        #return np.array2string(tmp)
+        #return list(tmp)
+        return tmp.tobytes()
     else:
         return str(tmp)
 
@@ -64,7 +68,7 @@ def parseParameter(parameter):
 
 ##Test shared memory##
 def smTest(line, shm):
-    line = line[7:]
+    line = line[6:]
     line = line.rstrip('\r\n')
     line = "{:016x}".format(len(line)) + line
 
@@ -72,7 +76,9 @@ def smTest(line, shm):
     print("DONE", flush=True)
 
 def smSet(line):
-    global shmSize;
+    global shmSize
+    global shm
+
     line = line[7:]
     line = line.rstrip('\r\n')
     try:
@@ -81,6 +87,11 @@ def smSet(line):
         print("Invalid SM size", flush=True, file=sys.stderr)
         print("ERROR", flush=True)
 
+    shm.setKey(shmKey)
+    shm.attach()
+
+    if not shm.isAttached():
+        print("Unable to attach SHM.", file=sys.stderr)
 
     print("DONE", flush=True)    
 
@@ -238,8 +249,12 @@ def callCwFunc(line, shm, cwDict):
         errorMessage = "The Python CW function raised this exception: " + traceback.format_exc()
         print(errorMessage, flush=True, file=sys.stderr)
 
-
-    ret = "{:016x}".format(len(ret)) + ret
+    if isinstance(ret, bytes):
+        tmpLen = "{:016x}".format(len(ret))
+        #tmpRet = QByteArray(ret)
+        ret = bytes(tmpLen, 'ascii') + ret
+    else:
+        ret = "{:016x}".format(len(ret)) + ret
     
     writeToSHM(ret, shm)
 
@@ -375,13 +390,6 @@ def main():
     print("STARTED", flush=True)
 
     cwDict = dict()
-
-    shm = QSharedMemory()
-    shm.setKey(shmKey)
-    shm.attach()
-     
-    if not shm.isAttached():
-        print("Unable to attach SHM.", file=sys.stderr)
 
     for line in sys.stdin:
         #print(line, flush=True, file=sys.stderr) # TODO!!! Remove!!
