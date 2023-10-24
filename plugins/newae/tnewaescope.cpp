@@ -21,6 +21,89 @@ TnewaeScope::TnewaeScope(const QString & name_in, const QString & info_in, uint8
     traceWaitingForRead = false;
 }
 
+TConfigParam TnewaeScope::_createPostInitParams(){
+    auto top = TConfigParam("NewAE scope sn: " + sn + " config", "", TConfigParam::TType::TDummy, "");
+
+    auto gain = TConfigParam("Gain", "", TConfigParam::TType::TDummy, "GainSettings");
+    auto adc = TConfigParam("ADC", "", TConfigParam::TType::TDummy, "TriggerSettings");
+    auto clock = TConfigParam("Clock", "", TConfigParam::TType::TDummy, "ClockSettings");
+    auto io = TConfigParam("IO", "", TConfigParam::TType::TDummy, "GPIOSettings");
+    auto trigger = TConfigParam("Trigger", "", TConfigParam::TType::TDummy, "");
+    auto glitch = TConfigParam("Glitch", "", TConfigParam::TType::TDummy, "");
+
+    //Gain
+    gain.addSubParam(TConfigParam("db", QString(""), TConfigParam::TType::TReal, ""));
+    gain.addSubParam(TConfigParam("gain", QString(""), TConfigParam::TType::TInt, ""));
+    gain.addSubParam(TConfigParam("mode", QString(""), TConfigParam::TType::TString, ""));
+
+    //ADC
+    adc.addSubParam(TConfigParam("basic_mode", QString(""), TConfigParam::TType::TString, ""));
+    adc.addSubParam(TConfigParam("clip_errors_disabled", QString(""), TConfigParam::TType::TBool, ""));
+    adc.addSubParam(TConfigParam("decimate", QString(""), TConfigParam::TType::TInt, ""));
+    adc.addSubParam(TConfigParam("lo_gain_errors_disabled", QString(""), TConfigParam::TType::TBool, ""));
+    adc.addSubParam(TConfigParam("offset", QString(""), TConfigParam::TType::TUInt, ""));
+    adc.addSubParam(TConfigParam("presamples", QString(""), TConfigParam::TType::TInt, ""));
+    adc.addSubParam(TConfigParam("samples", QString(""), TConfigParam::TType::TInt, ""));
+    adc.addSubParam(TConfigParam("state", QString(""), TConfigParam::TType::TBool, "", true));
+    adc.addSubParam(TConfigParam("timeout", QString(""), TConfigParam::TType::TReal, ""));
+    adc.addSubParam(TConfigParam("trig_count", QString(""), TConfigParam::TType::TInt, ""));
+
+    //Clock
+    clock.addSubParam(TConfigParam("adc_freq", QString(""), TConfigParam::TType::TInt, ""));
+    clock.addSubParam(TConfigParam("adc_locked", QString(""), TConfigParam::TType::TBool, "", true));
+    clock.addSubParam(TConfigParam("adc_phase", QString(""), TConfigParam::TType::TInt, ""));
+    clock.addSubParam(TConfigParam("adc_rate", QString(""), TConfigParam::TType::TReal, "", true));
+    clock.addSubParam(TConfigParam("adc_src", QString(""), TConfigParam::TType::TString, ""));
+    clock.addSubParam(TConfigParam("clkgen_div", QString(""), TConfigParam::TType::TInt, ""));
+    clock.addSubParam(TConfigParam("clkgen_freq", QString(""), TConfigParam::TType::TReal, ""));
+    clock.addSubParam(TConfigParam("clkgen_locked", QString(""), TConfigParam::TType::TBool, "", true));
+    clock.addSubParam(TConfigParam("clkgen_mul", QString(""), TConfigParam::TType::TInt, ""));
+    clock.addSubParam(TConfigParam("clkgen_src", QString(""), TConfigParam::TType::TString, ""));
+    clock.addSubParam(TConfigParam("enabled", QString(""), TConfigParam::TType::TBool, ""));
+    clock.addSubParam(TConfigParam("extclk_freq", QString(""), TConfigParam::TType::TInt, ""));
+    clock.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, "", true));
+    clock.addSubParam(TConfigParam("freq_ctr_src", QString(""), TConfigParam::TType::TString, ""));
+
+    //IO
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+
+    //Trigger
+
+
+    //Glitch
+
+    top.addSubParam(gain);
+    top.addSubParam(adc);
+    top.addSubParam(clock);
+    top.addSubParam(io);
+    top.addSubParam(trigger);
+    top.addSubParam(glitch);
+
+    return top;
+}
+
 uint8_t TnewaeScope::getId(){
     return cwId;
 }
@@ -87,6 +170,10 @@ bool TnewaeScope::_validatePreInitParamsStructure(TConfigParam & params){
     }
 
     return true;
+}
+
+bool TnewaeScope::_validatePostInitParamsStructure(TConfigParam & params){
+
 }
 
 TnewaeScope::~TnewaeScope() {
@@ -170,6 +257,8 @@ TConfigParam TnewaeScope::getPostInitParams() const{
 TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){
     //TODO!!
     //Natsavení osciloskopu!
+    //je potřeba je přečíst zpátky!
+    //adc clear_clip_errors()
     m_postInitParams = params;
     return m_postInitParams;
 }
