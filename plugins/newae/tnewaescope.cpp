@@ -28,8 +28,8 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     auto adc = TConfigParam("ADC", "", TConfigParam::TType::TDummy, "TriggerSettings");
     auto clock = TConfigParam("Clock", "", TConfigParam::TType::TDummy, "ClockSettings");
     auto io = TConfigParam("IO", "", TConfigParam::TType::TDummy, "GPIOSettings");
-    auto trigger = TConfigParam("Trigger", "", TConfigParam::TType::TDummy, "");
-    auto glitch = TConfigParam("Glitch", "", TConfigParam::TType::TDummy, "");
+    auto trigger = TConfigParam("Trigger", "", TConfigParam::TType::TDummy, "TriggerSettings");
+    auto glitch = TConfigParam("Glitch", "", TConfigParam::TType::TDummy, "GlitchSettings");
 
     //Gain
     gain.addSubParam(TConfigParam("db", QString(""), TConfigParam::TType::TReal, ""));
@@ -65,34 +65,39 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     clock.addSubParam(TConfigParam("freq_ctr_src", QString(""), TConfigParam::TType::TString, ""));
 
     //IO
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
-    io.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, ""));
+    io.addSubParam(TConfigParam("cdc_settings", QString(""), TConfigParam::TType::TString, ""));
+    io.addSubParam(TConfigParam("extclk_src", QString(""), TConfigParam::TType::TString, "", true));
+    io.addSubParam(TConfigParam("glitch_hp", QString(""), TConfigParam::TType::TBool, ""));
+    io.addSubParam(TConfigParam("glitch_lp", QString(""), TConfigParam::TType::TBool, ""));
+    io.addSubParam(TConfigParam("hs2", QString(""), TConfigParam::TType::TString, ""));
+    io.addSubParam(TConfigParam("nrst", QString(""), TConfigParam::TType::TString, "", true));
+    io.addSubParam(TConfigParam("pdic", QString(""), TConfigParam::TType::TString, ""));
+    io.addSubParam(TConfigParam("pdid", QString(""), TConfigParam::TType::TString, ""));
+    io.addSubParam(TConfigParam("target_pwr", QString(""), TConfigParam::TType::TBool, ""));
+    io.addSubParam(TConfigParam("tio1", QString(""), TConfigParam::TType::TString, ""));
+    io.addSubParam(TConfigParam("tio2", QString(""), TConfigParam::TType::TString, ""));
+    io.addSubParam(TConfigParam("tio3", QString(""), TConfigParam::TType::TString, ""));
+    io.addSubParam(TConfigParam("tio4", QString(""), TConfigParam::TType::TString, ""));
+    io.addSubParam(TConfigParam("tio_states", QString(""), TConfigParam::TType::TBool, ""));
+    io.addSubParam(TConfigParam("vcc_glitcht", QString(""), TConfigParam::TType::TInt, "", true));
 
     //Trigger
-
+    trigger.addSubParam(TConfigParam("triggers", QString(""), TConfigParam::TType::TString, ""));
+    trigger.addSubParam(TConfigParam("module", QString(""), TConfigParam::TType::TString, "", true));
+    //Add more for CW Pro?
 
     //Glitch
+    glitch.addSubParam(TConfigParam("arm_timing", QString(""), TConfigParam::TType::TString, ""));
+    glitch.addSubParam(TConfigParam("clk_src", QString(""), TConfigParam::TType::TString, ""));
+    glitch.addSubParam(TConfigParam("ext_offset", QString(""), TConfigParam::TType::TInt, ""));
+    glitch.addSubParam(TConfigParam("offset", QString(""), TConfigParam::TType::TInt, ""));
+    glitch.addSubParam(TConfigParam("offset_fine", QString(""), TConfigParam::TType::TInt, ""));
+    glitch.addSubParam(TConfigParam("output", QString(""), TConfigParam::TType::TInt, ""));
+    glitch.addSubParam(TConfigParam("repeat", QString(""), TConfigParam::TType::TString, ""));
+    glitch.addSubParam(TConfigParam("trigger_src", QString(""), TConfigParam::TType::TString, ""));
+    glitch.addSubParam(TConfigParam("width", QString(""), TConfigParam::TType::TReal, ""));
+    glitch.addSubParam(TConfigParam("width_fine", QString(""), TConfigParam::TType::TInt, ""));
+
 
     top.addSubParam(gain);
     top.addSubParam(adc);
