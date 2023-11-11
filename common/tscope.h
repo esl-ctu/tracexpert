@@ -20,6 +20,7 @@ public:
     };
 
     class TChannelStatus {
+    public:
         TChannelStatus(int index, QString alias, bool enabled, qreal range, qreal offset): m_index(index), m_alias(alias), m_enabled(enabled), m_range(range), m_offset(offset) {}
         int getIndex(){ return m_index; }
         QString getAlias() { return m_alias; }
