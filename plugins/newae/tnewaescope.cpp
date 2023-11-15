@@ -251,6 +251,7 @@ void TnewaeScope::deInit(bool *ok/* = nullptr*/){
 }
 
 TConfigParam TnewaeScope::getPostInitParams() const{
+    //načíst všechny params!
     return m_postInitParams;
 }
 
@@ -258,7 +259,7 @@ TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){
     //TODO!!
     //Natsavení osciloskopu!
     //je potřeba je přečíst zpátky!
-    //adc clear_clip_errors()
+    //adc clear_clip_errors() - a taky to někdy musím kontrolovat - co vůbec všechny chyby od cw?
     m_postInitParams = params;
     return m_postInitParams;
 }

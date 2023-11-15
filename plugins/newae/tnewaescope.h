@@ -60,7 +60,9 @@ protected:
     bool traceWaitingForRead;
 
     //void _createPreInitParams();
+    TConfigParam _createPostInitParams();
     bool _validatePreInitParamsStructure(TConfigParam & params);
+    bool _validatePostInitParamsStructure(TConfigParam & params);
 };
 
 #endif //NEWAESCOPE_H
