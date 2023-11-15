@@ -193,9 +193,9 @@ public:
                 break;
         }
 
-        if(m_readonly){
-            iok = false;
-        }
+        //if(m_readonly){
+            //iok = false;
+        //}
 
         if(iok == true){
             m_value = value;
