@@ -58,12 +58,12 @@ public:
     virtual TConfigParam setPostInitParams(TConfigParam params) = 0;
 
     /// Run the oscilloscope: wait for trigger when set, otherwise capture immediately
-    virtual void run(bool *ok = nullptr) = 0;
+    virtual void run(size_t * expectedBufferSize, bool *ok = nullptr) = 0;
     /// Stop the oscilloscope
     virtual void stop(bool *ok = nullptr) = 0;
 
     /// Downloads samples from the oscilloscope, first waits for the aquisition to complete. Works with a char memory buffer, fills it with an array of samplesType values (typically will need a recast!). Returns size in bytes.
-    virtual size_t downloadSamples(int channel, uint8_t * buffer, size_t bufferSize, TSampleType & samplesType, size_t & samplesPerTraceDownloaded, size_t & tracesDownloaded, bool & overvoltage) = 0;
+    virtual size_t downloadSamples(int channel, uint8_t * buffer, size_t bufferSize, TSampleType * samplesType, size_t * samplesPerTraceDownloaded, size_t * tracesDownloaded, bool * overvoltage) = 0;
 
     /// Get channel info
     virtual QList<TChannelStatus> getChannelsStatus() = 0;
