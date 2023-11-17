@@ -15,8 +15,8 @@ class TPluginUnitModel : public QObject, public virtual TProjectItem
 public:
     explicit TPluginUnitModel(QObject * parent = nullptr);
 
-    virtual QString name() const = 0;
-    virtual QString info() const = 0;
+    virtual QString name() const;
+    virtual QString info() const;
 
     bool isInit() const;
     virtual bool init() = 0;

@@ -14,9 +14,6 @@ class TScopeModel : public TPluginUnitModel
 
 public:
     explicit TScopeModel(TScope * scope, TScopeContainer * parent);
-    
-    QString name() const override;
-    QString info() const override;
 
     bool init() override;
     bool deInit() override;

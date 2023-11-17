@@ -5,17 +5,8 @@
 TScopeModel::TScopeModel(TScope * scope, TScopeContainer * parent)
     : TProjectItem(parent->model(), parent), TPluginUnitModel(parent), m_scope(scope)
 {
-
-}
-
-QString TScopeModel::name() const
-{
-    return m_scope->getScopeName();
-}
-
-QString TScopeModel::info() const
-{
-    return m_scope->getScopeInfo();
+    m_name = m_scope->getScopeName();
+    m_info = m_scope->getScopeInfo();
 }
 
 bool TScopeModel::init()

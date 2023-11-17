@@ -8,14 +8,14 @@ TScopeContainer::TScopeContainer(TComponentModel * parent)
 
 }
 
-int TScopeContainer::unitCount() const
+int TScopeContainer::count() const
 {
     return m_scopes.length();
 }
 
-TScopeModel * TScopeContainer::unit(int index) const
+TScopeModel * TScopeContainer::at(int index) const
 {
-    if (index >= 0 && index < unitCount()) {
+    if (index >= 0 && index < count()) {
         return m_scopes[index];
     }
     else {
@@ -23,7 +23,7 @@ TScopeModel * TScopeContainer::unit(int index) const
     }
 }
 
-void TScopeContainer::addScope(TScopeModel * unit)
+void TScopeContainer::add(TScopeModel * unit)
 {
     unit->setParent(this);
 

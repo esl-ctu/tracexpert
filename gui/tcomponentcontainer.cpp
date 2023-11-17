@@ -8,14 +8,14 @@ TComponentContainer::TComponentContainer(TProjectModel * parent)
 
 }
 
-int TComponentContainer::unitCount() const
+int TComponentContainer::count() const
 {
     return m_components.length();
 }
 
-TComponentModel * TComponentContainer::unit(int index) const
+TComponentModel * TComponentContainer::at(int index) const
 {
-    if (index >= 0 && index < unitCount()) {
+    if (index >= 0 && index < count()) {
         return m_components[index];
     }
     else {
@@ -23,7 +23,7 @@ TComponentModel * TComponentContainer::unit(int index) const
     }
 }
 
-void TComponentContainer::addComponent(TComponentModel * unit)
+void TComponentContainer::add(TComponentModel * unit)
 {
     unit->setParent(this);
 

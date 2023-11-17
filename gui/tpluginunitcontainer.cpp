@@ -11,7 +11,7 @@ TPluginUnitContainer::TPluginUnitContainer(QObject * parent)
 
 int TPluginUnitContainer::rowCount(const QModelIndex & parent) const
 {
-    return unitCount();
+    return count();
 }
 
 int TPluginUnitContainer::columnCount(const QModelIndex & parent) const
@@ -23,15 +23,15 @@ QVariant TPluginUnitContainer::data(const QModelIndex & index, int role) const
 {
     if (role == Qt::DisplayRole) {
         if (index.column() == 1) {
-            return unit(index.row())->name();
+            return at(index.row())->name();
         }
         else if (index.column() == 2) {
-            return unit(index.row())->info();
+            return at(index.row())->info();
         }
     }
     else if (role == Qt::DecorationRole) {
         if (index.column() == 0) {
-            return (unit(index.row())->isInit() ? QApplication::style()->standardIcon(QStyle::SP_DialogYesButton) : QApplication::style()->standardIcon(QStyle::SP_DialogNoButton));
+            return (at(index.row())->isInit() ? QApplication::style()->standardIcon(QStyle::SP_DialogYesButton) : QApplication::style()->standardIcon(QStyle::SP_DialogNoButton));
         }
     }
     return QVariant();
@@ -58,12 +58,12 @@ QVariant TPluginUnitContainer::headerData(int section, Qt::Orientation orientati
 
 int TPluginUnitContainer::childrenCount() const
 {
-    return unitCount();
+    return count();
 }
 
 TProjectItem * TPluginUnitContainer::child(int row) const
 {
-    return unit(row);
+    return at(row);
 }
 
 QVariant TPluginUnitContainer::status() const

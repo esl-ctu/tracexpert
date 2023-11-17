@@ -18,8 +18,7 @@ public:
     explicit TIODeviceModel(TIODevice * IODevice, TIODeviceContainer * parent);
     ~TIODeviceModel();
 
-    QString name() const override;
-    QString info() const override;
+    void show();
 
     bool init() override;
     bool deInit() override;
@@ -36,7 +35,8 @@ public:
 signals:
     void initialized(TIODeviceModel * IODevice);
     void deinitialized(TIODeviceModel * IODevice);
-    void toBeShown(TIODeviceModel * IODevice);
+    void showRequested(TIODeviceModel * IODevice);
+    void removeRequested(TIODeviceModel * IODevice);
 
 public slots:
     void writeData(QByteArray data);

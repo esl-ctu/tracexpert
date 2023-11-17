@@ -13,8 +13,8 @@ class TPluginUnitContainer : public QAbstractTableModel, public virtual TProject
 public:
     explicit TPluginUnitContainer(QObject * parent = nullptr);
 
-    virtual int unitCount() const = 0;
-    virtual TPluginUnitModel * unit(int index) const = 0;
+    virtual int count() const = 0;
+    virtual TPluginUnitModel * at(int index) const = 0;
 
     int rowCount(const QModelIndex & parent = QModelIndex()) const override;
     int columnCount(const QModelIndex & parent = QModelIndex()) const override;

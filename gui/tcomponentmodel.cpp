@@ -7,16 +7,9 @@ TComponentModel::TComponentModel(TPlugin * plugin, TComponentContainer * parent)
 {
     m_IOdevices = new TIODeviceContainer(this);
     m_scopes = new TScopeContainer(this);
-}
 
-QString TComponentModel::name() const
-{
-    return m_plugin->getPluginName();
-}
-
-QString TComponentModel::info() const
-{
-    return m_plugin->getPluginInfo();
+    m_name = plugin->getPluginName();
+    m_info = plugin->getPluginInfo();
 }
 
 bool TComponentModel::init()
@@ -50,14 +43,14 @@ bool TComponentModel::deInit()
         return false;
     }
     
-    for (int i = 0; i < m_IOdevices->unitCount(); i++) {
-        if (!m_IOdevices->unit(i)->deInit()) {
+    for (int i = 0; i < m_IOdevices->count(); i++) {
+        if (!m_IOdevices->at(i)->deInit()) {
             return false;
         }
     }
     
-    for (int i = 0; i < m_scopes->unitCount(); i++) {
-        if (!m_scopes->unit(i)->deInit()) {
+    for (int i = 0; i < m_scopes->count(); i++) {
+        if (!m_scopes->at(i)->deInit()) {
             return false;
         }
     }
@@ -94,22 +87,22 @@ TConfigParam TComponentModel::setPostInitParams(const TConfigParam & param)
 
 int TComponentModel::IODeviceCount() const
 {
-    return m_IOdevices->unitCount();
+    return m_IOdevices->count();
 }
 
 int TComponentModel::scopeCount() const
 {
-    return m_scopes->unitCount();
+    return m_scopes->count();
 }
 
 TIODeviceModel * TComponentModel::IODevice(int index) const
 {
-    return m_IOdevices->unit(index);
+    return m_IOdevices->at(index);
 }
 
 TScopeModel * TComponentModel::scope(int index) const
 {
-    return m_scopes->unit(index);
+    return m_scopes->at(index);
 }
 
 bool TComponentModel::canAddIODevice() const
@@ -214,7 +207,7 @@ void TComponentModel::appendIODevice(TIODevice * IODevice)
     TIODeviceModel * IODeviceModel = new TIODeviceModel(IODevice, m_IOdevices);
     connect(IODeviceModel, &TIODeviceModel::initialized, this, &TComponentModel::IODeviceInitialized);
     connect(IODeviceModel, &TIODeviceModel::deinitialized, this, &TComponentModel::IODeviceDeinitialized);
-    m_IOdevices->addIODevice(IODeviceModel);
+    m_IOdevices->add(IODeviceModel);
 }
 
 void TComponentModel::appendScope(TScope * scope)
@@ -222,5 +215,5 @@ void TComponentModel::appendScope(TScope * scope)
     TScopeModel * scopeModel = new TScopeModel(scope, m_scopes);
     connect(scopeModel, &TScopeModel::initialized, this, &TComponentModel::scopeInitialized);
     connect(scopeModel, &TScopeModel::deinitialized, this, &TComponentModel::scopeDeinitialized);
-    m_scopes->addScope(scopeModel);
+    m_scopes->add(scopeModel);
 }

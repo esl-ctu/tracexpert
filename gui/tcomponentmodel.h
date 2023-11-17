@@ -19,9 +19,6 @@ class TComponentModel : public TPluginUnitModel
 public:
     explicit TComponentModel(TPlugin * plugin, TComponentContainer * parent);
 
-    QString name() const override;
-    QString info() const override;
-
     bool init() override;
     bool deInit() override;
 

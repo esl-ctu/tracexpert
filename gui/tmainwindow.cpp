@@ -59,6 +59,7 @@ void TMainWindow::createIODeviceDockWidget(TIODeviceModel * IODevice)
     TDockWidget * dockWidget = new TDockWidget(title);
     dockWidget->setWidget(widget);
     connect(IODevice, &TIODeviceModel::deinitialized, dockWidget, &TDockWidget::close);
+    connect(IODevice, &TIODeviceModel::showRequested, dockWidget, &TDockWidget::show);
     m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
 }
 

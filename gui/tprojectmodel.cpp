@@ -106,12 +106,6 @@ void TProjectModel::emitDataChanged(const QModelIndex &topLeft, const QModelInde
     emit dataChanged(topLeft, bottomRight);
 }
 
-//TProjectRootItem::TProjectRootItem(TProjectItemModel * model, TComponentContainer * componentContainer)
-//    : TProjectItem(model, nullptr), m_componentContainer(componentContainer)
-//{
-
-//}
-
 int TProjectModel::childrenCount() const
 {
     int count = 0;
@@ -164,7 +158,7 @@ void TProjectModel::loadComponents()
                 TComponentModel * component = new TComponentModel(plugin, m_componentContainer);
                 connect(component, &TComponentModel::IODeviceInitialized, this, &TProjectModel::IODeviceInitialized);
                 connect(component, &TComponentModel::scopeInitialized, this, &TProjectModel::scopeInitialized);
-                m_componentContainer->addComponent(component);
+                m_componentContainer->add(component);
             }
         }
     }

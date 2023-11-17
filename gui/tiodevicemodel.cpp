@@ -11,6 +11,9 @@ TIODeviceModel::TIODeviceModel(TIODevice * IODevice, TIODeviceContainer * parent
     m_sending = false;
     m_receiving = false;
     m_autoReceive = false;
+
+    m_name = m_IODevice->getIODeviceName();
+    m_info = m_IODevice->getIODeviceInfo();
 }
 
 TIODeviceModel::~TIODeviceModel()
@@ -18,14 +21,9 @@ TIODeviceModel::~TIODeviceModel()
     TIODeviceModel::deInit();
 }
 
-QString TIODeviceModel::name() const
+void TIODeviceModel::show()
 {
-    return m_IODevice->getIODeviceName();
-}
-
-QString TIODeviceModel::info() const
-{
-    return m_IODevice->getIODeviceInfo();
+    emit showRequested(this);
 }
 
 bool TIODeviceModel::init()

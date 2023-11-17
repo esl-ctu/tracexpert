@@ -110,6 +110,16 @@ void TDialog::deviceFailedBusyMessage(QWidget *parent)
     criticalMessage(parent, parent->tr("Device busy"), parent->tr("Operation failed because device is currently busy!"));
 }
 
+void TDialog::deviceReceiveFailedMessage(QWidget *parent)
+{
+    criticalMessage(parent, parent->tr("Receive failed"), parent->tr("Operation failed because device is unable to read data!"));
+}
+
+void TDialog::deviceSendFailedMessage(QWidget *parent)
+{
+    criticalMessage(parent, parent->tr("Send failed"), parent->tr("Operation failed because device is unable to write data!"));
+}
+
 bool TDialog::question(QWidget * parent, const QString &title, const QString &text)
 {
     return QMessageBox::question(parent, title, text) == QMessageBox::Yes;
