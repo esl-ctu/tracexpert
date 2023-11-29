@@ -60,11 +60,11 @@ TFileDevice::~TFileDevice() {
     }
 }
 
-QString TFileDevice::getIODeviceName() const {
+QString TFileDevice::getName() const {
     return m_name;
 }
 
-QString TFileDevice::getIODeviceInfo() const {
+QString TFileDevice::getInfo() const {
     return m_info;
 }
 

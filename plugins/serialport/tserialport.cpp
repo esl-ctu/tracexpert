@@ -9,11 +9,11 @@ TSerialPort::~TSerialPort() {
     (*this).TSerialPort::deInit();
 }
 
-QString TSerialPort::getPluginName() const {
+QString TSerialPort::getName() const {
     return QString("Serial port");
 }
 
-QString TSerialPort::getPluginInfo() const {
+QString TSerialPort::getInfo() const {
     return QString("Provides access to local serial ports.");
 }
 

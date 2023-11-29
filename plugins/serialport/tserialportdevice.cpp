@@ -30,11 +30,11 @@ TSerialPortDevice::~TSerialPortDevice() {
     // Nothing to do.
 }
 
-QString TSerialPortDevice::getIODeviceName() const {
+QString TSerialPortDevice::getName() const {
     return m_name;
 }
 
-QString TSerialPortDevice::getIODeviceInfo() const {
+QString TSerialPortDevice::getInfo() const {
     return m_info;
 }
 
@@ -65,12 +65,13 @@ void TSerialPortDevice::init(bool *ok) {
     }
 
     if(iok){
-        m_initialized = true;
         _createPostInitParams();
         if(ok != nullptr) *ok = true;
     } else {
         if(ok != nullptr) *ok = false;
     }
+
+    m_initialized = true;
 
 }
 
@@ -192,7 +193,7 @@ bool TSerialPortDevice::_validatePostInitParamsStructure(TConfigParam & params) 
 void TSerialPortDevice::deInit(bool *ok) {
 
     m_port.close();
-    m_initialized = false;
+    m_initialized = true;
 
 }
 

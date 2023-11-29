@@ -57,11 +57,11 @@ TRandomDevice::~TRandomDevice() {
     // Nothing to do.
 }
 
-QString TRandomDevice::getIODeviceName() const {
+QString TRandomDevice::getName() const {
     return m_name;
 }
 
-QString TRandomDevice::getIODeviceInfo() const {
+QString TRandomDevice::getInfo() const {
     return m_info;
 }
 

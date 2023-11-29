@@ -6,11 +6,11 @@ TFile::~TFile() {
     (*this).TFile::deInit();
 }
 
-QString TFile::getPluginName() const {
+QString TFile::getName() const {
     return QString("File");
 }
 
-QString TFile::getPluginInfo() const {
+QString TFile::getInfo() const {
     return QString("Provides access to files.");
 }
 

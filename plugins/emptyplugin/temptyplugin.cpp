@@ -8,11 +8,11 @@ TEmptyPlugin::~TEmptyPlugin() {
 
 }
 
-QString TEmptyPlugin::getPluginName() const {
+QString TEmptyPlugin::getName() const {
     return QString("Empty plugin");
 }
 
-QString TEmptyPlugin::getPluginInfo() const {
+QString TEmptyPlugin::getInfo() const {
     return QString("Empty plugin info");
 }
 
