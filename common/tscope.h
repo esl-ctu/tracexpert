@@ -3,8 +3,9 @@
 
 #include <QString>
 #include "tconfigparam.h"
+#include "tcommon.h"
 
-class TScope {
+class TScope : public TCommon {
 
 public:  
 
@@ -38,9 +39,9 @@ public:
     virtual ~TScope() {}
 
     /// Scope name
-    virtual QString getScopeName() const = 0;
+    virtual QString getName() const = 0;
     /// Scope info
-    virtual QString getScopeInfo() const = 0;
+    virtual QString getInfo() const = 0;
 
     /// Get the current pre-initialization parameters
     virtual TConfigParam getPreInitParams() const = 0;
