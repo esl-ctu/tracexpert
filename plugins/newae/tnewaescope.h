@@ -63,6 +63,7 @@ protected:
     TConfigParam _createPostInitParams();
     bool _validatePreInitParamsStructure(TConfigParam & params);
     bool _validatePostInitParamsStructure(TConfigParam & params);
+    TConfigParam updatePostInitParams(TConfigParam paramsIn, bool write = false) const;
 };
 
 #endif //NEWAESCOPE_H

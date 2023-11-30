@@ -467,6 +467,13 @@ void TNewae::packagePythonFunction(uint8_t cwId, QString functionName, uint8_t n
     packageDataForPython(cwId, newFunctionName, numParams, params, out);
 }
 
+void TNewae::packagePythonOnAnObjectFunctionWithNoParams(uint8_t cwId, QString ObjectName, QString functionName, QString &out){
+    QString newFunctionName = "FUNO-" + ObjectName;
+    QList<QString> params;
+    params.append(functionName);
+    packageDataForPython(cwId, newFunctionName, 1, params, out);
+}
+
 void TNewae::packagePythonParam(uint8_t cwId, QString paramName, QString value, QString &out){
     QString newParamName = "PARA-" + paramName;
     QList<QString> params;
@@ -495,6 +502,35 @@ bool TNewae::runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionNa
     bool succ;
 
     packagePythonFunction(cwId, functionName, numParams,params , toSend);
+    succ = writeToPython(cwId, toSend);
+    if(!succ) {
+        return false;
+    }
+
+    succ &= waitForPythonDone(cwId, true);
+    if(!succ || pythonError) {
+        return false;
+    }
+
+    succ = getDataFromShm(dataLen, out);
+    if (!succ) {
+        qCritical("Error reading from shared memory");
+        return false;
+    }
+
+    if (!dataLen) {
+        qCritical("No data from shared memory");
+        return false;
+    }
+
+    return true;
+}
+
+bool TNewae::runPythonFunctionOnAnObjectAndGetStringOutput(int8_t cwId, QString ObjectName, QString functionName, size_t &dataLen, QString &out){
+    QString toSend;
+    bool succ;
+
+    packagePythonOnAnObjectFunctionWithNoParams(cwId, ObjectName, functionName, toSend);
     succ = writeToPython(cwId, toSend);
     if(!succ) {
         return false;

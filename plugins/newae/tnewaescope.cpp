@@ -178,11 +178,11 @@ bool TnewaeScope::_validatePreInitParamsStructure(TConfigParam & params){
 }
 
 bool TnewaeScope::_validatePostInitParamsStructure(TConfigParam & params){
-
+    //TODO
 }
 
 TnewaeScope::~TnewaeScope() {
-    deInit();
+    TnewaeScope::deInit();
 }
 
 QString TnewaeScope::getScopeName() const{
@@ -255,17 +255,70 @@ void TnewaeScope::deInit(bool *ok/* = nullptr*/){
 
 }
 
-TConfigParam TnewaeScope::getPostInitParams() const{
-    //načíst všechny params!
-    return m_postInitParams;
+TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write /*= false*/) const {
+    TConfigParam topPrm = paramsIn;
+    QList<TConfigParam> prms = topPrm.getSubParams();
+
+    for(int i = 0; i < prms.length(); ++i){
+        QString prmName = prms[i].getName();
+        QList<TConfigParam> subPrms = prms[i].getSubParams();
+
+        if (subPrms.length() == 0){
+            QString out;
+            if (write) {
+                plugin->setPythonParameter(cwId, prmName, paramsIn.getSubParamByName(prmName)->getValue(), out);
+                paramsIn.getSubParamByName(prmName)->setValue(out);
+            } else {
+                plugin->getPythonParameter(cwId, prmName, out);
+                paramsIn.getSubParamByName(prmName)->setValue(out);
+            }
+        }
+
+        if (!(subPrms.length() == 1 && subPrms[0].getName() == "Call function?")){ //make sure that this is not only a subparam for a function call
+            for (int j = 0; j < subPrms.length(); ++j){
+                QList<TConfigParam> subSubPrms = subPrms[i].getSubParams();
+
+                QString subPrmName = subPrms[i].getName();
+                if (subSubPrms.length() == 0){
+                    QString out;
+                    if (write) {
+                        plugin->setPythonSubparameter(cwId, prmName, subPrmName, paramsIn.getSubParamByName(prmName)->getSubParamByName(subPrmName)->getValue(), out);
+                        paramsIn.getSubParamByName(prmName)->getSubParamByName(subPrmName)->setValue(out);
+                    } else {
+                        plugin->getPythonSubparameter(cwId, prmName, subPrmName, out);
+                        paramsIn.getSubParamByName(prmName)->getSubParamByName(subPrmName)->setValue(out);
+                    }
+                } else {
+                    if (subSubPrms[0].getValue() == "Yes" && write){
+                        size_t len;
+                        QString out;
+                        //TODO
+                        plugin->runPythonFunctionOnAnObjectAndGetStringOutput(cwId, prmName, subPrmName, len, out);
+                        subSubPrms[0].setValue("No");
+                    }
+                }
+            }
+        } else { //Call function
+            if (subPrms[0].getValue() == "Yes" && write){
+                QList<QString> tmp;
+                size_t len;
+                QString out;
+                plugin->runPythonFunctionAndGetStringOutput(cwId, prmName, 0, tmp, len, out);
+                subPrms[0].setValue("No");
+            }
+        }
+    }
+
+    return paramsIn;
 }
 
-TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){
-    //TODO!!
-    //Natsavení osciloskopu!
-    //je potřeba je přečíst zpátky!
-    //adc clear_clip_errors() - a taky to někdy musím kontrolovat - co vůbec všechny chyby od cw?
-    m_postInitParams = params;
+TConfigParam TnewaeScope::getPostInitParams() const{
+    TConfigParam params = m_postInitParams;
+    return updatePostInitParams(params);
+}
+
+TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){  
+    m_postInitParams = updatePostInitParams(params, true);
     return m_postInitParams;
 }
 
