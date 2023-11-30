@@ -98,6 +98,8 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     glitch.addSubParam(TConfigParam("width", QString(""), TConfigParam::TType::TReal, ""));
     glitch.addSubParam(TConfigParam("width_fine", QString(""), TConfigParam::TType::TInt, ""));
 
+    //TODO funkce
+
 
     top.addSubParam(gain);
     top.addSubParam(adc);
@@ -238,6 +240,9 @@ void TnewaeScope::init(bool *ok/* = nullptr*/){
         return;
     }
 
+    m_postInitParams = _createPostInitParams();
+    m_postInitParams = updatePostInitParams(m_postInitParams);
+
     if(ok != nullptr) *ok = true;
     m_initialized = true;
 }
@@ -266,11 +271,15 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
         if (subPrms.length() == 0){
             QString out;
             if (write) {
-                plugin->setPythonParameter(cwId, prmName, paramsIn.getSubParamByName(prmName)->getValue(), out);
-                paramsIn.getSubParamByName(prmName)->setValue(out);
+                bool ok, ok2, ok3;
+                ok = plugin->setPythonParameter(cwId, prmName, paramsIn.getSubParamByName(prmName)->getValue(), out);
+                paramsIn.getSubParamByName(prmName, &ok2)->setValue(out, &ok3);
+                if (!(ok & ok2 & ok3)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read some params.");
             } else {
-                plugin->getPythonParameter(cwId, prmName, out);
-                paramsIn.getSubParamByName(prmName)->setValue(out);
+                bool ok, ok2, ok3;
+                ok = plugin->getPythonParameter(cwId, prmName, out);
+                paramsIn.getSubParamByName(prmName, &ok2)->setValue(out, &ok3);
+                if (!(ok & ok2 & ok3)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read some params.");
             }
         }
 
@@ -282,19 +291,25 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                 if (subSubPrms.length() == 0){
                     QString out;
                     if (write) {
-                        plugin->setPythonSubparameter(cwId, prmName, subPrmName, paramsIn.getSubParamByName(prmName)->getSubParamByName(subPrmName)->getValue(), out);
-                        paramsIn.getSubParamByName(prmName)->getSubParamByName(subPrmName)->setValue(out);
+                        bool ok, ok2, ok3, ok4;
+                        ok = plugin->setPythonSubparameter(cwId, prmName, subPrmName, paramsIn.getSubParamByName(prmName)->getSubParamByName(subPrmName)->getValue(), out);
+                        paramsIn.getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue(out, &ok4);
+                        if (!(ok & ok2 & ok3 & ok4)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read some params.");
                     } else {
-                        plugin->getPythonSubparameter(cwId, prmName, subPrmName, out);
-                        paramsIn.getSubParamByName(prmName)->getSubParamByName(subPrmName)->setValue(out);
+                        bool ok, ok2, ok3, ok4;
+                        ok = plugin->getPythonSubparameter(cwId, prmName, subPrmName, out);
+                        paramsIn.getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue(out, &ok4);
+                        if (!(ok & ok2 & ok3 & ok4)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read some params.");
                     }
                 } else {
                     if (subSubPrms[0].getValue() == "Yes" && write){
                         size_t len;
                         QString out;
+                        bool ok;
                         //TODO
-                        plugin->runPythonFunctionOnAnObjectAndGetStringOutput(cwId, prmName, subPrmName, len, out);
+                        ok = plugin->runPythonFunctionOnAnObjectAndGetStringOutput(cwId, prmName, subPrmName, len, out);
                         subSubPrms[0].setValue("No");
+                        if (!ok) paramsIn.setState(TConfigParam::TState::TError, "Cannot read/write some params.");
                     }
                 }
             }
@@ -303,8 +318,10 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                 QList<QString> tmp;
                 size_t len;
                 QString out;
-                plugin->runPythonFunctionAndGetStringOutput(cwId, prmName, 0, tmp, len, out);
-                subPrms[0].setValue("No");
+                bool ok, ok2;
+                ok = plugin->runPythonFunctionAndGetStringOutput(cwId, prmName, 0, tmp, len, out);
+                subPrms[0].setValue("No", &ok2);
+                if (!(ok & ok2)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read/write some params.");
             }
         }
     }

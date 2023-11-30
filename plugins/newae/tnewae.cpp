@@ -1,7 +1,12 @@
 #include "tnewae.h"
 //Next:
-//sériovka k targetu
-//počítadlo aktivních zařízení
+//5. sériovka k targetu
+//počítadlo aktivních zařízení (netřeba?)
+//1. zakomponovat změny v api (merge master into this branch)
+//2. podpora volání fcí nad objekty na straně pythonu
+///potřebuju někde parametry? teď je c++ neumí
+//3. test s cw
+//4. přepsat parametry na enumy (nice to have)
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     m_preInitParams  = TConfigParam("NewAE pre-init configuration", "", TConfigParam::TType::TDummy, "");
@@ -683,7 +688,7 @@ void TNewae::checkForPythonState(){
         pythonReady = true;
         pythonError = true;
         TnewaeScope * sc = getCWScopeObjectById(lastCWActive);
-        sc->notConnectedError();
+        if (sc) sc->notConnectedError();
     }else if (buff.contains("ERROR")){
         pythonReady = true;
         pythonError = true;
