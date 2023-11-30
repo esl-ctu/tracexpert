@@ -1,69 +1,93 @@
-#include <QDockWidget>
-#include <QLabel>
+#include <QMenu>
+#include <QMenuBar>
+
 #include "tmainwindow.h"
+#include "tdevicewizard.h"
+#include "tiodevicewidget.h"
+#include "tscopewidget.h"
+#include "tprojectview.h"
+#include "tprojectmodel.h"
 
-#define USE_ADS
-
-TMainWindow::TMainWindow(QWidget *parent)
+TMainWindow::TMainWindow(QWidget * parent)
     : QMainWindow(parent)
 {
     setCentralWidget(nullptr);
 
-#ifdef USE_ADS
-    m_DockManager = new ads::CDockManager(this);
+    createActions();
+    createMenus();
 
-    // create dock widget with Oscilloscope Widget
-    ads::CDockWidget * oscilloscopeDockWidget = new ads::CDockWidget(tr("Oscilloscope"), this);
-    QLabel * oscilloscopeWidget = new QLabel("This is an Oscilloscope widget", this);
-    oscilloscopeDockWidget->setWidget(oscilloscopeWidget);
-    m_DockManager->addDockWidget(ads::LeftDockWidgetArea, oscilloscopeDockWidget);
+    m_dockManager = TDockManagerInstance;
 
-    // create dock widget with IO Device Widget
-    ads::CDockWidget * IODeviceDockWidget = new ads::CDockWidget(tr("IO device"), this);
-    QLabel * IODeviceWidget = new QLabel("This is an IO device widget", this);
-    IODeviceDockWidget->setWidget(IODeviceWidget);
-    m_DockManager->addDockWidget(ads::RightDockWidgetArea, IODeviceDockWidget);
+    //create dock widget with Project Widget
+    TDockWidget * projectDockWidget = new TDockWidget(tr("Project"), this);
+    TProjectView * projectView = new TProjectView(this);
+    m_projectModel = new TProjectModel(this);
+    connect(m_projectModel, &TProjectModel::IODeviceInitialized, this, &TMainWindow::createIODeviceDockWidget);
+    connect(m_projectModel, &TProjectModel::scopeInitialized, this, &TMainWindow::createScopeDockWidget);
+    projectView->setModel(m_projectModel);
+    projectDockWidget->setWidget(projectView);
+    m_dockManager->addDockWidget(TDockArea::LeftDockWidgetArea, projectDockWidget);
 
-    // create dock widget with Protocol Widget
-    ads::CDockWidget * ProtocolDockWidget = new ads::CDockWidget(tr("Protocol"), this);
-    QLabel * ProtocolWidget = new QLabel("This is a Protocol widget", this);
-    ProtocolDockWidget->setWidget(ProtocolWidget);
-    m_DockManager->addDockWidget(ads::TopDockWidgetArea, ProtocolDockWidget);
-
-    // create dock widget with Scenario Widget
-    ads::CDockWidget * ScenarioDockWidget = new ads::CDockWidget(tr("Scenario"), this);
-    QLabel * ScenarioWidget = new QLabel("This is a Scenario widget", this);
-    ScenarioDockWidget->setWidget(ScenarioWidget);
-    m_DockManager->addDockWidget(ads::BottomDockWidgetArea, ScenarioDockWidget);
-#else
-
-    // create dock widget with Oscilloscope Widget
-    QDockWidget * oscilloscopeDockWidget = new QDockWidget(tr("Oscilloscope"), this);
-    QLabel * oscilloscopeWidget = new QLabel("This is an Oscilloscope widget", this);
-    oscilloscopeDockWidget->setWidget(oscilloscopeWidget);
-    addDockWidget(Qt::LeftDockWidgetArea, oscilloscopeDockWidget);
-
-    // create dock widget with IO Device Widget
-    QDockWidget * IODeviceDockWidget = new QDockWidget(tr("IO device"), this);
-    QLabel * IODeviceWidget = new QLabel("This is an IO device widget", this);
-    IODeviceDockWidget->setWidget(IODeviceWidget);
-    addDockWidget(Qt::RightDockWidgetArea, IODeviceDockWidget);
-
-    // create dock widget with Protocol Widget
-    QDockWidget * ProtocolDockWidget = new QDockWidget(tr("Protocol"), this);
-    QLabel * ProtocolWidget = new QLabel("This is a Protocol widget", this);
-    ProtocolDockWidget->setWidget(ProtocolWidget);
-    addDockWidget(Qt::TopDockWidgetArea, ProtocolDockWidget);
-
-    // create dock widget with Scenario Widget
-    QDockWidget * ScenarioDockWidget = new QDockWidget(tr("Scenario"), this);
-    QLabel * ScenarioWidget = new QLabel("This is a Scenario widget", this);
-    ScenarioDockWidget->setWidget(ScenarioWidget);
-    addDockWidget(Qt::BottomDockWidgetArea, ScenarioDockWidget);
-#endif
+    //projectWidget->refresh();
 }
 
 TMainWindow::~TMainWindow()
 {
 }
 
+void TMainWindow::createMenus()
+{
+    QMenu *fileMenu = new QMenu(tr("&File"), this);
+    menuBar()->addMenu(fileMenu);
+
+    QMenu *devicesMenu = new QMenu(tr("Devices"), this);
+    devicesMenu->addAction(m_openDeviceAction);
+    menuBar()->addMenu(devicesMenu);
+}
+
+void TMainWindow::createActions()
+{
+    m_openDeviceAction = new QAction(tr("Open device"), this);
+    m_openDeviceAction->setStatusTip(tr("Open a device using device wizard"));
+    connect(m_openDeviceAction, SIGNAL(triggered()), this, SLOT(showDeviceWizard()));
+}
+
+void TMainWindow::createIODeviceDockWidget(TIODeviceModel * IODevice)
+{
+    TIODeviceWidget * widget = new TIODeviceWidget(IODevice);
+    QString title = widget->windowTitle();
+    TDockWidget * dockWidget = new TDockWidget(title);
+    dockWidget->setWidget(widget);
+    connect(IODevice, &TIODeviceModel::deinitialized, dockWidget, &TDockWidget::close);
+    m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
+}
+
+void TMainWindow::createScopeDockWidget(TScopeModel * scope)
+{
+    TScopeWidget * widget = new TScopeWidget(scope);
+    QString title = widget->windowTitle();
+    TDockWidget * dockWidget = new TDockWidget(title);
+    dockWidget->setWidget(widget);
+    connect(scope, &TScopeModel::deinitialized, dockWidget, &TDockWidget::close);
+    m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
+}
+
+//void TMainWindow::closeDockWidget(TDockWidget * widget)
+//{
+//    QList<TDockWidget *> dockWidgets = m_DockManager->dockWidgetsMap().values();
+
+//    for (int i = 0; i < dockWidgets.length(); i++) {
+//        if (dockWidgets[i]->widget() == widget) {
+//            dockWidgets[i]->setFeature(TDockWidget::DockWidgetFeature::DeleteContentOnClose, true);
+//            dockWidgets[i]->closeDockWidget();
+//            return;
+//        }
+//    }
+//}
+
+void TMainWindow::showDeviceWizard()
+{
+    TDeviceWizard * deviceWizard = new TDeviceWizard(m_projectModel->componentContainer(), this);
+    deviceWizard->setAttribute(Qt::WidgetAttribute::WA_DeleteOnClose);
+    deviceWizard->show();
+}

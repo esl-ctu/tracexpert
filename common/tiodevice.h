@@ -3,17 +3,18 @@
 
 #include <QString>
 #include "tconfigparam.h"
+#include "tcommon.h"
 
-class TIODevice {
+class TIODevice : public TCommon {
 
 public:
 
     virtual ~TIODevice() {}
 
     /// IODevice name
-    virtual QString getIODeviceName() const = 0;
+    virtual QString getName() const = 0;
     /// IODevice info
-    virtual QString getIODeviceInfo() const = 0;
+    virtual QString getInfo() const = 0;
 
     /// Get the current pre-initialization parameters
     virtual TConfigParam getPreInitParams() const = 0;

@@ -7,17 +7,18 @@
 #include "tconfigparam.h"
 #include "tiodevice.h"
 #include "tscope.h"
+#include "tcommon.h"
 
-class TPlugin {
+class TPlugin : public TCommon {
 
 public:
 
     virtual ~TPlugin() {} // Should check if deinit() was done
 
     /// Plugin name
-    virtual QString getPluginName() const = 0;
+    virtual QString getName() const = 0;
     /// Plugin info
-    virtual QString getPluginInfo() const = 0;
+    virtual QString getInfo() const = 0;
 
     /// Get the current pre-initialization parameters
     virtual TConfigParam getPreInitParams() const = 0;

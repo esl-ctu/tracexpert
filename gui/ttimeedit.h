@@ -25,8 +25,8 @@ private slots:
 private:
     static const QStringList TUnitNames;
 
-    QLineEdit * lineEdit;
-    QComboBox * comboBox;
+    QLineEdit * m_lineEdit;
+    QComboBox * m_comboBox;
 };
 
 #endif // TTIMEEDIT_H

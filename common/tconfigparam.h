@@ -144,6 +144,19 @@ public:
         return m_hint;
     }
 
+    const QString & setName(const QString &name){
+        m_name = name;
+        return m_name;
+    }
+    const QString & setDefaultValue(const QString &defaultValue){
+        m_defaultValue = defaultValue;
+        return m_defaultValue;
+    }
+    const QString & setHint(const QString &hint){
+        m_hint = hint;
+        return m_hint;
+    }
+
     const QString & setValue(const QString &value, bool *ok = nullptr){
 
         bool iok=true;
@@ -193,9 +206,9 @@ public:
                 break;
         }
 
-        if(m_readonly){
-            iok = false;
-        }
+        //if(m_readonly){
+            //iok = false;
+        //}
 
         if(iok == true){
             m_value = value;
