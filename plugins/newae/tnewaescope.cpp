@@ -115,6 +115,10 @@ uint8_t TnewaeScope::getId(){
     return cwId;
 }
 
+QList<TScope::TChannelStatus> TnewaeScope::getChannelsStatus(){
+    //TODO
+}
+
 void TnewaeScope::notConnectedError() {
     qWarning("%s", (QString("NewAE device with serial number ") + QString(sn) + QString(" was disconnected. Please de-init and re-init the scope and device.")).toLocal8Bit().constData());
 }
@@ -187,11 +191,11 @@ TnewaeScope::~TnewaeScope() {
     TnewaeScope::deInit();
 }
 
-QString TnewaeScope::getScopeName() const{
+QString TnewaeScope::getName() const{
     return m_name;
 }
 
-QString TnewaeScope::getScopeInfo() const{
+QString TnewaeScope::getInfo() const{
     return m_info;
 }
 
@@ -339,7 +343,7 @@ TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){
     return m_postInitParams;
 }
 
-void TnewaeScope::run(bool *ok){
+void TnewaeScope::run(size_t * expectedBufferSize, bool *ok){
     //Comment: This function could probably use capture_segmented from the CW docs. However, the timeout is not handled on the CW side yet
     //         It would be a good idea to use that function once newae fixes that
     bool succ;
@@ -361,6 +365,7 @@ void TnewaeScope::run(bool *ok){
     }
 
     traceWaitingForRead = true;
+    *expectedBufferSize = cwBufferSize;
 
     if(ok != nullptr) *ok = true;
 
@@ -371,10 +376,10 @@ void TnewaeScope::stop(bool *ok){
 }
 
 size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t bufferSize,
-                                    TSampleType & samplesType, size_t & samplesPerTraceDownloaded, size_t & tracesDownloaded){
-    samplesType = TSampleType::TReal64;
-    samplesPerTraceDownloaded = 0;
-    tracesDownloaded = 0;
+                                    TSampleType * samplesType, size_t * samplesPerTraceDownloaded, size_t * tracesDownloaded, bool * overvoltage){
+    *samplesType = TSampleType::TReal64;
+    *samplesPerTraceDownloaded = 0;
+    *tracesDownloaded = 0;
 
     if (channel != 0) {
         qWarning("Wriong channel!");
@@ -397,7 +402,7 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
     }*/
 
     if (!traceWaitingForRead) {
-        run();
+        //run();
     }
 
     if (!traceWaitingForRead) {
@@ -420,8 +425,9 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
 
     traceWaitingForRead = false;
 
-    tracesDownloaded = 1;
-    samplesPerTraceDownloaded = dataLen/8;
+    *tracesDownloaded = 1;
+    *samplesPerTraceDownloaded = dataLen/8;
+    *overvoltage = false; //TODO
 
     size_t maxSize = dataLen > bufferSize ? bufferSize : dataLen;
 

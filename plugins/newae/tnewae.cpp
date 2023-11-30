@@ -1,12 +1,13 @@
 #include "tnewae.h"
 //Next:
-//5. sériovka k targetu
+//6. sériovka k targetu
 //počítadlo aktivních zařízení (netřeba?)
 //1. zakomponovat změny v api (merge master into this branch)
 //2. podpora volání fcí nad objekty na straně pythonu
 ///potřebuju někde parametry? teď je c++ neumí
 //3. test s cw
-//4. přepsat parametry na enumy (nice to have)
+//4. fce TnewaeScope::getChannelsStatus()
+//5. přepsat parametry na enumy (nice to have)
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     m_preInitParams  = TConfigParam("NewAE pre-init configuration", "", TConfigParam::TType::TDummy, "");
@@ -79,11 +80,11 @@ TNewae::~TNewae() {
     (*this).TNewae::deInit();
 }
 
-QString TNewae::getPluginName() const {
+QString TNewae::getName() const {
     return QString("NewAE");
 }
 
-QString TNewae::getPluginInfo() const {
+QString TNewae::getInfo() const {
     return QString("Provides access to NewAE devices.");
 }
 

@@ -10,11 +10,11 @@ TnewaeDevice::~TnewaeDevice(){
     //TODO
 }
 
-QString TnewaeDevice::getIODeviceName() const{
+QString TnewaeDevice::getName() const{
     return m_name;
 }
 
-QString TnewaeDevice::getIODeviceInfo() const{
+QString TnewaeDevice::getInfo() const{
     return m_info;
 }
 

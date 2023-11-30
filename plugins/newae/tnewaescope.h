@@ -5,6 +5,7 @@
 #include "tnewae.h"
 #include "tnewae_global.h"
 #include "tplugin.h"
+#include "tscope.h"
 //#include "tnewae.h"
 
 class TNewae;
@@ -15,8 +16,8 @@ public:
     TnewaeScope(const QString & name_in, const QString & info_in, uint8_t id_in, TNewae * plugin_in, bool createdManually_in = true);
     virtual ~TnewaeScope();
 
-    virtual QString getScopeName() const override;
-    virtual QString getScopeInfo() const override;
+    virtual QString getName() const override;
+    virtual QString getInfo() const override;
     QString getScopeSn() const;
 
     virtual TConfigParam getPreInitParams() const override;
@@ -29,13 +30,16 @@ public:
     virtual TConfigParam setPostInitParams(TConfigParam params) override;
 
     /// Run the oscilloscope: wait for trigger when triggered, otherwise capture immediately
-    virtual void run(bool *ok = nullptr) override;
+    virtual void run(size_t * expectedBufferSize, bool *ok = nullptr) override;
     /// Stop the oscilloscope
     virtual void stop(bool *ok = nullptr) override;
 
     /// Downloads values from the oscilloscope, first waits for the aquisition to complete
     virtual size_t downloadSamples(int channel, uint8_t * buffer, size_t bufferSize,
-                                   TSampleType & samplesType, size_t & samplesPerTraceDownloaded, size_t & tracesDownloaded) override;
+                                   TSampleType * samplesType, size_t * samplesPerTraceDownloaded, size_t * tracesDownloaded , bool * overvoltage) override;
+
+    /// Get channel info
+    virtual QList<TChannelStatus> getChannelsStatus() override;
 
     uint8_t getId();
     void notConnectedError();
@@ -58,6 +62,7 @@ protected:
     qint32 m_writeTimeout;
     bool m_initialized;
     bool traceWaitingForRead;
+    int cwBufferSize = 24000;
 
     //void _createPreInitParams();
     TConfigParam _createPostInitParams();
