@@ -145,6 +145,66 @@ def cwSetup(line, shm, cwDict):
         print("ERROR", flush=True)
         return  
 
+##Call a method on an object from the CW package
+##Takes: cwID, "FUNO-", obejct name, function name
+##Outputs: DONE/ERROR, data to shm
+def callCwFuncOnAnObject(line, shm, cwDict)
+    cwID = line[0:2]
+    scope = cwDict[cwID]
+    if scope == None:
+        sendCWNotConnected(line)
+        return
+
+    #Split to object name and function name
+    objectAndFunctionNames = line[9:]
+    objectName = ""
+    functionName = ""
+    splitLine = ""
+    try:
+        splitLine = functionName.split(FIELD_SEPARATOR, 1)
+        objectName = splitLine[0]
+        objectName = objectName.rstrip('\r\n')
+        functionName = splitLine[1]
+        functionName = functionName.rstrip('\r\n')
+    except:
+        print("ERROR", flush=True) 
+        print("Invalid Python CW function called or it was called on an invalid obejct (one of the names is probably empty)", flush=True, file=sys.stderr)
+
+    try:
+        subObject = getattr(scope, objectName)
+    except AttributeError:
+        print("ERROR", flush=True) 
+        print("Invalid Python CW object specified  (this object of the CW object does not exist)", flush=True, file=sys.stderr)
+        return
+
+    try:
+        function = getattr(subObject, functionName)
+    except AttributeError:
+        print("ERROR", flush=True) 
+        print("Invalid Python CW function called (this method of the specified subobejct of the CW object does not exist)", flush=True, file=sys.stderr)
+        return
+
+    ret = ""
+    try:
+        tmp = function()
+        ret = cwToStr(tmp)
+    except:
+        print("ERROR", flush=True) 
+        errorMessage = "The Python CW function raised this exception: " + traceback.format_exc()
+        print(errorMessage, flush=True, file=sys.stderr)
+
+    if isinstance(ret, bytes):
+        tmpLen = "{:016x}".format(len(ret))
+        #tmpRet = QByteArray(ret)
+        ret = bytes(tmpLen, 'ascii') + ret
+    else:
+        ret = "{:016x}".format(len(ret)) + ret
+    
+    writeToSHM(ret, shm)
+
+    print("DONE", flush=True)
+
+
 ##Call a method from the CW package
 ##Takes: cwID, "FUNC-", function name, [parameters]
 ##Outputs: DONE/ERROR, data to shm
@@ -419,6 +479,14 @@ def main():
             tmpline = line
             try:
                 callCwFunc(line, shm, cwDict)
+            except(USBError):
+                sendCWNotConnected(tmpline)
+
+        ## Call a method on an object from the CW package
+        elif line.startswith("FUNO-", 4, 10):
+            tmpline = line
+            try:
+                callCwFuncOnAnObject(line, shm, cwDict)
             except(USBError):
                 sendCWNotConnected(tmpline)
 
