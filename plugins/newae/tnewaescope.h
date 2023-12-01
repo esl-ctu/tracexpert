@@ -52,6 +52,7 @@ protected:
     QString info;
     TNewae * plugin;
 
+    QList<TChannelStatus> chanStatus;
     bool m_createdManually;
 
     QString m_name;
@@ -62,7 +63,7 @@ protected:
     qint32 m_writeTimeout;
     bool m_initialized;
     bool traceWaitingForRead;
-    int cwBufferSize = 24000;
+    int cwBufferSize;
 
     //void _createPreInitParams();
     TConfigParam _createPostInitParams();

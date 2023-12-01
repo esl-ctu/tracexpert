@@ -2,11 +2,11 @@
 //Next:
 //sériovka k targetu
 //počítadlo aktivních zařízení (netřeba?)
-//1. podpora volání fcí nad objekty na straně pythonu
+//1. podpora volání fcí nad objekty na straně pythonu (hotovo, nestestováno)
 ///potřebuju někde parametry? teď je c++ neumí
 //2. cwBufferSize jako pre init param
 //3. kontrola post init params
-//4. fce TnewaeScope::getChannelsStatus()
+//4. fce TnewaeScope::getChannelsStatus() (hotovo, netestováno, zkontrolovat na příštím meetingu)
 //5. test s cw
 //6. vyřešit traces as int nebo ne (spíš ne?)
 //7. přepsat parametry na enumy (nice to have)

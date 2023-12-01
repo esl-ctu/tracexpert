@@ -5,6 +5,7 @@ TnewaeScope::TnewaeScope(const QString & name_in, const QString & info_in, uint8
     m_createdManually = createdManually_in;
     m_preInitParams = TConfigParam("NewAE " + name_in + " config", "", TConfigParam::TType::TDummy, "");
     if (!m_createdManually){
+
         m_preInitParams.addSubParam(TConfigParam("Serial number", info_in, TConfigParam::TType::TString,
                                                  "Serial number of the NewAE device. RO for autodetected devices.",
                                                  true));
@@ -13,12 +14,19 @@ TnewaeScope::TnewaeScope(const QString & name_in, const QString & info_in, uint8
                                                  "Serial number of the NewAE device. RO for autodetected devices.",
                                                  false));
     }
+
+    m_preInitParams.addSubParam(TConfigParam("Memory depth of the oscilloscope", QString("24000"), TConfigParam::TType::TUInt,
+                                             "Memory depth of the oscilloscope. Edit only if you are not using CW lite and you know what you are doing.",
+                                             false));
+
     cwId = id_in;
     name = name_in;
     m_initialized = false;
     plugin = plugin_in;
     info = info_in;
     traceWaitingForRead = false;
+
+    chanStatus.append(TChannelStatus(0, "Chipwhisperer ch0", true, 0.5, 0)); //TODO: je to dobře?
 }
 
 TConfigParam TnewaeScope::_createPostInitParams(){
@@ -116,7 +124,7 @@ uint8_t TnewaeScope::getId(){
 }
 
 QList<TScope::TChannelStatus> TnewaeScope::getChannelsStatus(){
-    //TODO
+    return chanStatus;
 }
 
 void TnewaeScope::notConnectedError() {
@@ -224,6 +232,16 @@ void TnewaeScope::init(bool *ok/* = nullptr*/){
         return;
     }
 
+    QString cwBufferSizeStr = m_preInitParams.getSubParamByName("Memory depth of the oscilloscope", &succ)->getValue();
+    if(!succ) {
+        if(ok != nullptr) *ok = false;
+        return;
+    }
+    cwBufferSize = cwBufferSizeStr.toUInt(&succ);
+    if(!succ) {
+        if(ok != nullptr) *ok = false;
+        return;
+    }
 
     auto tmpSn = m_preInitParams.getSubParamByName("Serial number", &succ);
     if(!succ) {
@@ -350,6 +368,8 @@ void TnewaeScope::run(size_t * expectedBufferSize, bool *ok){
     QList<QString> params;
     size_t dataLen;
     QString response;
+
+    //TODO arm
 
     params.clear();
     succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "capture", 0, params, dataLen, response);
