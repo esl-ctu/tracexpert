@@ -4,15 +4,16 @@
 //počítadlo aktivních zařízení (netřeba?)
 //1. podpora volání fcí nad objekty na straně pythonu (hotovo, nestestováno)
 ///potřebuju někde parametry? teď je c++ neumí
-//2. cwBufferSize jako pre init param
-//3. kontrola post init params
+//2. cwBufferSize jako pre init param (hotovo, netestováno)
+//3. kontrola post init params (hotovo, netestováno)
 //4. fce TnewaeScope::getChannelsStatus() (hotovo, netestováno, zkontrolovat na příštím meetingu)
 //5. test s cw
 //6. vyřešit traces as int nebo ne (spíš ne?)
 //7. přepsat parametry na enumy (nice to have)
 //8. cesta k .py souboru
 //9. run() nemá být blokující
-//10.armuju scope?
+//10.armuju scope? (hotovo, stačí to takhle?)
+////Zkusit přímo v pythonu
 
 
 
