@@ -19,9 +19,9 @@
 #include <QFile>
 #include <QRandomGenerator>
 
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//! THIS CLASS IS NOT THREAD SAFE !
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//! DO NOT SPAWN NEW THREADS WITHIN THIS CLASS !
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 class TnewaeScope;
 
@@ -39,7 +39,7 @@ const uint8_t NO_CW_ID = 255;
 //All interprocess communication is ASCII
 //All shared memory binary (size is size_t, data are uint8_t)
 
-//Special functions implemented (to implement) in python - HALT, SETUP, DETECTDEVICES, SMTEST. FUNC-<pythonFunctionName>
+//Special functions implemented in python - HALT, SETUP, DETECT_DEVICES, SMTEST, SMSET, DEINI. FUNC-<pythonFunctionName>, FUNO-<objname,funcname>, SPAR-<>, PARA-<>
 //Special codes to be received from python - STARTED, DONE, ERROR
 
 class TNEWAE_EXPORT TNewae : public QObject, TPlugin

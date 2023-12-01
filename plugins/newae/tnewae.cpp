@@ -1,13 +1,20 @@
 #include "tnewae.h"
 //Next:
-//6. sériovka k targetu
+//sériovka k targetu
 //počítadlo aktivních zařízení (netřeba?)
-//1. zakomponovat změny v api (merge master into this branch)
-//2. podpora volání fcí nad objekty na straně pythonu
+//1. podpora volání fcí nad objekty na straně pythonu
 ///potřebuju někde parametry? teď je c++ neumí
-//3. test s cw
+//2. cwBufferSize jako pre init param
+//3. kontrola post init params
 //4. fce TnewaeScope::getChannelsStatus()
-//5. přepsat parametry na enumy (nice to have)
+//5. test s cw
+//6. vyřešit traces as int nebo ne (spíš ne?)
+//7. přepsat parametry na enumy (nice to have)
+//8. cesta k .py souboru
+//9. run() nemá být blokující
+//10.armuju scope?
+
+
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     m_preInitParams  = TConfigParam("NewAE pre-init configuration", "", TConfigParam::TType::TDummy, "");
@@ -38,12 +45,13 @@ void TNewae::_createPreInitParams(){
     m_preInitParams.addSubParam(TConfigParam("Auto-detect", "true", TConfigParam::TType::TBool, "Automatically detect available NewAE devices", false));
 
     TConfigParam tmp = TConfigParam("Shared memory size", "1024", TConfigParam::TType::TInt, "Size of the memory shared between the python NewAE libraries and TraceXpert. \
-                                             In kilobytes. Keep in mind that all numbers are transmetted as strings and as decimals. One int micht need up to 11 bytes of SHM.", false);
+                                             In kilobytes. Keep in mind that all numbers are transmitted as strings and as decimals. One int might need up to 11 bytes of SHM. \
+                                             Traces from scope stay doubles.", false);
     m_preInitParams.addSubParam(tmp);
 
     m_preInitParams.addSubParam(TConfigParam("Path to python executable", QString(""), TConfigParam::TType::TString,
                                              "Path at which the python executable is located. At least python 3.11 is needed. \
-                                             Leve blank to use python that us already installed and can be found in PATH. QT for python must also be installed",
+                                             Leve blank to use python that is already installed and can be found in PATH. QT for python must also be installed",
                                              false));
 }
 

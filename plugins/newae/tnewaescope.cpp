@@ -382,7 +382,7 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
     *tracesDownloaded = 0;
 
     if (channel != 0) {
-        qWarning("Wriong channel!");
+        qWarning("Wrong channel!");
         return 0;
     }
 
@@ -416,7 +416,7 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
 
     params.clear();
     params.append("false"); //Get traces as doubles
-    succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "get_last_trace", params.count(), params, dataLen, response);
+    succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "get_last_trace", params.count(), params, dataLen, response); //jen tohle přepsat, ať to čeká
 
     if (!succ) {
         qDebug("Error sending the get_last_trace command.");
