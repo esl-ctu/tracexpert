@@ -452,7 +452,7 @@ def main():
     cwDict = dict()
 
     for line in sys.stdin:
-        print(line, flush=True, file=sys.stderr) # TODO!!! Remove!!
+        #print(line, flush=True, file=sys.stderr) # TODO!!! Remove!!
         ## Test shared memory
         if line.startswith("SMTEST:"):
             smTest(line.lower(), shm)
@@ -484,6 +484,7 @@ def main():
 
         ## Call a method on an object from the CW package
         elif line.startswith("FUNO-", 4, 10):
+            print(line, flush=True, file=sys.stderr) # TODO!!! Remove!!
             tmpline = line
             try:
                 callCwFuncOnAnObject(line.lower(), shm, cwDict)

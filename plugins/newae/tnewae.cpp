@@ -5,7 +5,6 @@
 //1. podpora volání fcí nad objekty na straně pythonu (hotovo, nestestováno)
 ///potřebuju někde parametry? teď je c++ neumí
 //2. cwBufferSize jako pre init param (hotovo, netestováno)
-//3. kontrola post init params (hotovo, netestováno)
 //4. fce TnewaeScope::getChannelsStatus() (hotovo, netestováno, zkontrolovat na příštím meetingu)
 //5. test s cw
 //6. vyřešit traces as int nebo ne (spíš ne?)

@@ -39,6 +39,23 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     auto trigger = TConfigParam("Trigger", "", TConfigParam::TType::TDummy, "TriggerSettings");
     auto glitch = TConfigParam("Glitch", "", TConfigParam::TType::TDummy, "GlitchSettings");
 
+    //Top
+    auto fun1 = TConfigParam("default_setup", QString(""), TConfigParam::TType::TDummy, "");
+    fun1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    top.addSubParam(fun1);
+    auto fun2 = TConfigParam("cglitch_setup", QString(""), TConfigParam::TType::TDummy, "");
+    fun2.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    top.addSubParam(fun2);
+    auto fun3 = TConfigParam("vglitch_setup", QString(""), TConfigParam::TType::TDummy, "");
+    fun3.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    top.addSubParam(fun3);
+    auto fun4 = TConfigParam("reset_sam3u", QString(""), TConfigParam::TType::TDummy, "");
+    fun4.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    top.addSubParam(fun4);
+    top.addSubParam(TConfigParam("fw_version_str", QString(""), TConfigParam::TType::TString, "", true));
+    top.addSubParam(TConfigParam("sn", QString(""), TConfigParam::TType::TString, "", true));
+
+
     //Gain
     gain.addSubParam(TConfigParam("db", QString(""), TConfigParam::TType::TReal, ""));
     gain.addSubParam(TConfigParam("gain", QString(""), TConfigParam::TType::TInt, ""));
@@ -55,6 +72,9 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     adc.addSubParam(TConfigParam("state", QString(""), TConfigParam::TType::TBool, "", true));
     adc.addSubParam(TConfigParam("timeout", QString(""), TConfigParam::TType::TReal, ""));
     adc.addSubParam(TConfigParam("trig_count", QString(""), TConfigParam::TType::TInt, ""));
+    auto funA1 = TConfigParam("clear_clip_errors", QString(""), TConfigParam::TType::TDummy, "");
+    funA1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    adc.addSubParam(funA1);
 
     //Clock
     clock.addSubParam(TConfigParam("adc_freq", QString(""), TConfigParam::TType::TInt, ""));
@@ -71,6 +91,15 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     clock.addSubParam(TConfigParam("extclk_freq", QString(""), TConfigParam::TType::TInt, ""));
     clock.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, "", true));
     clock.addSubParam(TConfigParam("freq_ctr_src", QString(""), TConfigParam::TType::TString, ""));
+    auto funC1 = TConfigParam("reset_adc", QString(""), TConfigParam::TType::TDummy, "");
+    funC1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    clock.addSubParam(funC1);
+    auto funC2 = TConfigParam("reset_clkgen", QString(""), TConfigParam::TType::TDummy, "");
+    funC2.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    clock.addSubParam(funC2);
+    auto funC3 = TConfigParam("reset_dcms", QString(""), TConfigParam::TType::TDummy, "");
+    funC3.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    clock.addSubParam(funC3);
 
     //IO
     io.addSubParam(TConfigParam("cdc_settings", QString(""), TConfigParam::TType::TString, ""));
@@ -87,7 +116,13 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     io.addSubParam(TConfigParam("tio3", QString(""), TConfigParam::TType::TString, ""));
     io.addSubParam(TConfigParam("tio4", QString(""), TConfigParam::TType::TString, ""));
     io.addSubParam(TConfigParam("tio_states", QString(""), TConfigParam::TType::TBool, ""));
-    io.addSubParam(TConfigParam("vcc_glitcht", QString(""), TConfigParam::TType::TInt, "", true));
+    //io.addSubParam(TConfigParam("vcc_glitcht", QString(""), TConfigParam::TType::TInt, "", true));
+    auto funI1 = TConfigParam("vglitch_disable", QString(""), TConfigParam::TType::TDummy, "");
+    funI1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    io.addSubParam(funI1);
+    auto funI2 = TConfigParam("vglitch_reset", QString(""), TConfigParam::TType::TDummy, "");
+    funI2.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    io.addSubParam(funI2);
 
     //Trigger
     trigger.addSubParam(TConfigParam("triggers", QString(""), TConfigParam::TType::TString, ""));
@@ -105,8 +140,12 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     glitch.addSubParam(TConfigParam("trigger_src", QString(""), TConfigParam::TType::TString, ""));
     glitch.addSubParam(TConfigParam("width", QString(""), TConfigParam::TType::TReal, ""));
     glitch.addSubParam(TConfigParam("width_fine", QString(""), TConfigParam::TType::TInt, ""));
+    auto funG1 = TConfigParam("manual_trigger", QString(""), TConfigParam::TType::TDummy, "");
+    funG1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    glitch.addSubParam(funG1);
+    //read_status()??
 
-    //TODO funkce
+    //TODO object based
 
 
     top.addSubParam(gain);
@@ -305,7 +344,7 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
             }
         }
 
-        if (!(subPrms.length() == 1 && subPrms[0].getName() == "Call function?")){ //make sure that this is not only a subparam for a function call
+        if (!(subPrms.length() == 1 && subPrms[0].getName() == "Run?")){ //make sure that this is not only a subparam for a function call
             for (int j = 0; j < subPrms.length(); ++j){
                 QList<TConfigParam> subSubPrms = subPrms[j].getSubParams();
 
@@ -324,7 +363,7 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                         if (!(ok & ok2 & ok3 & ok4)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read some params.");
                     }
                 } else {
-                    if (subSubPrms[0].getValue() == "Yes" && write){
+                    if (subSubPrms[0].getValue() == "true" && write){
                         size_t len;
                         QString out;
                         bool ok;
@@ -335,7 +374,7 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                 }
             }
         } else { //Call function
-            if (subPrms[0].getValue() == "Yes" && write){
+            if (subPrms[0].getValue() == "true" && write){
                 QList<QString> tmp;
                 size_t len;
                 QString out;
