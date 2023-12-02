@@ -145,6 +145,10 @@ int main(int argc, char *argv[])
                                     stream << buf2[i];
                                 }
                                 stream << Qt::endl;
+
+                                auto ret = a[0]->getPostInitParams();
+                                //ret.getSubParamByName("reset_sam3u")->getSubParamByName("Run?")->setValue("true");
+                                a[0]->setPostInitParams(ret);
                             }
                         }
                     }

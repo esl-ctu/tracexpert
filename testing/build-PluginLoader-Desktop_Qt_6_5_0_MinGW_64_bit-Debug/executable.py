@@ -439,7 +439,11 @@ def cwSubParam(line, shm, cwDict):
         realSubParamValue = "{:016x}".format(len(realSubParamValue)) + realSubParamValue
         writeToSHM(realSubParamValue, shm)
     else:
-        subParamValue = str(subParam)
+        subParamValue = ""
+        if (isinstance(subParam, bytearray)):
+            subParamValue = str(int.from_bytes(subParam))
+        else:
+            subParamValue = str(subParam)
         subParamValue = "{:016x}".format(len(subParamValue)) + subParamValue
         writeToSHM(subParamValue, shm)
 

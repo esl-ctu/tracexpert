@@ -49,9 +49,9 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     auto fun3 = TConfigParam("vglitch_setup", QString(""), TConfigParam::TType::TDummy, "");
     fun3.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
     top.addSubParam(fun3);
-    auto fun4 = TConfigParam("reset_sam3u", QString(""), TConfigParam::TType::TDummy, "");
-    fun4.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
-    top.addSubParam(fun4);
+    //auto fun4 = TConfigParam("reset_sam3u", QString(""), TConfigParam::TType::TDummy, "");
+    //fun4.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    //top.addSubParam(fun4);
     top.addSubParam(TConfigParam("fw_version_str", QString(""), TConfigParam::TType::TString, "", true));
     top.addSubParam(TConfigParam("sn", QString(""), TConfigParam::TType::TString, "", true));
 
@@ -71,13 +71,13 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     adc.addSubParam(TConfigParam("samples", QString(""), TConfigParam::TType::TInt, ""));
     adc.addSubParam(TConfigParam("state", QString(""), TConfigParam::TType::TBool, "", true));
     adc.addSubParam(TConfigParam("timeout", QString(""), TConfigParam::TType::TReal, ""));
-    adc.addSubParam(TConfigParam("trig_count", QString(""), TConfigParam::TType::TInt, ""));
+    adc.addSubParam(TConfigParam("trig_count", QString(""), TConfigParam::TType::TInt, "", true));
     auto funA1 = TConfigParam("clear_clip_errors", QString(""), TConfigParam::TType::TDummy, "");
     funA1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
     adc.addSubParam(funA1);
 
     //Clock
-    clock.addSubParam(TConfigParam("adc_freq", QString(""), TConfigParam::TType::TInt, ""));
+    clock.addSubParam(TConfigParam("adc_freq", QString(""), TConfigParam::TType::TInt, "", true));
     clock.addSubParam(TConfigParam("adc_locked", QString(""), TConfigParam::TType::TBool, "", true));
     clock.addSubParam(TConfigParam("adc_phase", QString(""), TConfigParam::TType::TInt, ""));
     clock.addSubParam(TConfigParam("adc_rate", QString(""), TConfigParam::TType::TReal, "", true));
@@ -331,7 +331,7 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
 
         if (subPrms.length() == 0){
             QString out;
-            if (write) {
+            if (write && !(prms[i].isReadonly())) {
                 bool ok, ok2, ok3;
                 ok = plugin->setPythonParameter(cwId, prmName, paramsIn.getSubParamByName(prmName)->getValue(), out);
                 paramsIn.getSubParamByName(prmName, &ok2)->setValue(out, &ok3);
@@ -351,7 +351,7 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                 QString subPrmName = subPrms[j].getName();
                 if (subSubPrms.length() == 0){
                     QString out;
-                    if (write) {
+                    if (write && !(subPrms[j].isReadonly())) {
                         bool ok, ok2, ok3, ok4;
                         ok = plugin->setPythonSubparameter(cwId, prmName, subPrmName, paramsIn.getSubParamByName(prmName)->getSubParamByName(subPrmName)->getValue(), out);
                         paramsIn.getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue(out, &ok4);
@@ -362,7 +362,7 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                         paramsIn.getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue(out, &ok4);
                         if (!(ok & ok2 & ok3 & ok4)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read some params.");
                     }
-                } else {
+                } else { //Call function
                     if (subSubPrms[0].getValue() == "true" && write){
                         size_t len;
                         QString out;

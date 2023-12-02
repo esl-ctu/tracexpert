@@ -2,10 +2,8 @@
 //Next:
 //sériovka k targetu
 //počítadlo aktivních zařízení (netřeba?)
-//1. podpora volání fcí nad objekty na straně pythonu (hotovo, nestestováno)
-///potřebuju někde parametry? teď je c++ neumí
-//2. cwBufferSize jako pre init param (hotovo, netestováno)
-//4. fce TnewaeScope::getChannelsStatus() (hotovo, netestováno, zkontrolovat na příštím meetingu)
+//0. reset mcu způsobí nezapsání zbytku!
+//1. podpora volání fcí nad objekty na straně pythonu (hotovo, nestestováno nad subobjetky)
 //5. test s cw
 //6. vyřešit traces as int nebo ne (spíš ne?)
 //7. přepsat parametry na enumy (nice to have)
@@ -13,7 +11,7 @@
 //9. run() nemá být blokující
 //10.armuju scope? (hotovo, stačí to takhle?)
 ////Zkusit přímo v pythonu
-
+//11. overvoltage
 
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
