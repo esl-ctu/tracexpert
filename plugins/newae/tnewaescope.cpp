@@ -46,9 +46,9 @@ TConfigParam TnewaeScope::_createPostInitParams(){
 
     //ADC
     adc.addSubParam(TConfigParam("basic_mode", QString(""), TConfigParam::TType::TString, ""));
-    adc.addSubParam(TConfigParam("clip_errors_disabled", QString(""), TConfigParam::TType::TBool, ""));
+    //adc.addSubParam(TConfigParam("clip_errors_disabled", QString(""), TConfigParam::TType::TBool, ""));
     adc.addSubParam(TConfigParam("decimate", QString(""), TConfigParam::TType::TInt, ""));
-    adc.addSubParam(TConfigParam("lo_gain_errors_disabled", QString(""), TConfigParam::TType::TBool, ""));
+    //adc.addSubParam(TConfigParam("lo_gain_errors_disabled", QString(""), TConfigParam::TType::TBool, ""));
     adc.addSubParam(TConfigParam("offset", QString(""), TConfigParam::TType::TUInt, ""));
     adc.addSubParam(TConfigParam("presamples", QString(""), TConfigParam::TType::TInt, ""));
     adc.addSubParam(TConfigParam("samples", QString(""), TConfigParam::TType::TInt, ""));
@@ -67,7 +67,7 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     clock.addSubParam(TConfigParam("clkgen_locked", QString(""), TConfigParam::TType::TBool, "", true));
     clock.addSubParam(TConfigParam("clkgen_mul", QString(""), TConfigParam::TType::TInt, ""));
     clock.addSubParam(TConfigParam("clkgen_src", QString(""), TConfigParam::TType::TString, ""));
-    clock.addSubParam(TConfigParam("enabled", QString(""), TConfigParam::TType::TBool, ""));
+    //clock.addSubParam(TConfigParam("enabled", QString(""), TConfigParam::TType::TBool, ""));
     clock.addSubParam(TConfigParam("extclk_freq", QString(""), TConfigParam::TType::TInt, ""));
     clock.addSubParam(TConfigParam("freq_ctr", QString(""), TConfigParam::TType::TInt, "", true));
     clock.addSubParam(TConfigParam("freq_ctr_src", QString(""), TConfigParam::TType::TString, ""));
@@ -307,9 +307,9 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
 
         if (!(subPrms.length() == 1 && subPrms[0].getName() == "Call function?")){ //make sure that this is not only a subparam for a function call
             for (int j = 0; j < subPrms.length(); ++j){
-                QList<TConfigParam> subSubPrms = subPrms[i].getSubParams();
+                QList<TConfigParam> subSubPrms = subPrms[j].getSubParams();
 
-                QString subPrmName = subPrms[i].getName();
+                QString subPrmName = subPrms[j].getName();
                 if (subSubPrms.length() == 0){
                     QString out;
                     if (write) {
@@ -328,7 +328,6 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                         size_t len;
                         QString out;
                         bool ok;
-                        //TODO
                         ok = plugin->runPythonFunctionOnAnObjectAndGetStringOutput(cwId, prmName, subPrmName, len, out);
                         subSubPrms[0].setValue("No");
                         if (!ok) paramsIn.setState(TConfigParam::TState::TError, "Cannot read/write some params.");
@@ -369,7 +368,8 @@ void TnewaeScope::run(size_t * expectedBufferSize, bool *ok){
     size_t dataLen;
     QString response;
 
-    //TODO arm
+    params.clear();
+    succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "arm", 0, params, dataLen, response);
 
     params.clear();
     succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "capture", 0, params, dataLen, response);

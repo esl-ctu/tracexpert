@@ -148,7 +148,7 @@ def cwSetup(line, shm, cwDict):
 ##Call a method on an object from the CW package
 ##Takes: cwID, "FUNO-", obejct name, function name
 ##Outputs: DONE/ERROR, data to shm
-def callCwFuncOnAnObject(line, shm, cwDict)
+def callCwFuncOnAnObject(line, shm, cwDict):
     cwID = line[0:2]
     scope = cwDict[cwID]
     if scope == None:
@@ -378,7 +378,7 @@ def cwParam(line, shm, cwDict):
 ##Outputs: DONE/ERROR, subparameter value (to shm)
 def cwSubParam(line, shm, cwDict):
     cwID = line[0:2]
-    scope == cwDict[cwID]
+    scope = cwDict[cwID]
     if scope == None:
         sendCWNotConnected(line)
         return
@@ -452,21 +452,21 @@ def main():
     cwDict = dict()
 
     for line in sys.stdin:
-        #print(line, flush=True, file=sys.stderr) # TODO!!! Remove!!
+        print(line, flush=True, file=sys.stderr) # TODO!!! Remove!!
         ## Test shared memory
         if line.startswith("SMTEST:"):
-            smTest(line, shm)
+            smTest(line.lower(), shm)
 
         if line.startswith("SMSET:"):
-            smSet(line)
+            smSet(line.lower())
 
         ## Detect available CWs
         elif line.startswith(str(NO_CW_ID) + ",DETECT_DEVICES"):
-            detectDevices(line, shm)
+            detectDevices(line.lower(), shm)
 
         ## Initialize one CW
         elif line.startswith("SETUP", 4, 10):
-            cwSetup(line, shm, cwDict)
+            cwSetup(line.lower(), shm, cwDict)
 
         ## Deinitialize one CW
         elif line.startswith("DEINI", 4, 10):
@@ -478,7 +478,7 @@ def main():
         elif line.startswith("FUNC-", 4, 10):
             tmpline = line
             try:
-                callCwFunc(line, shm, cwDict)
+                callCwFunc(line.lower(), shm, cwDict)
             except(USBError):
                 sendCWNotConnected(tmpline)
 
@@ -486,7 +486,7 @@ def main():
         elif line.startswith("FUNO-", 4, 10):
             tmpline = line
             try:
-                callCwFuncOnAnObject(line, shm, cwDict)
+                callCwFuncOnAnObject(line.lower(), shm, cwDict)
             except(USBError):
                 sendCWNotConnected(tmpline)
 
@@ -494,7 +494,7 @@ def main():
         elif line.startswith("PARA-", 4, 10):
             tmpline = line
             try:
-                cwParam(line, shm, cwDict)
+                cwParam(line.lower(), shm, cwDict)
             except(USBError):
                 sendCWNotConnected(tmpline)
 
@@ -502,7 +502,7 @@ def main():
         elif line.startswith("SPAR-", 4, 10):
             tmpline = line
             try:
-                cwSubParam(line, shm, cwDict)
+                cwSubParam(line.lower(), shm, cwDict)
             except(USBError):
                 sendCWNotConnected(tmpline)
 

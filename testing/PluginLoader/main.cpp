@@ -63,8 +63,8 @@ int main(int argc, char *argv[])
                 if(pluginId.endsWith(".so")) pluginId.chop(3);
                 if(pluginId.endsWith(".dll")) pluginId.chop(4);
 
-                stream << "* Plug-in ID: '" << pluginId << "', name: '" << aPlugin->getPluginName() << "'\n";
-                stream << "    Description: '" << aPlugin->getPluginInfo() << "'\n\n";
+                stream << "* Plug-in ID: '" << pluginId << "', name: '" << aPlugin->getName() << "'\n";
+                stream << "    Description: '" << aPlugin->getInfo() << "'\n\n";
                 stream.flush();
 
                 if (pluginId.contains("serial")){
@@ -82,8 +82,8 @@ int main(int argc, char *argv[])
 
                     for(int i = 0; i < devices.size(); i++){
 
-                        stream << devices[i]->getIODeviceName() << "\n";
-                        stream << devices[i]->getIODeviceInfo() << "\n";
+                        stream << devices[i]->getName() << "\n";
+                        stream << devices[i]->getInfo() << "\n";
                         stream.flush();
 
                     }
@@ -135,8 +135,9 @@ int main(int argc, char *argv[])
                                 size_t samplesPerTraceDownloaded, tracesDownloaded, bufferSize;
                                 uint8_t buf[50000];
                                 TScope::TSampleType stype;
+                                bool overvoltage;
 
-                                a[0]->downloadSamples(0, buf, 50000, stype, samplesPerTraceDownloaded, tracesDownloaded);
+                                a[0]->downloadSamples(0, buf, 50000, &stype, &samplesPerTraceDownloaded, &tracesDownloaded, &overvoltage);
 
                                 double * buf2 = (double *) buf;
 
