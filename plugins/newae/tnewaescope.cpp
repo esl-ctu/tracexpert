@@ -409,6 +409,10 @@ void TnewaeScope::run(size_t * expectedBufferSize, bool *ok){
 
     params.clear();
     succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "arm", 0, params, dataLen, response);
+    if (!succ) {
+        qDebug("Error sending the arm command. This does not necessarily mean a timeout.");
+        if(ok != nullptr) *ok = false;
+    }
 
     params.clear();
     succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "capture", 0, params, dataLen, response);
