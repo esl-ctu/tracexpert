@@ -1,17 +1,19 @@
 #include "tnewae.h"
 //Next:
 //sériovka k targetu
-//počítadlo aktivních zařízení (netřeba?)
-//0. reset mcu způsobí nezapsání zbytku!
-//1. podpora volání fcí nad objekty na straně pythonu (hotovo, nestestováno nad subobjetky)
-//5. test s cw
-//6. vyřešit traces as int nebo ne (spíš ne?)
-//7. přepsat parametry na enumy (nice to have)
-//8. cesta k .py souboru
-//9. run() nemá být blokující
-//10.armuju scope? (hotovo, stačí to takhle?)
-////Zkusit přímo v pythonu
-//11. overvoltage
+//1. přepsat parametry na enumy (nice to have)
+//2. cesta k .py souboru (takhle dobrý? nebo jako preinitparam?)
+//3. run() nemá být blokující
+// arm, pošlu příkaz, počkám na ack, pak capture a pak get_last_trace.
+////ten ack jsem myslel k tomu příkazu. Jako simpleserial_write (resp. já používám výhradně cmd_send() u simpleserial v2)
+
+
+//Dotazy:
+//traces as int nebo ne (spíš ne?)
+//overvoltage (nepodporováno?)
+//run() nejspíš blokuje - mám spawnout extra thread? To by nebylo fajn.
+//exposenout manual_trigger()?
+
 
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {

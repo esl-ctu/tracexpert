@@ -475,6 +475,10 @@ def main():
         ## Deinitialize one CW
         elif line.startswith("DEINI", 4, 10):
             cwID = line[0:2]
+            try:
+                cwDict[cwID].dis()
+            except:
+                pass
             cwDict[cwID] = None
             print("DONE", flush=True)
 
