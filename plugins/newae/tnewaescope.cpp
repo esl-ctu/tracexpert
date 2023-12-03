@@ -49,9 +49,9 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     auto fun3 = TConfigParam("vglitch_setup", QString(""), TConfigParam::TType::TDummy, "");
     fun3.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
     top.addSubParam(fun3);
-    //auto fun4 = TConfigParam("reset_sam3u", QString(""), TConfigParam::TType::TDummy, "");
-    //fun4.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
-    //top.addSubParam(fun4);
+    auto fun4 = TConfigParam("reset_sam3u", QString(""), TConfigParam::TType::TDummy, "");
+    fun4.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, "You cannot call this function here. It would disconnect the scope!", true));
+    top.addSubParam(fun4);
     top.addSubParam(TConfigParam("fw_version_str", QString(""), TConfigParam::TType::TString, "", true));
     top.addSubParam(TConfigParam("sn", QString(""), TConfigParam::TType::TString, "", true));
 

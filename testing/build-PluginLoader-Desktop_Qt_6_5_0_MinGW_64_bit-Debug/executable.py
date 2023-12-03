@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, time, ctypes, traceback
+import sys, time, ctypes, traceback, struct
 from PySide6.QtCore import QSharedMemory, QByteArray
 import chipwhisperer as cw
 import numpy as np
@@ -441,7 +441,7 @@ def cwSubParam(line, shm, cwDict):
     else:
         subParamValue = ""
         if (isinstance(subParam, bytearray)):
-            subParamValue = str(int.from_bytes(subParam))
+            subParamValue = str(int.from_bytes(subParam, byteorder='big'))
         else:
             subParamValue = str(subParam)
         subParamValue = "{:016x}".format(len(subParamValue)) + subParamValue
