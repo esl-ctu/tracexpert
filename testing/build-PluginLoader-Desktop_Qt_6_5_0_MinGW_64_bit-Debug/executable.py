@@ -492,7 +492,6 @@ def main():
 
         ## Call a method on an object from the CW package
         elif line.startswith("FUNO-", 4, 10):
-            print(line, flush=True, file=sys.stderr) # TODO!!! Remove!!
             tmpline = line
             try:
                 callCwFuncOnAnObject(line.lower(), shm, cwDict)

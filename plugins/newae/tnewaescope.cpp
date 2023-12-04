@@ -149,16 +149,56 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     iEnum1.addEnumValue("clkgen");
     iEnum1.addEnumValue("glitch");
     iEnum1.addEnumValue("disabled");
-    io.addSubParam(iEnum1);//Continue from here tomorrow
-    io.addSubParam(TConfigParam("nrst", QString(""), TConfigParam::TType::TString, "", true));
-    io.addSubParam(TConfigParam("pdic", QString(""), TConfigParam::TType::TString, ""));
-    io.addSubParam(TConfigParam("pdid", QString(""), TConfigParam::TType::TString, ""));
+    io.addSubParam(iEnum1);
+    auto iEnum2 = TConfigParam("nrst", QString(""), TConfigParam::TType::TEnum, "");
+    iEnum2.addEnumValue("high");
+    iEnum2.addEnumValue("low");
+    iEnum2.addEnumValue("high_z");
+    io.addSubParam(iEnum2);
+    auto iEnum3 = TConfigParam("pdic", QString(""), TConfigParam::TType::TEnum, "");
+    iEnum3.addEnumValue("high");
+    iEnum3.addEnumValue("low");
+    iEnum3.addEnumValue("high_z");
+    io.addSubParam(iEnum3);
+    auto iEnum4 = TConfigParam("pdid", QString(""), TConfigParam::TType::TEnum, "");
+    iEnum4.addEnumValue("high");
+    iEnum4.addEnumValue("low");
+    iEnum4.addEnumValue("high_z");
+    io.addSubParam(iEnum4);
     io.addSubParam(TConfigParam("target_pwr", QString(""), TConfigParam::TType::TBool, ""));
-    io.addSubParam(TConfigParam("tio1", QString(""), TConfigParam::TType::TString, ""));
-    io.addSubParam(TConfigParam("tio2", QString(""), TConfigParam::TType::TString, ""));
-    io.addSubParam(TConfigParam("tio3", QString(""), TConfigParam::TType::TString, ""));
-    io.addSubParam(TConfigParam("tio4", QString(""), TConfigParam::TType::TString, ""));
-    io.addSubParam(TConfigParam("tio_states", QString(""), TConfigParam::TType::TBool, ""));
+    auto iEnum5 = TConfigParam("tio1", QString(""), TConfigParam::TType::TEnum, "");
+    iEnum5.addEnumValue("serial_rx");
+    iEnum5.addEnumValue("serial_tx");
+    iEnum5.addEnumValue("high_z");
+    iEnum5.addEnumValue("gpio_low");
+    iEnum5.addEnumValue("gpio_high");
+    iEnum5.addEnumValue("gpio_disabled");
+    io.addSubParam(iEnum5);
+    auto iEnum6 = TConfigParam("tio2", QString(""), TConfigParam::TType::TEnum, "");
+    iEnum6.addEnumValue("serial_rx");
+    iEnum6.addEnumValue("serial_tx");
+    iEnum6.addEnumValue("high_z");
+    iEnum6.addEnumValue("gpio_low");
+    iEnum6.addEnumValue("gpio_high");
+    iEnum6.addEnumValue("gpio_disabled");
+    io.addSubParam(iEnum6);
+    auto iEnum7 = TConfigParam("tio3", QString(""), TConfigParam::TType::TEnum, "");
+    iEnum7.addEnumValue("serial_rx");
+    iEnum7.addEnumValue("serial_tx");
+    iEnum7.addEnumValue("serial_tx_rx");
+    iEnum7.addEnumValue("high_z");
+    iEnum7.addEnumValue("gpio_low");
+    iEnum7.addEnumValue("gpio_high");
+    iEnum7.addEnumValue("gpio_disabled");
+    io.addSubParam(iEnum7);
+    auto iEnum8 = TConfigParam("tio4", QString(""), TConfigParam::TType::TEnum, "");
+    iEnum8.addEnumValue("serial_tx");
+    iEnum8.addEnumValue("high_z");
+    iEnum8.addEnumValue("gpio_low");
+    iEnum8.addEnumValue("gpio_high");
+    iEnum8.addEnumValue("gpio_disabled");
+    io.addSubParam(iEnum8);
+    //io.addSubParam(TConfigParam("tio_states", QString(""), TConfigParam::TType::TBool, ""));
     //io.addSubParam(TConfigParam("vcc_glitcht", QString(""), TConfigParam::TType::TInt, "", true));
     auto funI1 = TConfigParam("vglitch_disable", QString(""), TConfigParam::TType::TDummy, "");
     funI1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
@@ -168,27 +208,46 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     io.addSubParam(funI2);
 
     //Trigger
-    trigger.addSubParam(TConfigParam("triggers", QString(""), TConfigParam::TType::TString, ""));
+    trigger.addSubParam(TConfigParam("triggers", QString(""), TConfigParam::TType::TString, "Refer to CW docs. This parameter CANNOT be verified inside TraceXpert! The whole \
+                                                                                            config param struct is gonna be marked as invalid if you write an invalid expression here."));
     trigger.addSubParam(TConfigParam("module", QString(""), TConfigParam::TType::TString, "", true));
 
-    //Glitch
-    glitch.addSubParam(TConfigParam("arm_timing", QString(""), TConfigParam::TType::TString, ""));
-    glitch.addSubParam(TConfigParam("clk_src", QString(""), TConfigParam::TType::TString, ""));
+    //Glitch - continue from here
+    auto glEnum1 = TConfigParam("arm_timing", QString(""), TConfigParam::TType::TEnum, "");
+    glEnum1.addEnumValue("no_glitch");
+    glEnum1.addEnumValue("before_scope");
+    glEnum1.addEnumValue("after_scope");
+    glitch.addSubParam(glEnum1);
+    auto glEnum2 = TConfigParam("clk_src", QString(""), TConfigParam::TType::TEnum, "");
+    glEnum2.addEnumValue("target");
+    glEnum2.addEnumValue("clkgen");
+    glEnum2.addEnumValue("pll");
+    glitch.addSubParam(glEnum2);
     glitch.addSubParam(TConfigParam("ext_offset", QString(""), TConfigParam::TType::TInt, ""));
-    glitch.addSubParam(TConfigParam("offset", QString(""), TConfigParam::TType::TInt, ""));
+    glitch.addSubParam(TConfigParam("offset", QString(""), TConfigParam::TType::TReal, ""));
+    //DO NOT change the hint string! It is used to recognize a write only parameter in the code later on!
     glitch.addSubParam(TConfigParam("offset_fine", QString(""), TConfigParam::TType::TInt, "Write-only, reads return zero"));
-    glitch.addSubParam(TConfigParam("output", QString(""), TConfigParam::TType::TInt, ""));
-    glitch.addSubParam(TConfigParam("repeat", QString(""), TConfigParam::TType::TString, ""));
-    glitch.addSubParam(TConfigParam("trigger_src", QString(""), TConfigParam::TType::TString, ""));
+    auto glEnum3 = TConfigParam("output", QString(""), TConfigParam::TType::TEnum, "");
+    glEnum3.addEnumValue("clock_only");
+    glEnum3.addEnumValue("glitch_only");
+    glEnum3.addEnumValue("clock_or");
+    glEnum3.addEnumValue("clock_xor");
+    glEnum3.addEnumValue("enable_only");
+    glitch.addSubParam(glEnum3);
+    glitch.addSubParam(TConfigParam("repeat", QString(""), TConfigParam::TType::TInt, ""));
+    auto glEnum4 = TConfigParam("trigger_src", QString(""), TConfigParam::TType::TEnum, "");
+    glEnum4.addEnumValue("continuous");
+    glEnum4.addEnumValue("manual");
+    glEnum4.addEnumValue("ext_single");
+    glEnum4.addEnumValue("ext_continuous");
+    glitch.addSubParam(glEnum4);
     glitch.addSubParam(TConfigParam("width", QString(""), TConfigParam::TType::TReal, ""));
+    //DO NOT change the hint string! It is used to recognize a write only parameter in the code later on!
     glitch.addSubParam(TConfigParam("width_fine", QString(""), TConfigParam::TType::TInt, "Write-only, reads return zero"));
     auto funG1 = TConfigParam("manual_trigger", QString(""), TConfigParam::TType::TDummy, "");
     funG1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
     glitch.addSubParam(funG1);
     //read_status()??
-
-    //TODO object based
-
 
     top.addSubParam(gain);
     top.addSubParam(adc);
@@ -321,6 +380,35 @@ bool TnewaeScope::_validatePostInitParamsStructure(TConfigParam & params){
         ok = false;
     }
 
+    if(validateParamLL(params.getSubParamByName("Glitch")->getSubParamByName("ext_offset")->getValue(), 0, INT32_MAX)){
+        params.getSubParamByName("Glitch")->getSubParamByName("ext_offset")->setState(TConfigParam::TState::TError);
+        ok = false;
+    }
+
+    if(validateParamD(params.getSubParamByName("Glitch")->getSubParamByName("offset")->getValue(), -50, 50)){
+        params.getSubParamByName("Glitch")->getSubParamByName("offset")->setState(TConfigParam::TState::TError);
+        ok = false;
+    }
+
+    if(validateParamLL(params.getSubParamByName("Glitch")->getSubParamByName("offset_fine")->getValue(), -255, 255)){
+        params.getSubParamByName("Glitch")->getSubParamByName("offset_fine")->setState(TConfigParam::TState::TError);
+        ok = false;
+    }
+
+    if(validateParamLL(params.getSubParamByName("Glitch")->getSubParamByName("width_fine")->getValue(), -255, 255)){
+        params.getSubParamByName("Glitch")->getSubParamByName("width_fine")->setState(TConfigParam::TState::TError);
+        ok = false;
+    }
+
+    if(validateParamLL(params.getSubParamByName("Glitch")->getSubParamByName("repeat")->getValue(), 1, 8192)){
+        params.getSubParamByName("Glitch")->getSubParamByName("repeat")->setState(TConfigParam::TState::TError);
+        ok = false;
+    }
+
+    if(validateParamD(params.getSubParamByName("Glitch")->getSubParamByName("width")->getValue(), -49.8, 49.8)){
+        params.getSubParamByName("Glitch")->getSubParamByName("width")->setState(TConfigParam::TState::TError);
+        ok = false;
+    }
 
 
     return ok;
@@ -486,7 +574,9 @@ TConfigParam TnewaeScope::getPostInitParams() const{
     return updatePostInitParams(params);
 }
 
-TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){  
+TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){
+    m_postInitParams.resetState(true);
+    _validatePostInitParamsStructure(params);
     m_postInitParams = updatePostInitParams(params, true);
     return m_postInitParams;
 }
