@@ -1,6 +1,6 @@
 #include "tnewaedevice.h"
 
-TnewaeDevice::TnewaeDevice(const QString & name_in, const QString & sn_in, uint8_t id_in){
+TnewaeDevice::TnewaeDevice(const QString & name_in, const QString & sn_in, TNewae * plugin_in, bool createdManually_in/* = true*/){
     m_initialized = false;
     //TODO
 }
@@ -8,6 +8,19 @@ TnewaeDevice::TnewaeDevice(const QString & name_in, const QString & sn_in, uint8
 
 TnewaeDevice::~TnewaeDevice(){
     //TODO
+}
+
+void TnewaeDevice::setId(){
+//TODO
+}
+
+uint8_t TnewaeDevice::getId(){
+//TODO
+}
+
+QString TnewaeDevice::getDeviceSn(){
+//TODO
+    return "";
 }
 
 QString TnewaeDevice::getName() const{
@@ -33,11 +46,8 @@ TConfigParam TnewaeDevice::setPreInitParams(TConfigParam params){
 }
 
 void TnewaeDevice::init(bool *ok/* = nullptr*/){
-    //TODO intialize device
-    //pythonProcess->write("HALT");
-    //pythonProcess->waitForBytesWritten();
-
-    //Pozor, inicializovat jen jednou! Bacha na Scope
+    //najít a propojit se scope obejct
+    //nastavit stejné id
 }
 
 void TnewaeDevice::deInit(bool *ok/* = nullptr*/){

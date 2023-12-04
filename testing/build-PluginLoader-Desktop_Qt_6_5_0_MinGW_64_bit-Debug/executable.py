@@ -166,6 +166,7 @@ def callCwFuncOnAnObject(line, shm, cwDict):
         objectName = objectName.rstrip('\r\n')
         functionName = splitLine[1]
         functionName = functionName.rstrip('\r\n')
+        print(functionName, flush=True, file=sys.stderr)
     except:
         print("ERROR", flush=True) 
         print("Invalid Python CW function called or it was called on an invalid object (one of the names is probably empty)", flush=True, file=sys.stderr)
@@ -181,7 +182,7 @@ def callCwFuncOnAnObject(line, shm, cwDict):
         function = getattr(subObject, functionName)
     except AttributeError:
         print("ERROR", flush=True) 
-        print("Invalid Python CW function called (this method of the specified subobejct of the CW object does not exist)", flush=True, file=sys.stderr)
+        print("Invalid Python CW function called (this method of the specified subobject of the CW object does not exist)", flush=True, file=sys.stderr)
         return
 
     ret = ""

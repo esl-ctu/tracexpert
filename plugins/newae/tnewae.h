@@ -24,6 +24,7 @@
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 class TnewaeScope;
+class TnewaeDevice;
 
 const std::size_t ADDR_SIZE = 16;
 const std::size_t SM_SIZE_ADDR = 0;
@@ -72,9 +73,9 @@ public:
     virtual TConfigParam setPostInitParams(TConfigParam params) override;
 
     virtual TIODevice * addIODevice(QString name, QString info, bool *ok = nullptr) override;
+    TIODevice * addIODeviceAutomatically(QString name, QString info, bool *ok = nullptr);//Never call this manually!
     virtual TScope * addScope(QString name, QString info, bool *ok = nullptr) override;
-    //Never call this manually!
-    TScope * addScopeAutomatically(QString name, QString info, bool *ok = nullptr);
+    TScope * addScopeAutomatically(QString name, QString info, bool *ok = nullptr);//Never call this manually!
 
     /// Get available IO devices, available only after init()
     virtual QList<TIODevice *> getIODevices() override;
@@ -97,7 +98,6 @@ public:
     void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
     bool runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out);
     bool runPythonFunctionOnAnObjectAndGetStringOutput(int8_t cwId, QString ObjectName, QString functionName, size_t &dataLen, QString &out);
-    //////////////////////////////////////////////////(int8_t cwId, QString ObjectName, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out)
     bool getPythonParameter(int8_t cwId, QString paramName, QString &out);
     bool getPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString &out);
     bool setPythonParameter(int8_t cwId, QString paramName, QString value, QString &out); //Out is the new value of the parameter, can be discarded

@@ -136,8 +136,10 @@ int main(int argc, char *argv[])
                                 uint8_t buf[50000];
                                 TScope::TSampleType stype;
                                 bool overvoltage;
+                                size_t expSize;
 
-                                a[0]->downloadSamples(0, buf, 50000, &stype, &samplesPerTraceDownloaded, &tracesDownloaded, &overvoltage);
+                                //a[0]->run(&expSize);
+                                //a[0]->downloadSamples(0, buf, 50000, &stype, &samplesPerTraceDownloaded, &tracesDownloaded, &overvoltage);
 
                                 double * buf2 = (double *) buf;
 
@@ -147,7 +149,7 @@ int main(int argc, char *argv[])
                                 stream << Qt::endl;
 
                                 auto ret = a[0]->getPostInitParams();
-                                ret.getSubParamByName("IO")->getSubParamByName("vglitch_reset")->getSubParamByName("Run?")->setValue("true");
+                                ret.getSubParamByName("Clock")->getSubParamByName("reset_adc")->getSubParamByName("Run?")->setValue("true");
                                 a[0]->setPostInitParams(ret);
                             }
                         }

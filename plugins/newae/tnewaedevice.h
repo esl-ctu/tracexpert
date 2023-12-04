@@ -9,12 +9,13 @@
 
 #include "tiodevice.h"
 
+class TNewae;
 
 class TnewaeDevice : public TIODevice {
 
 public:
 
-    TnewaeDevice(const QString & name_in, const QString & sn_in, uint8_t id_in);
+    TnewaeDevice(const QString & name_in, const QString & sn_in, TNewae * plugin_in, bool createdManually_in = true);
 
     virtual ~TnewaeDevice() override;
 
@@ -32,6 +33,10 @@ public:
 
     virtual size_t writeData(const uint8_t * buffer, size_t len) override;
     virtual size_t readData(uint8_t * buffer, size_t len) override;
+
+    void setId();
+    uint8_t getId();
+    QString getDeviceSn();
 
 protected:
     /*void _openPort(bool *ok = nullptr);

@@ -1,9 +1,8 @@
 #include "tnewae.h"
 //Next:
 //sériovka k targetu
-//2. nečíst write only parametry
-//3. cesta k .py souboru (takhle dobrý? nebo jako preinitparam?)
-//4. run() nemá být blokující
+//1. run() nemá být blokující
+//2. co když se uživatel pokusí předidat stejné zařízení/cw dvakrát?
 // arm, pošlu příkaz, počkám na ack, pak capture a pak get_last_trace.
 ////ten ack jsem myslel k tomu příkazu. Jako simpleserial_write (resp. já používám výhradně cmd_send() u simpleserial v2)
 
@@ -14,6 +13,7 @@
 //run() nejspíš blokuje - mám spawnout extra thread? To by nebylo fajn.
 //exposenout manual_trigger()?
 //write-only parametry?
+//cesta k .py souboru (takhle dobrý? nebo jako preinitparam?)
 
 
 
@@ -355,9 +355,14 @@ void TNewae::init(bool *ok) {
             return;
         }
 
-        //Append available devices to m_scopes
+        //Append available devices to m_scopes/m_devices
         for(size_t i = 0; i < devices.size(); ++i) {
             addScopeAutomatically(devices.at(i).first, devices.at(i).second, &succ);
+            if(!succ) {
+                if(ok != nullptr) *ok = false;
+                return;
+            }
+            addIODeviceAutomatically(devices.at(i).first, devices.at(i).second, &succ);
             if(!succ) {
                 if(ok != nullptr) *ok = false;
                 return;
@@ -410,11 +415,28 @@ TConfigParam TNewae::setPostInitParams(TConfigParam params) {
     return m_postInitParams;
 }
 
-TIODevice * TNewae::addIODevice(QString name, QString info, bool *ok) {
-    //m_ports.append(new TnewaeDevice(name, info, numDevices));
-    //numDevices++;
-    if(ok != nullptr) *ok = true;
-    //TODO
+TIODevice * TNewae::addIODevice(QString name, QString info, bool *ok) {//TODO!!!!!
+    TnewaeDevice * port = new TnewaeDevice(name, info, this, true);
+    m_ports.append(port);
+    return port;
+}
+
+TIODevice * TNewae::addIODeviceAutomatically(QString name, QString info, bool *ok) {
+    //Check if the port exists
+    for (int i = 0; i < m_ports.length(); ++i){
+        TnewaeDevice * port = (TnewaeDevice *) m_ports.at(i);
+        QString portSn = port->getDeviceSn();
+        if (portSn == info) {
+            //Don't do anything, port already exists
+            //No need to throw a warning
+            if(ok != nullptr) *ok = true;
+            return port;
+        }
+    }
+
+    TnewaeDevice * port = new TnewaeDevice(name, info, this, false);
+    m_ports.append(port);
+    return port;
 }
 
 TScope * TNewae::addScope(QString name, QString info, bool *ok) {
