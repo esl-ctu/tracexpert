@@ -1,9 +1,9 @@
 #include "tnewae.h"
 //Next:
 //sériovka k targetu
-//1. přepsat parametry na enumy (nice to have)
-//2. cesta k .py souboru (takhle dobrý? nebo jako preinitparam?)
-//3. run() nemá být blokující
+//2. nečíst write only parametry
+//3. cesta k .py souboru (takhle dobrý? nebo jako preinitparam?)
+//4. run() nemá být blokující
 // arm, pošlu příkaz, počkám na ack, pak capture a pak get_last_trace.
 ////ten ack jsem myslel k tomu příkazu. Jako simpleserial_write (resp. já používám výhradně cmd_send() u simpleserial v2)
 
@@ -13,6 +13,7 @@
 //overvoltage (nepodporováno?)
 //run() nejspíš blokuje - mám spawnout extra thread? To by nebylo fajn.
 //exposenout manual_trigger()?
+//write-only parametry?
 
 
 

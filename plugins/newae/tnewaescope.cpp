@@ -518,9 +518,15 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                 if (!(ok & ok2 & ok3)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read write params.");
             } else {
                 bool ok, ok2, ok3;
-                ok = plugin->getPythonParameter(cwId, prmName, out);
-                paramsIn.getSubParamByName(prmName, &ok2)->setValue(out, &ok3);
-                if (!(ok & ok2 & ok3)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read some params.");
+                bool isWriteOnly = paramsIn.getSubParamByName(prmName, &ok)->getHint() == "Write-only, reads return zero";
+                if(!isWriteOnly && ok) { //If parameter is not write-only
+                    ok = plugin->getPythonParameter(cwId, prmName, out);
+                    paramsIn.getSubParamByName(prmName, &ok2)->setValue(out, &ok3);
+                    if (!(ok & ok2 & ok3)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read some params.");
+                } else { //Do nothing - keep old value
+                    //paramsIn.getSubParamByName(prmName, &ok2)->setValue("0", &ok3);
+                    //if (!(ok & ok2 & ok3)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read some params.");
+                }
             }
         }
 
@@ -538,9 +544,15 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                         if (!(ok & ok2 & ok3 & ok4)) paramsIn.setState(TConfigParam::TState::TError, "Cannot write some params.");
                     } else {
                         bool ok, ok2, ok3, ok4;
-                        ok = plugin->getPythonSubparameter(cwId, prmName, subPrmName, out);
-                        paramsIn.getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue(out, &ok4);
-                        if (!(ok & ok2 & ok3 & ok4)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read some params.");
+                        bool isWriteOnly = paramsIn.getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->getHint() == "Write-only, reads return zero";
+                        if(!isWriteOnly && ok2 && ok3) {
+                            ok = plugin->getPythonSubparameter(cwId, prmName, subPrmName, out);
+                            paramsIn.getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue(out, &ok4);
+                            if (!(ok & ok2 & ok3 & ok4)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read some params.");
+                        } else { //Do nothing - keep old value
+                            //paramsIn.getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue("0", &ok4);
+                            //if (!(ok2 & ok3 & ok4)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read some params.");
+                        }
                     }
                 } else { //Call function
                     if (subSubPrms[0].getValue() == "true" && write){
