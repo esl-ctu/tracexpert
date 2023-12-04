@@ -335,12 +335,13 @@ bool TnewaeScope::_validatePreInitParamsStructure(TConfigParam & params){
 
 bool TnewaeScope::_validatePostInitParamsStructure(TConfigParam & params){
     bool ok = true;
+
     if(validateParamD(params.getSubParamByName("Gain")->getSubParamByName("db")->getValue(), -6.5, 56)){
         params.getSubParamByName("Gain")->getSubParamByName("db")->setState(TConfigParam::TState::TError);
         ok = false;
     }
 
-    if(validateParamLL(params.getSubParamByName("gain")->getSubParamByName("gain")->getValue(), 0, 78)){
+    if(validateParamLL(params.getSubParamByName("Gain")->getSubParamByName("gain")->getValue(), 0, 78)){
         params.getSubParamByName("Gain")->getSubParamByName("gain")->setState(TConfigParam::TState::TError);
         ok = false;
     }
@@ -390,14 +391,18 @@ bool TnewaeScope::_validatePostInitParamsStructure(TConfigParam & params){
         ok = false;
     }
 
-    if(validateParamLL(params.getSubParamByName("Glitch")->getSubParamByName("offset_fine")->getValue(), -255, 255)){
-        params.getSubParamByName("Glitch")->getSubParamByName("offset_fine")->setState(TConfigParam::TState::TError);
-        ok = false;
+    if (params.getSubParamByName("Glitch")->getSubParamByName("offset_fine")->getValue() != ""){
+        if(validateParamLL(params.getSubParamByName("Glitch")->getSubParamByName("offset_fine")->getValue(), -255, 255)){
+            params.getSubParamByName("Glitch")->getSubParamByName("offset_fine")->setState(TConfigParam::TState::TError);
+            ok = false;
+        }
     }
 
-    if(validateParamLL(params.getSubParamByName("Glitch")->getSubParamByName("width_fine")->getValue(), -255, 255)){
-        params.getSubParamByName("Glitch")->getSubParamByName("width_fine")->setState(TConfigParam::TState::TError);
-        ok = false;
+    if (params.getSubParamByName("Glitch")->getSubParamByName("width_fine")->getValue() != ""){
+        if(validateParamLL(params.getSubParamByName("Glitch")->getSubParamByName("width_fine")->getValue(), -255, 255)){
+            params.getSubParamByName("Glitch")->getSubParamByName("width_fine")->setState(TConfigParam::TState::TError);
+            ok = false;
+        }
     }
 
     if(validateParamLL(params.getSubParamByName("Glitch")->getSubParamByName("repeat")->getValue(), 1, 8192)){
