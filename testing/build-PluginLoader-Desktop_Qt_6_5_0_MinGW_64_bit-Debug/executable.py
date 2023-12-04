@@ -161,14 +161,14 @@ def callCwFuncOnAnObject(line, shm, cwDict):
     functionName = ""
     splitLine = ""
     try:
-        splitLine = functionName.split(FIELD_SEPARATOR, 1)
+        splitLine = objectAndFunctionNames.split(FIELD_SEPARATOR, 1)
         objectName = splitLine[0]
         objectName = objectName.rstrip('\r\n')
         functionName = splitLine[1]
         functionName = functionName.rstrip('\r\n')
     except:
         print("ERROR", flush=True) 
-        print("Invalid Python CW function called or it was called on an invalid obejct (one of the names is probably empty)", flush=True, file=sys.stderr)
+        print("Invalid Python CW function called or it was called on an invalid object (one of the names is probably empty)", flush=True, file=sys.stderr)
 
     try:
         subObject = getattr(scope, objectName)
