@@ -56,14 +56,9 @@ QModelIndex TProjectModel::index(int row, int column, const QModelIndex & parent
 
     const TProjectItem * parentItem;
 
-    if (!parent.isValid()) {
-        parentItem = this;
-    }
-    else {
-        parentItem = static_cast<TProjectItem *>(parent.internalPointer());
-    }
+    parentItem = static_cast<TProjectItem *>(parent.internalPointer());
 
-    TProjectItem * childItem = parentItem->child(row);
+    const TProjectItem * childItem = parentItem ? parentItem->child(row) : this;
 
     if (childItem) {
         return createIndex(row, column, childItem);
@@ -133,7 +128,7 @@ TProjectItem * TProjectModel::child(int row) const
 
 QString TProjectModel::name() const
 {
-    return QString();
+    return tr("Project");
 }
 
 QVariant TProjectModel::status() const

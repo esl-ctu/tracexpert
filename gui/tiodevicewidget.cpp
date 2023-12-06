@@ -146,7 +146,6 @@ void TIODeviceWidget::receiveFailed() {
 void TIODeviceWidget::dataReceived(QByteArray data)
 {
     m_communicationLogTextEdit->appendPlainText(data);
-    QCoreApplication::processEvents(QEventLoop::ProcessEventsFlag::AllEvents);
 }
 
 void TIODeviceWidget::sendBytes()

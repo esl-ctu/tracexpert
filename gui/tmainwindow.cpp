@@ -37,16 +37,45 @@ TMainWindow::~TMainWindow()
 
 void TMainWindow::createMenus()
 {
-    QMenu *fileMenu = new QMenu(tr("&File"), this);
+    QMenu * fileMenu = new QMenu(tr("&File"), this);
+    fileMenu->addAction(m_newProjectAction);
+    fileMenu->addAction(m_openProjectAction);
+    fileMenu->addAction(m_saveProjectAction);
+    fileMenu->addAction(m_saveProjectAsAction);
     menuBar()->addMenu(fileMenu);
 
-    QMenu *devicesMenu = new QMenu(tr("Devices"), this);
+    QMenu * devicesMenu = new QMenu(tr("Devices"), this);
     devicesMenu->addAction(m_openDeviceAction);
     menuBar()->addMenu(devicesMenu);
 }
 
 void TMainWindow::createActions()
 {
+    m_newProjectAction = new QAction(tr("&New project"), this);
+    m_newProjectAction->setShortcuts(QKeySequence::New);
+    m_newProjectAction->setStatusTip(tr("Create a new project"));
+    m_newProjectAction->setIcon(QIcon::fromTheme("document-new"));
+    m_newProjectAction->setIconVisibleInMenu(true);
+    //connect(m_newProjectAction, SIGNAL(triggered()), this, SLOT(newFile()));
+
+    m_openProjectAction = new QAction(tr("&Open project"), this);
+    m_openProjectAction->setShortcuts(QKeySequence::Open);
+    m_openProjectAction->setStatusTip(tr("Open an existing project"));
+    m_newProjectAction->setIcon(QIcon::fromTheme("document-open"));
+    //connect(m_openProjectAction, SIGNAL(triggered()), this, SLOT(openFile()));
+
+    m_saveProjectAction = new QAction(tr("&Save project"), this);
+    m_saveProjectAction->setShortcuts(QKeySequence::Save);
+    m_newProjectAction->setIcon(QIcon::fromTheme("document-save"));
+    m_saveProjectAction->setStatusTip(tr("Save the currect project"));
+    //connect(m_saveProjectAction, SIGNAL(triggered()), this, SLOT(saveFile()));
+
+    m_saveProjectAsAction = new QAction(tr("&Save project as"), this);
+    m_saveProjectAsAction->setShortcuts(QKeySequence::SaveAs);
+    m_newProjectAction->setIcon(QIcon::fromTheme("document-save-as"));
+    m_saveProjectAsAction->setStatusTip(tr("Select path and save the current project"));
+    //connect(m_saveProjectAsAction, SIGNAL(triggered()), this, SLOT(saveAs()));
+
     m_openDeviceAction = new QAction(tr("Open device"), this);
     m_openDeviceAction->setStatusTip(tr("Open a device using device wizard"));
     connect(m_openDeviceAction, SIGNAL(triggered()), this, SLOT(showDeviceWizard()));

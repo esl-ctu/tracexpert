@@ -234,6 +234,7 @@ void TIODeviceReceiver::startReceiving()
         }
 
         QCoreApplication::processEvents(QEventLoop::ProcessEventsFlag::AllEvents);
+        thread()->msleep(AUTORECEIVE_DELAY_MS);
     }
 }
 

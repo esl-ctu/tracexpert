@@ -7,6 +7,7 @@
 #include "tiodevice.h"
 
 #define DATA_BLOCK_SIZE 64
+#define AUTORECEIVE_DELAY_MS 20
 
 class TIODeviceContainer;
 
