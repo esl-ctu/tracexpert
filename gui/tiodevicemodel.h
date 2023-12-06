@@ -24,11 +24,6 @@ public:
     bool init() override;
     bool deInit() override;
 
-    TConfigParam preInitParams() const override;
-    TConfigParam postInitParams() const override;
-    TConfigParam setPreInitParams(const TConfigParam & param) override;
-    TConfigParam setPostInitParams(const TConfigParam & param) override;
-
     int childrenCount() const override;
     TProjectItem * child(int row) const override;
     QVariant status() const override;

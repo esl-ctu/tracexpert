@@ -3,38 +3,31 @@
 #include "tcomponentcontainer.h"
 
 TComponentModel::TComponentModel(TPlugin * plugin, TComponentContainer * parent)
-    : TProjectItem(parent->model(), parent), TPluginUnitModel(parent), m_plugin(plugin)
+    : TProjectItem(parent->model(), parent), TPluginUnitModel(plugin, parent), m_plugin(plugin)
 {
     m_IOdevices = new TIODeviceContainer(this);
     m_scopes = new TScopeContainer(this);
-
-    m_name = plugin->getName();
-    m_info = plugin->getInfo();
 }
 
 bool TComponentModel::init()
 {
-    if (isInit()) {
+    if (isInit() || !TPluginUnitModel::init()) {
         return false;
     }
 
-    bool ok;
-    m_plugin->init(&ok);
+    m_isInit = true;
 
-    if (ok) {
-        m_isInit = true;
-        QList<TIODevice *> IODevices = m_plugin->getIODevices();
-        for (int i = 0; i < IODevices.length(); i++) {
-            appendIODevice(IODevices[i]);
-        }
-
-        QList<TScope *> scopes = m_plugin->getScopes();
-        for (int i = 0; i < scopes.length(); i++) {
-            appendScope(scopes[i]);
-        }
+    QList<TIODevice *> IODevices = m_plugin->getIODevices();
+    for (int i = 0; i < IODevices.length(); i++) {
+        appendIODevice(IODevices[i]);
     }
 
-    return ok;
+    QList<TScope *> scopes = m_plugin->getScopes();
+    for (int i = 0; i < scopes.length(); i++) {
+        appendScope(scopes[i]);
+    }
+
+    return true;
 }
 
 bool TComponentModel::deInit()
@@ -55,34 +48,13 @@ bool TComponentModel::deInit()
         }
     }
 
-    bool ok;
-    m_plugin->deInit(&ok);
-
-    if (ok) {
-        m_isInit = false;
+    if (!TPluginUnitModel::deInit()) {
+        return false;
     }
 
-    return ok;
-}
+    m_isInit = false;
 
-TConfigParam TComponentModel::preInitParams() const
-{
-    return m_plugin->getPreInitParams();
-}
-
-TConfigParam TComponentModel::postInitParams() const
-{
-    return m_plugin->getPostInitParams();
-}
-
-TConfigParam TComponentModel::setPreInitParams(const TConfigParam & param)
-{
-    return m_plugin->setPreInitParams(param);
-}
-
-TConfigParam TComponentModel::setPostInitParams(const TConfigParam & param)
-{
-    return m_plugin->setPostInitParams(param);
+    return true;
 }
 
 int TComponentModel::IODeviceCount() const

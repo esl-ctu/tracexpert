@@ -3,62 +3,30 @@
 #include "tscopecontainer.h"
 
 TScopeModel::TScopeModel(TScope * scope, TScopeContainer * parent)
-    : TProjectItem(parent->model(), parent), TPluginUnitModel(parent), m_scope(scope)
+    : TProjectItem(parent->model(), parent), TPluginUnitModel(scope, parent), m_scope(scope)
 {
-    m_name = m_scope->getName();
-    m_info = m_scope->getInfo();
 }
 
 bool TScopeModel::init()
 {
-    if (isInit()) {
+    if (isInit() || !TPluginUnitModel::init()) {
         return false;
     }
 
-    bool ok;
-    m_scope->init(&ok);
+    m_isInit = true;
 
-    if (ok) {
-        m_isInit = true;
-    }
-
-    return ok;
+    return true;
 }
 
 bool TScopeModel::deInit()
 {
-    if (!isInit()) {
+    if (!isInit() || !TPluginUnitModel::deInit()) {
         return false;
     }
 
-    bool ok;
-    m_scope->deInit(&ok);
+    m_isInit = false;
 
-    if (ok) {
-        m_isInit = false;
-    }
-
-    return ok;
-}
-
-TConfigParam TScopeModel::preInitParams() const
-{
-    return m_scope->getPreInitParams();
-}
-
-TConfigParam TScopeModel::postInitParams() const
-{
-    return m_scope->getPostInitParams();
-}
-
-TConfigParam TScopeModel::setPreInitParams(const TConfigParam & param)
-{
-    return m_scope->setPreInitParams(param);
-}
-
-TConfigParam TScopeModel::setPostInitParams(const TConfigParam & param)
-{
-    return m_scope->setPostInitParams(param);
+    return true;
 }
 
 int TScopeModel::childrenCount() const
@@ -66,7 +34,7 @@ int TScopeModel::childrenCount() const
     return 0;
 }
 
-TProjectItem *TScopeModel::child(int row) const
+TProjectItem * TScopeModel::child(int row) const
 {
     return nullptr;
 }

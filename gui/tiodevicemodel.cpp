@@ -6,14 +6,11 @@
 #include "tiodevicecontainer.h"
 
 TIODeviceModel::TIODeviceModel(TIODevice * IODevice, TIODeviceContainer * parent)
-    : TProjectItem(parent->model(), parent), TPluginUnitModel(parent), m_IODevice(IODevice)
+    : TProjectItem(parent->model(), parent), TPluginUnitModel(IODevice, parent), m_IODevice(IODevice)
 {
     m_sending = false;
     m_receiving = false;
     m_autoReceive = false;
-
-    m_name = m_IODevice->getName();
-    m_info = m_IODevice->getInfo();
 }
 
 TIODeviceModel::~TIODeviceModel()
@@ -28,79 +25,49 @@ void TIODeviceModel::show()
 
 bool TIODeviceModel::init()
 {
-    if (isInit()) {
+    if (isInit() || !TPluginUnitModel::init()) {
         return false;
     }
 
-    bool ok;
-    m_IODevice->init(&ok);
+    m_isInit = true;
 
-    if (ok) {
-        m_isInit = true;
+    m_receiver = new TIODeviceReceiver(m_IODevice);
+    m_receiver->moveToThread(&receiverThread);
+    m_sender = new TIODeviceSender(m_IODevice);
+    m_sender->moveToThread(&senderThread);
 
-        m_receiver = new TIODeviceReceiver(m_IODevice);
-        m_receiver->moveToThread(&receiverThread);
-        m_sender = new TIODeviceSender(m_IODevice);
-        m_sender->moveToThread(&senderThread);
+    connect(this, &TIODeviceModel::sendData, m_sender, &TIODeviceSender::sendData, Qt::ConnectionType::QueuedConnection);
+    connect(m_sender, &TIODeviceSender::dataSent, this, &TIODeviceModel::dataSent, Qt::ConnectionType::QueuedConnection);
+    connect(m_sender, &TIODeviceSender::sendFailed, this, &TIODeviceModel::sendFailed, Qt::ConnectionType::QueuedConnection);
 
-        connect(this, &TIODeviceModel::sendData, m_sender, &TIODeviceSender::sendData, Qt::ConnectionType::QueuedConnection);
-        connect(m_sender, &TIODeviceSender::dataSent, this, &TIODeviceModel::dataSent, Qt::ConnectionType::QueuedConnection);
-        connect(m_sender, &TIODeviceSender::sendFailed, this, &TIODeviceModel::sendFailed, Qt::ConnectionType::QueuedConnection);
+    connect(this, &TIODeviceModel::receiveData, m_receiver, &TIODeviceReceiver::receiveData, Qt::ConnectionType::QueuedConnection);
+    connect(m_receiver, &TIODeviceReceiver::dataReceived, this, &TIODeviceModel::dataReceived, Qt::ConnectionType::QueuedConnection);
+    connect(m_receiver, &TIODeviceReceiver::receiveFailed, this, &TIODeviceModel::receiveFailed, Qt::ConnectionType::QueuedConnection);
+    connect(this, &TIODeviceModel::startReceiving, m_receiver, &TIODeviceReceiver::startReceiving, Qt::ConnectionType::QueuedConnection);
+    connect(this, &TIODeviceModel::stopReceiving, m_receiver, &TIODeviceReceiver::stopReceiving, Qt::ConnectionType::QueuedConnection);
 
-        connect(this, &TIODeviceModel::receiveData, m_receiver, &TIODeviceReceiver::receiveData, Qt::ConnectionType::QueuedConnection);
-        connect(m_receiver, &TIODeviceReceiver::dataReceived, this, &TIODeviceModel::dataReceived, Qt::ConnectionType::QueuedConnection);
-        connect(m_receiver, &TIODeviceReceiver::receiveFailed, this, &TIODeviceModel::receiveFailed, Qt::ConnectionType::QueuedConnection);
-        connect(this, &TIODeviceModel::startReceiving, m_receiver, &TIODeviceReceiver::startReceiving, Qt::ConnectionType::QueuedConnection);
-        connect(this, &TIODeviceModel::stopReceiving, m_receiver, &TIODeviceReceiver::stopReceiving, Qt::ConnectionType::QueuedConnection);
+    receiverThread.start();
+    senderThread.start();
 
-        receiverThread.start();
-        senderThread.start();
+    emit initialized(this);
 
-        emit initialized(this);
-    }
-
-    return ok;
+    return true;
 }
 
 bool TIODeviceModel::deInit()
 {
-    if (!isInit()) {
+    if (!isInit() || !TPluginUnitModel::deInit()) {
         return false;
     }
 
-    bool ok;
-    m_IODevice->deInit(&ok);
+    m_isInit = false;
 
-    if (ok) {
-        m_isInit = false;
+    receiverThread.terminate();
+    senderThread.terminate();
 
-        receiverThread.terminate();
-        senderThread.terminate();
+    emit deinitialized(this);
 
-        emit deinitialized(this);
-    }
-
-    return ok;
-}
-
-TConfigParam TIODeviceModel::preInitParams() const
-{
-    return m_IODevice->getPreInitParams();
-}
-
-TConfigParam TIODeviceModel::postInitParams() const
-{
-    return m_IODevice->getPostInitParams();
-}
-
-TConfigParam TIODeviceModel::setPreInitParams(const TConfigParam & param)
-{
-    return m_IODevice->setPreInitParams(param);
-}
-
-TConfigParam TIODeviceModel::setPostInitParams(const TConfigParam & param)
-{
-    return m_IODevice->setPostInitParams(param);
+    return true;
 }
 
 int TIODeviceModel::childrenCount() const
