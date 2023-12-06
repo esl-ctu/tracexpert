@@ -15,8 +15,8 @@ public:
 
     virtual ~TSerialPortDevice() override;
 
-    virtual QString getIODeviceName() const override;
-    virtual QString getIODeviceInfo() const override;
+    virtual QString getName() const override;
+    virtual QString getInfo() const override;
 
     virtual TConfigParam getPreInitParams() const override;
     virtual TConfigParam setPreInitParams(TConfigParam params) override;

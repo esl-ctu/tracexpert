@@ -20,9 +20,9 @@ public:
     virtual ~TFile() override;
 
     /// Plugin name
-    virtual QString getPluginName() const override;
+    virtual QString getName() const override;
     /// Plugin info
-    virtual QString getPluginInfo() const override;
+    virtual QString getInfo() const override;
 
     /// Get the current pre-initialization parameters
     virtual TConfigParam getPreInitParams() const override;

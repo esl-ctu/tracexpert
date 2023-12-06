@@ -7,11 +7,11 @@ TRandom::~TRandom() {
     (*this).TRandom::deInit();
 }
 
-QString TRandom::getPluginName() const {
+QString TRandom::getName() const {
     return QString("Random number generator");
 }
 
-QString TRandom::getPluginInfo() const {
+QString TRandom::getInfo() const {
     return QString("Provides random number generation.");
 }
 

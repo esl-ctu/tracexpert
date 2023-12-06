@@ -1,19 +1,17 @@
-#ifndef TIODEVICE_H
-#define TIODEVICE_H
+#ifndef TCOMMON_H
+#define TCOMMON_H
 
 #include <QString>
 #include "tconfigparam.h"
-#include "tcommon.h"
 
-class TIODevice : public TCommon {
+class TCommon {
 
 public:
+    virtual ~TCommon() {}
 
-    virtual ~TIODevice() {}
-
-    /// IODevice name
+    /// Plugin name
     virtual QString getName() const = 0;
-    /// IODevice info
+    /// Plugin info
     virtual QString getInfo() const = 0;
 
     /// Get the current pre-initialization parameters
@@ -21,9 +19,9 @@ public:
     /// Set the pre-initialization parameters, returns the current params after set
     virtual TConfigParam setPreInitParams(TConfigParam params) = 0;
 
-    /// Initialize the IO device
+    /// Initialize the plugin
     virtual void init(bool *ok = nullptr) = 0;
-    /// Deinitialize the IO device
+    /// Deinitialize the plugin
     virtual void deInit(bool *ok = nullptr) = 0;
 
     /// Get the current post-initialization parameters
@@ -31,11 +29,6 @@ public:
     /// Set the post-initialization parameters, returns the current params after set
     virtual TConfigParam setPostInitParams(TConfigParam params) = 0;
 
-    /// Sends out the specified amount of data from buffer
-    virtual size_t writeData(const uint8_t * buffer, size_t len) = 0;
-    /// Receives the specified amount of data into the buffer
-    virtual size_t readData(uint8_t * buffer, size_t len) = 0;
-
 };
 
-#endif // TIODEVICE_H
+#endif // TCOMMON_H
