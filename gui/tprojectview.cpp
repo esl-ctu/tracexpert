@@ -281,7 +281,7 @@ void TProjectView::deinitIODevice()
         return;
     }
 
-    if (!m_component->deInit()) {
+    if (!m_IODevice->deInit()) {
         TDialog::deviceDeinitFailedGeneralMessage(this);
     }
 }
