@@ -8,8 +8,8 @@ TComponentModel::TComponentModel(TPlugin * plugin, TComponentContainer * parent)
     m_IOdevices = new TIODeviceContainer(this);
     m_scopes = new TScopeContainer(this);
 
-    m_name = plugin->getPluginName();
-    m_info = plugin->getPluginInfo();
+    m_name = plugin->getName();
+    m_info = plugin->getInfo();
 }
 
 bool TComponentModel::init()

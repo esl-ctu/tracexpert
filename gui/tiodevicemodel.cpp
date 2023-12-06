@@ -12,8 +12,8 @@ TIODeviceModel::TIODeviceModel(TIODevice * IODevice, TIODeviceContainer * parent
     m_receiving = false;
     m_autoReceive = false;
 
-    m_name = m_IODevice->getIODeviceName();
-    m_info = m_IODevice->getIODeviceInfo();
+    m_name = m_IODevice->getName();
+    m_info = m_IODevice->getInfo();
 }
 
 TIODeviceModel::~TIODeviceModel()
