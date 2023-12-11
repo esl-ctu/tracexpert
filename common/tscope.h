@@ -33,6 +33,7 @@ public:
         QString m_alias;
         bool m_enabled;        
         qreal m_range; //< Channel range, e.g., when m_range = 5.0, scope range is +5 V to -5 V (i.e., the whole range is 10 V)
+        qreal m_offset;
     };
 
     virtual ~TScope() {}
