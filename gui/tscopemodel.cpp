@@ -15,6 +15,19 @@ bool TScopeModel::init()
 
     m_isInit = true;
 
+    m_repeat = false;
+    m_stopping = false;
+
+    m_collector = new TScopeCollector(m_scope);
+    m_collector->moveToThread(&collectorThread);
+
+    connect(this, &TScopeModel::startDataCollection, m_collector, &TScopeCollector::collectData, Qt::ConnectionType::QueuedConnection);
+    connect(m_collector, &TScopeCollector::dataCollected, this, &TScopeModel::tracesDownloaded, Qt::ConnectionType::QueuedConnection);
+    connect(m_collector, &TScopeCollector::collectionStopped, this, &TScopeModel::dataCollectionStopped, Qt::ConnectionType::QueuedConnection);
+    connect(m_collector, &TScopeCollector::nothingCollected, this, &TScopeModel::noDataCollected, Qt::ConnectionType::QueuedConnection);
+
+    collectorThread.start();
+
     return true;
 }
 
@@ -24,9 +37,21 @@ bool TScopeModel::deInit()
         return false;
     }
 
+    collectorThread.quit();
+
+    delete m_collector;
+
     m_isInit = false;
 
     return true;
+}
+
+TConfigParam TScopeModel::setPostInitParams(const TConfigParam & param)
+{
+    stop();
+    TConfigParam newParam = TPluginUnitModel::setPostInitParams(param);
+    emit channelsStatusChanged();
+    return newParam;
 }
 
 int TScopeModel::childrenCount() const
@@ -46,5 +71,129 @@ QVariant TScopeModel::status() const
     }
     else {
         return tr("Uninitialized");
+    }
+}
+
+QList<TScope::TChannelStatus> TScopeModel::channelsStatus()
+{
+    return m_scope->getChannelsStatus();
+}
+
+void TScopeModel::run()
+{
+    run(true);
+}
+
+void TScopeModel::runSingle()
+{
+    run(false);
+}
+
+void TScopeModel::stop()
+{
+    bool ok;
+    m_stopping = true;
+
+    m_scope->stop(&ok);
+
+    if (!ok) {
+        emit stopFailed();
+        m_stopping = false;
+        return;
+    }
+
+    emit stopped();
+}
+
+void TScopeModel::dataCollected(size_t traces, size_t samples, TScope::TSampleType type, QList<quint8 *> buffers, bool overvoltage)
+{
+    emit tracesDownloaded(traces, samples, type, buffers, overvoltage);
+
+    if (m_repeat) {
+        run(m_repeat);
+    }
+    else {
+        stop();
+    }
+}
+
+void TScopeModel::dataCollectionStopped()
+{
+    if (!m_stopping) {
+        emit downloadFailed();
+    }
+}
+
+void TScopeModel::noDataCollected()
+{
+    emit tracesEmpty();
+}
+
+void TScopeModel::run(bool repeat)
+{
+    size_t bufferSize;
+    bool ok;
+
+    m_repeat = repeat;
+    m_stopping = false;
+
+    m_scope->run(&bufferSize, &ok);
+
+    if (!ok) {
+        emit runFailed();
+        return;
+    }
+
+    emit startDataCollection(bufferSize);
+}
+
+TScopeCollector::TScopeCollector(TScope * scope, QObject * parent)
+    : QObject(parent), m_scope(scope)
+{
+
+}
+
+void TScopeCollector::collectData(size_t bufferSize)
+{
+    QList<TScope::TChannelStatus> status = m_scope->getChannelsStatus();
+
+    QList<quint8 *> buffers;
+    TScope::TSampleType type;
+    size_t samples;
+    size_t traces;
+    bool overload = false;
+    int channels = 0;
+
+    for (int i = 0; i < status.count(); i++) {
+        quint8 * buffer = nullptr;
+
+        if (status[i].isEnabled()) {
+            bool overloadSingle;
+            buffer = new uint8_t[bufferSize];
+
+            m_scope->downloadSamples(i, buffer, bufferSize, &type, &samples, &traces, &overloadSingle);
+
+            if (!traces) {
+                for (int j = 0; j < buffers.count(); j++)
+                    if (buffers[j])
+                        delete [] buffers[j];
+                delete [] buffer;
+
+                emit collectionStopped();
+                return;
+            }
+
+            overload = overload || overloadSingle;
+            channels++;
+        }
+
+        buffers.append(buffer);
+    }
+
+    if (channels) {
+        emit dataCollected(traces, samples, type, buffers, overload);
+    }
+    else {
+        emit nothingCollected();
     }
 }

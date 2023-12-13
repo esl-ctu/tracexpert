@@ -2,6 +2,7 @@
 #define TSCOPEMODEL_H
 
 #include <QObject>
+#include <QThread>
 
 #include "tpluginunitmodel.h"
 #include "tscope.h"
@@ -18,13 +19,72 @@ public:
     bool init() override;
     bool deInit() override;
 
+    virtual TConfigParam setPostInitParams(const TConfigParam & param) override;
+
     int childrenCount() const override;
     TProjectItem * child(int row) const override;
     QVariant status() const override;
 
+    QList<TScope::TChannelStatus> channelsStatus();
+
 signals:
     void initialized(TScopeModel * scope);
     void deinitialized(TScopeModel * scope);
+
+    void channelsStatusChanged();
+
+    // External signals
+    void runFailed();
+    void stopFailed();
+    void downloadFailed();
+
+    void tracesDownloaded(size_t traces, size_t samples, TScope::TSampleType type, QList<quint8 *> buffers, bool overvoltage);
+    void tracesEmpty();
+    void stopped();
+
+    // Internal signals
+    void startDataCollection(size_t bufferSize);
+
+public slots:
+    void run();
+    void runSingle();
+    void stop();
+
+private slots:
+    void dataCollected(size_t traces, size_t samples, TScope::TSampleType type, QList<quint8 *> buffers, bool overvoltage);
+
+    void dataCollectionStopped();
+    void noDataCollected();
+
+private:
+    void run(bool repeat);
+
+    TScope * m_scope;
+
+    bool m_repeat;
+    bool m_stopping;
+
+    friend class TScopeCollector;
+
+    TScopeCollector * m_collector;
+
+    QThread collectorThread;
+};
+
+class TScopeCollector : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit TScopeCollector(TScope * scope, QObject * parent = nullptr);
+
+public slots:
+    void collectData(size_t bufferSize);
+
+signals:
+    void dataCollected(size_t traces, size_t samples, TScope::TSampleType type, QList<quint8 *> buffers, bool overvoltage);
+    void collectionStopped();
+    void nothingCollected();
 
 private:
     TScope * m_scope;
