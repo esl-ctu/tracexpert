@@ -495,8 +495,6 @@ def main():
                 callCwFunc(line.lower(), shm, cwDict)
             except(USBError):
                 sendCWNotConnected(tmpline)
-            except:
-                pass
 
         ## Call a method on an object from the CW package
         elif line.startswith("FUNO-", 4, 10):
