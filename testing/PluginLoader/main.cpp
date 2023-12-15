@@ -138,8 +138,8 @@ int main(int argc, char *argv[])
                                 bool overvoltage;
                                 size_t expSize;
 
-                                //a[0]->run(&expSize);
-                                //a[0]->downloadSamples(0, buf, 50000, &stype, &samplesPerTraceDownloaded, &tracesDownloaded, &overvoltage);
+                                a[0]->run(&expSize);
+                                a[0]->downloadSamples(0, buf, 50000, &stype, &samplesPerTraceDownloaded, &tracesDownloaded, &overvoltage);
 
                                 double * buf2 = (double *) buf;
 
@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
                                 stream << Qt::endl;
 
                                 auto ret = a[0]->getPostInitParams();
-                                ret.getSubParamByName("Clock")->getSubParamByName("reset_adc")->getSubParamByName("Run?")->setValue("true");
+                                ret.getSubParamByName("NewAE")->getSubParamByName("Clock")->getSubParamByName("reset_adc")->getSubParamByName("Run?")->setValue("true");
                                 a[0]->setPostInitParams(ret);
                             }
                         }

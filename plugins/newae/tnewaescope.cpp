@@ -44,11 +44,16 @@ TnewaeScope::TnewaeScope(const QString & name_in, const QString & info_in, uint8
     info = info_in;
     traceWaitingForRead = false;
 
+    stopNow = false;
+
     chanStatus.append(TChannelStatus(0, "Chipwhisperer ch0", true, 0.5, 0)); //TODO: je to dobře?
 }
 
 TConfigParam TnewaeScope::_createPostInitParams(){
     auto top = TConfigParam("NewAE scope sn: " + sn + " config", "", TConfigParam::TType::TDummy, "");
+
+    auto NewAE = TConfigParam("NewAE", "", TConfigParam::TType::TDummy, "Parameters for the NewAE device");
+    auto TraceXpert = TConfigParam("TraceXpert", "", TConfigParam::TType::TDummy, "Parameters for this SW");
 
     auto gain = TConfigParam("Gain", "", TConfigParam::TType::TDummy, "GainSettings");
     auto adc = TConfigParam("ADC", "", TConfigParam::TType::TDummy, "TriggerSettings");
@@ -249,12 +254,21 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     glitch.addSubParam(funG1);
     //read_status()??
 
-    top.addSubParam(gain);
-    top.addSubParam(adc);
-    top.addSubParam(clock);
-    top.addSubParam(io);
-    top.addSubParam(trigger);
-    top.addSubParam(glitch);
+    NewAE.addSubParam(gain);
+    NewAE.addSubParam(adc);
+    NewAE.addSubParam(clock);
+    NewAE.addSubParam(io);
+    NewAE.addSubParam(trigger);
+    NewAE.addSubParam(glitch);
+
+    TraceXpert.addSubParam(TConfigParam("Get traces as int", QString("true"), TConfigParam::TType::TBool, ""));
+    auto tEnum1 = TConfigParam("Mode", QString("Triggered"), TConfigParam::TType::TEnum, "");
+    tEnum1.addEnumValue("Triggered");
+    tEnum1.addEnumValue("Continuous");
+    TraceXpert.addSubParam(tEnum1);
+
+    top.addSubParam(NewAE);
+    top.addSubParam(TraceXpert);
 
     return top;
 }
@@ -335,83 +349,84 @@ bool TnewaeScope::_validatePreInitParamsStructure(TConfigParam & params){
 
 bool TnewaeScope::_validatePostInitParamsStructure(TConfigParam & params){
     bool ok = true;
+    TConfigParam * newAEparams = params.getSubParamByName("NewAE");
 
-    if(validateParamD(params.getSubParamByName("Gain")->getSubParamByName("db")->getValue(), -6.5, 56)){
-        params.getSubParamByName("Gain")->getSubParamByName("db")->setState(TConfigParam::TState::TError);
+    if(validateParamD(newAEparams->getSubParamByName("Gain")->getSubParamByName("db")->getValue(), -6.5, 56)){
+        newAEparams->getSubParamByName("Gain")->getSubParamByName("db")->setState(TConfigParam::TState::TError);
         ok = false;
     }
 
-    if(validateParamLL(params.getSubParamByName("Gain")->getSubParamByName("gain")->getValue(), 0, 78)){
-        params.getSubParamByName("Gain")->getSubParamByName("gain")->setState(TConfigParam::TState::TError);
+    if(validateParamLL(newAEparams->getSubParamByName("Gain")->getSubParamByName("gain")->getValue(), 0, 78)){
+        newAEparams->getSubParamByName("Gain")->getSubParamByName("gain")->setState(TConfigParam::TState::TError);
         ok = false;
     }
 
-    if(validateParamLL(params.getSubParamByName("ADC")->getSubParamByName("presamples")->getValue(), 0, cwBufferSize)){
-        params.getSubParamByName("ADC")->getSubParamByName("presamples")->setState(TConfigParam::TState::TError);
+    if(validateParamLL(newAEparams->getSubParamByName("ADC")->getSubParamByName("presamples")->getValue(), 0, cwBufferSize)){
+        newAEparams->getSubParamByName("ADC")->getSubParamByName("presamples")->setState(TConfigParam::TState::TError);
         ok = false;
     }
 
-    if(validateParamLL(params.getSubParamByName("ADC")->getSubParamByName("samples")->getValue(), 0, cwBufferSize)){
-        params.getSubParamByName("ADC")->getSubParamByName("samples")->setState(TConfigParam::TState::TError);
+    if(validateParamLL(newAEparams->getSubParamByName("ADC")->getSubParamByName("samples")->getValue(), 0, cwBufferSize)){
+        newAEparams->getSubParamByName("ADC")->getSubParamByName("samples")->setState(TConfigParam::TState::TError);
         ok = false;
     }
 
-    if(validateParamD(params.getSubParamByName("ADC")->getSubParamByName("timeout")->getValue(), 0, INT32_MAX)){
-        params.getSubParamByName("ADC")->getSubParamByName("timeout")->setState(TConfigParam::TState::TError);
+    if(validateParamD(newAEparams->getSubParamByName("ADC")->getSubParamByName("timeout")->getValue(), 0, INT32_MAX)){
+        newAEparams->getSubParamByName("ADC")->getSubParamByName("timeout")->setState(TConfigParam::TState::TError);
         ok = false;
     }
 
-    if(validateParamLL(params.getSubParamByName("Clock")->getSubParamByName("adc_phase")->getValue(), -255, 255)){
-        params.getSubParamByName("Clock")->getSubParamByName("adc_phase")->setState(TConfigParam::TState::TError);
+    if(validateParamLL(newAEparams->getSubParamByName("Clock")->getSubParamByName("adc_phase")->getValue(), -255, 255)){
+        newAEparams->getSubParamByName("Clock")->getSubParamByName("adc_phase")->setState(TConfigParam::TState::TError);
         ok = false;
     }
 
-    if(validateParamLL(params.getSubParamByName("Clock")->getSubParamByName("clkgen_div")->getValue(), 1, 256)){
-        params.getSubParamByName("Clock")->getSubParamByName("clkgen_div")->setState(TConfigParam::TState::TError);
+    if(validateParamLL(newAEparams->getSubParamByName("Clock")->getSubParamByName("clkgen_div")->getValue(), 1, 256)){
+        newAEparams->getSubParamByName("Clock")->getSubParamByName("clkgen_div")->setState(TConfigParam::TState::TError);
         ok = false;
     }
 
-    if(validateParamD(params.getSubParamByName("Clock")->getSubParamByName("clkgen_freq")->getValue(), 3200000, INT32_MAX)){
-        params.getSubParamByName("Clock")->getSubParamByName("clkgen_freq")->setState(TConfigParam::TState::TError);
+    if(validateParamD(newAEparams->getSubParamByName("Clock")->getSubParamByName("clkgen_freq")->getValue(), 3200000, INT32_MAX)){
+        newAEparams->getSubParamByName("Clock")->getSubParamByName("clkgen_freq")->setState(TConfigParam::TState::TError);
         ok = false;
     }
 
-    if(validateParamLL(params.getSubParamByName("Clock")->getSubParamByName("clkgen_mul")->getValue(), 2, 256)){
-        params.getSubParamByName("Clock")->getSubParamByName("clkgen_mul")->setState(TConfigParam::TState::TError);
+    if(validateParamLL(newAEparams->getSubParamByName("Clock")->getSubParamByName("clkgen_mul")->getValue(), 2, 256)){
+        newAEparams->getSubParamByName("Clock")->getSubParamByName("clkgen_mul")->setState(TConfigParam::TState::TError);
         ok = false;
     }
 
-    if(validateParamLL(params.getSubParamByName("Glitch")->getSubParamByName("ext_offset")->getValue(), 0, INT32_MAX)){
-        params.getSubParamByName("Glitch")->getSubParamByName("ext_offset")->setState(TConfigParam::TState::TError);
+    if(validateParamLL(newAEparams->getSubParamByName("Glitch")->getSubParamByName("ext_offset")->getValue(), 0, INT32_MAX)){
+        newAEparams->getSubParamByName("Glitch")->getSubParamByName("ext_offset")->setState(TConfigParam::TState::TError);
         ok = false;
     }
 
-    if(validateParamD(params.getSubParamByName("Glitch")->getSubParamByName("offset")->getValue(), -50, 50)){
-        params.getSubParamByName("Glitch")->getSubParamByName("offset")->setState(TConfigParam::TState::TError);
+    if(validateParamD(newAEparams->getSubParamByName("Glitch")->getSubParamByName("offset")->getValue(), -50, 50)){
+        newAEparams->getSubParamByName("Glitch")->getSubParamByName("offset")->setState(TConfigParam::TState::TError);
         ok = false;
     }
 
-    if (params.getSubParamByName("Glitch")->getSubParamByName("offset_fine")->getValue() != ""){
+    if (newAEparams->getSubParamByName("Glitch")->getSubParamByName("offset_fine")->getValue() != ""){
         if(validateParamLL(params.getSubParamByName("Glitch")->getSubParamByName("offset_fine")->getValue(), -255, 255)){
-            params.getSubParamByName("Glitch")->getSubParamByName("offset_fine")->setState(TConfigParam::TState::TError);
+            newAEparams->getSubParamByName("Glitch")->getSubParamByName("offset_fine")->setState(TConfigParam::TState::TError);
             ok = false;
         }
     }
 
-    if (params.getSubParamByName("Glitch")->getSubParamByName("width_fine")->getValue() != ""){
+    if (newAEparams->getSubParamByName("Glitch")->getSubParamByName("width_fine")->getValue() != ""){
         if(validateParamLL(params.getSubParamByName("Glitch")->getSubParamByName("width_fine")->getValue(), -255, 255)){
-            params.getSubParamByName("Glitch")->getSubParamByName("width_fine")->setState(TConfigParam::TState::TError);
+            newAEparams->getSubParamByName("Glitch")->getSubParamByName("width_fine")->setState(TConfigParam::TState::TError);
             ok = false;
         }
     }
 
-    if(validateParamLL(params.getSubParamByName("Glitch")->getSubParamByName("repeat")->getValue(), 1, 8192)){
-        params.getSubParamByName("Glitch")->getSubParamByName("repeat")->setState(TConfigParam::TState::TError);
+    if(validateParamLL(newAEparams->getSubParamByName("Glitch")->getSubParamByName("repeat")->getValue(), 1, 8192)){
+        newAEparams->getSubParamByName("Glitch")->getSubParamByName("repeat")->setState(TConfigParam::TState::TError);
         ok = false;
     }
 
-    if(validateParamD(params.getSubParamByName("Glitch")->getSubParamByName("width")->getValue(), -49.8, 49.8)){
-        params.getSubParamByName("Glitch")->getSubParamByName("width")->setState(TConfigParam::TState::TError);
+    if(validateParamD(newAEparams->getSubParamByName("Glitch")->getSubParamByName("width")->getValue(), -49.8, 49.8)){
+        newAEparams->getSubParamByName("Glitch")->getSubParamByName("width")->setState(TConfigParam::TState::TError);
         ok = false;
     }
 
@@ -507,8 +522,14 @@ void TnewaeScope::deInit(bool *ok/* = nullptr*/){
 }
 
 TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write /*= false*/) const {
-    TConfigParam topPrm = paramsIn;
-    QList<TConfigParam> prms = topPrm.getSubParams();
+    bool ook;
+    TConfigParam * topPrm = paramsIn.getSubParamByName("NewAE", &ook);
+    if (!ook) {
+        paramsIn.setState(TConfigParam::TState::TError, "Error getting scope params!");
+        qWarning("Cannot find postinit params!");
+        return paramsIn;
+    }
+    QList<TConfigParam> prms = topPrm->getSubParams();
 
     for(int i = 0; i < prms.length(); ++i){
         QString prmName = prms[i].getName();
@@ -518,19 +539,19 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
             QString out;
             if (write && !(prms[i].isReadonly())) {
                 bool ok, ok2, ok3;
-                ok = plugin->setPythonParameter(cwId, prmName, paramsIn.getSubParamByName(prmName)->getValue(), out);
-                paramsIn.getSubParamByName(prmName, &ok2)->setValue(out, &ok3);
-                if (!(ok & ok2 & ok3)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read write params.");
+                ok = plugin->setPythonParameter(cwId, prmName, topPrm->getSubParamByName(prmName)->getValue(), out);
+                topPrm->getSubParamByName(prmName, &ok2)->setValue(out, &ok3);
+                if (!(ok & ok2 & ok3)) topPrm->setState(TConfigParam::TState::TError, "Cannot read write params.");
             } else {
                 bool ok, ok2, ok3;
-                bool isWriteOnly = paramsIn.getSubParamByName(prmName, &ok)->getHint() == "Write-only, reads return zero";
+                bool isWriteOnly = topPrm->getSubParamByName(prmName, &ok)->getHint() == "Write-only, reads return zero";
                 if(!isWriteOnly && ok) { //If parameter is not write-only
                     ok = plugin->getPythonParameter(cwId, prmName, out);
-                    paramsIn.getSubParamByName(prmName, &ok2)->setValue(out, &ok3);
-                    if (!(ok & ok2 & ok3)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read some params.");
+                    topPrm->getSubParamByName(prmName, &ok2)->setValue(out, &ok3);
+                    if (!(ok & ok2 & ok3)) topPrm->setState(TConfigParam::TState::TError, "Cannot read some params.");
                 } else { //Do nothing - keep old value
-                    //paramsIn.getSubParamByName(prmName, &ok2)->setValue("0", &ok3);
-                    //if (!(ok & ok2 & ok3)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read some params.");
+                    //topPrm->getSubParamByName(prmName, &ok2)->setValue("0", &ok3);
+                    //if (!(ok & ok2 & ok3)) topPrm->setState(TConfigParam::TState::TError, "Cannot read some params.");
                 }
             }
         }
@@ -544,19 +565,19 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                     QString out;
                     if (write && !(subPrms[j].isReadonly())) {
                         bool ok, ok2, ok3, ok4;
-                        ok = plugin->setPythonSubparameter(cwId, prmName, subPrmName, paramsIn.getSubParamByName(prmName)->getSubParamByName(subPrmName)->getValue(), out);
-                        paramsIn.getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue(out, &ok4);
-                        if (!(ok & ok2 & ok3 & ok4)) paramsIn.setState(TConfigParam::TState::TError, "Cannot write some params.");
+                        ok = plugin->setPythonSubparameter(cwId, prmName, subPrmName, topPrm->getSubParamByName(prmName)->getSubParamByName(subPrmName)->getValue(), out);
+                        topPrm->getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue(out, &ok4);
+                        if (!(ok & ok2 & ok3 & ok4)) topPrm->setState(TConfigParam::TState::TError, "Cannot write some params.");
                     } else {
                         bool ok, ok2, ok3, ok4;
-                        bool isWriteOnly = paramsIn.getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->getHint() == "Write-only, reads return zero";
+                        bool isWriteOnly =topPrm->getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->getHint() == "Write-only, reads return zero";
                         if(!isWriteOnly && ok2 && ok3) {
                             ok = plugin->getPythonSubparameter(cwId, prmName, subPrmName, out);
-                            paramsIn.getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue(out, &ok4);
-                            if (!(ok & ok2 & ok3 & ok4)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read some params.");
+                            topPrm->getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue(out, &ok4);
+                            if (!(ok & ok2 & ok3 & ok4)) topPrm->setState(TConfigParam::TState::TError, "Cannot read some params.");
                         } else { //Do nothing - keep old value
-                            //paramsIn.getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue("0", &ok4);
-                            //if (!(ok2 & ok3 & ok4)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read some params.");
+                            //topPrm->getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue("0", &ok4);
+                            //if (!(ok2 & ok3 & ok4)) topPrm->setState(TConfigParam::TState::TError, "Cannot read some params.");
                         }
                     }
                 } else { //Call function
@@ -566,7 +587,7 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                         bool ok;
                         ok = plugin->runPythonFunctionOnAnObjectAndGetStringOutput(cwId, prmName, subPrmName, len, out);
                         subSubPrms[0].setValue("No");
-                        if (!ok) paramsIn.setState(TConfigParam::TState::TError, "Cannot read/write some params.");
+                        if (!ok) topPrm->setState(TConfigParam::TState::TError, "Cannot read/write some params.");
                     }
                 }
             }
@@ -578,7 +599,7 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                 bool ok, ok2;
                 ok = plugin->runPythonFunctionAndGetStringOutput(cwId, prmName, 0, tmp, len, out);
                 subPrms[0].setValue("No", &ok2);
-                if (!(ok & ok2)) paramsIn.setState(TConfigParam::TState::TError, "Cannot read/write some params.");
+                if (!(ok & ok2)) topPrm->setState(TConfigParam::TState::TError, "Cannot read/write some params.");
             }
         }
     }
@@ -613,27 +634,14 @@ void TnewaeScope::run(size_t * expectedBufferSize, bool *ok){
         if(ok != nullptr) *ok = false;
     }
 
-    params.clear();
-    succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "capture", 0, params, dataLen, response);
-
-    if (!succ) {
-        qDebug("Error sending the capture command. This does not necessarily mean a timeout.");
-        if(ok != nullptr) *ok = false;
-    }
-
-    if (response != "False") {
-        qDebug("%s", (QString("Capture timed out. CW reponse to timeot querry: ") + QString(response)).toLocal8Bit().constData());
-        if(ok != nullptr) *ok = false;
-    }
-
-    traceWaitingForRead = true;
     *expectedBufferSize = cwBufferSize;
 
     if(ok != nullptr) *ok = true;
+    stopNow = false;
 
 }
 void TnewaeScope::stop(bool *ok){
-    qDebug("The run method for newae is blocking. This stop() method does not do anything. The capture cannot be running when calling this.");
+    stopNow = true;
     if(ok != nullptr) *ok = true;
 }
 
@@ -663,21 +671,43 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
         internalBuffer[i] = traces.at(i);
     }*/
 
-    if (!traceWaitingForRead) {
-        //run();
-    }
-
-    if (!traceWaitingForRead) {
-        return 0;
-    }
+    bool tracesAsInt = m_postInitParams.getSubParamByName("TraceXpert")->getSubParamByName("Get traces as int")->getValue() == "true";
+    bool continouos = m_postInitParams.getSubParamByName("TraceXpert")->getSubParamByName("Mode")->getValue() == "Continous";
 
     bool succ;
     QList<QString> params;
     size_t dataLen;
     QString response;
 
+    while(!stopNow){
+        params.clear();
+        succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "capture", 0, params, dataLen, response);
+
+        if (!succ) {
+            qDebug("Error sending the capture command. This does not necessarily mean a timeout.");
+        }
+
+        if (stopNow) {
+            stopNow = false;
+            break;
+        }
+
+        if (!continouos) {
+            if (response == "True" || response == "true" || response == "TRUE"){
+                qDebug("Capture timed out.");
+            }
+            break;
+        }
+    }
+
+
     params.clear();
-    params.append("false"); //Get traces as doubles
+    if (tracesAsInt) {
+        params.append("true"); //Get traces as ints
+    } else {
+        params.append("false"); //Get traces as doubles
+    }
+
     succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "get_last_trace", params.count(), params, dataLen, response); //jen tohle přepsat, ať to čeká
 
     if (!succ) {

@@ -4,6 +4,7 @@ import sys, time, ctypes, traceback, struct
 from PySide6.QtCore import QSharedMemory, QByteArray
 import chipwhisperer as cw
 import numpy as np
+import logging
 
 ##GLOBALS##
 PLUGIN_ID = "TraceXpert.NewAE"
@@ -166,7 +167,6 @@ def callCwFuncOnAnObject(line, shm, cwDict):
         objectName = objectName.rstrip('\r\n')
         functionName = splitLine[1]
         functionName = functionName.rstrip('\r\n')
-        print(functionName, flush=True, file=sys.stderr)
     except:
         print("ERROR", flush=True) 
         print("Invalid Python CW function called or it was called on an invalid object (one of the names is probably empty)", flush=True, file=sys.stderr)
@@ -306,9 +306,12 @@ def callCwFunc(line, shm, cwDict):
             print("ERROR", flush=True) 
             print("Too many parameters passed to a Python function", flush=True, file=sys.stderr)
     except:
-        print("ERROR", flush=True) 
-        errorMessage = "The Python CW function raised this exception: " + traceback.format_exc()
-        print(errorMessage, flush=True, file=sys.stderr)
+        if functionName != "capture":
+            print("ERROR", flush=True) 
+            errorMessage = "The Python CW function raised this exception: " + traceback.format_exc()
+            print(errorMessage, flush=True, file=sys.stderr)
+        else:
+            pass
 
     if isinstance(ret, bytes):
         tmpLen = "{:016x}".format(len(ret))
@@ -453,8 +456,10 @@ def cwSubParam(line, shm, cwDict):
 #####EXEXUTABLE START######
 def main():
     print("STARTED", flush=True)
+    cw.scope_logger.setLevel(logging.ERROR)
 
     cwDict = dict()
+    targetDict = dict()
 
     for line in sys.stdin:
         #print(line, flush=True, file=sys.stderr) # TODO!!! Remove!!
@@ -490,6 +495,8 @@ def main():
                 callCwFunc(line.lower(), shm, cwDict)
             except(USBError):
                 sendCWNotConnected(tmpline)
+            except:
+                pass
 
         ## Call a method on an object from the CW package
         elif line.startswith("FUNO-", 4, 10):

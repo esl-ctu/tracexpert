@@ -64,6 +64,7 @@ protected:
     bool m_initialized;
     bool traceWaitingForRead;
     int cwBufferSize;
+    bool stopNow;
 
     //void _createPreInitParams();
     TConfigParam _createPostInitParams();

@@ -1,20 +1,21 @@
 #include "tnewae.h"
 //Next:
 //sériovka k targetu
-//1. run() nemá být blokující
+//víc cw najednou (fronta?, víc pyth. vláken?)
 //2. co když se uživatel pokusí předidat stejné zařízení/cw dvakrát?
-// arm, pošlu příkaz, počkám na ack, pak capture a pak get_last_trace.
-////ten ack jsem myslel k tomu příkazu. Jako simpleserial_write (resp. já používám výhradně cmd_send() u simpleserial v2)
+//cesta k .py souboru (jako preinitparam - ano - předkodovat?)
 
 
-//Dotazy:
-//traces as int nebo ne (spíš ne?)
-//overvoltage (nepodporováno?)
-//run() nejspíš blokuje - mám spawnout extra thread? To by nebylo fajn.
-//exposenout manual_trigger()?
-//write-only parametry?
-//cesta k .py souboru (takhle dobrý? nebo jako preinitparam?)
+//Udělal jsem:
+//trig (čekám na trigger i po timeoutu) a cont. mode (handlování v
+//formát traces
+//run neblokuje ale downloadsamples ano
+//Pomocí fronty to nepůjde - co když jeden CW zavolá download samples - během čekání se nemůže nic dít
 
+//Otestovat:
+//traces as int v configparam
+//mode v configparam a praxi
+//run / download samples
 
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
