@@ -13,8 +13,6 @@
 
 #include "tconfigparamwidget.h"
 
-#define CHANNEL_COLORS (QColor[]){Qt::blue, Qt::green, Qt::magenta, Qt::darkYellow}
-
 TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(parent), m_scopeModel(scope) {
     setWindowTitle(tr("Oscilloscope - %1").arg(m_scopeModel->name()));
 
@@ -315,7 +313,7 @@ void TScopeWidget::createLineSeries(TScope::TChannelStatus channel, T * buffer, 
 
     QLineSeries * lineSeries = new QLineSeries();
     lineSeries->setName(QString(tr("%1 [channel %2]")).arg(channel.getAlias()).arg(channel.getIndex()));
-    lineSeries->setColor(CHANNEL_COLORS[channel.getIndex()]); // TODO: consult implementation
+    lineSeries->setColor(channelColors[channel.getIndex()]);
 
     m_chart->addSeries(lineSeries);
 

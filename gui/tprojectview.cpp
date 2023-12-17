@@ -90,7 +90,14 @@ void TProjectView::showContextMenu(const QPoint &point)
         defaultAction = chooseDefaultAction(m_IODevice);
     }
     else if ((m_scope = dynamic_cast<TScopeModel *>(item))) {
+        m_initScopeAction->setDisabled(m_scope->isInit());
+        contextMenu->addAction(m_initScopeAction);
+        m_deinitScopeAction->setDisabled(!m_scope->isInit());
+        contextMenu->addAction(m_deinitScopeAction);
+        m_showScopeAction->setDisabled(!m_scope->isInit());
+        contextMenu->addAction(m_showScopeAction);
 
+        defaultAction = chooseDefaultAction(m_scope);
     }
 
     if (contextMenu->isEmpty()) {
@@ -125,7 +132,7 @@ void TProjectView::runDefaultAction(const QModelIndex & index) {
         defaultAction = chooseDefaultAction(m_IODevice);
     }
     else if ((m_scope = dynamic_cast<TScopeModel *>(item))) {
-
+        defaultAction = chooseDefaultAction(m_scope);
     }
 
     if (defaultAction) {

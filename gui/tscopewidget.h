@@ -49,6 +49,8 @@ private slots:
     void nextTraceButtonClicked();
 
 private:
+    const QList<QColor> channelColors = { Qt::blue, Qt::green, Qt::magenta, Qt::darkYellow };
+
     TScopeModel * m_scopeModel;
 
     // QList<QLineSeries> m_lineSeriesList;
