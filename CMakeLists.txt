@@ -17,6 +17,7 @@ include_directories(common)
 add_subdirectory(gui)
 
 add_executable(${PROJECT_NAME}
+        application.qrc
         main.cpp
 )
 

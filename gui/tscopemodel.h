@@ -7,6 +7,25 @@
 #include "tpluginunitmodel.h"
 #include "tscope.h"
 
+class TScopeCollector : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit TScopeCollector(TScope * scope, QObject * parent = nullptr);
+
+public slots:
+    void collectData(size_t bufferSize);
+
+signals:
+    void dataCollected(size_t traces, size_t samples, TScope::TSampleType type, QList<quint8 *> buffers, bool overvoltage);
+    void collectionStopped();
+    void nothingCollected();
+
+private:
+    TScope * m_scope;
+};
+
 class TScopeContainer;
 
 class TScopeModel : public TPluginUnitModel
@@ -15,6 +34,9 @@ class TScopeModel : public TPluginUnitModel
 
 public:
     explicit TScopeModel(TScope * scope, TScopeContainer * parent);
+    ~TScopeModel();
+
+    void show();
 
     bool init() override;
     bool deInit() override;
@@ -30,6 +52,8 @@ public:
 signals:
     void initialized(TScopeModel * scope);
     void deinitialized(TScopeModel * scope);
+    void showRequested(TScopeModel * scope);
+    void removeRequested(TScopeModel * scope);
 
     void channelsStatusChanged();
 
@@ -69,25 +93,6 @@ private:
     TScopeCollector * m_collector;
 
     QThread collectorThread;
-};
-
-class TScopeCollector : public QObject
-{
-    Q_OBJECT
-
-public:
-    explicit TScopeCollector(TScope * scope, QObject * parent = nullptr);
-
-public slots:
-    void collectData(size_t bufferSize);
-
-signals:
-    void dataCollected(size_t traces, size_t samples, TScope::TSampleType type, QList<quint8 *> buffers, bool overvoltage);
-    void collectionStopped();
-    void nothingCollected();
-
-private:
-    TScope * m_scope;
 };
 
 #endif // TSCOPEMODEL_H

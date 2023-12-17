@@ -99,6 +99,7 @@ void TMainWindow::createScopeDockWidget(TScopeModel * scope)
     TDockWidget * dockWidget = new TDockWidget(title);
     dockWidget->setWidget(widget);
     connect(scope, &TScopeModel::deinitialized, dockWidget, &TDockWidget::close);
+    connect(scope, &TScopeModel::showRequested, dockWidget, &TDockWidget::show);
     m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
 }
 

@@ -9,6 +9,45 @@
 #define DATA_BLOCK_SIZE 64
 #define AUTORECEIVE_DELAY_MS 20
 
+class TIODeviceReceiver : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit TIODeviceReceiver(TIODevice * IODevice, QObject * parent = nullptr);
+
+public slots:
+    void receiveData(int length);
+    void startReceiving();
+    void stopReceiving();
+
+private:
+    TIODevice * m_IODevice;
+    bool m_stopReceiving;
+
+signals:
+    void dataReceived(QByteArray data);
+    void receiveFailed();
+};
+
+class TIODeviceSender : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit TIODeviceSender(TIODevice * IODevice, QObject * parent = nullptr);
+
+public slots:
+    void sendData(QByteArray data);
+
+private:
+    TIODevice * m_IODevice;
+
+signals:
+    void dataSent(QByteArray data);
+    void sendFailed();
+};
+
 class TIODeviceContainer;
 
 class TIODeviceModel : public TPluginUnitModel
@@ -80,45 +119,6 @@ signals:
 
     void startReceiving();
     void stopReceiving();
-};
-
-class TIODeviceReceiver : public QObject
-{
-    Q_OBJECT
-
-public:
-    explicit TIODeviceReceiver(TIODevice * IODevice, QObject * parent = nullptr);
-
-public slots:
-    void receiveData(int length);
-    void startReceiving();
-    void stopReceiving();
-
-private:
-    TIODevice * m_IODevice;
-    bool m_stopReceiving;
-
-signals:
-    void dataReceived(QByteArray data);
-    void receiveFailed();
-};
-
-class TIODeviceSender : public QObject
-{
-    Q_OBJECT
-
-public:
-    explicit TIODeviceSender(TIODevice * IODevice, QObject * parent = nullptr);
-
-public slots:
-    void sendData(QByteArray data);
-
-private:
-    TIODevice * m_IODevice;
-
-signals:
-    void dataSent(QByteArray data);
-    void sendFailed();
 };
 
 #endif // TIODEVICEMODEL_H

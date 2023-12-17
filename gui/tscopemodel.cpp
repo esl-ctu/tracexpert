@@ -7,6 +7,16 @@ TScopeModel::TScopeModel(TScope * scope, TScopeContainer * parent)
 {
 }
 
+TScopeModel::~TScopeModel()
+{
+    TScopeModel::deInit();
+}
+
+void TScopeModel::show()
+{
+    emit showRequested(this);
+}
+
 bool TScopeModel::init()
 {
     if (isInit() || !TPluginUnitModel::init()) {
@@ -22,11 +32,13 @@ bool TScopeModel::init()
     m_collector->moveToThread(&collectorThread);
 
     connect(this, &TScopeModel::startDataCollection, m_collector, &TScopeCollector::collectData, Qt::ConnectionType::QueuedConnection);
-    connect(m_collector, &TScopeCollector::dataCollected, this, &TScopeModel::tracesDownloaded, Qt::ConnectionType::QueuedConnection);
+    connect(m_collector, &TScopeCollector::dataCollected, this, &TScopeModel::dataCollected, Qt::ConnectionType::QueuedConnection);
     connect(m_collector, &TScopeCollector::collectionStopped, this, &TScopeModel::dataCollectionStopped, Qt::ConnectionType::QueuedConnection);
     connect(m_collector, &TScopeCollector::nothingCollected, this, &TScopeModel::noDataCollected, Qt::ConnectionType::QueuedConnection);
 
     collectorThread.start();
+
+    emit initialized(this);
 
     return true;
 }
@@ -42,6 +54,8 @@ bool TScopeModel::deInit()
     delete m_collector;
 
     m_isInit = false;
+
+    emit deinitialized(this);
 
     return true;
 }
@@ -109,7 +123,7 @@ void TScopeModel::dataCollected(size_t traces, size_t samples, TScope::TSampleTy
 {
     emit tracesDownloaded(traces, samples, type, buffers, overvoltage);
 
-    if (m_repeat) {
+    if (m_repeat && !m_stopping) { // discuss addition of !m_stopping
         run(m_repeat);
     }
     else {
@@ -159,7 +173,7 @@ void TScopeCollector::collectData(size_t bufferSize)
 
     QList<quint8 *> buffers;
     TScope::TSampleType type;
-    size_t samples;
+    size_t samplesPerTrace;
     size_t traces;
     bool overload = false;
     int channels = 0;
@@ -171,7 +185,7 @@ void TScopeCollector::collectData(size_t bufferSize)
             bool overloadSingle;
             buffer = new uint8_t[bufferSize];
 
-            m_scope->downloadSamples(i, buffer, bufferSize, &type, &samples, &traces, &overloadSingle);
+            m_scope->downloadSamples(i, buffer, bufferSize, &type, &samplesPerTrace, &traces, &overloadSingle);
 
             if (!traces) {
                 for (int j = 0; j < buffers.count(); j++)
@@ -191,7 +205,7 @@ void TScopeCollector::collectData(size_t bufferSize)
     }
 
     if (channels) {
-        emit dataCollected(traces, samples, type, buffers, overload);
+        emit dataCollected(traces, samplesPerTrace, type, buffers, overload);
     }
     else {
         emit nothingCollected();

@@ -155,7 +155,12 @@ QAction * TProjectView::chooseDefaultAction(TIODeviceModel * IODevice)
 
 QAction * TProjectView::chooseDefaultAction(TScopeModel * scope)
 {
-    return nullptr;
+    if (!scope->isInit()) {
+        return m_initScopeAction;
+    }
+    else {
+        return m_showScopeAction;
+    }
 }
 
 void TProjectView::initComponent()
@@ -293,15 +298,37 @@ void TProjectView::showIODevice()
 
 void TProjectView::initScope()
 {
+    if (!m_scope || m_scope->isInit()) {
+        return;
+    }
 
+    TConfigParam param = m_scope->preInitParams();
+
+    if (!param.isEmpty()) {
+        TInitScopeDialog dialog(m_scope, this);
+
+        if (dialog.exec() != QDialog::DialogCode::Accepted) {
+            return;
+        }
+    }
+
+    if (!m_scope->init()) {
+        TDialog::deviceInitFailedGeneralMessage(this);
+    }
 }
 
 void TProjectView::deinitScope()
 {
+    if (!m_scope|| !m_scope->isInit()) {
+        return;
+    }
 
+    if (!m_scope->deInit()) {
+        TDialog::deviceDeinitFailedGeneralMessage(this);
+    }
 }
 
 void TProjectView::showScope()
 {
-
+    m_scope->show();
 }
