@@ -39,6 +39,7 @@ protected:
     void _setChannels();
     void _setTrigger();
     void _setTiming();
+    qreal rangeStrToReal(const QString & str);
 
     QString m_name;
     QString m_info;

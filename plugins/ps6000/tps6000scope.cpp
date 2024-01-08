@@ -153,7 +153,7 @@ void TPS6000Scope::init(bool *ok){
 
 
     } else {
-        // TODO vyresit chybovy stavy !!!
+        // TODO zkontrolovat chybovy stavy !!!
         if(ok != nullptr) *ok = false;
 
     }
@@ -293,7 +293,7 @@ void TPS6000Scope::_setChannels() {
         }
 
         float psOffset;
-        float offsetVal = rangeSub->getValue().toFloat(&iok);
+        float offsetVal = offsetSub->getValue().toFloat(&iok);
         if(!iok){
             qCritical("Cannot convert the analogue offset parameter to the float");
             return;
@@ -309,11 +309,11 @@ void TPS6000Scope::_setChannels() {
 
         if(offsetVal < minOffset){
             offsetSub->setValue(minOffset);
-            rangeSub->setState(TConfigParam::TState::TWarning, "Too small offset. The value was reset to the minimum allowable value.");
+            offsetSub->setState(TConfigParam::TState::TWarning, "Too small offset. The value was reset to the minimum allowable value.");
             psOffset = minOffset;
         } else if(offsetVal > maxOffset) {
             offsetSub->setValue(maxOffset);
-            rangeSub->setState(TConfigParam::TState::TWarning, "Too big offset. The value was reset to the maximum allowable value.");
+            offsetSub->setState(TConfigParam::TState::TWarning, "Too big offset. The value was reset to the maximum allowable value.");
             psOffset = maxOffset;
         } else {
             psOffset = offsetVal;
@@ -428,13 +428,13 @@ void TPS6000Scope::_setTrigger() {
         return;
     }
 
-    float voltageVal = voltagePar->getValue().toFloat(&iok);
+    double voltageVal = voltagePar->getValue().toFloat(&iok);
     if(!iok){
         qCritical("Failed to convert the trigger voltage threshold to float");
         return;
     }
 
-    float sourceRange = 1; // AUX input range is +- 1 V
+    double sourceRange = 1; // AUX input range is +- 1 V
 
     if(sourceChannelSettings != nullptr){
         TConfigParam * sourceRangePar = sourceChannelSettings->getSubParamByName("Range", &iok);
@@ -443,7 +443,9 @@ void TPS6000Scope::_setTrigger() {
             return;
         }
         QString sourceRangeVal = sourceRangePar->getValue();
-        if(sourceRangeVal == "-50 mV .. 50 mV") {
+        sourceRange = rangeStrToReal(sourceRangeVal);
+        if(sourceRange == 0) return;
+        /*if(sourceRangeVal == "-50 mV .. 50 mV") {
             sourceRange = 0.05;
         } else if(sourceRangeVal == "-100 mV .. 100 mV") {
             sourceRange = 0.1;
@@ -464,7 +466,10 @@ void TPS6000Scope::_setTrigger() {
         } else {
             qCritical("Unexpected range parameter value.");
             return;
-        }
+        }*/
+
+        // TODO adjust voltageVal according to the analogue offset
+
     }
 
     float level = (voltageVal + sourceRange) / (2*sourceRange); // TODO ADJUST ACCORDING TO THE ANALOGUE OFFSET
@@ -802,7 +807,6 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
     }
 
     uint32_t psSamples = (m_preTrigSamples + m_postTrigSamples);
-    *samplesType = TScope::TSampleType::TInt16;
 
     std::unique_ptr <int16_t> over(new int16_t[m_captures]);
 
@@ -824,7 +828,6 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
                 return 0;
             }
         }
-
 
         status = ps6000GetValuesBulk(m_handle, &psSamples, 0, m_captures - 1, 0, PS6000_RATIO_MODE_NONE, over.get());
         if (status || psSamples != ((m_preTrigSamples + m_postTrigSamples))) {
@@ -849,15 +852,150 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
     }
 
     // TODO overvoltage
+    *samplesType = TScope::TSampleType::TInt16;
     *samplesPerTraceDownloaded = psSamples;
     *tracesDownloaded = m_captures;
     return psSamples * m_captures * sizeof(int16_t);
 
 }
 
-QList<TScope::TChannelStatus> TPS6000Scope::getChannelsStatus() {
-    // TODO
-    return QList<TPS6000Scope::TChannelStatus>();
+qreal rangeStrToReal(const QString & str){
+    if(str == "-50 mV .. 50 mV") {
+        return 0.05f;
+    } else if(str == "-100 mV .. 100 mV") {
+        return 0.1f;
+    } else if(str == "-200 mV .. 200 mV") {
+        return 0.2f;
+    } else if(str == "-500 mV .. 500 mV") {
+        return 0.5f;
+    } else if(str == "-1 V .. 1 V") {
+        return 1.0f;
+    } else if(str == "-2 V .. 2 V") {
+        return 2.0f;
+    } else if(str == "-5 V .. 5 V") {
+        return 5.0f;
+    } else if(str == "-10 V .. 10 V") {
+        return 10.0f;
+    } else if(str == "-20 V .. 20 V") {
+        return 20.0f;
+    } else {
+        qCritical("Unexpected range parameter value.");
+        return 0;
+    }
 }
 
-// + TODO getScopeTiming, getScopeTrigger methods in TScope; requires a refactoring of
+QList<TScope::TChannelStatus> TPS6000Scope::getChannelsStatus() {
+    QList<TPS6000Scope::TChannelStatus> channelList;
+
+    bool iok;
+    TConfigParam * channelASettings = m_postInitParams.getSubParamByName("Channel 1 (A)", &iok);
+    if(!iok){
+        qCritical("Channel 1 settings not found during channel status retrieval");
+        return QList<TScope::TChannelStatus>();
+    }
+    TConfigParam * channelBSettings = m_postInitParams.getSubParamByName("Channel 2 (B)", &iok);
+    if(!iok){
+        qCritical("Channel 2 settings not found during channel status retrieval");
+        return QList<TScope::TChannelStatus>();
+    }
+    TConfigParam * channelCSettings = m_postInitParams.getSubParamByName("Channel 3 (C)", &iok);
+    if(!iok){
+        qCritical("Channel 3 settings not found during channel status retrieval");
+        return QList<TScope::TChannelStatus>();
+    }
+    TConfigParam * channelDSettings = m_postInitParams.getSubParamByName("Channel 4 (D)", &iok);
+    if(!iok){
+        qCritical("Channel 4 settings not found during channel status retrieval");
+        return QList<TScope::TChannelStatus>();
+    }
+
+    bool enabledA = (channelASettings->getValue() == "Enabled") ? true : false;
+    bool enabledB = (channelASettings->getValue() == "Enabled") ? true : false;
+    bool enabledC = (channelASettings->getValue() == "Enabled") ? true : false;
+    bool enabledD = (channelASettings->getValue() == "Enabled") ? true : false;
+
+    TConfigParam * rangeASub = channelASettings->getSubParamByName("Range", &iok);
+    if(!iok){
+        qCritical("Range parameter not found in the post-init params");
+        return QList<TScope::TChannelStatus>();
+    }
+    TConfigParam * rangeBSub = channelBSettings->getSubParamByName("Range", &iok);
+    if(!iok){
+        qCritical("Range parameter not found in the post-init params");
+        return QList<TScope::TChannelStatus>();
+    }
+    TConfigParam * rangeCSub = channelCSettings->getSubParamByName("Range", &iok);
+    if(!iok){
+        qCritical("Range parameter not found in the post-init params");
+        return QList<TScope::TChannelStatus>();
+    }
+    TConfigParam * rangeDSub = channelDSettings->getSubParamByName("Range", &iok);
+    if(!iok){
+        qCritical("Range parameter not found in the post-init params");
+        return QList<TScope::TChannelStatus>();
+    }
+
+    QString rangeAVal = rangeASub->getValue();
+    QString rangeBVal = rangeBSub->getValue();
+    QString rangeCVal = rangeCSub->getValue();
+    QString rangeDVal = rangeDSub->getValue();
+
+    TConfigParam * offsetASub = channelASettings->getSubParamByName("Analogue Offset", &iok);
+    if(!iok){
+        qCritical("Offset parameter not found in the post-init params");
+        return QList<TScope::TChannelStatus>();
+    }
+    TConfigParam * offsetBSub = channelBSettings->getSubParamByName("Analogue Offset", &iok);
+    if(!iok){
+        qCritical("Offset parameter not found in the post-init params");
+        return QList<TScope::TChannelStatus>();
+    }
+    TConfigParam * offsetCSub = channelCSettings->getSubParamByName("Analogue Offset", &iok);
+    if(!iok){
+        qCritical("Offset parameter not found in the post-init params");
+        return QList<TScope::TChannelStatus>();
+    }
+    TConfigParam * offsetDSub = channelDSettings->getSubParamByName("Analogue Offset", &iok);
+    if(!iok){
+        qCritical("Offset parameter not found in the post-init params");
+        return QList<TScope::TChannelStatus>();
+    }
+
+    qreal offsetAVal = offsetASub->getValue().toFloat(&iok);
+    if(!iok){
+        qCritical("Cannot convert the analogue offset parameter to the float");
+        return QList<TScope::TChannelStatus>();
+    }
+    qreal offsetBVal = offsetBSub->getValue().toFloat(&iok);
+    if(!iok){
+        qCritical("Cannot convert the analogue offset parameter to the float");
+        return QList<TScope::TChannelStatus>();
+    }
+    qreal offsetCVal = offsetCSub->getValue().toFloat(&iok);
+    if(!iok){
+        qCritical("Cannot convert the analogue offset parameter to the float");
+        return QList<TScope::TChannelStatus>();
+    }
+    qreal offsetDVal = offsetDSub->getValue().toFloat(&iok);
+    if(!iok){
+        qCritical("Cannot convert the analogue offset parameter to the float");
+        return QList<TScope::TChannelStatus>();
+    }
+
+
+    TPS6000Scope::TChannelStatus channelA(1, "Channel A", enabledA, rangeStrToReal(rangeAVal), offsetAVal);
+    TPS6000Scope::TChannelStatus channelB(2, "Channel B", enabledB, rangeStrToReal(rangeBVal), offsetBVal);
+    TPS6000Scope::TChannelStatus channelC(3, "Channel C", enabledC, rangeStrToReal(rangeCVal), offsetCVal);
+    TPS6000Scope::TChannelStatus channelD(4, "Channel D", enabledD, rangeStrToReal(rangeDVal), offsetDVal);
+
+
+    channelList.append(channelA);
+    channelList.append(channelB);
+    channelList.append(channelC);
+    channelList.append(channelD);
+
+    return channelList;
+}
+
+// + TODO getScopeTiming, getScopeTrigger methods in TScope; requires a refactoring of other plugins and GUI
+// TODO zmenit TError na TWarning, kde je to potreba... pri navratu TError ve strukture je ovladani oscila zablokovany
