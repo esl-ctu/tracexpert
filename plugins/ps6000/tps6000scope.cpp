@@ -859,7 +859,7 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
 
 }
 
-qreal rangeStrToReal(const QString & str){
+qreal TPS6000Scope::rangeStrToReal(const QString & str){
     if(str == "-50 mV .. 50 mV") {
         return 0.05f;
     } else if(str == "-100 mV .. 100 mV") {
