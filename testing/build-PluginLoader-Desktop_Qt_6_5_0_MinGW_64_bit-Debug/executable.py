@@ -32,6 +32,7 @@ def writeToSHM(line, shm):
 
 ##Helper to potentially convert a numpy array to string##
 def cwToStr(tmp):
+    
     if isinstance(tmp, np.ndarray):
         np.set_printoptions(threshold=sys.maxsize)
         #return np.array2string(tmp)

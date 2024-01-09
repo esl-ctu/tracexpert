@@ -138,17 +138,21 @@ int main(int argc, char *argv[])
                                 bool overvoltage;
                                 size_t expSize;
 
+                                auto ret = a[0]->getPostInitParams();
+                                ret.getSubParamByName("TraceXpert")->getSubParamByName("Get traces as int")->setValue("false");
+                                a[0]->setPostInitParams(ret);
+
                                 a[0]->run(&expSize);
                                 a[0]->downloadSamples(0, buf, 50000, &stype, &samplesPerTraceDownloaded, &tracesDownloaded, &overvoltage);
 
                                 double * buf2 = (double *) buf;
 
                                 for(int i = 0; i < samplesPerTraceDownloaded*tracesDownloaded; i++){
-                                    stream << buf2[i];
+                                    stream << buf2[i] << ",";
                                 }
                                 stream << Qt::endl;
 
-                                auto ret = a[0]->getPostInitParams();
+                                ret = a[0]->getPostInitParams();
                                 ret.getSubParamByName("NewAE")->getSubParamByName("Clock")->getSubParamByName("reset_adc")->getSubParamByName("Run?")->setValue("true");
                                 a[0]->setPostInitParams(ret);
                             }

@@ -647,7 +647,6 @@ void TnewaeScope::stop(bool *ok){
 
 size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t bufferSize,
                                     TSampleType * samplesType, size_t * samplesPerTraceDownloaded, size_t * tracesDownloaded, bool * overvoltage){
-    *samplesType = TSampleType::TReal64;
     *samplesPerTraceDownloaded = 0;
     *tracesDownloaded = 0;
 
@@ -704,8 +703,10 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
     params.clear();
     if (tracesAsInt) {
         params.append("true"); //Get traces as ints
+        *samplesType = TSampleType::TInt16;
     } else {
         params.append("false"); //Get traces as doubles
+        *samplesType = TSampleType::TReal64;
     }
 
     succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "get_last_trace", params.count(), params, dataLen, response); //jen tohle přepsat, ať to čeká
@@ -717,8 +718,13 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
 
     traceWaitingForRead = false;
 
+    if (tracesAsInt) {
+        *samplesPerTraceDownloaded = dataLen/2;
+    } else {
+        *samplesPerTraceDownloaded = dataLen/8;
+    }
+
     *tracesDownloaded = 1;
-    *samplesPerTraceDownloaded = dataLen/8;
     *overvoltage = false; //TODO
 
     size_t maxSize = dataLen > bufferSize ? bufferSize : dataLen;
