@@ -36,6 +36,7 @@ public:
     TMessage() { }
 
     TMessage(const QString & name, const QString & description, bool isResponse = false):
+        m_name(name),
         m_description(description),
         m_isResponse(isResponse),
         m_messageParts(),
@@ -45,6 +46,7 @@ public:
 
 
     TMessage(const TMessage &x):
+        m_name(x.m_name),
         m_description(x.m_description),
         m_isResponse(x.m_isResponse),
         m_messageParts(x.m_messageParts),
@@ -54,6 +56,7 @@ public:
 
     TMessage & operator=(const TMessage &x){
         if(&x != this){
+            m_name = x.m_name;
             m_description = x.m_description;
             m_isResponse = x.m_isResponse;
             m_messageParts = x.m_messageParts;
@@ -72,6 +75,7 @@ public:
 
     friend QDataStream & operator<<(QDataStream &out, const TMessage &x){
         out << QString(TMESSAGEVER);
+        out << x.m_name;
         out << x.m_description;
         out << x.m_isResponse;
         out << x.m_messageParts;
@@ -83,7 +87,8 @@ public:
     friend QDataStream & operator>>(QDataStream &in, TMessage &x){
         QString verString;
         in >> verString;
-        if(Q_LIKELY(verString == QString(TMESSAGEVER))){
+        if(Q_LIKELY(verString == QString(TMESSAGEVER))) {
+            in >> x.m_name;
             in >> x.m_description;
             in >> x.m_isResponse;
             in >> x.m_messageParts;
@@ -98,9 +103,11 @@ public:
     const QString & getName() const {
         return m_name;
     }
+
     const QString & getDescription() const {
         return m_description;
     }
+
     const bool isResponse() const {
         return m_isResponse;
     }
@@ -127,6 +134,18 @@ public:
         return m_stateMessage;
     }
 
+    void setName(QString value) {
+        m_name = value;
+    }
+
+    void setDescription(QString value) {
+        m_description = value;
+    }
+
+    void setResponse(bool value) {
+        m_isResponse = value;
+    }
+
     void validateMessage() {
         resetState();
 
@@ -146,17 +165,18 @@ public:
             }
 
             if(m_isResponse && !messagePart.hasStaticLength()) {
-                if(messagePart.getLength() >= i) {
+                if(messagePart.getLength() >= i || messagePart.getLength() < 0) {
                     messagePart.setState(TMessagePart::TState::TError, "Dynamic length message parts must have their lengths specified by preceding parameters!");
                     hasErrors = true;
+                    continue;
                 }
 
-                if(!m_messageParts.at(messagePart.getLength()).hasStaticLength()) {
+                if(!m_messageParts[messagePart.getLength()].hasStaticLength()) {
                     messagePart.setState(TMessagePart::TState::TError, "Dynamic length message parts must have their lengths specified by parameters with static length!");
                     hasErrors = true;
                 }
 
-                if(!m_messageParts.at(messagePart.getLength()).hasLengthType()) {
+                if(!m_messageParts[messagePart.getLength()].hasLengthType()) {
                     messagePart.setState(TMessagePart::TState::TError, "Dynamic length message parts must have their lengths specified by numeric parameters!");
                     hasErrors = true;
                 }
@@ -178,29 +198,35 @@ public:
 
         qsizetype length = 0;
         for(int i = 0; i < m_messageParts.length(); i++) {
-            const TMessagePart & messagePart = m_messageParts.at(i);
+            const TMessagePart & messagePart = m_messageParts[i];
 
             if(messagePart.hasStaticLength()) {
                 qsizetype partLength = messagePart.getLength();
 
                 if(partLength < 0) {
-                    qWarning("Cannot find length of message; a message part has negative length.");
+                    qWarning("Cannot find length of message; message part %s has negative length.", qPrintable(messagePart.getName()));
                     return -1;
                 }
 
                 length += partLength;
             }
             else {
+                qsizetype referencedIndex = messagePart.getLength();
+                if(referencedIndex >= i || referencedIndex < 0) {
+                    qWarning("Could not get dynamic length of message part %s; referenced message part does not exist.", qPrintable(messagePart.getName()));
+                    return -1;
+                }
+
                 bool ok;
-                qsizetype partLength = m_messageParts[messagePart.getLength()].getValueAsLength(&ok);
+                qsizetype partLength = m_messageParts[referencedIndex].getValueAsLength(&ok);
 
                 if(!ok) {
-                    qWarning("Cannot find length of message; a message part specifying length of another message part has an invalid value.");
+                    qWarning("Cannot find length of message; message part %s specifying length of message part %s has an invalid value.", qPrintable(m_messageParts[referencedIndex].getName()), qPrintable(messagePart.getName()));
                     return -1;
                 }
 
                 if(partLength < 0) {
-                    qWarning("Cannot find length of message; a message part specifying length of another message part has a negative value.");
+                    qWarning("Cannot find length of message; message part %s specifying length of message part %s has a negative value.", qPrintable(m_messageParts[referencedIndex].getName()), qPrintable(messagePart.getName()));
                     return -1;
                 }
 
@@ -225,7 +251,7 @@ public:
         qsizetype messageLength = 0;
 
         for(int i = 0; i < m_messageParts.length(); i++) {
-            const TMessagePart & messagePart = m_messageParts.at(i);
+            const TMessagePart & messagePart = m_messageParts[i];
 
             qsizetype appendedBytes = messagePart.getData(buffer + messageLength, maxLength - messageLength);
 
@@ -245,11 +271,11 @@ public:
         return messageLength;
     }
 
-    QList<TMessagePart> & getMessageParts(){
+    const QList<TMessagePart> & getMessageParts() const {
         return m_messageParts;
     }
 
-    void addMessagePart(const TMessagePart &param, bool *ok = nullptr){
+    void addMessagePart(const TMessagePart &param, bool *ok = nullptr) {
         if(m_messageParts.contains(param)){
             if(ok != nullptr) *ok = false;
             return;
@@ -260,7 +286,7 @@ public:
         validateMessage();
     }
 
-    void insertMessagePart(const TMessagePart &param, int pos = -1, bool *ok = nullptr){
+    void insertMessagePart(const TMessagePart &param, int pos = -1, bool *ok = nullptr) {
         if(m_messageParts.contains(param)){
             if(ok != nullptr) *ok = false;
             return;
@@ -274,7 +300,7 @@ public:
         validateMessage();
     }
 
-    void removeMessagePart(const QString &name, bool *ok = nullptr){
+    void removeMessagePart(const QString &name, bool *ok = nullptr) {
         qsizetype noOfRemoved = m_messageParts.removeAll(name);
         if(ok != nullptr && noOfRemoved > 0){
             *ok = true;
@@ -285,18 +311,18 @@ public:
         validateMessage();
     }
 
-    TMessagePart * getMessagePartByName(const QString &name, bool *ok = nullptr) {
+    const TMessagePart * getMessagePartByName(const QString &name, bool *ok = nullptr) const {
         int index = this->getMessageParts().indexOf(name);
         if(index < 0){
             if(ok != nullptr) *ok = false;
             return nullptr;
         } else {
             if(ok != nullptr) *ok = true;
-            return &(this->getMessageParts()[index]);
+            return &(m_messageParts[index]);
         }
     }
 
-    qsizetype getMessagePartLengthByName(const QString &name, bool *ok = nullptr) {
+    qsizetype getMessagePartLengthByName(const QString &name, bool *ok = nullptr) const {
         if(m_state == TState::TError) {
             qWarning("Cannot get message part length of invalid message, fix errors first.");
             if(ok != nullptr) *ok = false;
@@ -307,11 +333,24 @@ public:
         if(index < 0){
             if(ok != nullptr) *ok = false;
             return -1;
-        } else {
-            if(ok != nullptr) *ok = true;
-            TMessagePart & messagePart = this->getMessageParts()[index];
-            return messagePart.hasStaticLength() ? messagePart.getLength() : this->getMessageParts()[messagePart.getLength()].getValueAsLength(ok);
         }
+
+        const TMessagePart & messagePart = m_messageParts[index];
+
+        if(messagePart.hasStaticLength()) {
+            if(ok != nullptr) *ok = true;
+            return messagePart.getLength();
+        }
+
+        qsizetype referencedIndex = messagePart.getLength();
+        if(referencedIndex >= index || referencedIndex < 0) {
+            qWarning("Could not get dynamic length of message part %s; referenced message part does not exist.", qPrintable(messagePart.getName()));
+            if(ok != nullptr) *ok = false;
+            return -1;
+        }
+
+        if(ok != nullptr) *ok = true;
+        return m_messageParts[messagePart.getLength()].getValueAsLength(ok);
     }
 
 protected:

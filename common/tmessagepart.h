@@ -26,7 +26,6 @@
  * The whole clas can be serialized and deserialized through QDataStream by using \<\< and \>\> operators.
  */
 class TMessagePart {
-
     //Q_DECLARE_TR_FUNCTIONS(TMessagePart)
 
 public:
@@ -41,16 +40,17 @@ public:
     enum class TType {
         TString,
         TByteArray,
+        TBool,
         TChar,
         TUChar, /* aka */ TByte,
-        TInt,
-        TUInt,
         TShort,
         TUShort,
+        TInt,
+        TUInt,
         TLongLong,
         TULongLong,
         TReal,
-        TBool
+
     };
 
     TMessagePart() { }
@@ -146,6 +146,15 @@ public:
     const QString & getDescription() const {
         return m_description;
     }
+
+    void setName(QString value) {
+        m_name = value;
+    }
+
+    void setDescription(QString value) {
+        m_description = value;
+    }
+
     const enum TType getType() const {
         return m_type;
     }
@@ -158,6 +167,7 @@ public:
                 return true;
         }
     }
+
     const qsizetype getLength() const {
         switch(m_type) {
             case TType::TString:
@@ -256,8 +266,9 @@ public:
         return m_value.length();
     }
 
-    const QByteArray & setValue(const QByteArray &value, bool *ok = nullptr) {
-        // length of stored value is not checked id the value is dynamic, as we do not know the correct length
+
+    void setValue(const QByteArray & value, bool *ok = nullptr) {
+        // length of stored value is not checked if the value is dynamic, as we do not know the correct length
         bool iok = !this->hasStaticLength() || value.length() == getLength();
 
         if(iok == true){
@@ -265,8 +276,10 @@ public:
         }
 
         if(ok != nullptr) *ok = iok;
+    }
 
-        return m_value;
+    void setValue(const QString & value, bool *ok = nullptr) {
+        this->setValue(value.toUtf8(), ok);
     }
 
     void setValue(qint8 value, bool *ok = nullptr){
@@ -302,6 +315,10 @@ public:
     }
 
     void setValue(quint64 value, bool *ok = nullptr){
+        this->setValue(QByteArray(reinterpret_cast<const char *>(&value), sizeof(value)), ok);
+    }
+
+    void setValue(qreal value, bool *ok = nullptr){
         this->setValue(QByteArray(reinterpret_cast<const char *>(&value), sizeof(value)), ok);
     }
 

@@ -23,7 +23,13 @@ public:
 
     TProtocol() { }
 
-    TProtocol(const QString &name, const QString &description, QList<TMessage> messages = {}):
+    TProtocol(const QString &name, const QString &description):
+        m_name(name),
+        m_description(description),
+        m_messages()
+    { }
+
+    TProtocol(const QString &name, const QString &description, QList<TMessage> & messages):
         m_name(name),
         m_description(description),
         m_messages(messages)
@@ -47,6 +53,7 @@ public:
     bool operator==(const TProtocol &x) const {
         return (m_name == x.m_name);
     }
+
     bool operator==(const QString &x) const {
         return (m_name == x);
     }
@@ -80,6 +87,14 @@ public:
         return m_description;
     }
 
+    void setName(QString value) {
+        m_name = value;
+    }
+
+    void setDescription(QString value) {
+        m_description = value;
+    }
+
     const TMessage * tryMatchResponse(uint8_t * buffer, qsizetype length) {
         QByteArray receivedData = QByteArray(reinterpret_cast<const char *>(buffer), length);
 
@@ -99,7 +114,7 @@ public:
             bool iok, isMatch = true;
             qsizetype len, pos = 0;
 
-            for(TMessagePart & messagePart : message.getMessageParts()) {
+            for(TMessagePart messagePart : message.getMessageParts()) {
                 len = message.getMessagePartLengthByName(messagePart.getName(), &iok);
 
                 if(!iok) {
@@ -116,12 +131,12 @@ public:
 
                 if(messagePart.isPayload()) {
                     if(messagePart.isLittleEndian()) {
-                        messagePart.setValue(receivedData.sliced(pos, len), &iok);
-                    }
-                    else {
                         QByteArray tmp = receivedData.sliced(pos, len);
                         std::reverse(tmp.begin(), tmp.end());
                         messagePart.setValue(tmp, &iok);
+                    }
+                    else {
+                        messagePart.setValue(receivedData.sliced(pos, len), &iok);
                     }
 
                     if(!iok) {
@@ -160,7 +175,7 @@ public:
         return matchedMessage;
     }
 
-    QList<TMessage> & getMessages(){
+    const QList<TMessage> & getMessages() const {
         return m_messages;
     }
 
@@ -189,7 +204,7 @@ public:
             return nullptr;
         } else {
             if(ok != nullptr) *ok = true;
-            return &(this->getMessages()[index]);
+            return &(m_messages[index]);
         }
     }
 
