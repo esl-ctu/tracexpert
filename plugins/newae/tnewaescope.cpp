@@ -407,14 +407,14 @@ bool TnewaeScope::_validatePostInitParamsStructure(TConfigParam & params){
     }
 
     if (newAEparams->getSubParamByName("Glitch")->getSubParamByName("offset_fine")->getValue() != ""){
-        if(validateParamLL(params.getSubParamByName("Glitch")->getSubParamByName("offset_fine")->getValue(), -255, 255)){
+        if(validateParamLL(newAEparams->getSubParamByName("Glitch")->getSubParamByName("offset_fine")->getValue(), -255, 255)){
             newAEparams->getSubParamByName("Glitch")->getSubParamByName("offset_fine")->setState(TConfigParam::TState::TError);
             ok = false;
         }
     }
 
     if (newAEparams->getSubParamByName("Glitch")->getSubParamByName("width_fine")->getValue() != ""){
-        if(validateParamLL(params.getSubParamByName("Glitch")->getSubParamByName("width_fine")->getValue(), -255, 255)){
+        if(validateParamLL(newAEparams->getSubParamByName("Glitch")->getSubParamByName("width_fine")->getValue(), -255, 255)){
             newAEparams->getSubParamByName("Glitch")->getSubParamByName("width_fine")->setState(TConfigParam::TState::TError);
             ok = false;
         }
@@ -429,7 +429,6 @@ bool TnewaeScope::_validatePostInitParamsStructure(TConfigParam & params){
         newAEparams->getSubParamByName("Glitch")->getSubParamByName("width")->setState(TConfigParam::TState::TError);
         ok = false;
     }
-
 
     return ok;
 }
@@ -613,9 +612,13 @@ TConfigParam TnewaeScope::getPostInitParams() const{
 }
 
 TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){
+    qDebug("a");
     m_postInitParams.resetState(true);
+    qDebug("b");
     _validatePostInitParamsStructure(params);
+    qDebug("c");
     m_postInitParams = updatePostInitParams(params, true);
+    qDebug("d");
     return m_postInitParams;
 }
 
