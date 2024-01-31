@@ -40,7 +40,7 @@ public:
         m_description(description),
         m_isResponse(isResponse),
         m_messageParts(),
-        m_state(),
+        m_state(TState::TOk),
         m_stateMessage()
     { }
 
@@ -98,6 +98,26 @@ public:
             qCritical("Failed deserializing TMessage: Wrong version or wrong data.");
         }
         return in;
+    }
+
+    const QString & getName() const {
+        return m_name;
+    }
+
+    const QString & getDescription() const {
+        return m_description;
+    }
+
+    const bool isResponse() const {
+        return m_isResponse;
+    }
+
+    TMessage::TState getState() const{
+        return m_state;
+    }
+
+    const QString & getStateMessage() const {
+        return m_stateMessage;
     }
 
     void validateMessage() {
@@ -324,18 +344,6 @@ public:
         return QString("%1: (%2)").arg(m_name, messagePartSummaries.join(", "));
     }
 
-    const QString & getName() const {
-        return m_name;
-    }
-
-    const QString & getDescription() const {
-        return m_description;
-    }
-
-    bool isResponse() const {
-        return m_isResponse;
-    }
-
     QList<TMessagePart> & getMessageParts() {
         return m_messageParts;
     }
@@ -354,14 +362,6 @@ public:
 
     void setResponse(bool value) {
         m_isResponse = value;
-    }
-
-    TMessage::TState getState() const{
-        return m_state;
-    }
-
-    const QString & getStateMessage() const {
-        return m_stateMessage;
     }
 
     void setState(TState state){
