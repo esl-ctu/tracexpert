@@ -8,6 +8,7 @@ TProjectModel::TProjectModel(QObject * parent)
     : QAbstractItemModel(parent), TProjectItem(this, nullptr)
 {
     loadComponents();
+    loadProtocols();
 }
 
 TProjectModel::~TProjectModel()
@@ -18,6 +19,11 @@ TProjectModel::~TProjectModel()
 TComponentContainer *TProjectModel::componentContainer()
 {
     return m_componentContainer;
+}
+
+TProtocolContainer *TProjectModel::protocolContainer()
+{
+    return m_protocolContainer;
 }
 
 QVariant TProjectModel::data(const QModelIndex & index, int role) const
@@ -109,6 +115,10 @@ int TProjectModel::childrenCount() const
         count++;
     }
 
+    if (m_protocolContainer) {
+        count++;
+    }
+
     return count;
 }
 
@@ -117,6 +127,15 @@ TProjectItem * TProjectModel::child(int row) const
     if (m_componentContainer) {
         if (row == 0) {
             return m_componentContainer;
+        }
+        else {
+            row--;
+        }
+    }
+
+    if (m_protocolContainer) {
+        if (row == 0) {
+            return m_protocolContainer;
         }
         else {
             row--;
@@ -157,4 +176,33 @@ void TProjectModel::loadComponents()
             }
         }
     }
+}
+
+void TProjectModel::loadProtocols()
+{
+    m_protocolContainer = new TProtocolContainer(this);
+
+    QList<TMessage> messages;
+
+    QList<TMessage> messages1;
+    TMessage messageC("Dummy protocol message (command)", "Description of dummy protocol message.", false);
+    TMessage messageR("Dummy protocol message (response)", "Description of dummy protocol message.", true);
+    TMessagePart messagePart0("Foo", "Lorem ipsum.", TMessagePart::TType::TBool);
+    messageC.addMessagePart(messagePart0);
+    messageR.addMessagePart(messagePart0);
+    TMessagePart messagePart1("Bar", "Lorem ipsum.", TMessagePart::TType::TString);
+    messagePart1.setLength(4);
+    messageC.addMessagePart(messagePart1);
+    messageR.addMessagePart(messagePart1);
+    TMessagePart messagePart2("Goop", "Lorem ipsum.", TMessagePart::TType::TInt);
+    messageC.addMessagePart(messagePart2);
+    messageR.addMessagePart(messagePart2);
+    messages1.append(messageC);
+    messages1.append(messageR);
+
+    QList<TMessage> messages2;
+
+    m_protocolContainer->insertItem(0, new TProtocolModel(TProtocol("Dummy protocol 3", "Description of dummy protocol.", messages), m_protocolContainer));
+    m_protocolContainer->insertItem(0, new TProtocolModel(TProtocol("Dummy protocol 2", "Description of dummy protocol.", messages2), m_protocolContainer));
+    m_protocolContainer->insertItem(0, new TProtocolModel(TProtocol("Dummy protocol 1", "Description of dummy protocol.", messages1), m_protocolContainer));
 }
