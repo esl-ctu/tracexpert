@@ -13,10 +13,10 @@ class TScopeContainer : public TPluginUnitContainer
 public:
     explicit TScopeContainer(TComponentModel * parent);
     
-    int unitCount() const override;
-    TScopeModel * unit(int index) const override;
+    int count() const override;
+    TScopeModel * at(int index) const override;
 
-    void addScope(TScopeModel * unit);
+    void add(TScopeModel * unit);
     
     QString name() const override;
 

@@ -8,7 +8,10 @@ TDockWidget::TDockWidget(const QString & title, QWidget * parent)
 
 void TDockWidget::show()
 {
-
+    if (!toggleViewAction()->isChecked()) {
+        toggleViewAction()->trigger();
+    };
+    raise();
 }
 
 void TDockWidget::close()

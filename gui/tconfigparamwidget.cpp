@@ -138,7 +138,7 @@ void TConfigParamWidget::drawInput(const TConfigParam & param, QTreeWidgetItem *
             if (type == TConfigParam::TType::TBool) {
                 comboBox->addItem(tr("True"));
                 comboBox->addItem(tr("False"));
-                comboBox->setCurrentIndex(param.getValue() == QString("True") ? 1 : 0);
+                comboBox->setCurrentIndex(param.getValue() == QString("true") ? 0 : 1);
             }
             else if (type == TConfigParam::TType::TEnum) {
                 const QStringList & enumValues = param.getEnumValues();

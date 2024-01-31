@@ -26,7 +26,7 @@ public:
         int getIndex(){ return m_index; }
         QString getAlias() { return m_alias; }
         bool isEnabled() { return m_enabled; }
-        qreal getRange() {return m_range; }
+        qreal getRange() { return m_range; }
         qreal getOffset() { return m_offset; }
     protected:
         int m_index;

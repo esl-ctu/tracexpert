@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QLineEdit>
+#include <QPlainTextEdit>
 
 #include "tiodevicemodel.h"
 #include "tconfigparamwidget.h"
@@ -16,8 +17,16 @@ public:
 
 public slots:
     bool applyPostInitParam();
+
+    void setAutoreceive(bool enabled);
     void receiveBytes();
     void receiveBusy();
+    void receiveFailed();
+    void dataReceived(QByteArray data);
+
+    void sendBytes();
+    void sendBusy();
+    void sendFailed();
     //void selectSendMessageValidator();
 
 private:
@@ -25,6 +34,8 @@ private:
 
     TConfigParamWidget * m_paramWidget;
     QLineEdit * m_receiveBytesEdit;
+    QLineEdit * m_sendMessageEdit;
+    QPlainTextEdit * m_communicationLogTextEdit;
 };
 
 #endif // TIODEVICEWIDGET_H

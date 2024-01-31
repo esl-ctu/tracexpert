@@ -8,14 +8,14 @@ TIODeviceContainer::TIODeviceContainer(TComponentModel * parent)
 
 }
 
-int TIODeviceContainer::unitCount() const
+int TIODeviceContainer::count() const
 {
     return m_IODevices.length();
 }
 
-TIODeviceModel * TIODeviceContainer::unit(int index) const
+TIODeviceModel * TIODeviceContainer::at(int index) const
 {
-    if (index >= 0 && index < unitCount()) {
+    if (index >= 0 && index < count()) {
         return m_IODevices[index];
     }
     else {
@@ -23,15 +23,47 @@ TIODeviceModel * TIODeviceContainer::unit(int index) const
     }
 }
 
-void TIODeviceContainer::addIODevice(TIODeviceModel * unit)
+bool TIODeviceContainer::add(TIODeviceModel * unit)
 {
-    unit->setParent(this);
+    if (hasName(unit->name())) {
+        return false;
+    }
 
     beginInsertChild(m_IODevices.length());
     beginInsertRows(QModelIndex(), m_IODevices.length(), m_IODevices.length());
     m_IODevices.append(unit);
     endInsertRows();
     endInsertChild();
+
+    return true;
+}
+
+bool TIODeviceContainer::remove(TIODeviceModel * unit)
+{
+    int index = m_IODevices.indexOf(unit);
+
+    if (index < 0) {
+        return false;
+    }
+
+    beginInsertChild(index);
+    beginInsertRows(QModelIndex(), index, index);
+    m_IODevices.remove(index);
+    endInsertRows();
+    endInsertChild();
+
+    return true;
+}
+
+TIODeviceModel * TIODeviceContainer::hasName(QString name) const
+{
+    for (int i = 0; i < m_IODevices.length(); i++) {
+        if (m_IODevices[i]->name() == name) {
+            return m_IODevices[i];
+        }
+    }
+
+    return nullptr;
 }
 
 QString TIODeviceContainer::name() const

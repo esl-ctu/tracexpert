@@ -1,13 +1,14 @@
 #include "tiodevicewidget.h"
 
 #include <QLayout>
-#include <QPlainTextEdit>
 #include <QLineEdit>
 #include <QGroupBox>
 #include <QRadioButton>
 #include <QLabel>
 #include <QPushButton>
+#include <QCoreApplication>
 
+#include "qcheckbox.h"
 #include "tconfigparamwidget.h"
 #include "tdialog.h"
 
@@ -16,8 +17,10 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, QWidget * parent)
 {
     setWindowTitle(tr("IO Device - %1").arg(m_deviceModel->name()));
 
-    QPlainTextEdit * communicationLogTextEdit = new QPlainTextEdit;
-    communicationLogTextEdit->setEnabled(false);
+    connect(m_deviceModel, &TIODeviceModel::dataRead, this, &TIODeviceWidget::dataReceived);
+
+    m_communicationLogTextEdit = new QPlainTextEdit;
+    m_communicationLogTextEdit->setReadOnly(true);
     
     m_paramWidget = new TConfigParamWidget(m_deviceModel->postInitParams());
 
@@ -30,13 +33,13 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, QWidget * parent)
 
     QHBoxLayout * textParamLayout = new QHBoxLayout;
 
-    textParamLayout->addWidget(communicationLogTextEdit);
+    textParamLayout->addWidget(m_communicationLogTextEdit);
     textParamLayout->addLayout(paramLayout);
 
     QGroupBox * textParamBox = new QGroupBox;
     textParamBox->setLayout(textParamLayout);
 
-    QLineEdit * sendMessageEdit = new QLineEdit;
+    m_sendMessageEdit = new QLineEdit;
 
     QRadioButton * hexRadioButton = new QRadioButton("Hex");
     hexRadioButton->setChecked(true);
@@ -50,9 +53,10 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, QWidget * parent)
     radioGroupBox->setLayout(radioLayout);
 
     QPushButton * sendButton = new QPushButton("Send");
+    connect(sendButton, &QPushButton::clicked, this, &TIODeviceWidget::sendBytes);
 
     QHBoxLayout * sendMessageLayout = new QHBoxLayout;
-    sendMessageLayout->addWidget(sendMessageEdit);
+    sendMessageLayout->addWidget(m_sendMessageEdit);
     sendMessageLayout->addWidget(radioGroupBox);
     sendMessageLayout->addWidget(sendButton);
 
@@ -73,13 +77,23 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, QWidget * parent)
 
     connect(m_deviceModel, &TIODeviceModel::readBusy, this, &TIODeviceWidget::receiveBusy);
 
+    QCheckBox * autoReceiveCheckbox = new QCheckBox("Autoreceive");
+    autoReceiveCheckbox->setChecked(false);
+    connect(autoReceiveCheckbox, &QCheckBox::clicked, this, &TIODeviceWidget::setAutoreceive);
+    connect(autoReceiveCheckbox, &QCheckBox::clicked, m_receiveBytesEdit, &QLineEdit::setDisabled);
+    connect(autoReceiveCheckbox, &QCheckBox::clicked, receiveButton, &QPushButton::setDisabled);
+
     QHBoxLayout * receiveMessageLayout = new QHBoxLayout;
     receiveMessageLayout->addWidget(receiveBytesLabel);
     receiveMessageLayout->addWidget(m_receiveBytesEdit);
     receiveMessageLayout->addWidget(receiveButton);
 
+    QVBoxLayout * receiveLayout = new QVBoxLayout;
+    receiveLayout->addWidget(autoReceiveCheckbox);
+    receiveLayout->addLayout(receiveMessageLayout);
+
     QGroupBox * receiveMessageBox = new QGroupBox("Receive data");
-    receiveMessageBox->setLayout(receiveMessageLayout);
+    receiveMessageBox->setLayout(receiveLayout);
 
     QHBoxLayout * sendReceiveLayout = new QHBoxLayout;
     sendReceiveLayout->addWidget(sendMessageBox);
@@ -90,6 +104,8 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, QWidget * parent)
     layout->addLayout(sendReceiveLayout);
 
     setLayout(layout);
+
+    connect(m_deviceModel, &TIODeviceModel::readFailed, this, &TIODeviceWidget::receiveFailed);
 }
 
 bool TIODeviceWidget::applyPostInitParam()
@@ -103,6 +119,16 @@ bool TIODeviceWidget::applyPostInitParam()
     return true;
 }
 
+void TIODeviceWidget::setAutoreceive(bool enabled)
+{
+    if (enabled) {
+        m_deviceModel->enableAutoRead();
+    }
+    else {
+        m_deviceModel->disableAutoRead();
+    }
+}
+
 void TIODeviceWidget::receiveBytes()
 {
     m_deviceModel->readData(m_receiveBytesEdit->text().toInt());
@@ -111,4 +137,29 @@ void TIODeviceWidget::receiveBytes()
 void TIODeviceWidget::receiveBusy()
 {
     TDialog::deviceFailedBusyMessage(this);
+}
+
+void TIODeviceWidget::receiveFailed() {
+    TDialog::deviceReceiveFailedMessage(this);
+}
+
+void TIODeviceWidget::dataReceived(QByteArray data)
+{
+    m_communicationLogTextEdit->appendPlainText(data);
+}
+
+void TIODeviceWidget::sendBytes()
+{
+    m_deviceModel->writeData(m_sendMessageEdit->text().toUtf8());
+    m_communicationLogTextEdit->appendPlainText(m_sendMessageEdit->text());
+}
+
+void TIODeviceWidget::sendBusy()
+{
+    TDialog::deviceFailedBusyMessage(this);
+}
+
+void TIODeviceWidget::sendFailed()
+{
+    TDialog::deviceSendFailedMessage(this);
 }

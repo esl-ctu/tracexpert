@@ -13,10 +13,13 @@ class TIODeviceContainer : public TPluginUnitContainer
 public:
     explicit TIODeviceContainer(TComponentModel * parent);
 
-    int unitCount() const override;
-    TIODeviceModel * unit(int index) const override;
+    int count() const override;
+    TIODeviceModel * at(int index) const override;
 
-    void addIODevice(TIODeviceModel * unit);
+    bool add(TIODeviceModel * unit);
+    bool remove(TIODeviceModel * unit);
+
+    TIODeviceModel * hasName(QString name) const;
 
     QString name() const override;
 

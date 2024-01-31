@@ -52,6 +52,18 @@ void TProjectItem::endInsertChild()
     m_model->endInsertRows();
 }
 
+void TProjectItem::beginRemoveChild(int childRow)
+{
+    QModelIndex index = m_model->createIndex(row(), 0, this);
+
+    m_model->beginRemoveRows(index, childRow, childRow);
+}
+
+void TProjectItem::endRemoveChild()
+{
+    m_model->endRemoveRows();
+}
+
 void TProjectItem::itemDataChanged()
 {
     QModelIndex index = m_model->createIndex(row(), 0, m_parent);

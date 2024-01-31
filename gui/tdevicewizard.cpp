@@ -226,7 +226,7 @@ void TSelectComponentWizardPage::selectComponent()
         m_selectedComponent = nullptr;
     }
     else {
-        m_selectedComponent = m_componentContainer->unit(selected.constFirst().row());
+        m_selectedComponent = m_componentContainer->at(selected.constFirst().row());
     }
 
     m_reInitCheckBox->setEnabled(m_selectedComponent);
@@ -389,7 +389,7 @@ void TSelectDeviceWizardPage::initializePage()
     connect(m_IODeviceListWidget, &QTableView::doubleClicked, wizard(), &QWizard::next);
     connect(m_scopeListWidget, &QTableView::doubleClicked, wizard(), &QWizard::next);
     
-    if (IODevices->unitCount() || m_selectedComponent->canAddIODevice()) {
+    if (IODevices->count() || m_selectedComponent->canAddIODevice()) {
         m_IOGroupBox->show();
     }
     else {
@@ -398,7 +398,7 @@ void TSelectDeviceWizardPage::initializePage()
 
     m_addIOButton->setEnabled(m_selectedComponent->canAddIODevice());
     
-    if (scopes->unitCount() ||  m_selectedComponent->canAddScope()) {
+    if (scopes->count() ||  m_selectedComponent->canAddScope()) {
         m_scopeGroupBox->show();
     }
     else {
@@ -456,7 +456,7 @@ void TSelectDeviceWizardPage::selectIODevice()
         m_selectedDevice = nullptr;
     }
     else {
-        m_selectedDevice = m_selectedComponent->IODeviceContainer()->unit(selected.constFirst().row());
+        m_selectedDevice = m_selectedComponent->IODeviceContainer()->at(selected.constFirst().row());
     }
 
     emit completeChanged();
@@ -471,7 +471,7 @@ void TSelectDeviceWizardPage::selectScope()
         m_selectedDevice = nullptr;
     }
     else {
-        m_selectedDevice = m_selectedComponent->scopeContainer()->unit(selected.constFirst().row());
+        m_selectedDevice = m_selectedComponent->scopeContainer()->at(selected.constFirst().row());
     }
 
     emit completeChanged();

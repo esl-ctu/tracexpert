@@ -30,6 +30,9 @@ public:
 
     static void deviceFailedBusyMessage(QWidget * parent);
 
+    static void deviceReceiveFailedMessage(QWidget * parent);
+    static void deviceSendFailedMessage(QWidget * parent);
+
 protected:
     static bool question(QWidget * parent, const QString & title, const QString & text);
     static void criticalMessage(QWidget * parent, const QString & title, const QString & text);

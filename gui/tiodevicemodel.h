@@ -7,6 +7,46 @@
 #include "tiodevice.h"
 
 #define DATA_BLOCK_SIZE 64
+#define AUTORECEIVE_DELAY_MS 20
+
+class TIODeviceReceiver : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit TIODeviceReceiver(TIODevice * IODevice, QObject * parent = nullptr);
+
+public slots:
+    void receiveData(int length);
+    void startReceiving();
+    void stopReceiving();
+
+private:
+    TIODevice * m_IODevice;
+    bool m_stopReceiving;
+
+signals:
+    void dataReceived(QByteArray data);
+    void receiveFailed();
+};
+
+class TIODeviceSender : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit TIODeviceSender(TIODevice * IODevice, QObject * parent = nullptr);
+
+public slots:
+    void sendData(QByteArray data);
+
+private:
+    TIODevice * m_IODevice;
+
+signals:
+    void dataSent(QByteArray data);
+    void sendFailed();
+};
 
 class TIODeviceContainer;
 
@@ -18,16 +58,10 @@ public:
     explicit TIODeviceModel(TIODevice * IODevice, TIODeviceContainer * parent);
     ~TIODeviceModel();
 
-    QString name() const override;
-    QString info() const override;
+    void show();
 
     bool init() override;
     bool deInit() override;
-
-    TConfigParam preInitParams() const override;
-    TConfigParam postInitParams() const override;
-    TConfigParam setPreInitParams(const TConfigParam & param) override;
-    TConfigParam setPostInitParams(const TConfigParam & param) override;
 
     int childrenCount() const override;
     TProjectItem * child(int row) const override;
@@ -36,7 +70,8 @@ public:
 signals:
     void initialized(TIODeviceModel * IODevice);
     void deinitialized(TIODeviceModel * IODevice);
-    void toBeShown(TIODeviceModel * IODevice);
+    void showRequested(TIODeviceModel * IODevice);
+    void removeRequested(TIODeviceModel * IODevice);
 
 public slots:
     void writeData(QByteArray data);
@@ -84,45 +119,6 @@ signals:
 
     void startReceiving();
     void stopReceiving();
-};
-
-class TIODeviceReceiver : public QObject
-{
-    Q_OBJECT
-
-public:
-    explicit TIODeviceReceiver(TIODevice * IODevice, QObject * parent = nullptr);
-
-public slots:
-    void receiveData(int length);
-    void startReceiving();
-    void stopReceiving();
-
-private:
-    TIODevice * m_IODevice;
-    bool m_stopReceiving;
-
-signals:
-    void dataReceived(QByteArray data);
-    void receiveFailed();
-};
-
-class TIODeviceSender : public QObject
-{
-    Q_OBJECT
-
-public:
-    explicit TIODeviceSender(TIODevice * IODevice, QObject * parent = nullptr);
-
-public slots:
-    void sendData(QByteArray data);
-
-private:
-    TIODevice * m_IODevice;
-
-signals:
-    void dataSent(QByteArray data);
-    void sendFailed();
 };
 
 #endif // TIODEVICEMODEL_H

@@ -19,16 +19,8 @@ class TComponentModel : public TPluginUnitModel
 public:
     explicit TComponentModel(TPlugin * plugin, TComponentContainer * parent);
 
-    QString name() const override;
-    QString info() const override;
-
     bool init() override;
     bool deInit() override;
-
-    TConfigParam preInitParams() const override;
-    TConfigParam postInitParams() const override;
-    TConfigParam setPreInitParams(const TConfigParam & param) override;
-    TConfigParam setPostInitParams(const TConfigParam & param) override;
 
     int IODeviceCount() const;
     int scopeCount() const;

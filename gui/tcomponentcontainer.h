@@ -11,10 +11,10 @@ class TComponentContainer : public TPluginUnitContainer
 public:
     explicit TComponentContainer(TProjectModel * parent);
 
-    int unitCount() const override;
-    TComponentModel * unit(int index) const override;
+    int count() const override;
+    TComponentModel * at(int index) const override;
 
-    void addComponent(TComponentModel * unit);
+    void add(TComponentModel * unit);
 
     QString name() const override;
 

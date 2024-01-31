@@ -3,6 +3,7 @@
 
 #include <QObject>
 
+#include "tcommon.h"
 #include "tconfigparam.h"
 #include "tprojectitem.h"
 
@@ -13,21 +14,23 @@ class TPluginUnitModel : public QObject, public virtual TProjectItem
     Q_OBJECT
 
 public:
-    explicit TPluginUnitModel(QObject * parent = nullptr);
+    explicit TPluginUnitModel(TCommon * unit, QObject * parent = nullptr);
 
-    virtual QString name() const = 0;
-    virtual QString info() const = 0;
+    virtual QString name() const;
+    virtual QString info() const;
 
     bool isInit() const;
-    virtual bool init() = 0;
-    virtual bool deInit() = 0;
+    virtual bool init();
+    virtual bool deInit();
 
-    virtual TConfigParam preInitParams() const = 0;
-    virtual TConfigParam postInitParams() const = 0;
-    virtual TConfigParam setPreInitParams(const TConfigParam & param) = 0;
-    virtual TConfigParam setPostInitParams(const TConfigParam & param) = 0;
+    virtual TConfigParam preInitParams() const;
+    virtual TConfigParam postInitParams() const;
+    virtual TConfigParam setPreInitParams(const TConfigParam & param);
+    virtual TConfigParam setPostInitParams(const TConfigParam & param);
 
 protected:
+    TCommon * m_unit;
+
     QString m_name;
     QString m_info;
 

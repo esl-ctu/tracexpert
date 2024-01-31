@@ -56,14 +56,9 @@ QModelIndex TProjectModel::index(int row, int column, const QModelIndex & parent
 
     const TProjectItem * parentItem;
 
-    if (!parent.isValid()) {
-        parentItem = this;
-    }
-    else {
-        parentItem = static_cast<TProjectItem *>(parent.internalPointer());
-    }
+    parentItem = static_cast<TProjectItem *>(parent.internalPointer());
 
-    TProjectItem * childItem = parentItem->child(row);
+    const TProjectItem * childItem = parentItem ? parentItem->child(row) : this;
 
     if (childItem) {
         return createIndex(row, column, childItem);
@@ -106,12 +101,6 @@ void TProjectModel::emitDataChanged(const QModelIndex &topLeft, const QModelInde
     emit dataChanged(topLeft, bottomRight);
 }
 
-//TProjectRootItem::TProjectRootItem(TProjectItemModel * model, TComponentContainer * componentContainer)
-//    : TProjectItem(model, nullptr), m_componentContainer(componentContainer)
-//{
-
-//}
-
 int TProjectModel::childrenCount() const
 {
     int count = 0;
@@ -139,7 +128,7 @@ TProjectItem * TProjectModel::child(int row) const
 
 QString TProjectModel::name() const
 {
-    return QString();
+    return tr("Project");
 }
 
 QVariant TProjectModel::status() const
@@ -164,7 +153,7 @@ void TProjectModel::loadComponents()
                 TComponentModel * component = new TComponentModel(plugin, m_componentContainer);
                 connect(component, &TComponentModel::IODeviceInitialized, this, &TProjectModel::IODeviceInitialized);
                 connect(component, &TComponentModel::scopeInitialized, this, &TProjectModel::scopeInitialized);
-                m_componentContainer->addComponent(component);
+                m_componentContainer->add(component);
             }
         }
     }

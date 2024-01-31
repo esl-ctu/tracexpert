@@ -24,6 +24,8 @@ public:
 protected:
     void beginInsertChild(int childRow);
     void endInsertChild();
+    void beginRemoveChild(int childRow);
+    void endRemoveChild();
     void itemDataChanged();
 
 private:
