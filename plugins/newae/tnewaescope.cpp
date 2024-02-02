@@ -522,6 +522,7 @@ void TnewaeScope::deInit(bool *ok/* = nullptr*/){
 
 }
 
+//This whole method is ugly. I'm sorry
 TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write /*= false*/) const {
     bool ook;
     TConfigParam * topPrm = paramsIn.getSubParamByName("NewAE", &ook);
@@ -532,110 +533,116 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
     }
     QList<TConfigParam> prms = topPrm->getSubParams();
 
-    for(int i = 0; i < prms.length(); ++i){
-        QString prmName = prms[i].getName();
-        QList<TConfigParam> subPrms = prms[i].getSubParams();
+    //state == 0 -> call any FUNCTIONs that shoulf be called
+    //state == 1 -> set any PARAMs that should be set
+    //This ensures that functions are called first
+    for(int state = 0; state <= 1; state++) {
 
-        if (subPrms.length() == 0){
-            QString out;
-            if (write && !(prms[i].isReadonly())) {
-                bool ok, ok2, ok3;
-                QString newVal = topPrm->getSubParamByName(prmName)->getValue();
-                QString oldVal = ((TConfigParam *) &m_postInitParams)->getSubParamByName("NewAE")->getSubParamByName(prmName)->getValue();
-                //qDebug("first");
-                //qDebug(newVal.toLocal8Bit().constData());
-                //qDebug(oldVal.toLocal8Bit().constData());
-                if (newVal != oldVal) {
-                    //qDebug("changeeeeeeeeeeeeeeeeeeeed");
-                    ok = plugin->setPythonParameter(cwId, prmName, newVal, out);
-                    topPrm->getSubParamByName(prmName, &ok2)->setValue(out.toLower(), &ok3);
-                    if (!(ok & ok2 & ok3)) {
-                        topPrm->setState(TConfigParam::TState::TError, "Cannot read write params.");
-                        qDebug("%s", ("Error writing param " + prmName).toLocal8Bit().constData());
-                    }
-                }
-            } else {
-                bool ok, ok2, ok3;
-                bool isWriteOnly = topPrm->getSubParamByName(prmName, &ok)->getHint() == "Write-only, reads return zero";
-                if(!isWriteOnly && ok) { //If parameter is not write-only
-                    ok = plugin->getPythonParameter(cwId, prmName, out);
-                    topPrm->getSubParamByName(prmName, &ok2)->setValue(out.toLower(), &ok3);
-                    if (!(ok & ok2 & ok3)) {
-                        topPrm->setState(TConfigParam::TState::TError, "Cannot read some params.");
-                        qDebug("%s", ("Error reading param " + prmName).toLocal8Bit().constData());
-                    }
-                } else { //Do nothing - keep old value
-                    //topPrm->getSubParamByName(prmName, &ok2)->setValue("0", &ok3);
-                    //if (!(ok & ok2 & ok3)) topPrm->setState(TConfigParam::TState::TError, "Cannot read some params.");
-                }
-            }
-        }
+        for(int i = 0; i < prms.length(); ++i){
+            QString prmName = prms[i].getName();
+            QList<TConfigParam> subPrms = prms[i].getSubParams();
 
-        if (!(subPrms.length() == 1 && subPrms[0].getName() == "Run?")){ //make sure that this is not only a subparam for a function call
-            for (int j = 0; j < subPrms.length(); ++j){
-                QList<TConfigParam> subSubPrms = subPrms[j].getSubParams();
-
-                QString subPrmName = subPrms[j].getName();
-                if (subSubPrms.length() == 0){
+            if (state == 1) { //PARAMs
+                if (subPrms.length() == 0){
                     QString out;
-                    if (write && !(subPrms[j].isReadonly())) {
-                        bool ok, ok2, ok3, ok4;
-                        QString newVal = topPrm->getSubParamByName(prmName)->getSubParamByName(subPrmName)->getValue();
-                        QString oldVal = ((TConfigParam *) &m_postInitParams)->getSubParamByName("NewAE")->getSubParamByName(prmName)->getSubParamByName(subPrmName)->getValue();
-                        //qDebug("second");
-                        //qDebug(newVal.toLocal8Bit().constData());
-                        //qDebug(oldVal.toLocal8Bit().constData());
+                    if (write && !(prms[i].isReadonly())) {
+                        bool ok, ok2, ok3;
+                        QString newVal = topPrm->getSubParamByName(prmName)->getValue();
+                        QString oldVal = ((TConfigParam *) &m_postInitParams)->getSubParamByName("NewAE")->getSubParamByName(prmName)->getValue();
                         if (newVal != oldVal) {
-                            //qDebug("changeeeeeeeeeeeeeeeeeeeedddddddd");
-                            ok = plugin->setPythonSubparameter(cwId, prmName, subPrmName, newVal, out);
-                            topPrm->getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue(out.toLower(), &ok4);
-                            if (!(ok & ok2 & ok3 & ok4)){
-                                topPrm->setState(TConfigParam::TState::TError, "Cannot write some params.");
-                                qDebug("%s", ("Error writing subparam " + prmName + "->" + subPrmName).toLocal8Bit().constData());
-                                if (!ok)  qDebug("Error is in Python");
+                            ok = plugin->setPythonParameter(cwId, prmName, newVal, out);
+                            topPrm->getSubParamByName(prmName, &ok2)->setValue(out.toLower(), &ok3);
+                            if (!(ok & ok2 & ok3)) {
+                                topPrm->setState(TConfigParam::TState::TError, "Cannot read write params.");
+                                qDebug("%s", ("Error writing param " + prmName).toLocal8Bit().constData());
                             }
                         }
-
                     } else {
-                        bool ok, ok2, ok3, ok4;
-                        bool isWriteOnly =topPrm->getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->getHint() == "Write-only, reads return zero";
-                        if(!isWriteOnly && ok2 && ok3) {
-                            ok = plugin->getPythonSubparameter(cwId, prmName, subPrmName, out);
-                            topPrm->getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue(out.toLower(), &ok4);
-                            if (!(ok & ok2 & ok3 & ok4)) {
+                        bool ok, ok2, ok3;
+                        bool isWriteOnly = topPrm->getSubParamByName(prmName, &ok)->getHint() == "Write-only, reads return zero";
+                        if(!isWriteOnly && ok) { //If parameter is not write-only
+                            ok = plugin->getPythonParameter(cwId, prmName, out);
+                            topPrm->getSubParamByName(prmName, &ok2)->setValue(out.toLower(), &ok3);
+                            if (!(ok & ok2 & ok3)) {
                                 topPrm->setState(TConfigParam::TState::TError, "Cannot read some params.");
-                                qDebug("%s", ("Error reading subparam " + prmName + "->" + subPrmName).toLocal8Bit().constData());
+                                qDebug("%s", ("Error reading param " + prmName).toLocal8Bit().constData());
                             }
                         } else { //Do nothing - keep old value
-                            //topPrm->getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue("0", &ok4);
-                            //if (!(ok2 & ok3 & ok4)) topPrm->setState(TConfigParam::TState::TError, "Cannot read some params.");
-                        }
-                    }
-                } else { //Call function
-                    if (subSubPrms[0].getValue() == "true" && write){
-                        size_t len;
-                        QString out;
-                        bool ok;
-                        ok = plugin->runPythonFunctionOnAnObjectAndGetStringOutput(cwId, prmName, subPrmName, len, out);
-                        subSubPrms[0].setValue("No");
-                        if (!ok) {
-                            topPrm->setState(TConfigParam::TState::TError, "Cannot read/write some params.");
-                            qDebug("%s", ("Error reading or writing (sub)param " + prmName).toLocal8Bit().constData());
+                            //topPrm->getSubParamByName(prmName, &ok2)->setValue("0", &ok3);
+                            //if (!(ok & ok2 & ok3)) topPrm->setState(TConfigParam::TState::TError, "Cannot read some params.");
                         }
                     }
                 }
             }
-        } else { //Call function
-            if (subPrms[0].getValue() == "true" && write){
-                QList<QString> tmp;
-                size_t len;
-                QString out;
-                bool ok, ok2;
-                ok = plugin->runPythonFunctionAndGetStringOutput(cwId, prmName, 0, tmp, len, out);
-                subPrms[0].setValue("No", &ok2);
-                if (!(ok & ok2)) {
-                    topPrm->setState(TConfigParam::TState::TError, "Cannot read/write some params.");
-                    qDebug("%s", ("Error reading or writing param " + prmName).toLocal8Bit().constData());
+
+            if (!(subPrms.length() == 1 && subPrms[0].getName() == "Run?")){ //make sure that this is not only a subparam for a function call
+                for (int j = 0; j < subPrms.length(); ++j){
+                    QList<TConfigParam> subSubPrms = subPrms[j].getSubParams();
+
+                    QString subPrmName = subPrms[j].getName();
+                    if (subSubPrms.length() == 0){
+                        if (state == 1) { //PARAMs
+                            QString out;
+                            if (write && !(subPrms[j].isReadonly())) {
+                                bool ok, ok2, ok3, ok4;
+                                QString newVal = topPrm->getSubParamByName(prmName)->getSubParamByName(subPrmName)->getValue();
+                                QString oldVal = ((TConfigParam *) &m_postInitParams)->getSubParamByName("NewAE")->getSubParamByName(prmName)->getSubParamByName(subPrmName)->getValue();
+                                if (newVal != oldVal) {
+                                    ok = plugin->setPythonSubparameter(cwId, prmName, subPrmName, newVal, out);
+                                    topPrm->getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue(out.toLower(), &ok4);
+                                    if (!(ok & ok2 & ok3 & ok4)){
+                                        topPrm->setState(TConfigParam::TState::TError, "Cannot write some params.");
+                                        qDebug("%s", ("Error writing subparam " + prmName + "->" + subPrmName).toLocal8Bit().constData());
+                                        if (!ok)  qDebug("Error is in Python");
+                                    }
+                                }
+
+                            } else {
+                                bool ok, ok2, ok3, ok4;
+                                bool isWriteOnly =topPrm->getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->getHint() == "Write-only, reads return zero";
+                                if(!isWriteOnly && ok2 && ok3) {
+                                    ok = plugin->getPythonSubparameter(cwId, prmName, subPrmName, out);
+                                    topPrm->getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue(out.toLower(), &ok4);
+                                    if (!(ok & ok2 & ok3 & ok4)) {
+                                        topPrm->setState(TConfigParam::TState::TError, "Cannot read some params.");
+                                        qDebug("%s", ("Error reading subparam " + prmName + "->" + subPrmName).toLocal8Bit().constData());
+                                    }
+                                } else { //Do nothing - keep old value
+                                    //topPrm->getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue("0", &ok4);
+                                    //if (!(ok2 & ok3 & ok4)) topPrm->setState(TConfigParam::TState::TError, "Cannot read some params.");
+                                }
+                            }
+                        }
+                    } else { //Call function
+                        if (state == 0) { //FUNCTIONs
+                            if (subSubPrms[0].getValue() == "true" && write){
+                                size_t len;
+                                QString out;
+                                bool ok;
+                                ok = plugin->runPythonFunctionOnAnObjectAndGetStringOutput(cwId, prmName, subPrmName, len, out);
+                                subSubPrms[0].setValue("No");
+                                if (!ok) {
+                                    topPrm->setState(TConfigParam::TState::TError, "Cannot read/write some params.");
+                                    qDebug("%s", ("Error reading or writing (sub)param " + prmName).toLocal8Bit().constData());
+                                }
+                            }
+                        }
+                    }
+                }
+            } else { //Call function
+                if (state == 0) { //FUNCTIONs
+                    if (subPrms[0].getValue() == "true" && write){
+                        QList<QString> tmp;
+                        size_t len;
+                        QString out;
+                        bool ok, ok2;
+                        ok = plugin->runPythonFunctionAndGetStringOutput(cwId, prmName, 0, tmp, len, out);
+                        subPrms[0].setValue("No", &ok2);
+                        if (!(ok & ok2)) {
+                            topPrm->setState(TConfigParam::TState::TError, "Cannot read/write some params.");
+                            qDebug("%s", ("Error reading or writing param " + prmName).toLocal8Bit().constData());
+                        }
+                    }
                 }
             }
         }
