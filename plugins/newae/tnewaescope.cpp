@@ -651,8 +651,14 @@ TConfigParam TnewaeScope::getPostInitParams() const{
 
 TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){
     m_postInitParams.resetState(true);
-    _validatePostInitParamsStructure(params);
-    m_postInitParams = updatePostInitParams(params, true);
+    bool ok = _validatePostInitParamsStructure(params);
+    if (ok) {
+        m_postInitParams = updatePostInitParams(params, true);
+        m_postInitParams = updatePostInitParams(params);
+    }
+    else {
+        m_postInitParams = params;
+    }
     return m_postInitParams;
 }
 
