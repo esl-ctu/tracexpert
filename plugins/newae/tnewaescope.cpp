@@ -553,7 +553,7 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                             ok = plugin->setPythonParameter(cwId, prmName, newVal, out);
                             topPrm->getSubParamByName(prmName, &ok2)->setValue(out.toLower(), &ok3);
                             if (!(ok & ok2 & ok3)) {
-                                topPrm->setState(TConfigParam::TState::TError, "Cannot read write params.");
+                                topPrm->setState(TConfigParam::TState::TError, "Cannot write params.");
                                 qDebug("%s", ("Error writing param " + prmName).toLocal8Bit().constData());
                             }
                         }
@@ -564,7 +564,7 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                             ok = plugin->getPythonParameter(cwId, prmName, out);
                             topPrm->getSubParamByName(prmName, &ok2)->setValue(out.toLower(), &ok3);
                             if (!(ok & ok2 & ok3)) {
-                                topPrm->setState(TConfigParam::TState::TError, "Cannot read some params.");
+                                topPrm->setState(TConfigParam::TState::TWarning, "Cannot read some params.");
                                 qDebug("%s", ("Error reading param " + prmName).toLocal8Bit().constData());
                             }
                         } else { //Do nothing - keep old value
@@ -604,7 +604,7 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                                     ok = plugin->getPythonSubparameter(cwId, prmName, subPrmName, out);
                                     topPrm->getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue(out.toLower(), &ok4);
                                     if (!(ok & ok2 & ok3 & ok4)) {
-                                        topPrm->setState(TConfigParam::TState::TError, "Cannot read some params.");
+                                        topPrm->setState(TConfigParam::TState::TWarning, "Cannot read some params.");
                                         qDebug("%s", ("Error reading subparam " + prmName + "->" + subPrmName).toLocal8Bit().constData());
                                     }
                                 } else { //Do nothing - keep old value
@@ -622,7 +622,7 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                                 ok = plugin->runPythonFunctionOnAnObjectAndGetStringOutput(cwId, prmName, subPrmName, len, out);
                                 subSubPrms[0].setValue("No");
                                 if (!ok) {
-                                    topPrm->setState(TConfigParam::TState::TError, "Cannot read/write some params.");
+                                    topPrm->setState(TConfigParam::TState::TWarning, "Cannot read/write some params.");
                                     qDebug("%s", ("Error reading or writing (sub)param " + prmName).toLocal8Bit().constData());
                                 }
                             }
@@ -639,7 +639,7 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                         ok = plugin->runPythonFunctionAndGetStringOutput(cwId, prmName, 0, tmp, len, out);
                         subPrms[0].setValue("No", &ok2);
                         if (!(ok & ok2)) {
-                            topPrm->setState(TConfigParam::TState::TError, "Cannot read/write some params.");
+                            topPrm->setState(TConfigParam::TState::TWarning, "Cannot read/write some params.");
                             qDebug("%s", ("Error reading or writing param " + prmName).toLocal8Bit().constData());
                         }
                     }
@@ -721,14 +721,37 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
     }*/
 
     bool tracesAsInt = m_postInitParams.getSubParamByName("TraceXpert")->getSubParamByName("Get traces as int")->getValue() == "true";
-    bool continouos = m_postInitParams.getSubParamByName("TraceXpert")->getSubParamByName("Mode")->getValue() == "Continous";
+    bool continuous = m_postInitParams.getSubParamByName("TraceXpert")->getSubParamByName("Mode")->getValue() == "Continuous";
 
     bool succ;
     QList<QString> params;
     size_t dataLen;
     QString response;
 
-    while(!stopNow){
+    params.clear();
+    succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "capture", 0, params, dataLen, response);
+
+    if (!succ) {
+        qDebug("Error sending the capture command. This does not necessarily mean a timeout.");
+    }
+
+    if (continuous && !stopNow){
+        if (stopNow) {
+            stopNow = false;
+        } else {
+            size_t throwaway;
+            bool ook;
+            run(&throwaway, &ook);
+            if(!ook) {
+                qWarning("Continuous mode not available right now. Switched to Triggered");
+                m_postInitParams.getSubParamByName("TraceXpert")->getSubParamByName("Mode")->setValue("Triggered");
+                m_postInitParams.getSubParamByName("TraceXpert")->getSubParamByName("Mode")->setState(TConfigParam::TState::TWarning, "Triggered mode unavailable");
+            }
+        }
+    }
+
+    //Probably wrong, keeping till next iteration
+    /*while(!stopNow){
         params.clear();
         succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "capture", 0, params, dataLen, response);
 
@@ -741,13 +764,13 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
             break;
         }
 
-        if (!continouos) {
+        if (!continuous) {
             if (response == "True" || response == "true" || response == "TRUE"){
                 qDebug("Capture timed out.");
             }
             break;
         }
-    }
+    }*/
 
 
     params.clear();

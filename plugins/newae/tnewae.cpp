@@ -352,7 +352,8 @@ void TNewae::init(bool *ok) {
         QList<std::pair<QString, QString>> devices;
         succ = autodetectDevices(devices);
         if(!succ) {
-            if(ok != nullptr) *ok = false;
+            qCritical("No available devices autodetected. Please plug in your device (or make sure an another process is not using it) and re-initialize the component.");
+            if(ok != nullptr) *ok = true;
             return;
         }
 
@@ -371,7 +372,7 @@ void TNewae::init(bool *ok) {
         }
 
         if (!numDevices){
-            qWarning("No devices autodetected.");
+            qCritical("No available devices autodetected. Please plug in your device (or make sure an another process is not using it) and re-initialize the component.");
         }
     }
 

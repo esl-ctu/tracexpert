@@ -142,15 +142,17 @@ int main(int argc, char *argv[])
                                 ret.getSubParamByName("TraceXpert")->getSubParamByName("Get traces as int")->setValue("false");
                                 a[0]->setPostInitParams(ret);
 
-                                a[0]->run(&expSize);
-                                a[0]->downloadSamples(0, buf, 50000, &stype, &samplesPerTraceDownloaded, &tracesDownloaded, &overvoltage);
+                                for (int k = 0; k < 5000; ++k){
+                                    a[0]->run(&expSize);
+                                    a[0]->downloadSamples(0, buf, 50000, &stype, &samplesPerTraceDownloaded, &tracesDownloaded, &overvoltage);
 
-                                double * buf2 = (double *) buf;
+                                    double * buf2 = (double *) buf;
 
-                                for(int i = 0; i < samplesPerTraceDownloaded*tracesDownloaded; i++){
-                                    stream << buf2[i] << ",";
+                                    for(int i = 0; i < samplesPerTraceDownloaded*tracesDownloaded; i++){
+                                        stream << buf2[i] << ",";
+                                    }
+                                    stream << Qt::endl;
                                 }
-                                stream << Qt::endl;
 
                                 ret = a[0]->getPostInitParams();
                                 ret.getSubParamByName("NewAE")->getSubParamByName("Clock")->getSubParamByName("reset_adc")->getSubParamByName("Run?")->setValue("true");
