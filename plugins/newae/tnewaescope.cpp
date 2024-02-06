@@ -45,6 +45,7 @@ TnewaeScope::TnewaeScope(const QString & name_in, const QString & info_in, uint8
     traceWaitingForRead = false;
 
     stopNow = false;
+    running = false;
 
     chanStatus.append(TChannelStatus(0, "Chipwhisperer ch0", true, 0.5, 0)); //TODO: je to dobře?
 }
@@ -278,7 +279,17 @@ uint8_t TnewaeScope::getId(){
 }
 
 QList<TScope::TChannelStatus> TnewaeScope::getChannelsStatus(){
-    return chanStatus;
+    int index = 0;
+    QString alias = name + " ch0";
+    bool enabled = true;
+    qreal range = 0.5;
+    qreal offset = 0;
+
+    TChannelStatus channelA(index, alias, enabled, range, offset);
+
+    QList<TnewaeScope::TChannelStatus> channelList;
+    channelList.append(channelA);
+    return channelList;
 }
 
 void TnewaeScope::notConnectedError() {
@@ -677,6 +688,8 @@ void TnewaeScope::run(size_t * expectedBufferSize, bool *ok){
     size_t dataLen;
     QString response;
 
+    running = true;
+
     params.clear();
     succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "arm", 0, params, dataLen, response);
     if (!succ) {
@@ -692,6 +705,7 @@ void TnewaeScope::run(size_t * expectedBufferSize, bool *ok){
 }
 void TnewaeScope::stop(bool *ok){
     stopNow = true;
+    running = false;
     if(ok != nullptr) *ok = true;
 }
 
@@ -735,9 +749,10 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
         qDebug("Error sending the capture command. This does not necessarily mean a timeout.");
     }
 
-    if (continuous && !stopNow){
+    if (continuous){
         if (stopNow) {
             stopNow = false;
+            running = false;
         } else {
             size_t throwaway;
             bool ook;
@@ -746,8 +761,11 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
                 qWarning("Continuous mode not available right now. Switched to Triggered");
                 m_postInitParams.getSubParamByName("TraceXpert")->getSubParamByName("Mode")->setValue("Triggered");
                 m_postInitParams.getSubParamByName("TraceXpert")->getSubParamByName("Mode")->setState(TConfigParam::TState::TWarning, "Triggered mode unavailable");
+                running = false;
             }
         }
+    } else {
+        running = false;
     }
 
     //Probably wrong, keeping till next iteration
@@ -782,7 +800,7 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
         *samplesType = TSampleType::TReal64;
     }
 
-    succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "get_last_trace", params.count(), params, dataLen, response); //jen tohle přepsat, ať to čeká
+    succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "get_last_trace", params.count(), params, dataLen, response);
 
     if (!succ) {
         qDebug("Error sending the get_last_trace command.");

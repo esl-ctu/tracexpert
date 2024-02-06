@@ -51,6 +51,7 @@ protected:
     QString name;
     QString info;
     TNewae * plugin;
+    bool running;
 
     QList<TChannelStatus> chanStatus;
     bool m_createdManually;
