@@ -697,7 +697,13 @@ void TnewaeScope::run(size_t * expectedBufferSize, bool *ok){
         if(ok != nullptr) *ok = false;
     }
 
-    *expectedBufferSize = cwBufferSize;
+    bool tracesAsInt = m_postInitParams.getSubParamByName("TraceXpert")->getSubParamByName("Get traces as int")->getValue() == "true";
+
+    if (tracesAsInt){
+        *expectedBufferSize = cwBufferSize*sizeof(uint16_t);
+    } else {
+        *expectedBufferSize = cwBufferSize*sizeof(double);
+    }
 
     if(ok != nullptr) *ok = true;
     stopNow = false;
@@ -768,33 +774,11 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
         running = false;
     }
 
-    //Probably wrong, keeping till next iteration
-    /*while(!stopNow){
-        params.clear();
-        succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "capture", 0, params, dataLen, response);
-
-        if (!succ) {
-            qDebug("Error sending the capture command. This does not necessarily mean a timeout.");
-        }
-
-        if (stopNow) {
-            stopNow = false;
-            break;
-        }
-
-        if (!continuous) {
-            if (response == "True" || response == "true" || response == "TRUE"){
-                qDebug("Capture timed out.");
-            }
-            break;
-        }
-    }*/
-
-
+    //Get trace
     params.clear();
     if (tracesAsInt) {
         params.append("true"); //Get traces as ints
-        *samplesType = TSampleType::TInt16;
+        *samplesType = TSampleType::TUInt16;
     } else {
         params.append("false"); //Get traces as doubles
         *samplesType = TSampleType::TReal64;
@@ -809,18 +793,32 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
 
     traceWaitingForRead = false;
 
+    //Set trace size
     if (tracesAsInt) {
-        *samplesPerTraceDownloaded = dataLen/2;
+        *samplesPerTraceDownloaded = dataLen/sizeof(int16_t);
     } else {
-        *samplesPerTraceDownloaded = dataLen/8;
+        *samplesPerTraceDownloaded = dataLen/sizeof(double);
     }
 
+    //Segmented capture unavaliable, we always have only one trace
     *tracesDownloaded = 1;
-    *overvoltage = false; //TODO
 
+    //Overvoltage supported only by Husky
+    *overvoltage = false;
+
+    //Copy trace to buffer
     size_t maxSize = dataLen > bufferSize ? bufferSize : dataLen;
-
     memcpy(buffer, response.toLocal8Bit().constData(), maxSize);
+
+    //Scale int traces to fill the whole uint16_t type
+    if (tracesAsInt) {
+        uint16_t * uintBuf = (uint16_t *) buffer;
+        int16_t * intBuf = (int16_t *) buffer;
+
+        for (int i = 0; i < *samplesPerTraceDownloaded; ++i){
+            uintBuf[i] = intBuf[i] * 64;
+        }
+    }
 
     return maxSize;
 }
