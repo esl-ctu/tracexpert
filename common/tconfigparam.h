@@ -207,7 +207,7 @@ public:
         }
 
         //if(m_readonly){
-            //iok = false;
+        //iok = false;
         //}
 
         if(iok == true){
@@ -303,10 +303,12 @@ public:
     void setState(TState state){
         m_state = state;
     }
+
     void setState(TState state, const QString &message){
         m_state = state;
         m_stateMessage = message;
     }
+
     void resetState(bool includeSubParams = false){
         m_state = TState::TOk;
         m_stateMessage = "";
@@ -316,6 +318,7 @@ public:
             }
         }
     }
+
     TConfigParam::TState getState(bool includeSubParams = false) const{
         TConfigParam::TState retState = m_state;
         if(includeSubParams == true){
@@ -328,10 +331,10 @@ public:
         }
         return retState;
     }
+
     const QString & getStateMessage() const {
         return m_stateMessage;
     }
-
 
     bool isReadonly() const {
         return m_readonly;
@@ -400,7 +403,7 @@ protected:
     QString m_hint;
     TState m_state;
     QString m_stateMessage;
-    bool m_readonly;    
+    bool m_readonly;
     QList<QString> m_enums;
     QList<TConfigParam> m_subParams;
 
@@ -408,3 +411,4 @@ protected:
 
 
 #endif // TCONFIGPARAM_H
+

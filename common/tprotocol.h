@@ -79,26 +79,7 @@ public:
         return in;
     }
 
-    const QString & getName() const {
-        return m_name;
-    }
-
-    const QString & getDescription() const {
-        return m_description;
-    }
-
-    void setName(QString value) {
-        m_name = value;
-    }
-
-    void setDescription(QString value) {
-        m_description = value;
-    }
-
-    const TMessage * tryMatchResponse(uint8_t * buffer, qsizetype length) {
-        QByteArray receivedData = QByteArray(reinterpret_cast<const char *>(buffer), length);
-
-        TMessage * matchedMessage = nullptr;
+    TMessage tryMatchResponse(QByteArray receivedData) {
 
         for(TMessage message : m_messages) {
 
@@ -114,7 +95,7 @@ public:
             bool iok, isMatch = true;
             qsizetype len, pos = 0;
 
-            for(TMessagePart messagePart : message.getMessageParts()) {
+            for(TMessagePart & messagePart : message.getMessageParts()) {
                 len = message.getMessagePartLengthByName(messagePart.getName(), &iok);
 
                 if(!iok) {
@@ -123,7 +104,7 @@ public:
                     break;
                 }
 
-                if(pos + len > length) {
+                if(pos + len > receivedData.length()) {
                     // qInfo("Candidate message longer then received message...");
                     isMatch = false;
                     break;
@@ -131,12 +112,12 @@ public:
 
                 if(messagePart.isPayload()) {
                     if(messagePart.isLittleEndian()) {
+                        messagePart.setValue(receivedData.sliced(pos, len), &iok);
+                    }
+                    else {                        
                         QByteArray tmp = receivedData.sliced(pos, len);
                         std::reverse(tmp.begin(), tmp.end());
                         messagePart.setValue(tmp, &iok);
-                    }
-                    else {
-                        messagePart.setValue(receivedData.sliced(pos, len), &iok);
                     }
 
                     if(!iok) {
@@ -162,21 +143,17 @@ public:
                 pos += len;
             }
 
-            if(isMatch && pos != length) {
+            if(isMatch && pos != receivedData.length()) {
                 // qInfo("Could be a match, but received message has yet more data...");
                 continue;
             }
 
             if(isMatch) {
-                matchedMessage = new TMessage(message);
+                return message;
             }
         }
 
-        return matchedMessage;
-    }
-
-    const QList<TMessage> & getMessages() const {
-        return m_messages;
+        return TMessage();
     }
 
     void addMessage(const TMessage &param, bool *ok = nullptr){
@@ -197,15 +174,39 @@ public:
         }
     }
 
-    TMessage * getMessageByName(const QString &name, bool *ok = nullptr){
-        int index = this->getMessages().indexOf(name);
+    TMessage getMessageByName(const QString &name, bool *ok = nullptr){
+        int index = m_messages.indexOf(name);
         if(index < 0){
             if(ok != nullptr) *ok = false;
-            return nullptr;
+            return TMessage();
         } else {
             if(ok != nullptr) *ok = true;
-            return &(m_messages[index]);
+            return m_messages[index];
         }
+    }
+
+    const QString & getName() const {
+        return m_name;
+    }
+
+    const QString & getDescription() const {
+        return m_description;
+    }
+
+    QList<TMessage> & getMessages() {
+        return m_messages;
+    }
+
+    const QList<TMessage> & getMessages() const {
+        return m_messages;
+    }
+
+    void setName(const QString & value) {
+        m_name = value;
+    }
+
+    void setDescription(const QString & value) {
+        m_description = value;
     }
 
 protected:

@@ -112,20 +112,6 @@ public:
         return m_isResponse;
     }
 
-    void setState(TState state){
-        m_state = state;
-    }
-
-    void setState(TState state, const QString &message){
-        m_state = state;
-        m_stateMessage = message;
-    }
-
-    void resetState(){
-        m_state = TState::TOk;
-        m_stateMessage = "";
-    }
-
     TMessage::TState getState() const{
         return m_state;
     }
@@ -134,29 +120,18 @@ public:
         return m_stateMessage;
     }
 
-    void setName(QString value) {
-        m_name = value;
-    }
-
-    void setDescription(QString value) {
-        m_description = value;
-    }
-
-    void setResponse(bool value) {
-        m_isResponse = value;
-    }
-
     void validateMessage() {
         resetState();
 
+        bool hasWarnings = false;
         bool hasErrors = false;
         for(int i = 0; i < m_messageParts.length(); i++) {
             TMessagePart & messagePart = m_messageParts[i];
             messagePart.resetState();
 
-            if(!m_isResponse && messagePart.hasStaticLength() && messagePart.getLength() != messagePart.getValue().length()) {
+            if(!m_isResponse && messagePart.hasStaticLength() && !messagePart.isPayload() && messagePart.getLength() != messagePart.getValue().length()) {
                 messagePart.setState(TMessagePart::TState::TWarning, "Actual length of TMessagePart value is not the same as the length parameter; did you set the value?");
-                hasErrors = true;
+                hasWarnings = true;
             }
 
             if(!m_isResponse && !messagePart.hasStaticLength()) {
@@ -187,9 +162,13 @@ public:
             m_state = TState::TError;
             m_stateMessage = "One ore more message parts have errors that need to be fixed.";
         }
+        else if (hasWarnings) {
+            m_state = TState::TWarning;
+            m_stateMessage = "One ore more message parts have warnings that may need attention.";
+        }
     }
 
-    const qsizetype getLength() const {
+    qsizetype getLength() const {
 
         if(m_state == TState::TError) {
             qWarning("Cannot find length of invalid message, fix errors first.");
@@ -237,42 +216,35 @@ public:
         return length;
     }
 
-    const qsizetype getData(uint8_t * buffer, qsizetype maxLength) const {
+    QByteArray getData() const {
 
         if(m_isResponse) {
-            qWarning("Getting data of a message which is a response, not a command.");
+            qWarning("Getting data of a message \"%s\" which is a response, not a command.", qPrintable(m_name));
         }
 
         if(m_state == TState::TError) {
-            qWarning("Cannot get data of invalid message, fix errors first.");
-            return -1;
+            qWarning("Cannot get data of invalid message \"%s\", fix errors first.", qPrintable(m_name));
+            return QByteArray();
         }
 
-        qsizetype messageLength = 0;
+        QByteArray messageData;
 
         for(int i = 0; i < m_messageParts.length(); i++) {
             const TMessagePart & messagePart = m_messageParts[i];
+            const QByteArray & messagePartData = messagePart.getData();
 
-            qsizetype appendedBytes = messagePart.getData(buffer + messageLength, maxLength - messageLength);
+            if(messagePartData.length() == 0)
+                break;
 
-            if(appendedBytes == 0) {
-                qWarning("Failed to form message as a result of an error; check previous messages.");
-                return 0;
-            }
-
-            messageLength += appendedBytes;
+            messageData.append(messagePartData);
         }
 
-        if(messageLength != getLength()) {
-            qWarning("Failed to form message of correct length; check previous messages.");
-            return -1;
+        if(messageData.length() != getLength()) {
+            qWarning("Failed to form message \"%s\" of correct length; check previous messages.", qPrintable(m_name));
+            return QByteArray();
         }
 
-        return messageLength;
-    }
-
-    const QList<TMessagePart> & getMessageParts() const {
-        return m_messageParts;
+        return messageData;
     }
 
     void addMessagePart(const TMessagePart &param, bool *ok = nullptr) {
@@ -311,25 +283,25 @@ public:
         validateMessage();
     }
 
-    const TMessagePart * getMessagePartByName(const QString &name, bool *ok = nullptr) const {
-        int index = this->getMessageParts().indexOf(name);
+    TMessagePart getMessagePartByName(const QString &name, bool *ok = nullptr) const {
+        int index = m_messageParts.indexOf(name);
         if(index < 0){
             if(ok != nullptr) *ok = false;
-            return nullptr;
+            return TMessagePart();
         } else {
             if(ok != nullptr) *ok = true;
-            return &(m_messageParts[index]);
+            return m_messageParts[index];
         }
     }
 
     qsizetype getMessagePartLengthByName(const QString &name, bool *ok = nullptr) const {
         if(m_state == TState::TError) {
-            qWarning("Cannot get message part length of invalid message, fix errors first.");
+            qWarning("Cannot get message part length of invalid message \"%s\", fix errors first.", qPrintable(m_name));
             if(ok != nullptr) *ok = false;
             return -1;
         }
 
-        int index = this->getMessageParts().indexOf(name);
+        int index = m_messageParts.indexOf(name);
         if(index < 0){
             if(ok != nullptr) *ok = false;
             return -1;
@@ -352,6 +324,60 @@ public:
         if(ok != nullptr) *ok = true;
         return m_messageParts[messagePart.getLength()].getValueAsLength(ok);
     }
+
+    QString getPayloadSummary() const {
+
+        if(m_messageParts.isEmpty()) {
+            return m_name;
+        }
+
+        QList<QString> messagePartSummaries;
+        for(const TMessagePart & messagePart : m_messageParts) {
+            if(!messagePart.isPayload())
+                continue;
+
+            bool isFormattedAsHex;
+            QString value = messagePart.getHumanReadableValue(isFormattedAsHex);
+            messagePartSummaries.append(QString(isFormattedAsHex ? "%1: 0x%2" : "%1: %2").arg(messagePart.getName(), value));
+        }
+
+        return QString("%1: (%2)").arg(m_name, messagePartSummaries.join(", "));
+    }
+
+    QList<TMessagePart> & getMessageParts() {
+        return m_messageParts;
+    }
+
+    const QList<TMessagePart> & getMessageParts() const {
+        return m_messageParts;
+    }
+
+    void setName(const QString &  value) {
+        m_name = value;
+    }
+
+    void setDescription(const QString &  value) {
+        m_description = value;
+    }
+
+    void setResponse(bool value) {
+        m_isResponse = value;
+    }
+
+    void setState(TState state){
+        m_state = state;
+    }
+
+    void setState(TState state, const QString & message){
+        m_state = state;
+        m_stateMessage = message;
+    }
+
+    void resetState(){
+        m_state = TState::TOk;
+        m_stateMessage = "";
+    }
+
 
 protected:
     QString m_name;

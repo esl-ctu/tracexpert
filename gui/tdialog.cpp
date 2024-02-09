@@ -105,19 +105,39 @@ void TDialog::deviceAddFailedGeneralMessage(QWidget * parent)
     criticalMessage(parent, parent->tr("Add device failed"), parent->tr("Unable to add device!"));
 }
 
-void TDialog::deviceFailedBusyMessage(QWidget *parent)
+void TDialog::deviceFailedBusyMessage(QWidget * parent)
 {
     criticalMessage(parent, parent->tr("Device busy"), parent->tr("Operation failed because device is currently busy!"));
 }
 
-void TDialog::deviceReceiveFailedMessage(QWidget *parent)
+void TDialog::deviceReceiveFailedMessage(QWidget * parent)
 {
     criticalMessage(parent, parent->tr("Receive failed"), parent->tr("Operation failed because device is unable to read data!"));
 }
 
-void TDialog::deviceSendFailedMessage(QWidget *parent)
+void TDialog::deviceSendFailedMessage(QWidget * parent)
 {
     criticalMessage(parent, parent->tr("Send failed"), parent->tr("Operation failed because device is unable to write data!"));
+}
+
+void TDialog::parameterValueEmpty(QWidget * parent, const QString & parameterName)
+{
+    criticalMessage(parent, parent->tr("Parameter value is empty"), parent->tr("Parameter \"%1\" cannot be empty!").arg(parameterName));
+}
+
+void TDialog::parameterValueInvalid(QWidget * parent, const QString & parameterName)
+{
+    criticalMessage(parent, parent->tr("Parameter value is invalid"), parent->tr("Parameter \"%1\" has an invalid value!").arg(parameterName));
+}
+
+void TDialog::parameterValueNotUniqueMessage(QWidget * parent, const QString & parameterName)
+{
+    criticalMessage(parent, parent->tr("Parameter value is non-unique"), parent->tr("The value of \"%1\" has to be unique!").arg(parameterName));
+}
+
+void TDialog::protocolMessageCouldNotBeFormed(QWidget * parent)
+{
+    criticalMessage(parent, parent->tr("Send failed"), parent->tr("Protocol message could not be formed, check console for errors!"));
 }
 
 bool TDialog::question(QWidget * parent, const QString &title, const QString &text)

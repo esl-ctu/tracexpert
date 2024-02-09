@@ -1,5 +1,7 @@
 #ifndef TMESSAGEPART_H
 #define TMESSAGEPART_H
+#include <algorithm>
+#include "qregularexpression.h"
 #include <QString>
 #include <QList>
 #include <QDataStream>
@@ -34,7 +36,8 @@ public:
         TOk,
         TInfo,
         TWarning,
-        TError
+        TError,
+        TUnevaluated
     };
 
     enum class TType {
@@ -49,11 +52,10 @@ public:
         TUInt,
         TLongLong,
         TULongLong,
-        TReal,
-
+        TReal
     };
 
-    TMessagePart() { }
+    TMessagePart() : m_type(TType::TString), m_length(0) { }
 
     TMessagePart(const QString & name, const QString & description, TType type, bool isPayload = true, const QByteArray & value = {}, bool hasStaticLength = true, qsizetype length = 0, bool isLittleEndian = true) :
         m_name(name),
@@ -64,8 +66,8 @@ public:
         m_hasStaticLength(hasStaticLength),
         m_length(length),
         m_isLittleEndian(isLittleEndian),
-        m_state(TState::TOk),
-        m_stateMessage()
+        m_state(TState::TUnevaluated),
+        m_stateMessage("The message is yet to be evaluated.")
     { }
 
     TMessagePart(const TMessagePart &x) :
@@ -145,20 +147,13 @@ public:
     }
     const QString & getDescription() const {
         return m_description;
-    }
+    }   
 
-    void setName(QString value) {
-        m_name = value;
-    }
-
-    void setDescription(QString value) {
-        m_description = value;
-    }
-
-    const enum TType getType() const {
+    enum TType getType() const {
         return m_type;
     }
-    const bool hasStaticLength() const {
+
+    bool hasStaticLength() const {
         switch(m_type) {
             case TType::TString:
             case TType::TByteArray:
@@ -168,7 +163,7 @@ public:
         }
     }
 
-    const qsizetype getLength() const {
+    qsizetype getLength() const {
         switch(m_type) {
             case TType::TString:
             case TType::TByteArray:
@@ -190,22 +185,20 @@ public:
             case TType::TReal:
                 return sizeof(double);
             default:
-                qWarning("TMessagePart has unrecognized type.");
+                qWarning("TMessagePart \"%s\" has unrecognized type.", qPrintable(m_name));
                 return -1;
         }
     }
 
-    const bool isPayload() const {
+    bool isPayload() const {
         return m_isPayload;
     }
-    const bool isLittleEndian() const {
+
+    bool isLittleEndian() const {
         return m_isLittleEndian;
     }
-    const QByteArray & getValue() const {
-        return m_value;
-    }
 
-    const qsizetype hasLengthType() const {
+    bool hasLengthType() const {
         switch(m_type) {
             case TType::TChar:
             case TType::TUChar:
@@ -222,15 +215,85 @@ public:
         }
     }
 
-    const qsizetype getValueAsLength(bool *ok = nullptr) const {
+    bool isHexOrAsciiSensibleType() const {
+        switch(m_type) {
+            case TType::TString:
+            case TType::TByteArray:
+            case TType::TChar:
+            case TType::TUChar:
+            case TType::TByte:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    const QByteArray & getValue() const {
+        return m_value;
+    }
+
+    QString getHumanReadableValue() const {
+        bool isFormattedAsHex;
+        return getHumanReadableValue(isFormattedAsHex);
+    }
+
+    QString getHumanReadableValue(bool & isFormattedAsHex) const {
+        isFormattedAsHex = isHexOrAsciiSensibleType() && ((QString)m_value).contains(QRegularExpression(QStringLiteral("[^A-Za-z0-9]")));
+
+        if(isFormattedAsHex) {
+            return (QString)m_value.toHex();
+        }
+        else if(isHexOrAsciiSensibleType()) {
+            return (QString)m_value;
+        }
+
+        switch(m_type) {
+            case TType::TShort: {
+                    auto dataPointer = reinterpret_cast<const qint16 *>(m_value.constData());
+                    return QString::number(*dataPointer);
+                }
+            case TType::TUShort: {
+                    auto dataPointer = reinterpret_cast<const quint16 *>(m_value.constData());
+                    return QString::number(*dataPointer);
+                }
+            case TType::TInt: {
+                    auto dataPointer = reinterpret_cast<const quint32 *>(m_value.constData());
+                    return QString::number(*dataPointer);
+                }
+            case TType::TUInt: {
+                    auto dataPointer = reinterpret_cast<const quint32 *>(m_value.constData());
+                    return QString::number(*dataPointer);
+                }
+            case TType::TLongLong: {
+                    auto dataPointer = reinterpret_cast<const qint64 *>(m_value.constData());
+                    return QString::number(*dataPointer);
+                }
+            case TType::TULongLong: {
+                    auto dataPointer = reinterpret_cast<const quint64 *>(m_value.constData());
+                    return QString::number(*dataPointer);
+                }
+            case TType::TBool: {
+                    auto dataPointer = reinterpret_cast<const bool *>(m_value.constData());
+                    return QString::number(*dataPointer);
+                }
+            case TType::TReal: {
+                    auto dataPointer = reinterpret_cast<const double *>(m_value.constData());
+                    return QString::number(*dataPointer);
+                }
+            default:
+                return QStringLiteral("Could not interpret value.");
+        }
+    }
+
+    qsizetype getValueAsLength(bool *ok = nullptr) const {
 
         if(!this->hasLengthType()) {
-            qWarning("TMessagePart does not have a suitable type to convert to qsizetype.");
+            qWarning("TMessagePart \"%s\" does not have a suitable type to convert to qsizetype.", qPrintable(m_name));
             if(ok != nullptr) *ok = false;
         }
 
         if(this->hasStaticLength() && m_value.length() != this->getLength()) {
-            qWarning("Value of TMessagePart is not the same as the length parameter; did you set the value?");
+            qWarning("Value of TMessagePart \"%s\" is not the same as the length parameter; did you set the value?", qPrintable(m_name));
             if(ok != nullptr) *ok = false;
         }
 
@@ -239,33 +302,54 @@ public:
         return length;
     }
 
-    const qsizetype getData(uint8_t * buffer, qsizetype maxLength) const {
+    QByteArray getData() const {
 
         if(m_value.isEmpty()) {
-            qWarning("TMessagePart value is empty; did you set the value?");
-            return 0;
+            qWarning("TMessagePart \"%s\" value is empty; did you set the value?", qPrintable(m_name));
+            return QByteArray();
         }
 
         if(this->hasStaticLength() && m_value.length() != this->getLength()) {
-            qWarning("Actual length of TMessagePart value is not the same as the length parameter; did you set the value?");
-            return 0;
-        }
-
-        if(m_value.length() > maxLength) {
-            qWarning("TMessagePart length is greater than supplied maxLength parameter.");
-            return 0;
+            qWarning("Actual length of TMessagePart \"%s\" value is not the same as the length parameter; did you set the value?", qPrintable(m_name));
+            return QByteArray();
         }
 
         if(m_isLittleEndian) {
-            std::copy(m_value.constBegin(), m_value.constEnd(), buffer);
+            return m_value;
         }
         else {
-            std::reverse_copy(m_value.constBegin(), m_value.constEnd(), buffer);
+            QByteArray reverse;
+            reverse.reserve(m_value.size());
+            for(int i = m_value.size(); i >= 0; i--) {
+                reverse.append(m_value[i]);
+            }
+            return reverse;
         }
-
-        return m_value.length();
     }
 
+    TMessagePart::TState getState() const{
+        return m_state;
+    }
+
+    const QString & getStateMessage() const {
+        return m_stateMessage;
+    }
+
+    void setName(const QString & value) {
+        m_name = value;
+    }
+
+    void setDescription(const QString &  value) {
+        m_description = value;
+    }
+
+    void setStaticLength(bool value) {
+        m_hasStaticLength = value;
+    }
+
+    void setLength(qsizetype value) {
+        m_length = value;
+    }
 
     void setValue(const QByteArray & value, bool *ok = nullptr) {
         // length of stored value is not checked if the value is dynamic, as we do not know the correct length
@@ -278,74 +362,160 @@ public:
         if(ok != nullptr) *ok = iok;
     }
 
-    void setValue(const QString & value, bool *ok = nullptr) {
-        this->setValue(value.toUtf8(), ok);
+    void setValue(const QString & value, bool *ok = nullptr, bool asHex = false, bool asAscii = false){
+
+        if(!isHexOrAsciiSensibleType() && (asHex || asAscii)) {
+            if(ok != nullptr) *ok = false;
+            return;
+        }
+
+        bool iok = true;
+
+        switch(m_type) {
+            case TType::TByteArray:
+            case TType::TByte:
+                if(asAscii) {
+                    this->setValue(value.toUtf8(), &iok);
+                }
+                else {
+                    this->setValue(QByteArray::fromHex(value.toUtf8()), &iok);
+                }
+                break;
+            case TType::TString:
+            case TType::TChar:
+            case TType::TUChar:
+                if(asHex) {
+                    this->setValue(QByteArray::fromHex(value.toUtf8()), &iok);
+                }
+                else {
+                    this->setValue(value.toUtf8(), &iok);
+                }
+                break;
+            case TType::TShort: {
+                short convertedValue = value.toShort(&iok);
+                if(iok) {
+                    this->setValue(convertedValue, &iok);
+                }
+                break;
+            }
+            case TType::TUShort: {
+                ushort convertedValue = value.toUShort(&iok);
+                if(iok) {
+                    this->setValue(convertedValue, &iok);
+                }
+                break;
+            }
+            case TType::TInt: {
+                int convertedValue = value.toInt(&iok);
+                if(iok) {
+                    this->setValue(convertedValue, &iok);
+                }
+                break;
+            }
+            case TType::TUInt: {
+                uint convertedValue = value.toUInt(&iok);
+                if(iok) {
+                    this->setValue(convertedValue, &iok);
+                }
+                break;
+            }
+            case TType::TLongLong: {
+                qint64 convertedValue = value.toLongLong(&iok);
+                if(iok) {
+                    this->setValue(convertedValue, &iok);
+                }
+                break;
+            }
+            case TType::TULongLong: {
+                quint64 convertedValue = value.toULongLong(&iok);
+                if(iok) {
+                    this->setValue(convertedValue, &iok);
+                }
+                break;
+            }
+            case TType::TReal: {
+                double convertedValue = value.toDouble(&iok);
+                if(iok) {
+                    this->setValue(convertedValue, &iok);
+                }
+                break;
+            }
+            case TType::TBool: {
+                if(value.compare("true", Qt::CaseInsensitive) == 0 || value == "1") {
+                    this->setBool(true, &iok);
+                }
+                else if (value.compare("false", Qt::CaseInsensitive) == 0 || value == "0"){
+                    this->setBool(false, &iok);
+                }
+                else {
+                    iok = false;
+                }
+                break;
+            }
+            default:
+                iok = false;
+                break;
+        }
+
+        if(ok != nullptr) *ok = iok;
     }
 
-    void setValue(qint8 value, bool *ok = nullptr){
+    void setValue(qint8 value, bool *ok = nullptr) {
         this->setValue(QByteArray(reinterpret_cast<const char *>(&value), sizeof(value)), ok);
     }
 
-    void setValue(quint8 value, bool *ok = nullptr){
+    void setValue(quint8 value, bool *ok = nullptr) {
         this->setValue(QByteArray(reinterpret_cast<const char *>(&value), sizeof(value)), ok);
     }
 
-    void setByteValue(quint8 value, bool *ok = nullptr){
+    void setByteValue(quint8 value, bool *ok = nullptr) {
         this->setValue(QByteArray(reinterpret_cast<const char *>(&value), sizeof(value)), ok);
     }
 
-    void setValue(qint16 value, bool *ok = nullptr){
+    void setValue(qint16 value, bool *ok = nullptr) {
         this->setValue(QByteArray(reinterpret_cast<const char *>(&value), sizeof(value)), ok);
     }
 
-    void setValue(quint16 value, bool *ok = nullptr){
+    void setValue(quint16 value, bool *ok = nullptr) {
         this->setValue(QByteArray(reinterpret_cast<const char *>(&value), sizeof(value)), ok);
     }
 
-    void setValue(qint32 value, bool *ok = nullptr){
+    void setValue(qint32 value, bool *ok = nullptr) {
         this->setValue(QByteArray(reinterpret_cast<const char *>(&value), sizeof(value)), ok);
     }
 
-    void setValue(quint32 value, bool *ok = nullptr){
+    void setValue(quint32 value, bool *ok = nullptr) {
         this->setValue(QByteArray(reinterpret_cast<const char *>(&value), sizeof(value)), ok);
     }
 
-    void setValue(qint64 value, bool *ok = nullptr){
+    void setValue(qint64 value, bool *ok = nullptr) {
         this->setValue(QByteArray(reinterpret_cast<const char *>(&value), sizeof(value)), ok);
     }
 
-    void setValue(quint64 value, bool *ok = nullptr){
+    void setValue(quint64 value, bool *ok = nullptr) {
         this->setValue(QByteArray(reinterpret_cast<const char *>(&value), sizeof(value)), ok);
     }
 
-    void setValue(qreal value, bool *ok = nullptr){
+    void setValue(qreal value, bool *ok = nullptr) {
         this->setValue(QByteArray(reinterpret_cast<const char *>(&value), sizeof(value)), ok);
     }
 
-    void setBool(bool value, bool *ok = nullptr){
-        this->setValue(value ? QByteArrayLiteral("\x01") : QByteArrayLiteral("\x00"), ok);
+    void setBool(bool value, bool *ok = nullptr) {
+        this->setValue(value ? QByteArray::fromHex("01") : QByteArray::fromHex("00"), ok);
     }
 
-    void setState(TState state){
+    void setState(TState state) {
         m_state = state;
     }
 
-    void setState(TState state, const QString &message){
+    void setState(TState state, const QString &message) {
         m_state = state;
         m_stateMessage = message;
     }
 
-    void resetState(){
+    void resetState() {
         m_state = TState::TOk;
         m_stateMessage = "";
-    }
-
-    TMessagePart::TState getState() const{
-        return m_state;
-    }
-
-    const QString & getStateMessage() const {
-        return m_stateMessage;
     }
 
 protected:
