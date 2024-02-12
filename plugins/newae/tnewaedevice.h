@@ -46,8 +46,15 @@ protected:
     bool m_createdManually;
     //
     //
+
+    QString sn;
+    uint8_t cwId;
     QString m_name;
     QString m_info;
+    TNewae * plugin;
+    TnewaeScope * scopeParent;
+    uint8_t matchingScopeID;
+
     TConfigParam m_preInitParams;
     TConfigParam m_postInitParams;
     qint32 m_readTimeout;

@@ -2,7 +2,13 @@
 
 TnewaeDevice::TnewaeDevice(const QString & name_in, const QString & sn_in, TNewae * plugin_in, bool createdManually_in/* = true*/){
     m_initialized = false;
-    //TODO
+    m_name = name_in;
+    sn = sn_in;
+    plugin = plugin_in;
+    m_createdManually = createdManually_in;
+
+    //create empty pre init params TODO
+    //create post init params TODO
 }
 
 
@@ -46,8 +52,29 @@ TConfigParam TnewaeDevice::setPreInitParams(TConfigParam params){
 }
 
 void TnewaeDevice::init(bool *ok/* = nullptr*/){
+    QList<TScope *> scopes = plugin->getScopes();
+    TnewaeScope * matchingScope = NULL;
+
+    for (int i = 0; i < scopes.length(); ++i){
+        TnewaeScope * currentScope = (TnewaeScope *) scopes.at(i);
+
+        QString scopeSn = currentScope->getSn();
+        if (scopeSn == sn) {
+            matchingScope = currentScope;
+            break;
+        }
+    }
+
+    if (matchingScope) {
+
+    } else {
+
+    }
+
     //najít a propojit se scope obejct
     //nastavit stejné id
+
+
 }
 
 void TnewaeDevice::deInit(bool *ok/* = nullptr*/){

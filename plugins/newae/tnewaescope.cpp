@@ -39,9 +39,11 @@ TnewaeScope::TnewaeScope(const QString & name_in, const QString & info_in, uint8
 
     cwId = id_in;
     m_name = name_in;
+    name = name_in;
     m_initialized = false;
     plugin = plugin_in;
     info = info_in;
+    m_info = info_in;
     traceWaitingForRead = false;
 
     stopNow = false;
@@ -278,12 +280,20 @@ uint8_t TnewaeScope::getId(){
     return cwId;
 }
 
+QString TnewaeScope::getSn(){
+    return sn;
+}
+
 QList<TScope::TChannelStatus> TnewaeScope::getChannelsStatus(){
     int index = 0;
     QString alias = name + " ch0";
     bool enabled = true;
     qreal range = 0.5;
     qreal offset = 0;
+
+    QString out;
+    bool ok = plugin->getPythonSubparameter(cwId, "ADC", "offset", out);
+    offset = out.toDouble();
 
     TChannelStatus channelA(index, alias, enabled, range, offset);
 
