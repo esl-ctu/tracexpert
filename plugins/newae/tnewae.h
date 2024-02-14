@@ -18,6 +18,7 @@
 #include <QtDebug>
 #include <QFile>
 #include <QRandomGenerator>
+#include <QMutex>
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //! DO NOT SPAWN NEW THREADS WITHIN THIS CLASS !
@@ -151,6 +152,9 @@ protected:
 
     QString shmKey = PLUGIN_ID + "shm2";
     size_t shmSize;
+
+    QMutex pythonProcessStdOutMutex;
+    QString pythonProcessStdOutData;
 };
 
 

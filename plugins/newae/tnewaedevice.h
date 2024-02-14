@@ -6,6 +6,7 @@
 #include "tnewae_global.h"
 #include "tplugin.h"
 #include "tnewae.h"
+#include "tnewaescope.h"
 
 #include "tiodevice.h"
 
@@ -53,7 +54,6 @@ protected:
     QString m_info;
     TNewae * plugin;
     TnewaeScope * scopeParent;
-    uint8_t matchingScopeID;
 
     TConfigParam m_preInitParams;
     TConfigParam m_postInitParams;

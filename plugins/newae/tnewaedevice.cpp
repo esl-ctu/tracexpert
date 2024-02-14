@@ -6,6 +6,8 @@ TnewaeDevice::TnewaeDevice(const QString & name_in, const QString & sn_in, TNewa
     sn = sn_in;
     plugin = plugin_in;
     m_createdManually = createdManually_in;
+    scopeParent = NULL;
+    cwId = NO_CW_ID;
 
     //create empty pre init params TODO
     //create post init params TODO
@@ -66,13 +68,35 @@ void TnewaeDevice::init(bool *ok/* = nullptr*/){
     }
 
     if (matchingScope) {
-
+        scopeParent = matchingScope;
+        cwId = scopeParent->getId();
     } else {
-
+        qWarning("Matching scope was not initialized. Please initialize the scope first!");
+        if (ok != nullptr) {
+            *ok = false;
+            return;
+        }
+        //TODO okýnko
     }
 
-    //najít a propojit se scope obejct
-    //nastavit stejné id
+    QString toSend;
+    QList<QString> params;
+    params.append(QString::number(cwId));
+    plugin->packageDataForPython(cwId, "T-SETUP", 1, params, toSend);
+    bool succ = plugin->writeToPython(cwId, toSend);
+    succ &= plugin->waitForPythonDone(cwId, true);
+
+    if(!succ) {
+        if(ok != nullptr) *ok = false;
+        return;
+    }
+
+    //TODO
+    //m_postInitParams = _createPostInitParams();
+    //m_postInitParams = updatePostInitParams(m_postInitParams);
+
+    if(ok != nullptr) *ok = true;
+    m_initialized = true;
 
 
 }

@@ -42,6 +42,7 @@ public:
     virtual QList<TChannelStatus> getChannelsStatus() override;
 
     uint8_t getId();
+    QString getSn();
     void notConnectedError();
     bool isInitialized();
 

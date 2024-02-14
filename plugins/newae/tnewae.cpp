@@ -30,6 +30,7 @@ TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     pythonPath = "";
     m_initialized = false;
     numActiveDevices = 0;
+    pythonProcessStdOutData = "";
 }
 
 TnewaeScope * TNewae::getCWScopeObjectById(uint8_t id){
@@ -184,7 +185,9 @@ bool TNewae::setUpPythonProcess(){
     }
 
     succ = pythonProcess->waitForReadyRead(PROCESS_WAIT_MSCECS);
+    pythonProcessStdOutMutex.lock();
     QString data = pythonProcess->readAllStandardOutput();
+    pythonProcessStdOutMutex.unlock();
     succ &= data.contains("STARTED");
 
     if (!succ){
@@ -707,7 +710,53 @@ void TNewae::callbackPythonError() {
 
 void TNewae::checkForPythonState(){
     QString buff;
-    buff = pythonProcess->peek(1024*1024);
+
+    pythonProcessStdOutMutex.lock();
+    QString pythonProcessStdOutData = pythonProcessStdOutData + pythonProcess->readAllStandardOutput();
+    pythonProcessStdOutMutex.unlock();
+
+    //najít DONE/STARTED/NOTCN/ERROR
+    //vyzobat to z toho pro všechny dostupný CW
+
+    int fromIndexDone = 0;
+    int fromIndexStarted = 0;
+    int fromIndexNotcn = 0;
+    int fromIndexError = 0;
+
+    while (true) {
+        int indexDone = pythonProcessStdOutData.indexOf("DONE", fromIndexDone);
+        int indexStarted = pythonProcessStdOutData.indexOf("STARTED", fromIndexStarted);
+        int indexNotcn = pythonProcessStdOutData.indexOf("NOTCN", fromIndexNotcn);
+        int indexError = pythonProcessStdOutData.indexOf("ERROR", fromIndexError);
+
+        if (indexDone != -1){
+
+
+            fromIndexDone = indexDone;
+        }
+
+        if (indexStarted != -1){
+
+
+            fromIndexStarted = indexStarted;
+        }
+
+        if (indexNotcn != -1){
+
+
+            fromIndexNotcn = indexNotcn;
+        }
+
+        if (indexError != -1){
+
+
+            fromIndexError = indexError;
+        }
+
+
+        if (indexDone == -1 && indexStarted == -1 && indexNotcn == -1 && indexError == -1)
+            break;
+    }
 
     if (pythonReady)
         return;
@@ -740,6 +789,9 @@ bool TNewae::readFromPython(uint8_t cwId, QString &data, bool wait/* = true*/){
     if (!pythonReady || !deviceWaitingForRead || cwId != waitingForReadDeviceId){
         return false;
     }
+
+    //Číst z pythonProcessStdOutData
+    //zlikvidovat tu část ve stringu s daty
 
     data = pythonProcess->readAllStandardOutput();
     deviceWaitingForRead = false;
