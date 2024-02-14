@@ -19,6 +19,7 @@
 #include <QFile>
 #include <QRandomGenerator>
 #include <QMutex>
+#include <QMap>
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //! DO NOT SPAWN NEW THREADS WITHIN THIS CLASS !
@@ -118,12 +119,13 @@ protected:
     const QString PLUGIN_ID = "TraceXpert.NewAE";
 
     //Methods for setup:
-    bool setUpSHM();
+    bool setUpSHM(uint8_t cwId);
     bool setUpPythonProcess();
-    bool testSHM();
+    bool testSHM(uint8_t cwId);
     bool autodetectDevices(QList<std::pair<QString, QString>> & devices);
+    bool setUpAndTestSHM(uint8_t cwId);
 
-    bool getDataFromShm(size_t &size, QString &data);
+    bool getDataFromShm(size_t &size, QString &data, uint8_t cwId);
 
 
     //In this block, CW is super important
@@ -147,7 +149,9 @@ protected:
     TConfigParam m_postInitParams;
     bool m_initialized;
 
-    QSharedMemory shm;
+    QMap<uint8_t, QSharedMemory> shmMap;
+
+    //QSharedMemory shm;
     QProcess *pythonProcess;
 
     QString shmKey = PLUGIN_ID + "shm2";
