@@ -1,7 +1,7 @@
 #ifndef TMESSAGEPART_H
 #define TMESSAGEPART_H
 #include <algorithm>
-#include "qregularexpression.h"
+#include <QRegularExpression>
 #include <QString>
 #include <QList>
 #include <QDataStream>
@@ -237,8 +237,8 @@ public:
         return getHumanReadableValue(isFormattedAsHex);
     }
 
-    QString getHumanReadableValue(bool & isFormattedAsHex) const {
-        isFormattedAsHex = isHexOrAsciiSensibleType() && ((QString)m_value).contains(QRegularExpression(QStringLiteral("[^A-Za-z0-9]")));
+    QString getHumanReadableValue(bool & isFormattedAsHex, bool preferHex = false) const {
+        isFormattedAsHex = isHexOrAsciiSensibleType() && (preferHex || ((QString)m_value).contains(QRegularExpression(QStringLiteral("[^A-Za-z0-9]"))));
 
         if(isFormattedAsHex) {
             return (QString)m_value.toHex();
@@ -363,34 +363,48 @@ public:
     }
 
     void setValue(const QString & value, bool *ok = nullptr, bool asHex = false, bool asAscii = false){
+        static QRegularExpression asciiRegExp("^([\\x00-\\x7F])+$");
+        static QRegularExpression hexRegExp("^([A-Fa-f0-9]{2})+$");
 
         if(!isHexOrAsciiSensibleType() && (asHex || asAscii)) {
             if(ok != nullptr) *ok = false;
             return;
         }
 
-        bool iok = true;
+        bool iok = false;
 
         switch(m_type) {
             case TType::TByteArray:
-            case TType::TByte:
+            case TType::TByte: {
+                QByteArray valueAsByteArray = value.toUtf8();
                 if(asAscii) {
-                    this->setValue(value.toUtf8(), &iok);
+                    if(asciiRegExp.match(valueAsByteArray).hasMatch()) {
+                        this->setValue(valueAsByteArray, &iok);
+                    }
                 }
                 else {
-                    this->setValue(QByteArray::fromHex(value.toUtf8()), &iok);
+                    if(hexRegExp.match(valueAsByteArray).hasMatch()) {
+                        this->setValue(QByteArray::fromHex(valueAsByteArray), &iok);
+                    }
                 }
                 break;
+            }
             case TType::TString:
             case TType::TChar:
-            case TType::TUChar:
+            case TType::TUChar: {
+                QByteArray valueAsByteArray = value.toUtf8();
                 if(asHex) {
-                    this->setValue(QByteArray::fromHex(value.toUtf8()), &iok);
+                    if(hexRegExp.match(valueAsByteArray).hasMatch()) {
+                        this->setValue(QByteArray::fromHex(valueAsByteArray), &iok);
+                    }
                 }
                 else {
-                    this->setValue(value.toUtf8(), &iok);
+                    if(asciiRegExp.match(valueAsByteArray).hasMatch()) {
+                        this->setValue(valueAsByteArray, &iok);
+                    }
                 }
                 break;
+            }
             case TType::TShort: {
                 short convertedValue = value.toShort(&iok);
                 if(iok) {

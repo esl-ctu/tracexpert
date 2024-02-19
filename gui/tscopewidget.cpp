@@ -1,5 +1,3 @@
-#include "tscopewidget.h"
-
 #include <QLayout>
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
@@ -11,6 +9,7 @@
 #include <QPushButton>
 #include <QMessageBox>
 
+#include "tscopewidget.h"
 #include "tconfigparamwidget.h"
 
 TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(parent), m_scopeModel(scope) {
@@ -258,7 +257,7 @@ void TScopeWidget::displayTrace(size_t traceIndex) {
         return;
     }
 
-    TScopeTraceData & traceData = m_traceDataList[traceDataListIndex];
+    const TScopeTraceData & traceData = m_traceDataList[traceDataListIndex];
     size_t sampleOffset = traceIndex - m_traceDataList[traceDataListIndex].firstTraceIndex;
 
     m_chart->removeAllSeries();
@@ -312,11 +311,11 @@ template <class T>
 void TScopeWidget::createLineSeries(TScope::TChannelStatus channel, T * buffer, size_t sampleOffset, size_t sampleCount, qreal typeMinValue, qreal typeMaxValue) {
 
     QLineSeries * lineSeries = new QLineSeries();
-    lineSeries->useOpenGL();
+    lineSeries->setUseOpenGL(true);
     lineSeries->setName(QString(tr("%1 [channel %2]")).arg(channel.getAlias()).arg(channel.getIndex()));
     lineSeries->setColor(channelColors[channel.getIndex()]);
 
-    QList<QPointF> pointList;
+    QVector<QPointF> pointList;
 
     if(typeMaxValue == 0) { // TReal32, TReal64
         for (size_t i = sampleOffset; i < sampleCount; i++) {

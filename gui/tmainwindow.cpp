@@ -29,12 +29,7 @@ TMainWindow::TMainWindow(QWidget * parent)
     projectDockWidget->setWidget(projectView);
     m_dockManager->addDockWidget(TDockArea::LeftDockWidgetArea, projectDockWidget);
 
-    //create dock widget with Protocol Widget
-    TDockWidget * protocolDockWidget = new TDockWidget(tr("Protocol"), this);
-    TProtocolWidget * protocolWidget = new TProtocolWidget(m_projectModel->protocolContainer(), this);
-    protocolDockWidget->setWidget(protocolWidget);
-    m_dockManager->addDockWidget(ads::RightDockWidgetArea, protocolDockWidget);
-
+    //openProtocolManagerWidget();
     //projectWidget->refresh();
 }
 
@@ -107,6 +102,15 @@ void TMainWindow::createScopeDockWidget(TScopeModel * scope)
     dockWidget->setWidget(widget);
     connect(scope, &TScopeModel::deinitialized, dockWidget, &TDockWidget::close);
     connect(scope, &TScopeModel::showRequested, dockWidget, &TDockWidget::show);
+    m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
+}
+
+void TMainWindow::openProtocolManagerWidget()
+{
+    //create dock widget with Protocol Widget
+    TProtocolWidget * widget = new TProtocolWidget(m_projectModel->protocolContainer(), this);
+    TDockWidget * dockWidget = new TDockWidget(tr("Protocol manager"), this);
+    dockWidget->setWidget(widget);
     m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
 }
 

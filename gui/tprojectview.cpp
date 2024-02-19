@@ -4,11 +4,15 @@
 
 #include "tdialog.h"
 #include "tdevicewizard.h"
+#include "tmainwindow.h"
 #include "tprojectmodel.h"
 
 TProjectView::TProjectView(QWidget * parent)
 {
     createActions();
+
+    m_openProtocolManagerAction = new QAction(tr("Open Protocol Manager"), this);
+    connect(m_openProtocolManagerAction, &QAction::triggered, (TMainWindow *)parent, &TMainWindow::openProtocolManagerWidget);
 
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &TProjectView::customContextMenuRequested, this, &TProjectView::showContextMenu);
@@ -98,6 +102,12 @@ void TProjectView::showContextMenu(const QPoint &point)
         contextMenu->addAction(m_showScopeAction);
 
         defaultAction = chooseDefaultAction(m_scope);
+    }
+    else if ((dynamic_cast<TProtocolContainer *>(item))) {
+        m_openProtocolManagerAction->setEnabled(true);
+        contextMenu->addAction(m_openProtocolManagerAction);
+
+        defaultAction = nullptr;
     }
 
     if (contextMenu->isEmpty()) {

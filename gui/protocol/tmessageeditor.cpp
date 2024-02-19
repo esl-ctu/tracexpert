@@ -1,6 +1,3 @@
-#include "tmessageeditor.h"
-#include "tmessageparteditor.h"
-#include "tprotocoltableview.h"
 #include <QListWidget>
 #include <QLayout>
 #include <QPlainTextEdit>
@@ -12,7 +9,11 @@
 #include <QListView>
 #include <QFormLayout>
 #include <QHeaderView>
-#include <TDialog.h>
+
+#include "tmessageeditor.h"
+#include "tmessageparteditor.h"
+#include "tprotocoltableview.h"
+#include "tdialog.h"
 
 TMessageEditorDetailsPage::TMessageEditorDetailsPage(const TMessage & message, const QList<TMessage> & messageList, QWidget * parent)
     : QWizardPage(parent), m_originalName(message.getName()), m_messageList(messageList) {
@@ -102,6 +103,7 @@ TMessageEditor::TMessageEditor(const TMessage & message, const QList<TMessage> &
     QTableView * messagePartView = new TProtocolTableView();
     m_messagePartContainer = new TMessagePartSimpleContainer(message.getMessageParts());
     messagePartView->setModel(m_messagePartContainer);
+    connect(messagePartView, &QTableView::doubleClicked, this, &TMessageEditor::onEditButtonClicked);
 
     m_messagePartView = messagePartView;
 
@@ -141,12 +143,22 @@ void TMessageEditor::onAddButtonClicked() {
     m_editor->open();
 }
 
+
+void TMessageEditor::onRowDoubleClicked(const QModelIndex & index) {
+    m_editedItemIndex = index.row();
+    openEditor();
+}
+
 void TMessageEditor::onEditButtonClicked() {
-    if(m_messagePartView->selectionModel()->selectedIndexes().isEmpty())
+    if(m_messagePartView->selectionModel()->selectedIndexes().isEmpty()) {
         return;
+    }
 
     m_editedItemIndex = m_messagePartView->selectionModel()->selectedIndexes().first().row();
+    openEditor();
+}
 
+void TMessageEditor::openEditor() {
     m_editor = new TMessagePartEditor(m_messagePartContainer->getItem(m_editedItemIndex), m_messagePartContainer->getItems(), this);
     connect(m_editor, &QWizard::finished, this, &TMessageEditor::onEditorFinished);
     m_editor->open();
@@ -185,7 +197,15 @@ void TMessageEditor::onEditorFinished(int finished) {
         m_messagePartContainer->updateItem(m_editedItemIndex, m_editor->messagePart());
     }
     else {
-        m_messagePartContainer->insertItem(-1, m_editor->messagePart());
+        m_messagePartContainer->addItem(m_editor->messagePart());
+    }
+
+    const TMessage & validatedMessage = message();
+
+    int messageCount = m_messagePartContainer->rowCount();
+    for(int i = 0; i < messageCount; i++) {
+        const QString & messageName = m_messagePartContainer->getItem(i).getName();
+        m_messagePartContainer->updateItem(i, validatedMessage.getMessagePartByName(messageName));
     }
 }
 

@@ -1,6 +1,4 @@
-#include "tmessageparteditor.h"
-
-#include "qcombobox.h"
+#include <QComboBox>
 #include <QListWidget>
 #include <QLayout>
 #include <QPlainTextEdit>
@@ -13,7 +11,9 @@
 #include <QFormLayout>
 #include <QHeaderView>
 #include <QCheckBox>
-#include <TDialog.h>
+
+#include "tmessageparteditor.h"
+#include "tdialog.h"
 
 TMessagePartEditorDetailsPage::TMessagePartEditorDetailsPage(const TMessagePart & messagePart, const QList<TMessagePart> & messagePartList, QWidget * parent)
     : QWizardPage(parent), m_originalName(messagePart.getName()), m_messagePartList(messagePartList) {
@@ -44,11 +44,11 @@ TMessagePartEditorDetailsPage::TMessagePartEditorDetailsPage(const TMessagePart 
     m_payloadCheckBox = new QCheckBox();
     m_payloadCheckBox->setChecked(messagePart.isPayload());
 
+
     bool variableLengthTypeSelected = (messagePart.getType() == TMessagePart::TType::TString || messagePart.getType() == TMessagePart::TType::TByteArray);
     bool valueEditingAllowed = !m_payloadCheckBox->isChecked();
 
     m_valueLineEdit = new QLineEdit();
-    m_valueLineEdit->setEnabled(valueEditingAllowed);
 
     bool isValueFormattedAsHex = false;
     if(valueEditingAllowed) {
@@ -69,7 +69,6 @@ TMessagePartEditorDetailsPage::TMessagePartEditorDetailsPage(const TMessagePart 
     radioLayout->addWidget(m_asciiRadioButton);
     radioLayout->setContentsMargins(0, 0, 0, 0);
     m_radioWidget->setLayout(radioLayout);
-    m_radioWidget->setEnabled(valueEditingAllowed && messagePart.isHexOrAsciiSensibleType());
 
     m_interpretedValueLineEdit = new QLineEdit();
     m_interpretedValueLineEdit->setEnabled(false);
@@ -80,14 +79,11 @@ TMessagePartEditorDetailsPage::TMessagePartEditorDetailsPage(const TMessagePart 
 
     m_staticLengthCheckBox = new QCheckBox();
     m_staticLengthCheckBox->setChecked(messagePart.hasStaticLength());
-    m_staticLengthCheckBox->setEnabled(variableLengthTypeSelected);
 
     m_lengthLineEdit = new QLineEdit();
-    m_lengthLineEdit->setEnabled(messagePart.hasStaticLength() && variableLengthTypeSelected);
     if(!variableLengthTypeSelected) { m_lengthLineEdit->setText(QString::number(messagePart.getLength())); }
 
     m_dynamicLengthComboBox = new QComboBox();
-    m_dynamicLengthComboBox->setEnabled(!messagePart.hasStaticLength());
 
     qsizetype size = messagePartList.size();
     for(qsizetype i = 0; i < size; i++) {
@@ -113,18 +109,19 @@ TMessagePartEditorDetailsPage::TMessagePartEditorDetailsPage(const TMessagePart 
     endiannessComboBox->addItem(tr("Big endian"), false);
     endiannessComboBox->setCurrentIndex(messagePart.isLittleEndian() ? 0 : 1);
 
-    QFormLayout * formLayout = new QFormLayout();
-    formLayout->addRow(tr("&Name:"), nameLineEdit);
-    formLayout->addRow(tr("&Description:"), descLineEdit);
-    formLayout->addRow(tr("&Endianness:"), endiannessComboBox);
-    formLayout->addRow(tr("&Is payload:"), m_payloadCheckBox);
-    formLayout->addRow(tr("&Data type:"), typeComboBox);
-    formLayout->addRow(tr("&Value:"), m_valueLineEdit);
-    formLayout->addRow(tr("Interpret as:"), m_radioWidget);
-    formLayout->addRow(tr("&Interpreted value:"), m_interpretedValueLineEdit);
-    formLayout->addRow(tr("&Has static length:"), m_staticLengthCheckBox);
-    formLayout->addRow(tr("&Length:"), m_lengthLineEdit);
-    formLayout->addRow(tr("&Length determined by:"), m_dynamicLengthComboBox);
+    m_formLayout = new QFormLayout(this);
+    m_formLayout->addRow(tr("&Name:"), nameLineEdit);
+    m_formLayout->addRow(tr("&Description:"), descLineEdit);
+    m_formLayout->addRow(tr("&Data type:"), typeComboBox);
+    m_formLayout->addRow(tr("&Is payload:"), m_payloadCheckBox);
+    m_formLayout->addRow(tr("&Value:"), m_valueLineEdit);
+    m_formLayout->addRow(tr("Interpret as:"), m_radioWidget);
+    m_formLayout->addRow(tr("&Interpreted value:"), m_interpretedValueLineEdit);
+    m_formLayout->addRow(tr("&Has static length:"), m_staticLengthCheckBox);
+    m_formLayout->addRow(tr("&Length:"), m_lengthLineEdit);
+    m_formLayout->addRow(tr("&Length determined by:"), m_dynamicLengthComboBox);
+    m_formLayout->addRow(tr("&Endianness:"), endiannessComboBox);
+    setLayout(m_formLayout);
 
     registerField("name", nameLineEdit);
     registerField("description", descLineEdit);
@@ -147,7 +144,15 @@ TMessagePartEditorDetailsPage::TMessagePartEditorDetailsPage(const TMessagePart 
     connect(m_staticLengthCheckBox, &QCheckBox::stateChanged, this, &TMessagePartEditorDetailsPage::updateDisplayedFields);
     connect(m_lengthLineEdit, &QLineEdit::textEdited, this, &TMessagePartEditorDetailsPage::updateDisplayedFields);
 
-    setLayout(formLayout);
+    m_formLayout->setRowVisible(m_lengthLineEdit, messagePart.hasStaticLength() && variableLengthTypeSelected);
+    m_formLayout->setRowVisible(m_dynamicLengthComboBox, !messagePart.hasStaticLength());
+    m_formLayout->setRowVisible(m_staticLengthCheckBox, variableLengthTypeSelected);
+
+    setFixedHeight(sizeHint().height());
+
+    m_formLayout->setRowVisible(m_valueLineEdit, valueEditingAllowed);
+    m_formLayout->setRowVisible(m_radioWidget, valueEditingAllowed && messagePart.isHexOrAsciiSensibleType());
+    m_formLayout->setRowVisible(m_interpretedValueLineEdit, valueEditingAllowed);
 }
 
 void TMessagePartEditorDetailsPage::updateDisplayedFields() {
@@ -155,29 +160,39 @@ void TMessagePartEditorDetailsPage::updateDisplayedFields() {
     TMessagePart tmpMessagePart("", "", type);
 
     bool variableLengthTypeSelected = (type == TMessagePart::TType::TString || type == TMessagePart::TType::TByteArray);
-    m_staticLengthCheckBox->setEnabled(variableLengthTypeSelected);
+    m_formLayout->setRowVisible(m_staticLengthCheckBox, variableLengthTypeSelected);
 
-    if(!variableLengthTypeSelected) {
+    bool isPayload = m_payloadCheckBox->isChecked();
+    m_staticLengthCheckBox->setEnabled(variableLengthTypeSelected && isPayload);
+    if(!variableLengthTypeSelected || !isPayload) {
         m_lengthLineEdit->setText(QString::number(tmpMessagePart.getLength()));
         m_staticLengthCheckBox->setChecked(true);
     }
 
+    bool valueEditingAllowed = !isPayload;
     bool staticLengthEditingAllowed = m_staticLengthCheckBox->isChecked() && variableLengthTypeSelected;
-    m_lengthLineEdit->setEnabled(staticLengthEditingAllowed);
-    m_dynamicLengthComboBox->setEnabled(!staticLengthEditingAllowed && variableLengthTypeSelected);
+    m_formLayout->setRowVisible(m_lengthLineEdit, staticLengthEditingAllowed);
+    m_lengthLineEdit->setEnabled(staticLengthEditingAllowed && !valueEditingAllowed);
+    m_formLayout->setRowVisible(m_dynamicLengthComboBox, !staticLengthEditingAllowed && variableLengthTypeSelected);
 
     if(staticLengthEditingAllowed) {
         m_dynamicLengthComboBox->setCurrentIndex(-1);
-        tmpMessagePart.setLength(m_lengthLineEdit->text().toLongLong());
+
+        if(!valueEditingAllowed) {
+            tmpMessagePart.setLength(m_lengthLineEdit->text().toLongLong());
+        }
+        else {
+            tmpMessagePart.setStaticLength(false);
+        }
     }
     else if(variableLengthTypeSelected) {
         m_lengthLineEdit->setText("");
         tmpMessagePart.setStaticLength(false);
     }
 
-    bool valueEditingAllowed = !m_payloadCheckBox->isChecked();
-    m_valueLineEdit->setEnabled(valueEditingAllowed);
-    m_radioWidget->setEnabled(valueEditingAllowed && tmpMessagePart.isHexOrAsciiSensibleType());
+    m_formLayout->setRowVisible(m_valueLineEdit, valueEditingAllowed);
+    m_formLayout->setRowVisible(m_interpretedValueLineEdit, valueEditingAllowed);
+    m_formLayout->setRowVisible(m_radioWidget, valueEditingAllowed && tmpMessagePart.isHexOrAsciiSensibleType());
 
     if(valueEditingAllowed) {
         bool valueSetCorrectly;
@@ -188,15 +203,22 @@ void TMessagePartEditorDetailsPage::updateDisplayedFields() {
 
         if(valueSetCorrectly) {
             bool isFormattedAsHex;
-            QString interpretedValue = tmpMessagePart.getHumanReadableValue(isFormattedAsHex);
+            QString interpretedValue = tmpMessagePart.getHumanReadableValue(isFormattedAsHex, m_hexRadioButton->isChecked());
             m_interpretedValueLineEdit->setText(QString(isFormattedAsHex ? "0x" : "").append(interpretedValue));
+            m_valueLineEdit->setStyleSheet("background-color: white;");
         }
         else {
             m_interpretedValueLineEdit->setText("Error interpreting value. Check type and length.");
+            m_valueLineEdit->setStyleSheet("background-color: rgba(255, 0, 0, 0.3);");
+        }
+
+        if(staticLengthEditingAllowed && valueEditingAllowed) {
+            m_lengthLineEdit->setText(QString::number(tmpMessagePart.getValue().size()));
         }
     }
     else {
         m_valueLineEdit->setText("");
+        m_valueLineEdit->setStyleSheet("background-color: white;");
         m_interpretedValueLineEdit->setText("");
     }
 }
@@ -212,7 +234,7 @@ bool TMessagePartEditorDetailsPage::validatePage() {
         return false;
     }
 
-    if(m_lengthLineEdit->isEnabled()) {
+    if(field("hasStaticLength").toBool()) {
         if(!field("length").canConvert<qsizetype>() || field("length").value<qsizetype>() < 1) {
             TDialog::parameterValueInvalid(this, tr("length"));
             return false;

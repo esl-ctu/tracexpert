@@ -15,6 +15,8 @@
 #include <QFormLayout>
 #include <QHeaderView>
 #include <QCheckBox>
+#include <QComboBox>
+
 #include "tmessagepart.h"
 
 class TMessagePartEditorDetailsPage : public QWizardPage {
@@ -35,6 +37,8 @@ private:
     QCheckBox * m_staticLengthCheckBox;
     QLineEdit * m_lengthLineEdit;
     QComboBox * m_dynamicLengthComboBox;
+
+    QFormLayout * m_formLayout;
 
     const QString m_originalName;
     const QList<TMessagePart> & m_messagePartList;

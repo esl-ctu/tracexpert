@@ -59,6 +59,8 @@ private:
     QAction * m_deinitScopeAction;
     QAction * m_showScopeAction;
 
+    QAction * m_openProtocolManagerAction;
+
     QAction * chooseDefaultAction(TComponentModel * component);
     QAction * chooseDefaultAction(TIODeviceModel * component);
     QAction * chooseDefaultAction(TScopeModel * component);

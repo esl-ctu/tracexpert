@@ -182,8 +182,6 @@ void TProjectModel::loadProtocols()
 {
     m_protocolContainer = new TProtocolContainer(this);
 
-    QList<TMessage> messages;
-
     QList<TMessage> messages1;
     TMessage messageC("Dummy protocol message (command)", "Description of dummy protocol message.", false);
     TMessage messageR("Dummy protocol message (response)", "Description of dummy protocol message.", true);
@@ -201,8 +199,9 @@ void TProjectModel::loadProtocols()
     messages1.append(messageR);
 
     QList<TMessage> messages2;
+    QList<TMessage> messages3;
 
-    m_protocolContainer->insertItem(0, new TProtocolModel(TProtocol("Dummy protocol 3", "Description of dummy protocol.", messages), m_protocolContainer));
-    m_protocolContainer->insertItem(0, new TProtocolModel(TProtocol("Dummy protocol 2", "Description of dummy protocol.", messages2), m_protocolContainer));
-    m_protocolContainer->insertItem(0, new TProtocolModel(TProtocol("Dummy protocol 1", "Description of dummy protocol.", messages1), m_protocolContainer));
+    m_protocolContainer->add(TProtocol("Dummy protocol 1", "Description of dummy protocol.", messages1));
+    m_protocolContainer->add(TProtocol("Dummy protocol 2", "Description of dummy protocol.", messages2));
+    m_protocolContainer->add(TProtocol("Dummy protocol 3", "Description of dummy protocol.", messages3));
 }

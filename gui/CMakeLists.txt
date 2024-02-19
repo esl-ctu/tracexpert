@@ -75,7 +75,8 @@ add_library(${PROJECT_NAME} OBJECT
   protocol/tprotocolmodel.cpp
   protocol/tmessageparteditor.cpp
   protocol/tprotocoltableview.h
-  tmessageformwidget.h tmessageformwidget.cpp
+  tmessageformmanager.h
+  tmessageformmanager.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ads/src)

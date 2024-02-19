@@ -79,7 +79,7 @@ public:
         return in;
     }
 
-    TMessage tryMatchResponse(QByteArray receivedData) {
+    TMessage tryMatchResponse(QByteArray receivedData) const {
 
         for(TMessage message : m_messages) {
 
@@ -156,7 +156,7 @@ public:
         return TMessage();
     }
 
-    void addMessage(const TMessage &param, bool *ok = nullptr){
+    void addMessage(const TMessage &param, bool *ok = nullptr) {
         if(m_messages.contains(param)){
             if(ok != nullptr) *ok = false;
             return;
@@ -165,7 +165,7 @@ public:
         if(ok != nullptr) *ok = true;
     }
 
-    void removeMessage(const QString &name, bool *ok = nullptr){
+    void removeMessage(const QString &name, bool *ok = nullptr) {
         qsizetype noOfRemoved = m_messages.removeAll(name);
         if(ok != nullptr && noOfRemoved > 0){
             *ok = true;
@@ -174,7 +174,7 @@ public:
         }
     }
 
-    TMessage getMessageByName(const QString &name, bool *ok = nullptr){
+    TMessage getMessageByName(const QString &name, bool *ok = nullptr) {
         int index = m_messages.indexOf(name);
         if(index < 0){
             if(ok != nullptr) *ok = false;

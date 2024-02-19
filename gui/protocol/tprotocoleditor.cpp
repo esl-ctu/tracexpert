@@ -1,6 +1,3 @@
-#include "tprotocoleditor.h"
-#include "protocol/tprotocoltableview.h"
-#include "tmessageeditor.h"
 #include <QListWidget>
 #include <QLayout>
 #include <QPlainTextEdit>
@@ -12,7 +9,11 @@
 #include <QListView>
 #include <QFormLayout>
 #include <QHeaderView>
-#include <TDialog.h>
+
+#include "tprotocoleditor.h"
+#include "protocol/tprotocoltableview.h"
+#include "tmessageeditor.h"
+#include "tdialog.h"
 
 TProtocolEditorDetailsPage::TProtocolEditorDetailsPage(const TProtocol & protocol, const TProtocolContainer * protocolContainer, QWidget * parent)
     : QWizardPage(parent), m_originalName(protocol.getName()), m_protocolContainer(protocolContainer)  {
@@ -41,17 +42,12 @@ bool TProtocolEditorDetailsPage::validatePage() {
     }
 
     // if name was changed, check uniqueness
-    bool isUnique = true;
+    bool nameFound = false;
     if(field("name").toString() != m_originalName) {
-        for(const TProtocolModel * protocolModel : m_protocolContainer->getItems()) {
-            if(field("name").toString() == protocolModel->name()) {
-                isUnique = false;
-                break;
-            }
-        }
+        m_protocolContainer->getByName(field("name").toString(), &nameFound);
     }
 
-    if(!isUnique) {
+    if(nameFound) {
         TDialog::parameterValueNotUniqueMessage(this, tr("name"));
         return false;
     }
@@ -88,6 +84,7 @@ TProtocolEditor::TProtocolEditor(const TProtocol & protocol, const TProtocolCont
     QTableView * messageView = new TProtocolTableView();
     m_messageContainer = new TMessageSimpleContainer(protocol.getMessages());
     messageView->setModel(m_messageContainer);
+    connect(messageView, &QTableView::doubleClicked, this, &TProtocolEditor::onEditButtonClicked);
 
     m_messageView = messageView;
 
@@ -122,12 +119,21 @@ void TProtocolEditor::onAddButtonClicked() {
     m_editor->open();
 }
 
+void TProtocolEditor::onRowDoubleClicked(const QModelIndex & index) {
+    m_editedItemIndex = index.row();
+    openEditor();
+}
+
 void TProtocolEditor::onEditButtonClicked() {
-    if(m_messageView->selectionModel()->selectedIndexes().isEmpty())
+    if(m_messageView->selectionModel()->selectedIndexes().isEmpty()) {
         return;
+    }
 
     m_editedItemIndex = m_messageView->selectionModel()->selectedIndexes().first().row();
+    openEditor();
+}
 
+void TProtocolEditor::openEditor() {
     m_editor = new TMessageEditor(m_messageContainer->getItem(m_editedItemIndex), m_messageContainer->getItems(), this);
     connect(m_editor, &QWizard::finished, this, &TProtocolEditor::onEditorFinished);
     m_editor->open();
@@ -142,8 +148,10 @@ void TProtocolEditor::onEditorFinished(int finished) {
         m_messageContainer->updateItem(m_editedItemIndex, m_editor->message());
     }
     else {
-        m_messageContainer->insertItem(-1, m_editor->message());
+        m_messageContainer->addItem(m_editor->message());
     }
+
+    m_messageContainer->sort();
 }
 
 

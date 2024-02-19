@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QWidget>
 #include <QTableView>
-#include "tprotocolmodel.h"
+
 #include "tprotocolcontainer.h"
 #include "tprotocoleditor.h"
 
@@ -18,6 +18,7 @@ signals:
 private slots:
     void onAddButtonClicked();
     void onEditButtonClicked();
+    void onRowDoubleClicked(const QModelIndex & index);
     void onRemoveButtonClicked();
     void onEditorFinished(int finished);
 
