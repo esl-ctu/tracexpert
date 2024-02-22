@@ -14,6 +14,7 @@ Adam Švehla
  - File plugin
  - RNG plugin
  - IO Protocols support
+ - GUI
 
 David Pokorný
  - Testing
