@@ -39,7 +39,8 @@ public:
 
     int childrenCount() const override;
     TProjectItem * child(int row) const override;
-    QVariant status() const override;
+
+    virtual void load(QDomElement * element) override;
 
 signals:
     void IODeviceInitialized(TIODeviceModel * IODevice);
@@ -49,8 +50,13 @@ signals:
     void scopeDeinitialized(TScopeModel * scope);
 
 private:
-    void appendIODevice(TIODevice * IODevice);
-    void appendScope(TScope * scope);
+    void appendIODevice(TIODevice * IODevice, QDomElement * element = nullptr);
+    void appendScope(TScope * scope, QDomElement * element = nullptr);
+
+    void loadIODevices(QDomElement * element);
+    void loadIODevice(QDomElement * element);
+    void loadScopes(QDomElement * element);
+    void loadScope(QDomElement * element);
 
     TPlugin * m_plugin;
 

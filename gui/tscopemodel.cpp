@@ -5,6 +5,7 @@
 TScopeModel::TScopeModel(TScope * scope, TScopeContainer * parent)
     : TProjectItem(parent->model(), parent), TPluginUnitModel(scope, parent), m_scope(scope)
 {
+    m_typeName = "scope";
 }
 
 TScopeModel::~TScopeModel()
@@ -28,6 +29,9 @@ bool TScopeModel::init()
     m_repeat = false;
     m_stopping = false;
 
+    if (collectorThread.isRunning())
+        collectorThread.terminate();
+
     m_collector = new TScopeCollector(m_scope);
     m_collector->moveToThread(&collectorThread);
 
@@ -35,6 +39,7 @@ bool TScopeModel::init()
     connect(m_collector, &TScopeCollector::dataCollected, this, &TScopeModel::dataCollected, Qt::ConnectionType::QueuedConnection);
     connect(m_collector, &TScopeCollector::collectionStopped, this, &TScopeModel::dataCollectionStopped, Qt::ConnectionType::QueuedConnection);
     connect(m_collector, &TScopeCollector::nothingCollected, this, &TScopeModel::noDataCollected, Qt::ConnectionType::QueuedConnection);
+    connect(&collectorThread, &QThread::finished, m_collector, &QObject::deleteLater);
 
     collectorThread.start();
 
@@ -78,14 +83,16 @@ TProjectItem * TScopeModel::child(int row) const
     return nullptr;
 }
 
-QVariant TScopeModel::status() const
+void TScopeModel::bind(TCommon * unit)
 {
-    if (m_isInit) {
-        return tr("Initialized");
-    }
-    else {
-        return tr("Uninitialized");
-    }
+    m_scope = dynamic_cast<TScope *>(unit);
+    TPluginUnitModel::bind(m_scope);
+}
+
+void TScopeModel::release()
+{
+    m_scope = nullptr;
+    TPluginUnitModel::release();
 }
 
 QList<TScope::TChannelStatus> TScopeModel::channelsStatus()

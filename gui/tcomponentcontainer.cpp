@@ -5,7 +5,7 @@
 TComponentContainer::TComponentContainer(TProjectModel * parent)
     : TProjectItem(parent->model(), parent), TPluginUnitContainer(parent)
 {
-
+    m_typeName = "components";
 }
 
 int TComponentContainer::count() const

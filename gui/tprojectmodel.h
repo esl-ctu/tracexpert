@@ -22,15 +22,23 @@ public:
     int rowCount(const QModelIndex & parent = QModelIndex()) const override;
     int columnCount(const QModelIndex & parent = QModelIndex()) const override;
 
-    void emitDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
+    void emitDataChanged(const QModelIndex &topLeft, const QModelIndex & bottomRight);
 
     int childrenCount() const override;
     TProjectItem * child(int row) const override;
     QString name() const override;
-    QVariant status() const override;
+    Status status() const override;
+
+    void load(QDomElement * element);
 
 private:
-    void loadComponents();
+    void appendComponent(TPlugin * plugin, QDomElement * element = nullptr);
+
+    void loadPlugins();
+    void loadComponents(QDomElement * element);
+    void loadComponent(QDomElement * element);
+
+    void unloadComponents();
 
     TComponentContainer * m_componentContainer;
 

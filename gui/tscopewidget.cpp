@@ -244,7 +244,7 @@ void TScopeWidget::displayTrace(size_t traceIndex) {
 
     bool found = false;
     size_t traceDataListIndex = 0;
-    while(traceDataListIndex < m_traceDataList.size()) {
+    while(traceDataListIndex < (size_t)m_traceDataList.size()) {
         if(m_traceDataList[traceDataListIndex].firstTraceIndex + m_traceDataList[traceDataListIndex].traces > traceIndex) {
             found = true;
             break;

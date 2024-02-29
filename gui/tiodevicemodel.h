@@ -65,7 +65,9 @@ public:
 
     int childrenCount() const override;
     TProjectItem * child(int row) const override;
-    QVariant status() const override;
+
+    virtual void bind(TCommon * unit) override;
+    virtual void release() override;
 
 signals:
     void initialized(TIODeviceModel * IODevice);

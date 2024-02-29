@@ -1,6 +1,8 @@
 #include "tprojectitem.h"
 
 #include <QModelIndex>
+#include <QApplication>
+#include <QStyle>
 
 #include "tprojectmodel.h"
 
@@ -13,6 +15,38 @@ TProjectItem::TProjectItem(TProjectModel * model, TProjectItem * parent)
 TProjectItem::~TProjectItem()
 {
 
+}
+
+QVariant TProjectItem::statusText(Status status)
+{
+    switch (status) {
+        case None:
+            return QObject::tr("");
+        case Unavailable:
+            return QObject::tr("Unavailable");
+        case Uninitialized:
+            return QObject::tr("Uninitialized");
+        case Initialized:
+            return QObject::tr("Initialized");
+    }
+
+    return QVariant();
+}
+
+QVariant TProjectItem::statusIcon(Status status)
+{
+    switch (status) {
+        case None:
+            return QVariant();
+        case Unavailable:
+            return QApplication::style()->standardIcon(QStyle::SP_DialogCancelButton);
+        case Uninitialized:
+            return QApplication::style()->standardIcon(QStyle::SP_DialogNoButton);
+        case Initialized:
+            return QApplication::style()->standardIcon(QStyle::SP_DialogYesButton);
+    }
+
+    return QVariant();
 }
 
 int TProjectItem::row() const
@@ -38,6 +72,28 @@ TProjectItem * TProjectItem::parent()
 TProjectModel * TProjectItem::model()
 {
     return m_model;
+}
+
+QString TProjectItem::typeName() const
+{
+    return m_typeName;
+}
+
+bool TProjectItem::toBeSaved() const
+{
+    return true;
+}
+
+QDomElement TProjectItem::save(QDomDocument & document) const
+{
+    QDomElement element = document.createElement(typeName());
+
+    for (int i = 0; i < childrenCount(); i++) {
+        if (child(i)->toBeSaved())
+            element.appendChild(child(i)->save(document));
+    }
+
+    return element;
 }
 
 void TProjectItem::beginInsertChild(int childRow)

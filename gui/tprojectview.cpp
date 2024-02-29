@@ -64,37 +64,37 @@ void TProjectView::showContextMenu(const QPoint &point)
     m_scope = nullptr;
 
     if ((m_component = dynamic_cast<TComponentModel *>(item))) {
-        m_initComponentAction->setDisabled(m_component->isInit());
+        m_initComponentAction->setDisabled(m_component->status() != TProjectItem::Uninitialized);
         contextMenu->addAction(m_initComponentAction);
-        m_deinitComponentAction->setDisabled(!m_component->isInit());
+        m_deinitComponentAction->setDisabled(m_component->status() != TProjectItem::Initialized);
         contextMenu->addAction(m_deinitComponentAction);
-        m_showComponentSettingsAction->setDisabled(!m_component->isInit());
+        m_showComponentSettingsAction->setDisabled(m_component->status() != TProjectItem::Initialized);
         contextMenu->addAction(m_showComponentSettingsAction);
-        m_openDeviceAction->setDisabled(!m_component->isInit());
+        m_openDeviceAction->setDisabled(m_component->status() != TProjectItem::Initialized);
         contextMenu->addAction(m_openDeviceAction);
-        m_addIODeviceAction->setDisabled(!m_component->isInit() || !m_component->canAddIODevice());
+        m_addIODeviceAction->setDisabled(m_component->status() != TProjectItem::Initialized || !m_component->canAddIODevice());
         contextMenu->addAction(m_addIODeviceAction);
-        m_addScopeAction->setDisabled(!m_component->isInit() || !m_component->canAddScope());
+        m_addScopeAction->setDisabled(m_component->status() != TProjectItem::Initialized || !m_component->canAddScope());
         contextMenu->addAction(m_addScopeAction);
 
         defaultAction = chooseDefaultAction(m_component);
     }
     else if ((m_IODevice = dynamic_cast<TIODeviceModel *>(item))) {
-        m_initIODeviceAction->setDisabled(m_IODevice->isInit());
+        m_initIODeviceAction->setDisabled(m_IODevice->status() != TProjectItem::Uninitialized);
         contextMenu->addAction(m_initIODeviceAction);
-        m_deinitIODeviceAction->setDisabled(!m_IODevice->isInit());
+        m_deinitIODeviceAction->setDisabled(m_IODevice->status() != TProjectItem::Initialized);
         contextMenu->addAction(m_deinitIODeviceAction);
-        m_showIODeviceAction->setDisabled(!m_IODevice->isInit());
+        m_showIODeviceAction->setDisabled(m_IODevice->status() != TProjectItem::Initialized);
         contextMenu->addAction(m_showIODeviceAction);
 
         defaultAction = chooseDefaultAction(m_IODevice);
     }
     else if ((m_scope = dynamic_cast<TScopeModel *>(item))) {
-        m_initScopeAction->setDisabled(m_scope->isInit());
+        m_initScopeAction->setDisabled(m_scope->status() != TProjectItem::Uninitialized);
         contextMenu->addAction(m_initScopeAction);
-        m_deinitScopeAction->setDisabled(!m_scope->isInit());
+        m_deinitScopeAction->setDisabled(m_scope->status() != TProjectItem::Initialized);
         contextMenu->addAction(m_deinitScopeAction);
-        m_showScopeAction->setDisabled(!m_scope->isInit());
+        m_showScopeAction->setDisabled(m_scope->status() != TProjectItem::Initialized);
         contextMenu->addAction(m_showScopeAction);
 
         defaultAction = chooseDefaultAction(m_scope);

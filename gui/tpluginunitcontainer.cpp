@@ -31,7 +31,7 @@ QVariant TPluginUnitContainer::data(const QModelIndex & index, int role) const
     }
     else if (role == Qt::DecorationRole) {
         if (index.column() == 0) {
-            return (at(index.row())->isInit() ? QApplication::style()->standardIcon(QStyle::SP_DialogYesButton) : QApplication::style()->standardIcon(QStyle::SP_DialogNoButton));
+            return TProjectItem::statusIcon(at(index.row())->status());
         }
     }
     return QVariant();
@@ -66,7 +66,7 @@ TProjectItem * TPluginUnitContainer::child(int row) const
     return at(row);
 }
 
-QVariant TPluginUnitContainer::status() const
+TProjectItem::Status TPluginUnitContainer::status() const
 {
-    return QVariant();
+    return None;
 }
