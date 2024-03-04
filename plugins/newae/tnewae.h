@@ -149,7 +149,7 @@ protected:
     TConfigParam m_postInitParams;
     bool m_initialized;
 
-    QMap<uint8_t, QSharedMemory> shmMap;
+    QMap<uint8_t, QSharedMemory *> shmMap;
 
     //QSharedMemory shm;
     QProcess *pythonProcess;

@@ -32,7 +32,9 @@ TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     numActiveDevices = 0;
     pythonProcessStdOutData = "";
 
-    shmMap.insert(NO_CW_ID, QSharedMemory());
+    QSharedMemory * tmp = new QSharedMemory();
+
+    shmMap.insert(NO_CW_ID, tmp);
 }
 
 TnewaeScope * TNewae::getCWScopeObjectById(uint8_t id){
@@ -152,17 +154,25 @@ void TNewae::handlePythonError(QProcess::ProcessError error){
 }
 
 bool TNewae::setUpSHM(uint8_t cwId){
-    shmMap[cwId].setKey(shmKey + QString::number(cwId));
-    bool succ = shmMap[cwId].create(shmSize); //this also attaches the segment on success
-    if (!succ && shmMap[cwId].error() == QSharedMemory::AlreadyExists){
-        shmMap[cwId].attach();
+    char cwIdShmKey[4];
+    sprintf(cwIdShmKey, "%03d", cwId);
+
+    QSharedMemory * cwSHM = new QSharedMemory();
+    QString wholeShmKey = shmKey + QString(cwIdShmKey);
+    cwSHM->setKey(wholeShmKey);
+
+    bool succ = cwSHM->create(shmSize); //this also attaches the segment on success
+    if (!succ && cwSHM->error() == QSharedMemory::AlreadyExists){
+        cwSHM->attach();
     } else if (!succ) {
         qCritical("Failed to set up shared memory.");
         return false;
     }
 
+    shmMap.insert(cwId, cwSHM);
+
     //Finish setting up the SHM in Python
-    succ = writeToPython(NO_CW_ID, "SMSET:" + QString::number(shmSize) + lineSeparator); //Tohle musí být jinak, zpráva musí obsahovat cw id TODO
+    succ = writeToPython(cwId, "SMSET:" + QString::number(shmSize) + lineSeparator);
     if (!succ){
         return false;
     }
@@ -221,7 +231,7 @@ bool TNewae::setUpPythonProcess(){
 bool TNewae::testSHM(uint8_t cwId) {
     quint32 tmpval = QRandomGenerator::global()->generate();
     QString tmpstr = QString::number(tmpval);
-    bool succ = writeToPython(cwId, "SMTEST:" + tmpstr + lineSeparator); //Tohle musí být jinak, zpráva musí obsahovat cw id TODO
+    bool succ = writeToPython(cwId, "SMTEST:" + tmpstr + lineSeparator);
     if (!succ){
         qCritical("Failed to send data to Python when setting up the shared memory.");
         return false;
@@ -315,19 +325,19 @@ bool TNewae::autodetectDevices(QList<std::pair<QString, QString>> & devices) {
 
 bool TNewae::setUpAndTestSHM(uint8_t cwId) {
     //Create and attach the memory that's shared between C++ and the python process
-    bool succ = setUpSHM(NO_CW_ID);
+    bool succ = setUpSHM(cwId);
     if(!succ) {
         return false;
     }
 
-    succ = waitForPythonDone(NO_CW_ID, true);
+    succ = waitForPythonDone(cwId, true);
     succ &= !pythonError;
     if (!succ){
         return false;
     }
 
     //Test shared memory
-    succ = testSHM(NO_CW_ID);
+    succ = testSHM(cwId);
     if(!succ) {
         return false;
     }
@@ -411,10 +421,11 @@ void TNewae::deInit(bool *ok) {
 
     //Detach shm
     for (auto it = shmMap.begin(); it != shmMap.end(); ++it) {
-        succ = it->detach();
+        succ = (*it)->detach();
         if (!succ){
             if(ok != nullptr) *ok = false;
         }
+        delete (QSharedMemory *) *it;
     }
 }
 
@@ -456,7 +467,7 @@ TScope * TNewae::addScope(QString name, QString info, bool *ok) {
         TnewaeScope * sc;
         sc = new TnewaeScope(name, info, numDevices, this, true);
         m_scopes.append(sc);
-        bool succ = setUpShmForCw(numDevices);
+        bool succ = setUpAndTestSHM(numDevices);
         numDevices++;
         if(ok != nullptr) *ok = succ;
         return sc;
@@ -484,7 +495,7 @@ TScope * TNewae::addScopeAutomatically(QString name, QString info, bool *ok) {
         TnewaeScope * sc;
         sc = new TnewaeScope(name, info, numDevices, this, false);
         m_scopes.append(sc);
-        bool succ = setUpShmForCw(numDevices);
+        bool succ = setUpAndTestSHM(numDevices);
         numDevices++;
         if(ok != nullptr) *ok = succ;
         return sc;
@@ -874,10 +885,14 @@ bool TNewae::getDataFromShm(size_t &size, QString &data, uint8_t cwId){
     char* dataLenAddr;
     bool succ, succ2;
 
-    succ = shmMap[cwId].lock();
+    QSharedMemory * shm = shmMap.value(cwId, NULL);
+    if (shm == NULL)
+        return false;
+
+    succ = shm->lock();
 
     //Get data pointer and data size
-    char * shmData = (char *) (shmMap[cwId].data());
+    char * shmData = (char *) (shm->data());
     dataLenAddr = shmData + SM_SIZE_ADDR;
     QString sizeStr = "";
     for (int i = 0; i < ADDR_SIZE; ++i){
@@ -900,7 +915,7 @@ bool TNewae::getDataFromShm(size_t &size, QString &data, uint8_t cwId){
         data.append(shmData[i]);
     }
 
-    succ = succ & shmMap[cwId].unlock();
+    succ = succ & shm->unlock();
 
     return succ;
 }

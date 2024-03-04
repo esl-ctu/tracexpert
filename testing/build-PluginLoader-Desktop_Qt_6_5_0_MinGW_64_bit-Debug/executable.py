@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
 import sys, time, ctypes, traceback, struct
-from PySide6.QtCore import QSharedMemory, QByteArray
+from PySide6.QtCore import QSharedMemory, QByteArray, QMutex
 import chipwhisperer as cw
 import numpy as np
 import logging
+import threading
+from queue import Queue
 
 ##GLOBALS##
 PLUGIN_ID = "TraceXpert.NewAE"
@@ -13,7 +15,30 @@ FIELD_SEPARATOR = ','
 LINE_SEPARATOR = '\n'
 shmKey = PLUGIN_ID + "shm2"
 shmSize = 1024*1024*1024
-shm = QSharedMemory()
+#shm = QSharedMemory()
+stdoutMutex = QMutex()
+stderrMutex = QMutex()
+
+
+
+def printToStdout(data, asIODevice, cwId):
+    toPrint = data
+    if asIODevice == True:
+        data += ",IO,"
+    else:
+        data += ",SC,"
+    data += cwID
+
+    stdoutMutex.lock()
+    print(data, flush=True)
+    stdoutMutex.unlock()
+
+
+def printToStderr(data):
+    stderrMutex.lock()
+    print(data, flush=True, file=sys.stderr)
+    stderrMutex.unlock()
+
 
 ##Write to shared memory##
 def writeToSHM(line, shm):
@@ -21,7 +46,7 @@ def writeToSHM(line, shm):
     size = buffer.size()
 
     if size > shmSize:
-        print("SHM is not large enough. Data would not fit!", flush=True, file=sys.stderr)
+        printToStderr("SHM is not large enough. Data would not fit!")
         return
 
     shm.lock()
@@ -42,12 +67,12 @@ def cwToStr(tmp):
         return str(tmp)
 
 ##Handle error when CW is not connected
-def sendCWNotConnected():
+def sendCWNotConnected(line):
     cwID = line[0:2]
     cwDict[cwID] = None
 
-    print("NOTCN", flush=True)
-    print("Connection to CW unsuccessful. Is it plugged in? Was it initialized? Careful: The CW object was destroyed on this error, please re-intialize the CW scope!", flush=True, file=sys.stderr)
+    printToStdout("NOTCN", false, cwID)
+    printToStderr("Connection to CW unsuccessful. Is it plugged in? Was it initialized? Careful: The CW object was destroyed on this error, please re-intialize the CW scope!")
 
 ##Helper for pasing parameters from a string input
 ## Takes: Parameter in a form of a string
@@ -70,32 +95,35 @@ def parseParameter(parameter):
 
 ##Test shared memory##
 def smTest(line, shm):
-    line = line[6:]
+    cwID = line[0:2]
+
+    line = line[11:]
     line = line.rstrip('\r\n')
     line = "{:016x}".format(len(line)) + line
 
     writeToSHM(line, shm)
-    print("DONE", flush=True)
+    printToStdout("DONE", false, cwID)
 
-def smSet(line):
+def smSet(line, shm):
     global shmSize
-    global shm
 
-    line = line[7:]
+    cwID = line[0:2]
+
+    line = line[10:]
     line = line.rstrip('\r\n')
     try:
         shmSize = int(line)
     except:
-        print("Invalid SM size", flush=True, file=sys.stderr)
-        print("ERROR", flush=True)
+        printToStderr("Invalid SM size")
+        printToStdout("ERROR", false, cwID)
 
-    shm.setKey(shmKey)
+    shm.setKey(shmKey + cwID)
     shm.attach()
 
     if not shm.isAttached():
-        print("Unable to attach SHM.", file=sys.stderr)
+        printToStderr("Unable to attach SHM.")
 
-    print("DONE", flush=True)    
+    printToStdout("DONE", false, cwID)    
 
 
 ##Detect connected CW devices##
@@ -113,7 +141,7 @@ def detectDevices(line, shm):
     line = "{:016x}".format(len(line)) + line
         
     writeToSHM(line, shm)
-    print("DONE", flush=True)
+    printToStdout("DONE", false, NO_CW_ID)
 
 ##Initialize one CW##
 ##Takes: cwID, "SETUP", cw_sn
@@ -123,28 +151,28 @@ def cwSetup(line, shm, cwDict):
     cwSN = line.split(',')[2].strip()
 
     if cwID == "" or cwSN == "":
-        print("ERROR", flush=True)
+        printToStdout("ERROR", false, cwID)
         return
 
     try:
         cwDict[cwID] = cw.scope(sn=str(cwSN))
     except:
-        print("Connection to CW unsuccessful. Is it plugged in? Error: " + traceback.format_exc(), flush=True, file=sys.stderr)
-        print("ERROR", flush=True)
+        printToStderr("Connection to CW unsuccessful. Is it plugged in? Error: " + traceback.format_exc())
+        printToStdout("ERROR")
         return
 
     if cwDict[cwID] != None:
         try:
             cwDict[cwID].default_setup()
         except:
-            print("Connection to CW unsuccessful. Is it plugged in? Error: " + traceback.format_exc(), flush=True, file=sys.stderr)
-            print("ERROR", flush=True)
+            printToStderr("Connection to CW unsuccessful. Is it plugged in? Error: " + traceback.format_exc())
+            printToStdout("ERROR")
             cwDict[cwID] = None
             return
 
-        print("DONE", flush=True)
+        printToStdout("DONE", false, cwID)
     else:
-        print("ERROR", flush=True)
+        printToStdout("ERROR", false, cwID)
         return  
 
 ##Call a method on an object from the CW package
@@ -169,21 +197,21 @@ def callCwFuncOnAnObject(line, shm, cwDict):
         functionName = splitLine[1]
         functionName = functionName.rstrip('\r\n')
     except:
-        print("ERROR", flush=True) 
-        print("Invalid Python CW function called or it was called on an invalid object (one of the names is probably empty)", flush=True, file=sys.stderr)
+        printToStdout("ERROR", false, cwID) 
+        printToStderr("Invalid Python CW function called or it was called on an invalid object (one of the names is probably empty)")
 
     try:
         subObject = getattr(scope, objectName)
     except AttributeError:
-        print("ERROR", flush=True) 
-        print("Invalid Python CW object specified  (this object of the CW object does not exist)", flush=True, file=sys.stderr)
+        printToStdout("ERROR", false, cwID) 
+        printToStderr("Invalid Python CW object specified  (this object of the CW object does not exist)")
         return
 
     try:
         function = getattr(subObject, functionName)
     except AttributeError:
-        print("ERROR", flush=True) 
-        print("Invalid Python CW function called (this method of the specified subobject of the CW object does not exist)", flush=True, file=sys.stderr)
+        printToStdout("ERROR", false, cwID) 
+        printToStderr("Invalid Python CW function called (this method of the specified subobject of the CW object does not exist)")
         return
 
     ret = ""
@@ -191,9 +219,9 @@ def callCwFuncOnAnObject(line, shm, cwDict):
         tmp = function()
         ret = cwToStr(tmp)
     except:
-        print("ERROR", flush=True) 
+        printToStdout("ERROR", false, cwID) 
         errorMessage = "The Python CW function raised this exception: " + traceback.format_exc()
-        print(errorMessage, flush=True, file=sys.stderr)
+        printToStderr(errorMessage)
 
     if isinstance(ret, bytes):
         tmpLen = "{:016x}".format(len(ret))
@@ -204,7 +232,7 @@ def callCwFuncOnAnObject(line, shm, cwDict):
     
     writeToSHM(ret, shm)
 
-    print("DONE", flush=True)
+    printToStdout("DONE", false, cwID)
 
 
 ##Call a method from the CW package
@@ -227,8 +255,8 @@ def callCwFunc(line, shm, cwDict):
         functionName = splitLine[0]
         functionName = functionName.rstrip('\r\n')
     except:
-        print("ERROR", flush=True) 
-        print("Invalid Python CW function called (name is empty) (1)", flush=True, file=sys.stderr)
+        printToStdout("ERROR", false, cwID) 
+        printToStderr("Invalid Python CW function called (name is empty) (1)")
 
     try:
         lineParameters = splitLine[1]
@@ -237,15 +265,15 @@ def callCwFunc(line, shm, cwDict):
         noParams = True
 
     if functionName == "":
-       print("ERROR", flush=True) 
-       print("Invalid Python CW function called (name is empty) (2)", flush=True, file=sys.stderr)
+       printToStdout("ERROR", false, cwID) 
+       printToStderr("Invalid Python CW function called (name is empty) (2)")
        return
 
     try:
         function = getattr(scope, functionName)
     except AttributeError:
-        print("ERROR", flush=True) 
-        print("Invalid Python CW function called (this method of the CW object does not exist)", flush=True, file=sys.stderr)
+        printToStdout("ERROR", false, cwID) 
+        printToStderr("Invalid Python CW function called (this method of the CW object does not exist)")
         return
 
     parameters = [None] * 10
@@ -259,8 +287,8 @@ def callCwFunc(line, shm, cwDict):
                 parameter = lineParameters.split(LINE_SEPARATOR, 1)[0]
                 parameter = parameters[numParams].rstrip('\r\n')
             except:
-                print("ERROR", flush=True) 
-                print("Error processing fucntion parameters", flush=True, file=sys.stderr)
+                printToStdout("ERROR", false, cwID) 
+                printToStderr("Error processing fucntion parameters")
                 return
         
         parameters[numParams] = parseParameter(parameter)
@@ -304,13 +332,13 @@ def callCwFunc(line, shm, cwDict):
             tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7], parameters[8])
             ret = cwToStr(tmp)
         else:
-            print("ERROR", flush=True) 
-            print("Too many parameters passed to a Python function", flush=True, file=sys.stderr)
+            printToStdout("ERROR", false, cwID) 
+            printToStderr("Too many parameters passed to a Python function")
     except:
         if functionName != "capture":
-            print("ERROR", flush=True) 
+            printToStdout("ERROR", false, cwID) 
             errorMessage = "The Python CW function raised this exception: " + traceback.format_exc()
-            print(errorMessage, flush=True, file=sys.stderr)
+            printToStderr(errorMessage)
         else:
             pass
 
@@ -323,7 +351,7 @@ def callCwFunc(line, shm, cwDict):
     
     writeToSHM(ret, shm)
 
-    print("DONE", flush=True)
+    printToStdout("DONE", false, cwID)
 
 ##Set or read a scope object parameter
 ##If No value is provided, read is performed
@@ -344,8 +372,8 @@ def cwParam(line, shm, cwDict):
     try:
         paramName = params.split(FIELD_SEPARATOR, 1)[0]
     except:
-        print("ERROR", flush=True) 
-        print("Invalid Python CW attribute reqested (1)", flush=True, file=sys.stderr) 
+        printToStdout("ERROR", false, cwID) 
+        printToStderr("Invalid Python CW attribute reqested (1)") 
         return     
     paramName = paramName.rstrip('\r\n')
 
@@ -362,8 +390,8 @@ def cwParam(line, shm, cwDict):
     try:
         param = getattr(scope, paramName)
     except AttributeError:
-        print("ERROR", flush=True) 
-        print("Invalid Python CW attribute reqested (2)", flush=True, file=sys.stderr)
+        printToStdout("ERROR", false, cwID) 
+        printToStderr("Invalid Python CW attribute reqested (2)")
         return
 
     if not noValue:
@@ -375,7 +403,7 @@ def cwParam(line, shm, cwDict):
     realParamValue = "{:016x}".format(len(realParamValue)) + realParamValue
     writeToSHM(realParamValue, shm)
 
-    print("DONE", flush=True)
+    printToStdout("DONE", false, cwID)
 
 ##Set or read a scope object subparameter
 ##If No value is provided, read is performed
@@ -397,16 +425,16 @@ def cwSubParam(line, shm, cwDict):
     try:
         paramName = params.split(FIELD_SEPARATOR, 1)[0]
     except:
-        print("ERROR", flush=True) 
-        print("Invalid Python CW attribute reqested (1)", flush=True, file=sys.stderr) 
+        printToStdout("ERROR", false, cwID) 
+        printToStderr("Invalid Python CW attribute reqested (1)") 
         return     
     paramName = paramName.rstrip('\r\n')
 
     try:
         subParamName = params.split(FIELD_SEPARATOR, 2)[1]
     except:
-        print("ERROR", flush=True) 
-        print("Invalid Python CW subattribute reqested (1)", flush=True, file=sys.stderr) 
+        printToStdout("ERROR", false, cwID) 
+        printToStderr("Invalid Python CW subattribute reqested (1)") 
         return     
     subParamName = subParamName.rstrip('\r\n')
 
@@ -423,15 +451,15 @@ def cwSubParam(line, shm, cwDict):
     try:
         param = getattr(scope, paramName)
     except AttributeError:
-        print("ERROR", flush=True) 
-        print("Invalid Python CW attribute reqested (2)", flush=True, file=sys.stderr)
+        printToStdout("ERROR", false, cwID) 
+        printToStderr("Invalid Python CW attribute reqested (2)")
         return
 
     try:
         subParam = getattr(param, subParamName)
     except AttributeError:
-        print("ERROR", flush=True) 
-        print("Invalid Python CW subattribute reqested (2)", flush=True, file=sys.stderr)
+        printToStdout("ERROR", false, cwID) 
+        printToStderr("Invalid Python CW subattribute reqested (2)")
         return
 
     if not noValue:
@@ -452,7 +480,47 @@ def cwSubParam(line, shm, cwDict):
         subParamValue = "{:016x}".format(len(subParamValue)) + subParamValue
         writeToSHM(subParamValue, shm)
 
-    print("DONE", flush=True)
+    printToStdout("DONE", false, cwID)
+
+def consumerCw(queue, cwShmDict, cwDict):
+    while True:
+        line = queue.get()
+
+        ## Call a method from the CW package
+        if line.startswith("FUNC-", 4, 10):
+            cwID = line[0:2]
+            tmpline = line
+            try:
+                callCwFunc(line.lower(), cwShmDict[cwID], cwDict)
+            except(USBError):
+                sendCWNotConnected(tmpline)
+
+        ## Call a method on an object from the CW package
+        elif line.startswith("FUNO-", 4, 10):
+            cwID = line[0:2]
+            tmpline = line
+            try:
+                callCwFuncOnAnObject(line.lower(), cwShmDict[cwID], cwDict)
+            except(USBError):
+                sendCWNotConnected(tmpline)
+
+        ## Set or read a scope parameter
+        elif line.startswith("PARA-", 4, 10):
+            cwID = line[0:2]
+            tmpline = line
+            try:
+                cwParam(line.lower(), cwShmDict[cwID], cwDict)
+            except(USBError):
+                sendCWNotConnected(tmpline)
+
+        ## Set or read a scope subparameter 
+        elif line.startswith("SPAR-", 4, 10):
+            cwID = line[0:2]
+            tmpline = line
+            try:
+                cwSubParam(line.lower(), cwShmDict[cwID], cwDict)
+            except(USBError):
+                sendCWNotConnected(tmpline)
 
 #####EXEXUTABLE START######
 def main():
@@ -462,22 +530,36 @@ def main():
     cwDict = dict()
     targetDict = dict()
 
+    cwShmDict = dict()
+    targetShmDict = dict()
+
+    cwQueueDict = dict()
+
+    cwConsumerDict = dict()
+
     for line in sys.stdin:
         #print(line, flush=True, file=sys.stderr) # TODO!!! Remove!!
         ## Test shared memory
-        if line.startswith("SMTEST:"):
-            smTest(line.lower(), shm)
+        if line.startswith("SMTEST:", 4, 12):
+            cwID = line[0:2]
+            smTest(line.lower(), cwShmDict[cwID])
 
-        if line.startswith("SMSET:"):
-            smSet(line.lower())
+        if line.startswith("SMSET:", 4, 11):
+            cwID = line[0:2]
+            cwShmDict[cwID] = QSharedMemory()
+            smSet(line.lower(), cwShmDict[cwID])
 
         ## Detect available CWs
         elif line.startswith(str(NO_CW_ID) + ",DETECT_DEVICES"):
-            detectDevices(line.lower(), shm)
+            detectDevices(line.lower(), cwShmDict[str(NO_CW_ID)])
 
         ## Initialize one CW
         elif line.startswith("SETUP", 4, 10):
-            cwSetup(line.lower(), shm, cwDict)
+            cwID = line[0:2]
+            cwSetup(line.lower(), cwShmDict[cwID], cwDict)
+            cwQueueDict[cwID] = Queue()
+            cwConsumerDict[cwID] = Thread(target=consumer, args=(cwQueueDict[cwID], cwShmDict, cwDict,))
+            cwConsumerDict[cwID].start()
 
         ## Deinitialize one CW
         elif line.startswith("DEINI", 4, 10):
@@ -487,39 +569,27 @@ def main():
             except:
                 pass
             cwDict[cwID] = None
-            print("DONE", flush=True)
+            printToStdout("DONE", false, cwID)
 
         ## Call a method from the CW package
         elif line.startswith("FUNC-", 4, 10):
-            tmpline = line
-            try:
-                callCwFunc(line.lower(), shm, cwDict)
-            except(USBError):
-                sendCWNotConnected(tmpline)
+            cwID = line[0:2]
+            cwQueueDict[cwID].put(line)
 
         ## Call a method on an object from the CW package
         elif line.startswith("FUNO-", 4, 10):
-            tmpline = line
-            try:
-                callCwFuncOnAnObject(line.lower(), shm, cwDict)
-            except(USBError):
-                sendCWNotConnected(tmpline)
+            cwID = line[0:2]
+            cwQueueDict[cwID].put(line)
 
         ## Set or read a scope parameter
         elif line.startswith("PARA-", 4, 10):
-            tmpline = line
-            try:
-                cwParam(line.lower(), shm, cwDict)
-            except(USBError):
-                sendCWNotConnected(tmpline)
+            cwID = line[0:2]
+            cwQueueDict[cwID].put(line)
 
         ## Set or read a scope subparameter 
         elif line.startswith("SPAR-", 4, 10):
-            tmpline = line
-            try:
-                cwSubParam(line.lower(), shm, cwDict)
-            except(USBError):
-                sendCWNotConnected(tmpline)
+            cwID = line[0:2]
+            cwQueueDict[cwID].put(line)
 
         ## Exit
         elif line.startswith("HALT"):
@@ -527,7 +597,7 @@ def main():
         
         ## Something went wrong
         else:
-            print("ERROR", flush=True) 
+            printToStdout("ERROR", false, NO_CW_ID) 
 
 if __name__ == "__main__":
     main()
