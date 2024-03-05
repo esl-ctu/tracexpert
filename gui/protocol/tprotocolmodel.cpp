@@ -26,7 +26,7 @@ QString TProtocolModel::name() const
     return m_protocol.getName();
 }
 
-QVariant TProtocolModel::status() const
+TProjectItem::Status TProtocolModel::status() const
 {
-    return QString("");
+    return Status::None;
 }

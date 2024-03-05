@@ -161,7 +161,7 @@ QString TProtocolContainer::name() const
     return tr("Protocols");
 }
 
-QVariant TProtocolContainer::status() const
+TProjectItem::Status TProtocolContainer::status() const
 {
-    return QString();
+    return Status::None;
 }

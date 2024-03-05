@@ -21,7 +21,7 @@ public:
     int childrenCount() const override;
     TProjectItem * child(int row) const override;
     QString name() const override;
-    QVariant status() const override;
+    Status status() const override;
 
 private:
     TProtocol m_protocol;
