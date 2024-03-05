@@ -233,7 +233,7 @@ void TIODeviceSender::sendData(QByteArray data)
 {
     quint8 * buffer = (quint8*)data.data();
 
-    size_t bytesSent = m_IODevice->readData(buffer, data.length());
+    size_t bytesSent = m_IODevice->writeData(buffer, data.length());
 
     if (bytesSent < (size_t)data.length()) {
         emit sendFailed();

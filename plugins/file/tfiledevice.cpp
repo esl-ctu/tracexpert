@@ -262,6 +262,7 @@ TConfigParam TFileDevice::setPostInitParams(TConfigParam params) {
 
     qint64 posToSeek = params.getSubParamByName("Seek to position")->getValue().toInt();
     if(posToSeek > -1) {
+
         if(!m_file.seek(posToSeek)) {
             m_postInitParams.getSubParamByName("Seek to position")->setState(TConfigParam::TState::TError, "Failed to seek to supplied position.");
         }
@@ -277,6 +278,10 @@ size_t TFileDevice::writeData(const uint8_t * buffer, size_t len){
 
     qsizetype writtenLen;
     writtenLen = m_file.write((const char *) buffer, len);
+
+    if(!m_file.flush()) {
+        qWarning("Failed to flush data to the file.");
+    }
 
     if(writtenLen != len) {
         qWarning("Failed to write as much data as requested to the file.");

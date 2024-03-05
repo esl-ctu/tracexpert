@@ -33,6 +33,12 @@ public:
     static void deviceReceiveFailedMessage(QWidget * parent);
     static void deviceSendFailedMessage(QWidget * parent);
 
+    static void parameterValueEmpty(QWidget * parent, const QString & parameterName);
+    static void parameterValueInvalid(QWidget * parent, const QString & parameterName);
+    static void parameterValueNotUniqueMessage(QWidget * parent, const QString & parameterName);
+
+    static void protocolMessageCouldNotBeFormed(QWidget * parent);
+
 protected:
     static bool question(QWidget * parent, const QString & title, const QString & text);
     static void criticalMessage(QWidget * parent, const QString & title, const QString & text);

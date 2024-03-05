@@ -4,6 +4,7 @@
 #include <QAbstractItemModel>
 
 #include "tcomponentcontainer.h"
+#include "protocol/tprotocolcontainer.h"
 
 class TProjectModel : public QAbstractItemModel, public TProjectItem
 {
@@ -14,6 +15,7 @@ public:
     ~TProjectModel();
 
     TComponentContainer * componentContainer();
+    TProtocolContainer * protocolContainer();
 
     QVariant data(const QModelIndex & index, int role) const override;
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
@@ -39,8 +41,11 @@ private:
     void loadComponent(QDomElement * element);
 
     void unloadComponents();
+    
+    void loadProtocols();
 
     TComponentContainer * m_componentContainer;
+    TProtocolContainer * m_protocolContainer;
 
     friend class TProjectItem;
 

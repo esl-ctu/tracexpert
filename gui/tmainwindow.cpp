@@ -10,6 +10,7 @@
 #include "tscopewidget.h"
 #include "tprojectview.h"
 #include "tprojectmodel.h"
+#include "protocol/tprotocolwidget.h"
 
 TMainWindow::TMainWindow(QWidget * parent)
     : QMainWindow(parent)
@@ -92,7 +93,7 @@ void TMainWindow::createActions()
 
 void TMainWindow::createIODeviceDockWidget(TIODeviceModel * IODevice)
 {
-    TIODeviceWidget * widget = new TIODeviceWidget(IODevice);
+    TIODeviceWidget * widget = new TIODeviceWidget(IODevice, m_projectModel->protocolContainer());
     QString title = widget->windowTitle();
     TDockWidget * dockWidget = new TDockWidget(title);
     dockWidget->setWidget(widget);
@@ -109,6 +110,15 @@ void TMainWindow::createScopeDockWidget(TScopeModel * scope)
     dockWidget->setWidget(widget);
     connect(scope, &TScopeModel::deinitialized, dockWidget, &TDockWidget::close);
     connect(scope, &TScopeModel::showRequested, dockWidget, &TDockWidget::show);
+    m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
+}
+
+void TMainWindow::openProtocolManagerWidget()
+{
+    //create dock widget with Protocol Widget
+    TProtocolWidget * widget = new TProtocolWidget(m_projectModel->protocolContainer(), this);
+    TDockWidget * dockWidget = new TDockWidget(tr("Protocol manager"), this);
+    dockWidget->setWidget(widget);
     m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
 }
 

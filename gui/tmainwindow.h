@@ -20,6 +20,8 @@ public slots:
     void createIODeviceDockWidget(TIODeviceModel * IODevice);
     void createScopeDockWidget(TScopeModel * scope);
 
+    void openProtocolManagerWidget();
+
 private slots:
     void showDeviceWizard();
 

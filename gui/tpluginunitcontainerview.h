@@ -9,4 +9,5 @@ public:
     explicit TPluginUnitContainerView(QWidget * parent = nullptr);
 };
 
+
 #endif // TPLUGINUNITCONTAINERVIEW_H

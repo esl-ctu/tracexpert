@@ -59,7 +59,24 @@ add_library(${PROJECT_NAME} OBJECT
   tprojectview.h
   tprojectitem.cpp
   tprojectitem.h
-
+  protocol/tabstracttablemodel.h
+  protocol/tprotocolwidget.cpp
+  protocol/tprotocolwidget.h
+  protocol/tprotocoleditor.cpp
+  protocol/tprotocoleditor.h
+  protocol/tmessagesimplecontainer.h
+  protocol/tmessageeditor.h
+  protocol/tmessageeditor.cpp
+  protocol/tmessagepartsimplecontainer.h
+  protocol/tmessageparteditor.h
+  protocol/tprotocolcontainer.h
+  protocol/tprotocolcontainer.cpp
+  protocol/tprotocolmodel.h
+  protocol/tprotocolmodel.cpp
+  protocol/tmessageparteditor.cpp
+  protocol/tprotocoltableview.h
+  tmessageformmanager.h
+  tmessageformmanager.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ads/src)
