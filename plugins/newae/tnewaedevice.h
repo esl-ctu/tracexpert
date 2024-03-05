@@ -4,9 +4,7 @@
 #pragma once
 
 #include "tnewae_global.h"
-#include "tplugin.h"
-#include "tnewae.h"
-#include "tnewaescope.h"
+
 
 #include "tiodevice.h"
 

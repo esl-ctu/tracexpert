@@ -23,14 +23,17 @@ TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     _createPreInitParams();
 
     numDevices = 0;
-    pythonReady = false;
-    pythonError = false;
-    deviceWaitingForRead = false;
-    waitingForReadDeviceId = NO_CW_ID;
+    for (int i = 0; i <= NO_CW_ID; ++i){
+        pythonReady[i] = false;
+        pythonError[i] = false;
+    }
+
+    //deviceWaitingForRead = false;
+    //waitingForReadDeviceId = NO_CW_ID;
     pythonPath = "";
     m_initialized = false;
     numActiveDevices = 0;
-    pythonProcessStdOutData = "";
+    //pythonProcessStdOutData = "";
 
     QSharedMemory * tmp = new QSharedMemory();
 
@@ -237,8 +240,8 @@ bool TNewae::testSHM(uint8_t cwId) {
         return false;
     }
 
-    succ = waitForPythonDone(NO_CW_ID, true);
-    succ &= !pythonError;
+    succ = waitForPythonDone(cwId, true);
+    succ &= !pythonError[cwId];
     if (!succ){
         qCritical("Python did not respond to SHM read request.");
         return false;
@@ -275,7 +278,7 @@ bool TNewae::autodetectDevices(QList<std::pair<QString, QString>> & devices) {
         size_t dataLen;
         QString data;
         succ &= waitForPythonDone(NO_CW_ID, true);
-        succ &= !pythonError;
+        succ &= !pythonError[NO_CW_ID];
         if (!succ){
             qWarning("Failed to receive response for the DETECT DEVICES command or received an invalid one.");
             return false;
@@ -331,7 +334,7 @@ bool TNewae::setUpAndTestSHM(uint8_t cwId) {
     }
 
     succ = waitForPythonDone(cwId, true);
-    succ &= !pythonError;
+    succ &= !pythonError[cwId];
     if (!succ){
         return false;
     }
@@ -341,6 +344,8 @@ bool TNewae::setUpAndTestSHM(uint8_t cwId) {
     if(!succ) {
         return false;
     }
+
+    return true;
 }
 
 
@@ -417,7 +422,7 @@ void TNewae::deInit(bool *ok) {
         pythonProcess->kill();
     }
 
-    pythonReady = false;
+    pythonReady[NO_CW_ID] = false;
 
     //Detach shm
     for (auto it = shmMap.begin(); it != shmMap.end(); ++it) {
@@ -570,7 +575,7 @@ bool TNewae::runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionNa
     }
 
     succ &= waitForPythonDone(cwId, true);
-    if(!succ || pythonError) {
+    if(!succ || pythonError[cwId]) {
         return false;
     }
 
@@ -599,7 +604,7 @@ bool TNewae::runPythonFunctionOnAnObjectAndGetStringOutput(int8_t cwId, QString 
     }
 
     succ &= waitForPythonDone(cwId, true);
-    if(!succ || pythonError) {
+    if(!succ || pythonError[cwId]) {
         return false;
     }
 
@@ -690,10 +695,10 @@ bool TNewae::setPythonSubparameter(int8_t cwId, QString paramName, QString subPa
 }
 
 bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpected/* = true*/, bool wait/* = true*/){
-    if (!pythonReady){
+    if (!pythonReady[cwId]){
         return false;
     }
-    pythonReady = false;
+    pythonReady[cwId] = false;
     wait = true; //!!!!!
     lastCWActive = cwId;
 
@@ -713,11 +718,8 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpec
         return false;
     }
 
-    if (responseExpected){
-        deviceWaitingForRead = true;
-        waitingForReadDeviceId = cwId;
-    } else {
-        pythonReady = true;
+    if (!responseExpected){
+        pythonReady[cwId] = true;
     }
 
     return true;
@@ -732,7 +734,8 @@ void TNewae::checkForPythonState(){
     QString buff;
 
     pythonProcessStdOutMutex.lock();
-    pythonProcessStdOutData = pythonProcessStdOutData + pythonProcess->readAllStandardOutput();
+    //pythonProcessStdOutData = pythonProcessStdOutData + pythonProcess->readAllStandardOutput();
+    buff = pythonProcess->readAllStandardOutput();
     pythonProcessStdOutMutex.unlock();
 
     //najít DONE/STARTED/NOTCN/ERROR
@@ -744,33 +747,75 @@ void TNewae::checkForPythonState(){
     int fromIndexError = 0;
 
     while (true) {
-        int indexDone = pythonProcessStdOutData.indexOf("DONE", fromIndexDone);
-        int indexStarted = pythonProcessStdOutData.indexOf("STARTED", fromIndexStarted);
-        int indexNotcn = pythonProcessStdOutData.indexOf("NOTCN", fromIndexNotcn);
-        int indexError = pythonProcessStdOutData.indexOf("ERROR", fromIndexError);
+        int indexDone = buff.indexOf("DONE", fromIndexDone);
+        int indexStarted = buff.indexOf("STARTED", fromIndexStarted);
+        int indexNotcn = buff.indexOf("NOTCN", fromIndexNotcn);
+        int indexError = buff.indexOf("ERROR", fromIndexError);
 
         if (indexDone != -1){
+            QString type = buff.right(indexDone + 4);
+            QString id = type.right(2);
+            type.truncate(2);
+            id.truncate(3);
+            uint8_t idUint = id.toUShort();
 
+            if (type == "IO"){
+                //TODO
+            }
 
-            fromIndexDone = indexDone;
+            if (type == "SC") {
+                pythonReady[idUint] = true;
+                pythonError[idUint] = false;
+            }
+
+            fromIndexDone = indexDone + 11;
         }
 
         if (indexStarted != -1){
+            pythonReady[NO_CW_ID] = true;
+            pythonError[NO_CW_ID] = false;
 
-
-            fromIndexStarted = indexStarted;
+            fromIndexStarted = indexStarted + 7;
         }
 
         if (indexNotcn != -1){
+            QString type = buff.right(indexDone + 5);
+            QString id = type.right(2);
+            type.truncate(2);
+            id.truncate(3);
+            uint8_t idUint = id.toUShort();
 
+            if (type == "IO"){
+                //TODO
+            }
 
-            fromIndexNotcn = indexNotcn;
+            if (type == "SC") {
+                pythonError[idUint] = true;
+                pythonReady[idUint] = true;
+            }
+
+            TnewaeScope * sc = getCWScopeObjectById(idUint);
+            if (sc) sc->notConnectedError();
+
+            fromIndexNotcn = indexNotcn + 12;
         }
 
         if (indexError != -1){
+            QString type = buff.right(indexDone + 5);
+            QString id = type.right(2);
+            type.truncate(2);
+            id.truncate(3);
+            uint8_t idUint = id.toUShort();
+            if (type == "IO"){
+                //TODO
+            }
 
+            if (type == "SC") {
+                pythonError[idUint] = true;
+                pythonReady[idUint] = true;
+            }
 
-            fromIndexError = indexError;
+            fromIndexError = indexError + 12;
         }
 
 
@@ -778,7 +823,7 @@ void TNewae::checkForPythonState(){
             break;
     }
 
-    if (pythonReady)
+/*    if (pythonReady)
         return;
 
     if (buff.contains("DONE")){
@@ -802,11 +847,11 @@ void TNewae::checkForPythonState(){
     } else {
         pythonReady = false;
         pythonError = false;
-    }
+    }*/
 }
 
-bool TNewae::readFromPython(uint8_t cwId, QString &data, bool wait/* = true*/){
-    if (!pythonReady || !deviceWaitingForRead || cwId != waitingForReadDeviceId){
+/*bool TNewae::readFromPython(uint8_t cwId, QString &data, bool wait/* = true){
+    if (!pythonReady[cwId] || !deviceWaitingForRead || cwId != waitingForReadDeviceId){
         return false;
     }
 
@@ -817,26 +862,17 @@ bool TNewae::readFromPython(uint8_t cwId, QString &data, bool wait/* = true*/){
     deviceWaitingForRead = false;
 
     return true;
-}
+}*/
 
-bool TNewae::waitForPythonDone(uint8_t cwId, bool discardOutput, int timeout/* = 30000*/){
+bool TNewae::waitForPythonDone(uint8_t cwId, int timeout/* = 30000*/){
     for (int i = 0; i < 15; ++i) {
-        if (pythonReady){
+        if (pythonReady[cwId]){
             break;
         }
         pythonProcess->waitForReadyRead(timeout/15);
     }
 
-    if (!pythonReady || !deviceWaitingForRead || cwId != waitingForReadDeviceId){
-        return false;
-    }
-
-    if (discardOutput) {
-        QString tmp;
-        readFromPython(cwId, tmp);
-    }
-
-    return true;
+    return pythonReady[cwId];
 }
 
 /*bool TNewae::getTracesFromShm(size_t &numTraces, size_t &traceSize, QList<double> &data){

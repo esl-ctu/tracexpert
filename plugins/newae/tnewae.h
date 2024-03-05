@@ -4,9 +4,6 @@
 #pragma once
 
 #include "tnewae_global.h"
-#include "tplugin.h"
-#include "tnewaedevice.h"
-#include "tnewaescope.h"
 
 #include <QCoreApplication>
 #include <QSharedMemory>
@@ -93,8 +90,8 @@ public:
 
     //In this block, cwId is only used for identification if the correct CW is being accessed
     bool writeToPython(uint8_t cwId, const QString &data, bool responseExpected = true, bool wait = true);
-    bool readFromPython(uint8_t cwId, QString &data, bool wait = true);
-    bool waitForPythonDone(uint8_t cwId, bool discardOutput, int timeout = 30000);
+    //bool readFromPython(uint8_t cwId, QString &data, bool wait = true);
+    bool waitForPythonDone(uint8_t cwId, int timeout = 30000);
 
     //In this block, CW is super important
     void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
@@ -136,10 +133,10 @@ protected:
 
     uint8_t numDevices; //This counts the number of **seen** devices, not the number of connected devices. Use m_scopes.lenght() for that
     uint8_t numActiveDevices;
-    bool pythonReady;
-    bool pythonError;
-    bool deviceWaitingForRead;
-    uint8_t waitingForReadDeviceId;
+    bool pythonReady[NO_CW_ID + 1];
+    bool pythonError[NO_CW_ID + 1];
+    //bool deviceWaitingForRead;
+    //uint8_t waitingForReadDeviceId;
     uint8_t lastCWActive;
     QString pythonPath;
 
@@ -158,7 +155,7 @@ protected:
     size_t shmSize;
 
     QMutex pythonProcessStdOutMutex;
-    QString pythonProcessStdOutData;
+    //QString pythonProcessStdOutData;
 };
 
 

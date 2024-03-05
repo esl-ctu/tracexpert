@@ -2,10 +2,8 @@
 #define NEWAESCOPE_H
 #pragma once
 
-#include "tnewae.h"
 #include "tnewae_global.h"
-#include "tplugin.h"
-#include "tscope.h"
+
 //#include "tnewae.h"
 
 class TNewae;

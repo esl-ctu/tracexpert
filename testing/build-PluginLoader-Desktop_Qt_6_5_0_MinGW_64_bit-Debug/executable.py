@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#Todo: Stopping threads
 
 import sys, time, ctypes, traceback, struct
 from PySide6.QtCore import QSharedMemory, QByteArray, QMutex
@@ -569,6 +570,7 @@ def main():
             except:
                 pass
             cwDict[cwID] = None
+            cwConsumerDict[cwID].join()
             printToStdout("DONE", false, cwID)
 
         ## Call a method from the CW package
