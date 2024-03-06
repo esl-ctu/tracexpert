@@ -489,23 +489,27 @@ TConfigParam TnewaeScope::setPreInitParams(TConfigParam params){
 void TnewaeScope::init(bool *ok/* = nullptr*/){
     bool succ = _validatePreInitParamsStructure(m_preInitParams);
     if(!succ) {
+        qCritical("Invalid Pre init params");
         if(ok != nullptr) *ok = false;
         return;
     }
 
     QString cwBufferSizeStr = m_preInitParams.getSubParamByName("Memory depth of the oscilloscope", &succ)->getValue();
     if(!succ) {
+        qCritical("Invalid mem depth");
         if(ok != nullptr) *ok = false;
         return;
     }
     cwBufferSize = cwBufferSizeStr.toUInt(&succ);
     if(!succ) {
+        qCritical("Invalid buffer size");
         if(ok != nullptr) *ok = false;
         return;
     }
 
     auto tmpSn = m_preInitParams.getSubParamByName("Serial number", &succ);
     if(!succ) {
+        qCritical("Invalid sn");
         if(ok != nullptr) *ok = false;
         return;
     }
@@ -516,9 +520,17 @@ void TnewaeScope::init(bool *ok/* = nullptr*/){
     params.append(sn);
     plugin->packageDataForPython(cwId, "SETUP", 1, params, toSend);
     succ = plugin->writeToPython(cwId, toSend);
-    succ &= plugin->waitForPythonDone(cwId, true);
 
     if(!succ) {
+        qCritical("Error setting CW up in Python (1)");
+        if(ok != nullptr) *ok = false;
+        return;
+    }
+
+    succ = plugin->waitForPythonDone(cwId);
+
+    if(!succ) {
+        qCritical("Error setting CW up in Python (2)");
         if(ok != nullptr) *ok = false;
         return;
     }
@@ -537,7 +549,7 @@ void TnewaeScope::deInit(bool *ok/* = nullptr*/){
     QList<QString> params;
     plugin->packageDataForPython(cwId, "DEINI", 0, params, toSend);
     bool succ = plugin->writeToPython(cwId, toSend);
-    succ &= plugin->waitForPythonDone(cwId, true);
+    succ &= plugin->waitForPythonDone(cwId);
 
     if(ok != nullptr) *ok = succ;
 
