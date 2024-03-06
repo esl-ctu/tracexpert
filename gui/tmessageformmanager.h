@@ -6,17 +6,17 @@
 #include "qformlayout.h"
 #include "tmessage.h"
 
-class TMessageFormWidget : public QWidget
+class TMessageFormManager : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit TMessageFormWidget(QWidget * parent = nullptr);
-    ~TMessageFormWidget();
+    explicit TMessageFormManager(QFormLayout * formLayout, int insertOffset);
+    ~TMessageFormManager();
 
     TMessage getMessage();
     void setMessage(const TMessage & message, bool * ok = nullptr);
-    void resetLayout();
+    void clearRows();
     bool assignInputValues();
 
 public slots:
@@ -29,5 +29,6 @@ private:
     QList<QWidget*> m_inputs;
 
     QFormLayout * m_formLayout;
+    int m_insertOffset;
 };
 #endif // TMESSAGEFORMWIDGET_H

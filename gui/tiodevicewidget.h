@@ -4,12 +4,13 @@
 #include <QWidget>
 #include <QLineEdit>
 #include <QPlainTextEdit>
+#include <QBoxLayout>
+#include <QComboBox>
 
 #include "protocol/tprotocolcontainer.h"
-#include "qboxlayout.h"
 #include "tiodevicemodel.h"
 #include "tconfigparamwidget.h"
-#include "tmessageformwidget.h"
+#include "tmessageformmanager.h"
 
 class TIODeviceWidget : public QWidget
 {
@@ -17,6 +18,7 @@ class TIODeviceWidget : public QWidget
 
 public:
     explicit TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContainer * protocolContainer, QWidget * parent = nullptr);
+    ~TIODeviceWidget();
 
 public slots:
     bool applyPostInitParam();
@@ -27,17 +29,22 @@ public slots:
     void receiveFailed();
     void dataReceived(QByteArray data);
 
+    void sendBytes();
     void sendRawBytes();
     void sendProtocolBytes();
     void sendBusy();
     void sendFailed();
     //void selectSendMessageValidator();
 
+    bool validateRawInputValues();
+
 private:
     void sendProtocolChanged(int index);
     void sendMessageChanged(int index);
 
     void updateDisplayedProtocols();
+
+    QString byteArraytoHumanReadableString(const QByteArray & byteArray);
 
     TIODeviceModel * m_deviceModel;
     TProtocolContainer * m_protocolContainer;
@@ -47,16 +54,18 @@ private:
     TProtocol m_selectedProtocol;
     TMessage m_selectedMessage;
 
-    TMessageFormWidget * m_messageFormWidget;
+    TMessageFormManager * m_messageFormManager;
+
     QLineEdit * m_receiveBytesEdit;
     QComboBox * m_receiveProtocolComboBox;
 
     QComboBox * m_sendProtocolComboBox;
     QComboBox * m_sendMessageComboBox;
-    QVBoxLayout * m_sendMessageLayout;
-    QWidget * m_sendRawMessageWidget;
-    QWidget * m_sendProtocolMessageWidget;
-    QLineEdit * m_sendMessageEdit;
+    QFormLayout * m_sendFormLayout;
+
+    QLineEdit * m_rawMessageEdit;
+    QComboBox * m_rawFormatComboBox;
+    QHBoxLayout * m_rawMessageEditLayout;
 
     QPlainTextEdit * m_communicationLogTextEdit;
 };

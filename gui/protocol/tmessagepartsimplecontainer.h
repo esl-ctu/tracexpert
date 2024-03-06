@@ -1,8 +1,9 @@
 #ifndef TMESSAGEPARTMODEL_H
 #define TMESSAGEPARTMODEL_H
 
-#include "qapplication.h"
-#include "qstyle.h"
+#include <QApplication>
+#include <QStyle>
+
 #include "tabstracttablemodel.h"
 #include "tmessagepart.h"
 

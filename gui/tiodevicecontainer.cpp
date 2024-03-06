@@ -5,7 +5,7 @@
 TIODeviceContainer::TIODeviceContainer(TComponentModel * parent)
     : TProjectItem(parent->model(), parent), TPluginUnitContainer(parent)
 {
-
+    m_typeName = "iodevices";
 }
 
 int TIODeviceContainer::count() const
@@ -46,11 +46,11 @@ bool TIODeviceContainer::remove(TIODeviceModel * unit)
         return false;
     }
 
-    beginInsertChild(index);
-    beginInsertRows(QModelIndex(), index, index);
+    beginRemoveChild(index);
+    beginRemoveRows(QModelIndex(), index, index);
     m_IODevices.remove(index);
-    endInsertRows();
-    endInsertChild();
+    endRemoveRows();
+    endRemoveChild();
 
     return true;
 }

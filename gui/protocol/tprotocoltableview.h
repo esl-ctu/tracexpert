@@ -1,9 +1,9 @@
 #ifndef TPROTOCOLTABLEVIEW_H
 #define TPROTOCOLTABLEVIEW_H
 
-#include "qheaderview.h"
 #include <QWidget>
 #include <QTableView>
+#include <QHeaderView>
 
 class TProtocolTableView : public QTableView
 {

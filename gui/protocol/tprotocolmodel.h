@@ -2,6 +2,7 @@
 #define TPROTOCOLMODEL_H
 
 #include <QObject>
+
 #include "tprotocol.h"
 #include "tprojectitem.h"
 
@@ -13,16 +14,17 @@ class TProtocolModel : public QObject, public TProjectItem {
 public:
     explicit TProtocolModel(TProtocol protocol, TProtocolContainer * parent);
 
-    TProtocol protocol() const { return m_protocol; }
+    const TProtocol & protocol() const;
+    void setProtocol(const TProtocol & protocol);
 
+    // methods for TProjectItem - to be able to show Protocols in the Project view
     int childrenCount() const override;
     TProjectItem * child(int row) const override;
     QString name() const override;
-    QVariant status() const override;
+    Status status() const override;
 
 private:
     TProtocol m_protocol;
-
 };
 
 

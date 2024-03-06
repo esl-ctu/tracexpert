@@ -66,6 +66,7 @@ void TPS6000Scope::_createPostInitParams() {
     limiterParam.addEnumValue("Full Bandwidth");
     limiterParam.addEnumValue("20 MHz Limiter");
     limiterParam.addEnumValue("25 MHz Limiter");
+    channelSettings.addSubParam(limiterParam);
 
     // Channel 1/A
     m_postInitParams.addSubParam(channelSettings);
@@ -104,9 +105,9 @@ void TPS6000Scope::_createPostInitParams() {
     triggerDirection.addEnumValue("Below");
     triggerSettings.addSubParam(triggerDirection);
     // Autotrigger
-    TConfigParam triggerAuto = TConfigParam("Auto trigger (ms)", "10000", TConfigParam::TType::TInt, "The number of milliseconds the device will wait if no trigger occurs");
+    TConfigParam triggerAuto = TConfigParam("Auto trigger (ms)", "10000", TConfigParam::TType::TInt, "The number of milliseconds the device will wait if no trigger occurs"); // TODO nula je nekonecno?
     triggerSettings.addSubParam(triggerAuto);
-    m_postInitParams.addSubParam(triggerAuto);
+    m_postInitParams.addSubParam(triggerSettings);
 
     // Acquisition/Timing settings
     // Basic mode = set time and preferred samples per trace OR Advanced mode = set sampling frequency and number of samples
@@ -153,7 +154,7 @@ void TPS6000Scope::init(bool *ok){
 
 
     } else {
-        // TODO zkontrolovat chybovy stavy !!!
+        // TODO zkontrolovat chybovy stavy
         if(ok != nullptr) *ok = false;
 
     }
@@ -166,8 +167,6 @@ void TPS6000Scope::deInit(bool *ok){
 
         PICO_STATUS picoStatus = ps6000CloseUnit(m_handle);
         m_initialized = false;
-
-        //qDebug("Picoscope deinitialized");
 
         if(picoStatus != PICO_OK){
             qWarning("Error occured while closing the Picoscope");
@@ -435,6 +434,7 @@ void TPS6000Scope::_setTrigger() {
     }
 
     double sourceRange = 1; // AUX input range is +- 1 V
+    qreal sourceOffset  = 0;
 
     if(sourceChannelSettings != nullptr){
         TConfigParam * sourceRangePar = sourceChannelSettings->getSubParamByName("Range", &iok);
@@ -444,35 +444,24 @@ void TPS6000Scope::_setTrigger() {
         }
         QString sourceRangeVal = sourceRangePar->getValue();
         sourceRange = rangeStrToReal(sourceRangeVal);
-        if(sourceRange == 0) return;
-        /*if(sourceRangeVal == "-50 mV .. 50 mV") {
-            sourceRange = 0.05;
-        } else if(sourceRangeVal == "-100 mV .. 100 mV") {
-            sourceRange = 0.1;
-        } else if(sourceRangeVal == "-200 mV .. 200 mV") {
-            sourceRange = 0.2;
-        } else if(sourceRangeVal == "-500 mV .. 500 mV") {
-            sourceRange = 0.5;
-        } else if(sourceRangeVal == "-1 V .. 1 V") {
-            sourceRange = 1;
-        } else if(sourceRangeVal == "-2 V .. 2 V") {
-            sourceRange = 2;
-        } else if(sourceRangeVal == "-5 V .. 5 V") {
-            sourceRange = 5;
-        } else if(sourceRangeVal == "-10 V .. 10 V") {
-            sourceRange = 10;
-        } else if(sourceRangeVal == "-20 V .. 20 V") {
-            sourceRange = 20;
-        } else {
-            qCritical("Unexpected range parameter value.");
-            return;
-        }*/
+        if(sourceRange == 0) return; 
 
-        // TODO adjust voltageVal according to the analogue offset
+        TConfigParam * sourceOffsetPar = sourceChannelSettings->getSubParamByName("Analogue Offset", &iok);
+        if(!iok){
+            qCritical("Failed to find the trigger source channel range");
+            return;
+        }
+
+        sourceOffset = sourceOffsetPar->getValue().toDouble(&iok);
+        if(!iok){
+            qCritical("Failed to convert source offset");
+            return;
+        }
 
     }
 
-    float level = (voltageVal + sourceRange) / (2*sourceRange); // TODO ADJUST ACCORDING TO THE ANALOGUE OFFSET
+    float level = (voltageVal + sourceOffset + sourceRange) / (2*sourceRange); // TODO zkontrolovat offset
+
     if(level < 0) {
         level = 0;
         voltagePar->setValue((-1)*sourceRange);
@@ -529,6 +518,10 @@ void TPS6000Scope::_setTrigger() {
         return;
     }
 
+}
+
+bool TCompareReal(qreal a, qreal b){
+    return qAbs(a - b) * 100000. <= qMin(qAbs(a), qAbs(b));
 }
 
 void TPS6000Scope::_setTiming() {
@@ -622,13 +615,11 @@ void TPS6000Scope::_setTiming() {
 
         requestedTimebase = std::log2(samplingPeriod * 5000000000.0f);
         requestedTimebase = (requestedTimebase > 4) ? 0 : requestedTimebase; // check for overflow caused by uint(float(log2))
-        //closestSamplingPeriod = std::pow(2, requestedTimebase) / 5000000000.0f;
 
     } else {
 
         requestedTimebase = samplingPeriod * 156250000.0f + 4.0f;
         requestedTimebase = (requestedTimebase < 5) ? 5 : requestedTimebase; // check for numerical errors around the border
-        //closestSamplingPeriod = (requestedTimebase - 4.0f) / 156250000.0f;
 
     }
 
@@ -655,7 +646,7 @@ void TPS6000Scope::_setTiming() {
 
         status = ps6000GetTimebase2(m_handle, realTimebase, realSamples, &offeredTimeInterval, 0, &offeredSamples, 0);
 
-        if(status != PICO_OK || (offeredTimeInterval  / 1000000000.0f) != realSamplingPeriod || offeredSamples < realSamples) {
+        if(status != PICO_OK || !TCompareReal(((qreal)offeredTimeInterval  / 1000000000.0f), realSamplingPeriod) || offeredSamples < realSamples) {
 
             notSatisfied = true;
 
@@ -705,7 +696,7 @@ void TPS6000Scope::_setTiming() {
     // set sampling period + warning
     samplingPeriodPar->setValue(realSamplingPeriod);
     if(realSamplingPeriod != samplingPeriod){
-        preTrigTimePar->setState(TConfigParam::TState::TWarning, "The sampling period was adjusted to the nearest possible according to the oscilloscope memory capabilities and the capture time requirements");
+        samplingPeriodPar->setState(TConfigParam::TState::TWarning, "The sampling period was adjusted to the nearest (smaller if possible) according to the oscilloscope memory capabilities and the capture time requirements");
     }
 
 }
@@ -793,9 +784,14 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
         ps6000IsReady(m_handle, &ready);
     }
 
-    if(!m_running){ // the scope was stopped during waiting for the samples
+    ps6000IsReady(m_handle, &ready);
+
+    if(!ready){ // the scope was stopped during waiting for the samples
+        *samplesPerTraceDownloaded = 0;
+        *tracesDownloaded = 0;
         return 0;
     }
+
     m_running = false; // the acquisition is complete
 
     PS6000_CHANNEL psChannel;
@@ -851,7 +847,14 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
 
     }
 
-    // TODO overvoltage
+    *overvoltage = false;
+    int channel_bitidx = channel - 1;
+    for(uint32_t i = 0; i < m_captures; i++){
+        if( ((((over.get())[i]) >> channel_bitidx) & 0x01) > 0 ) {
+            *overvoltage = true;
+        }
+    }
+
     *samplesType = TScope::TSampleType::TInt16;
     *samplesPerTraceDownloaded = psSamples;
     *tracesDownloaded = m_captures;

@@ -5,6 +5,7 @@
 #include <QLineEdit>
 #include <QFormLayout>
 #include <QTableView>
+
 #include "protocol/tprotocolcontainer.h"
 #include "tmessagesimplecontainer.h"
 #include "tprotocol.h"
@@ -37,6 +38,7 @@ signals:
 private slots:
     void onAddButtonClicked();
     void onEditButtonClicked();
+    void onRowDoubleClicked(const QModelIndex & index);
     void onRemoveButtonClicked();
     void onEditorFinished(int finished);
 

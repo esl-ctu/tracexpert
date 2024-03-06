@@ -1,11 +1,11 @@
 #ifndef TMESSAGEMODEL_H
 #define TMESSAGEMODEL_H
 
-#include "tabstracttablemodel.h"
-#include "tmessage.h"
-
 #include <QApplication>
 #include <QStyle>
+
+#include "tabstracttablemodel.h"
+#include "tmessage.h"
 
 class TMessageSimpleContainer : public TAbstractTableModel<TMessage> {
 

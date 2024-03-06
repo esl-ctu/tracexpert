@@ -13,7 +13,6 @@
 #include <QDialog>
 #include <QHeaderView>
 
-
 TProtocolWidget::TProtocolWidget(TProtocolContainer * protocolContainer, QWidget * parent) : QWidget(parent)
 {
     setWindowTitle("Protocol manager");
@@ -37,6 +36,7 @@ TProtocolWidget::TProtocolWidget(TProtocolContainer * protocolContainer, QWidget
 
     QTableView * protocolView = new TProtocolTableView();
     protocolView->setModel(m_protocolContainer);
+    connect(protocolView, &QTableView::doubleClicked, this, &TProtocolWidget::onEditButtonClicked);
 
     m_protocolView = protocolView;
 
@@ -55,13 +55,22 @@ void TProtocolWidget::onAddButtonClicked() {
     m_protocolEditor->open();
 }
 
+void TProtocolWidget::onRowDoubleClicked(const QModelIndex & index) {
+    m_editedItemIndex = index.row();
+    openEditor();
+}
+
 void TProtocolWidget::onEditButtonClicked() {
-    if(m_protocolView->selectionModel()->selectedIndexes().isEmpty())
+    if(m_protocolView->selectionModel()->selectedIndexes().isEmpty()) {
         return;
+    }
 
     m_editedItemIndex = m_protocolView->selectionModel()->selectedIndexes().first().row();
+    openEditor();
+}
 
-    m_protocolEditor = new TProtocolEditor(m_protocolContainer->getItem(m_editedItemIndex)->protocol(), m_protocolContainer, this);
+void TProtocolWidget::openEditor() {
+    m_protocolEditor = new TProtocolEditor(m_protocolContainer->at(m_editedItemIndex), m_protocolContainer, this);
     connect(m_protocolEditor, &QWizard::finished, this, &TProtocolWidget::onEditorFinished);
     m_protocolEditor->open();
 }
@@ -72,11 +81,14 @@ void TProtocolWidget::onEditorFinished(int finished) {
     }
 
     if(m_editedItemIndex >= 0) {
-        m_protocolContainer->getItem(m_editedItemIndex)->protocol();
-        m_protocolContainer->updateItem(m_editedItemIndex, new TProtocolModel(TProtocol(m_protocolEditor->protocol()), m_protocolContainer));
+        if(!m_protocolContainer->update(m_editedItemIndex, m_protocolEditor->protocol())) {
+            qWarning("Failed to update protocol, validation in editor probably failed.");
+        }
     }
     else {
-        m_protocolContainer->insertItem(m_protocolContainer->rowCount(), new TProtocolModel(TProtocol(m_protocolEditor->protocol()), m_protocolContainer));
+        if(!m_protocolContainer->add(m_protocolEditor->protocol())) {
+            qWarning("Failed to add protocol, validation in editor probably failed.");
+        }
     }
 }
 
@@ -85,5 +97,5 @@ void TProtocolWidget::onRemoveButtonClicked() {
     if(m_protocolView->selectionModel()->selectedIndexes().isEmpty())
         return;
 
-    m_protocolContainer->removeItem(m_protocolView->selectionModel()->selectedIndexes().first().row());
+    m_protocolContainer->remove(m_protocolView->selectionModel()->selectedIndexes().first().row());
 }

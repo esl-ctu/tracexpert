@@ -8,6 +8,8 @@
 TIODeviceModel::TIODeviceModel(TIODevice * IODevice, TIODeviceContainer * parent)
     : TProjectItem(parent->model(), parent), TPluginUnitModel(IODevice, parent), m_IODevice(IODevice)
 {
+    m_typeName = "iodevice";
+
     m_sending = false;
     m_receiving = false;
     m_autoReceive = false;
@@ -31,20 +33,29 @@ bool TIODeviceModel::init()
 
     m_isInit = true;
 
-    m_receiver = new TIODeviceReceiver(m_IODevice);
-    m_receiver->moveToThread(&receiverThread);
+    if (senderThread.isRunning())
+        senderThread.terminate();
+
+    if (receiverThread.isRunning())
+        receiverThread.terminate();
+
     m_sender = new TIODeviceSender(m_IODevice);
     m_sender->moveToThread(&senderThread);
+
+    m_receiver = new TIODeviceReceiver(m_IODevice);
+    m_receiver->moveToThread(&receiverThread);
 
     connect(this, &TIODeviceModel::sendData, m_sender, &TIODeviceSender::sendData, Qt::ConnectionType::QueuedConnection);
     connect(m_sender, &TIODeviceSender::dataSent, this, &TIODeviceModel::dataSent, Qt::ConnectionType::QueuedConnection);
     connect(m_sender, &TIODeviceSender::sendFailed, this, &TIODeviceModel::sendFailed, Qt::ConnectionType::QueuedConnection);
+    connect(&senderThread, &QThread::finished, m_sender, &QObject::deleteLater);
 
     connect(this, &TIODeviceModel::receiveData, m_receiver, &TIODeviceReceiver::receiveData, Qt::ConnectionType::QueuedConnection);
     connect(m_receiver, &TIODeviceReceiver::dataReceived, this, &TIODeviceModel::dataReceived, Qt::ConnectionType::QueuedConnection);
     connect(m_receiver, &TIODeviceReceiver::receiveFailed, this, &TIODeviceModel::receiveFailed, Qt::ConnectionType::QueuedConnection);
     connect(this, &TIODeviceModel::startReceiving, m_receiver, &TIODeviceReceiver::startReceiving, Qt::ConnectionType::QueuedConnection);
     connect(this, &TIODeviceModel::stopReceiving, m_receiver, &TIODeviceReceiver::stopReceiving, Qt::ConnectionType::QueuedConnection);
+    connect(&receiverThread, &QThread::finished, m_receiver, &QObject::deleteLater);
 
     receiverThread.start();
     senderThread.start();
@@ -62,8 +73,8 @@ bool TIODeviceModel::deInit()
 
     m_isInit = false;
 
-    receiverThread.terminate();
-    senderThread.terminate();
+    receiverThread.quit();
+    senderThread.quit();
 
     emit deinitialized(this);
 
@@ -80,14 +91,16 @@ TProjectItem *TIODeviceModel::child(int row) const
     return nullptr;
 }
 
-QVariant TIODeviceModel::status() const
+void TIODeviceModel::bind(TCommon * unit)
 {
-    if (m_isInit) {
-        return tr("Initialized");
-    }
-    else {
-        return tr("Uninitialized");
-    }
+    m_IODevice = static_cast<TIODevice *>(unit);
+    TPluginUnitModel::bind(m_IODevice);
+}
+
+void TIODeviceModel::release()
+{
+    m_IODevice = nullptr;
+    TPluginUnitModel::release();
 }
 
 void TIODeviceModel::writeData(QByteArray data)

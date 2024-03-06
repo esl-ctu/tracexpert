@@ -1,4 +1,4 @@
-#include "tmessageformwidget.h"
+#include "tmessageformmanager.h"
 #include <QFormLayout>
 #include <QLineEdit>
 #include <QLabel>
@@ -7,37 +7,33 @@
 #include <QObjectCleanupHandler>
 
 
-TMessageFormWidget::TMessageFormWidget(QWidget * parent) {
-    m_formLayout = new QFormLayout();
-    m_formLayout->setContentsMargins(0, 0, 0, 0);
-
-    setLayout(m_formLayout);
+TMessageFormManager::TMessageFormManager(QFormLayout * formLayout, int insertOffset) {
+    m_formLayout = formLayout;
+    m_insertOffset = insertOffset;
 }
 
-TMessageFormWidget::~TMessageFormWidget() { }
+TMessageFormManager::~TMessageFormManager() { }
 
-void TMessageFormWidget::resetLayout() {
+void TMessageFormManager::clearRows() {
 
-    int rowCount = m_formLayout->rowCount();
-    for(int i = 0; i < rowCount; i++) {
-        m_formLayout->removeRow(rowCount-i-1);
+    for(QWidget * widget : m_inputs) {
+        m_formLayout->removeRow(widget);
     }
 
-    QLabel * noFieldsLabel = new QLabel(tr("No message fields to fill in."));
-    m_formLayout->addRow(noFieldsLabel);
-    m_formLayout->setAlignment(noFieldsLabel, Qt::AlignCenter);
+    m_inputs.clear();
 }
 
-TMessage TMessageFormWidget::getMessage() {
+TMessage TMessageFormManager::getMessage() {
     return m_message;
 }
 
-void TMessageFormWidget::setMessage(const TMessage & message, bool * ok) {
-    resetLayout();
+void TMessageFormManager::setMessage(const TMessage & message, bool * ok) {
+    clearRows();
 
     m_message = message;
     m_inputs.clear();
 
+    int insertedInputs = 0;
     QList<TMessagePart> messageParts = m_message.getMessageParts();
     for(int i = 0; i < messageParts.size(); i++) {
         if(!messageParts[i].isPayload())
@@ -49,35 +45,46 @@ void TMessageFormWidget::setMessage(const TMessage & message, bool * ok) {
         QLabel * label = new QLabel(messageParts[i].getName());
         label->setToolTip(messageParts[i].getDescription());
 
-        m_formLayout->addRow(label, input);
+        m_formLayout->insertRow(m_insertOffset + insertedInputs, label, input);
+        insertedInputs++;
     }
 
-    if(m_formLayout->rowCount() > 1) {
-        m_formLayout->removeRow(0);
-        validateInputValues();
+    if(insertedInputs == 0) {
+        return;
     }
+
+    // add a separator line
+    QFrame * separatorLine = new QFrame();
+    separatorLine->setFrameShape(QFrame::HLine);
+    separatorLine->setFrameShadow(QFrame::Sunken);
+
+    m_inputs.append(separatorLine);
+
+    m_formLayout->insertRow(m_insertOffset, separatorLine);
+
+    validateInputValues();
 }
 
-QWidget * TMessageFormWidget::createInputField(const TMessagePart & messagePart) {
+QWidget * TMessageFormManager::createInputField(const TMessagePart & messagePart) {
     QWidget * input;
 
     if (messagePart.getType() == TMessagePart::TType::TBool) {
-        QComboBox * comboBox = new QComboBox(this);
+        QComboBox * comboBox = new QComboBox;
         comboBox->addItem(tr("True"));
         comboBox->addItem(tr("False"));
         input = comboBox;
     }
     else if (messagePart.isHexOrAsciiSensibleType()) {
-        QLineEdit * lineEdit = new QLineEdit();
-        connect(lineEdit, &QLineEdit::textEdited, this, &TMessageFormWidget::validateInputValues);
+        QLineEdit * lineEdit = new QLineEdit;
+        connect(lineEdit, &QLineEdit::textEdited, this, &TMessageFormManager::validateInputValues);
 
-        QComboBox * comboBox = new QComboBox();
+        QComboBox * comboBox = new QComboBox;
         comboBox->addItem(tr("Hex"));
         comboBox->addItem(tr("ASCII"));
         comboBox->setCurrentIndex((messagePart.getType() == TMessagePart::TType::TByte || messagePart.getType() == TMessagePart::TType::TByteArray) ? 0 : 1);
-        connect(comboBox, &QComboBox::currentIndexChanged, this, &TMessageFormWidget::validateInputValues);
+        connect(comboBox, &QComboBox::currentIndexChanged, this, &TMessageFormManager::validateInputValues);
 
-        QHBoxLayout * layout = new QHBoxLayout();
+        QHBoxLayout * layout = new QHBoxLayout;
         layout->setContentsMargins(0, 0, 0, 0);
         layout->addWidget(lineEdit);
         layout->addWidget(comboBox);
@@ -90,15 +97,15 @@ QWidget * TMessageFormWidget::createInputField(const TMessagePart & messagePart)
         input = widget;
     }
     else {
-        QLineEdit * lineEdit = new QLineEdit(this);
-        connect(lineEdit, &QLineEdit::textEdited, this, &TMessageFormWidget::validateInputValues);
+        QLineEdit * lineEdit = new QLineEdit;
+        connect(lineEdit, &QLineEdit::textEdited, this, &TMessageFormManager::validateInputValues);
         input = lineEdit;
     }
 
     return input;
 }
 
-bool TMessageFormWidget::assignInputValues() {
+bool TMessageFormManager::assignInputValues() {
 
     qsizetype payloadInputIndex = 0;
     QList<TMessagePart> & messageParts = m_message.getMessageParts();
@@ -128,7 +135,7 @@ bool TMessageFormWidget::assignInputValues() {
         }
 
         if(!iok) {
-            TDialog::parameterValueInvalid(this, messagePart.getName());
+            TDialog::parameterValueInvalid(m_formLayout->parentWidget(), messagePart.getName());
             return false;
         }
 
@@ -138,7 +145,7 @@ bool TMessageFormWidget::assignInputValues() {
     return true;
 }
 
-void TMessageFormWidget::validateInputValues() {
+void TMessageFormManager::validateInputValues() {
 
     qsizetype payloadInputIndex = 0;
     QList<TMessagePart> & messageParts = m_message.getMessageParts();

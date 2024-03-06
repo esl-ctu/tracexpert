@@ -341,6 +341,10 @@ public:
             messagePartSummaries.append(QString(isFormattedAsHex ? "%1: 0x%2" : "%1: %2").arg(messagePart.getName(), value));
         }
 
+        if(messagePartSummaries.isEmpty()) {
+            return m_name;
+        }
+
         return QString("%1: (%2)").arg(m_name, messagePartSummaries.join(", "));
     }
 

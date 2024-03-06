@@ -6,6 +6,7 @@
 #include <QLineEdit>
 #include <QFormLayout>
 #include <QComboBox>
+
 #include "tmessage.h"
 #include "tmessagepartsimplecontainer.h"
 #include "tmessageparteditor.h"
@@ -36,6 +37,7 @@ public:
 private slots:
     void onAddButtonClicked();
     void onEditButtonClicked();
+    void onRowDoubleClicked(const QModelIndex & index);
     void onRemoveButtonClicked();
     void onMoveUpButtonClicked();
     void onMoveDownButtonClicked();
@@ -43,6 +45,8 @@ private slots:
     void onEditorFinished(int finished);
 
 private:
+    void openEditor();
+
     TMessagePartEditor * m_editor;
     qsizetype  m_editedItemIndex;    
 

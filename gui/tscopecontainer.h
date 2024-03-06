@@ -17,6 +17,9 @@ public:
     TScopeModel * at(int index) const override;
 
     void add(TScopeModel * unit);
+    bool remove(TScopeModel * unit);
+
+    TScopeModel * hasName(QString name) const;
     
     QString name() const override;
 
