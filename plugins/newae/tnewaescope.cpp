@@ -797,30 +797,24 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
     }
 
     //Get trace
-    params.clear();
+    size_t byteSize;
     if (tracesAsInt) {
-        params.append("true"); //Get traces as ints
-        *samplesType = TSampleType::TUInt16;
+        succ = plugin->downloadSamples(cwId, &byteSize, buffer, true, bufferSize);
+        *samplesPerTraceDownloaded = byteSize/sizeof(int16_t);
+        *samplesType = TSampleType::TInt16;
     } else {
-        params.append("false"); //Get traces as doubles
+        succ = plugin->downloadSamples(cwId, &byteSize, buffer, false, bufferSize);
         *samplesType = TSampleType::TReal64;
+        *samplesPerTraceDownloaded = byteSize/sizeof(double);
     }
 
-    succ = plugin->runPythonFunctionAndGetStringOutput(cwId, "get_last_trace", params.count(), params, dataLen, response);
-
     if (!succ) {
-        qDebug("Error sending the get_last_trace command.");
+        qDebug("Error downloading samples from scope.");
         return 0;
     }
 
     traceWaitingForRead = false;
 
-    //Set trace size
-    if (tracesAsInt) {
-        *samplesPerTraceDownloaded = dataLen/sizeof(int16_t);
-    } else {
-        *samplesPerTraceDownloaded = dataLen/sizeof(double);
-    }
 
     //Segmented capture unavaliable, we always have only one trace
     *tracesDownloaded = 1;
@@ -828,19 +822,5 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
     //Overvoltage supported only by Husky
     *overvoltage = false;
 
-    //Copy trace to buffer
-    size_t maxSize = dataLen > bufferSize ? bufferSize : dataLen;
-    memcpy(buffer, response.toLocal8Bit().constData(), maxSize);
-
-    //Scale int traces to fill the whole uint16_t type
-    if (tracesAsInt) {
-        uint16_t * uintBuf = (uint16_t *) buffer;
-        int16_t * intBuf = (int16_t *) buffer;
-
-        for (int i = 0; i < *samplesPerTraceDownloaded; ++i){
-            uintBuf[i] = intBuf[i] * 64;
-        }
-    }
-
-    return maxSize;
+    return byteSize;
 }

@@ -8,6 +8,8 @@ import numpy as np
 import logging
 from threading import Thread
 from queue import Queue
+from ctypes import c_uint8 as uint16_t
+from ctypes import c_double as double
 
 ##GLOBALS##
 PLUGIN_ID = "TraceXpert.NewAE"
@@ -44,27 +46,47 @@ def printToStderr(data):
 
 ##Write to shared memory##
 def writeToSHM(line, shm):
-    buffer = QByteArray(line)
-    size = buffer.size()
-
-    if size > shmSize:
-        printToStderr("SHM is not large enough. Data would not fit!")
-        return
-
     shm.lock()
     _to = memoryview(shm.data()).cast('c')
-    _from = buffer
-    _to[0:size] = _from[0:size]
+    if isinstance(line, np.ndarray):
+        if isinstance(line[0], np.int16):
+            tmpLen = "{:016x}".format(line.size * 2)
+            leng = bytes(tmpLen, 'ascii')
+            _from = QByteArray(leng)
+            _to[0:16] = _from[0:16]
+
+            _to = memoryview(shm.data()).cast('h')
+            size = line.size
+            if size + 16 > shmSize:
+                printToStderr("SHM is not large enough. Data would not fit!")
+                return
+            _to[8:(size+8)] = line[0:size]
+        else:
+            tmpLen = "{:016x}".format(line.size * 8)
+            leng = bytes(tmpLen, 'ascii')
+            _from = QByteArray(leng)
+            _to[0:16] = _from[0:16]
+
+            _to = memoryview(shm.data()).cast('d')
+            size = line.size
+            if size + 16 > shmSize:
+                printToStderr("SHM is not large enough. Data would not fit!")
+                return
+            _to[2:(size+2)] = line[0:size]
+    else:    
+        buffer = QByteArray(line)  
+        size = buffer.size() 
+        if size > shmSize:
+            printToStderr("SHM is not large enough. Data would not fit!")
+            return
+        _to[0:size] = buffer[0:size]
     shm.unlock()
 
 ##Helper to potentially convert a numpy array to string##
 def cwToStr(tmp):
     
     if isinstance(tmp, np.ndarray):
-        np.set_printoptions(threshold=sys.maxsize)
-        #return np.array2string(tmp)
-        #return list(tmp)
-        return tmp.tobytes()
+        return tmp
     else:
         return str(tmp)
 
@@ -229,9 +251,9 @@ def callCwFuncOnAnObject(line, shm, cwDict):
         printToStderr(errorMessage)
 
     if isinstance(ret, bytes):
-        tmpLen = "{:016x}".format(len(ret))
-        #tmpRet = QByteArray(ret)
-        ret = bytes(tmpLen, 'ascii') + ret
+        #tmpLen = "{:016x}".format(len(ret))
+        #ret = bytes(tmpLen, 'ascii') + ret
+        pass
     else:
         ret = "{:016x}".format(len(ret)) + ret
     
@@ -310,8 +332,41 @@ def callCwFunc(line, shm, cwDict):
             tmp = function()
             ret = cwToStr(tmp)
         elif numParams == 1:
+            '''if functionName == "get_last_trace":
+                shm.lock()
+                numSamples = 5000 #todo
+                if parameters[0] == True: #traces as ints
+                    _to = memoryview(shm.data()).cast('c')
+                    tmpLen = "{:016x}".format(numSamples * 2)
+                    leng = bytes(tmpLen, 'ascii')
+                    _from = QByteArray(leng)
+                    _to[0:16] = _from[0:16]
+                    _to = memoryview(shm.data()).cast('h')
+                    result = np.ndarray(shape=(numSamples,), dtype=np.int16, buffer=_to[16:])
+                    result = function(parameters[0])
+                else: #traces as doubles
+                    _to = memoryview(shm.data()).cast('c')
+                    tmpLen = "{:016x}".format(numSamples * 8)
+                    leng = bytes(tmpLen, 'ascii')
+                    _from = QByteArray(leng)
+                    _to[0:16] = _from[0:16]
+                    _to = memoryview(shm.data()).cast('d')
+                    result = np.ndarray(shape=(numSamples,), dtype=np.double, buffer=_to[16:])
+                    result = function(parameters[0])
+                shm.unlock()
+                stri = ""
+                for i in range(0,5000):
+                    #tmp[i] = i
+                    stri += str(result[i])
+                    stri += "\r\n"
+                printToStderr(stri)
+                printToStdout("DONE", False, cwID)
+                return
+            else:
+                tmp = function(parameters[0])
+                ret = cwToStr(tmp)'''
             tmp = function(parameters[0])
-            ret = cwToStr(tmp)
+            ret = cwToStr(tmp)   
         elif numParams == 2:
             tmp = function(parameters[0], parameters[1])
             ret = cwToStr(tmp)
@@ -347,10 +402,10 @@ def callCwFunc(line, shm, cwDict):
         else:
             pass
 
-    if isinstance(ret, bytes):
-        tmpLen = "{:016x}".format(len(ret))
-        #tmpRet = QByteArray(ret)
-        ret = bytes(tmpLen, 'ascii') + ret
+    if isinstance(ret, np.ndarray):
+        pass
+        #tmpLen = "{:016x}".format(len(ret))
+        #ret = bytes(tmpLen, 'ascii') + ret
     else:
         ret = "{:016x}".format(len(ret)) + ret
     

@@ -101,6 +101,7 @@ public:
     bool getPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString &out);
     bool setPythonParameter(int8_t cwId, QString paramName, QString value, QString &out); //Out is the new value of the parameter, can be discarded
     bool setPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString value, QString &out); //Out is the new value of the subparameter, can be discarded
+    bool downloadSamples(int8_t cwId, size_t * size, void * out, bool asInt, size_t bufferSize);
 
     //bool getTracesFromShm(size_t &numTraces, size_t &traceSize, QList<double> &data);
 
@@ -123,7 +124,7 @@ protected:
     bool setUpAndTestSHM(uint8_t cwId);
 
     bool getDataFromShm(size_t &size, QString &data, uint8_t cwId);
-
+    bool getDataFromShm(size_t * size, void * data, uint8_t cwId, size_t bufferSize);
 
     //In this block, CW is super important
     void packagePythonFunction(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);

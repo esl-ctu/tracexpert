@@ -48,16 +48,16 @@ void TNewae::_createPreInitParams(){
                                              Traces from scope stay doubles.", false);
     m_preInitParams.addSubParam(tmp);
 
-    m_preInitParams.addSubParam(TConfigParam("Path to python executable", QString(""), TConfigParam::TType::TString,
+    m_preInitParams.addSubParam(TConfigParam("Path to python executable (3.11 or newer)", QString(""), TConfigParam::TType::TString,
                                              "Path at which the python executable is located. At least python 3.11 is needed. \
-                                             Leve blank to use python that is already installed and can be found in PATH. QT for python must also be installed",
+                                             Leave blank to use python that is already installed and can be found in PATH. QT for python must also be installed",
                                              false));
 }
 
 bool TNewae::_validatePreInitParamsStructure(TConfigParam & params){
     bool iok;
 
-    TConfigParam * par = params.getSubParamByName("Path to python executable", &iok);
+    TConfigParam * par = params.getSubParamByName("Path to python executable (3.11 or newer)", &iok);
     if(!iok) return false;
 
     QString path = par->getValue();
@@ -593,6 +593,42 @@ bool TNewae::runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionNa
     return true;
 }
 
+bool TNewae::downloadSamples(int8_t cwId, size_t * size, void * out, bool asInt, size_t bufferSize){
+    QString toSend;
+    bool succ;
+    QList<QString> params;
+    if (asInt) {
+        params.append("true");
+    } else {
+        params.append("false");
+    }
+
+    packagePythonFunction(cwId, "get_last_trace", 1, params , toSend);
+    succ = writeToPython(cwId, toSend);
+    if(!succ) {
+        qDebug("Error sending the get_last_trace command.");
+        return false;
+    }
+
+    succ &= waitForPythonDone(cwId);
+    if(!succ || pythonError[cwId]) {
+        return false;
+    }
+
+    succ = getDataFromShm(size, out, cwId, bufferSize);
+    if (!succ) {
+        qCritical("Error reading from shared memory");
+        return false;
+    }
+
+    if (*size == 0) {
+        qCritical("No data from shared memory");
+        return false;
+    }
+
+    return true;
+}
+
 bool TNewae::runPythonFunctionOnAnObjectAndGetStringOutput(int8_t cwId, QString ObjectName, QString functionName, size_t &dataLen, QString &out){
     QString toSend;
     bool succ;
@@ -916,3 +952,35 @@ bool TNewae::getDataFromShm(size_t &size, QString &data, uint8_t cwId){
 
     return succ;
 }
+
+bool TNewae::getDataFromShm(size_t * size, void * data, uint8_t cwId, size_t bufferSize){
+    char* dataLenAddr;
+    bool succ, succ2;
+
+    QSharedMemory * shm = shmMap.value(cwId, NULL);
+    if (shm == NULL)
+        return false;
+
+    succ = shm->lock();
+
+    //Get data pointer and data size
+    char * shmData = (char *) (shm->data());
+    dataLenAddr = shmData + SM_SIZE_ADDR;
+    QString sizeStr = "";
+    for (int i = 0; i < ADDR_SIZE; ++i){
+        sizeStr += dataLenAddr[i];
+    }
+    shmData += SM_DATA_ADDR;
+    *size = sizeStr.toULongLong(&succ2, 16);
+    succ &= succ2;
+
+    if (*size > bufferSize)
+        *size = bufferSize;
+
+    memcpy(data, shmData, *size);
+
+    succ = succ & shm->unlock();
+
+    return succ;
+}
+
