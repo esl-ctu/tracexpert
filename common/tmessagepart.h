@@ -241,7 +241,17 @@ public:
         isFormattedAsHex = isHexOrAsciiSensibleType() && (preferHex || ((QString)m_value).contains(QRegularExpression(QStringLiteral("[^A-Za-z0-9]"))));
 
         if(isFormattedAsHex) {
-            return (QString)m_value.toHex();
+            if(m_isLittleEndian) {
+                return (QString)m_value.toHex();
+            }
+            else {
+                QByteArray reverse;
+                reverse.reserve(m_value.size());
+                for(int i = m_value.size(); i >= 0; i--) {
+                    reverse.append(m_value[i]);
+                }
+                return (QString)reverse.toHex();
+            }
         }
         else if(isHexOrAsciiSensibleType()) {
             return (QString)m_value;
@@ -257,7 +267,7 @@ public:
                     return QString::number(*dataPointer);
                 }
             case TType::TInt: {
-                    auto dataPointer = reinterpret_cast<const quint32 *>(m_value.constData());
+                    auto dataPointer = reinterpret_cast<const qint32 *>(m_value.constData());
                     return QString::number(*dataPointer);
                 }
             case TType::TUInt: {
@@ -297,9 +307,54 @@ public:
             if(ok != nullptr) *ok = false;
         }
 
-        qsizetype length = m_value.toHex().toLongLong(ok, 16);
+        // this needs to be done in order to interpret quint64 length values correctly
+        // however, we're assigning quint64 into a qint64 which could cause problems,
+        // but we can assume length will never be negative
+        // and hopefully also not over quint64 max value ( :) )
+        if(ok != nullptr) *ok = true;
 
-        return length;
+        if(m_value.size() == 0) {
+            return 0;
+        }
+
+        switch(m_type) {
+            case TType::TChar: {
+                    auto dataPointer = reinterpret_cast<const qint8 *>(m_value.constData());
+                    return *dataPointer;
+                }
+            case TType::TUChar:
+            case TType::TByte: {
+                    auto dataPointer = reinterpret_cast<const quint8 *>(m_value.constData());
+                    return *dataPointer;
+                }
+            case TType::TShort: {
+                    auto dataPointer = reinterpret_cast<const qint16 *>(m_value.constData());
+                    return *dataPointer;
+                }
+            case TType::TUShort: {
+                    auto dataPointer = reinterpret_cast<const quint16 *>(m_value.constData());
+                    return *dataPointer;
+                }
+            case TType::TInt: {
+                    auto dataPointer = reinterpret_cast<const qint32 *>(m_value.constData());
+                    return *dataPointer;
+                }
+            case TType::TUInt: {
+                    auto dataPointer = reinterpret_cast<const quint32 *>(m_value.constData());
+                    return *dataPointer;
+                }
+            case TType::TLongLong: {
+                    auto dataPointer = reinterpret_cast<const qint64 *>(m_value.constData());
+                    return *dataPointer;
+                }
+            case TType::TULongLong: {
+                    auto dataPointer = reinterpret_cast<const quint64 *>(m_value.constData());
+                    return *dataPointer;
+                }
+            default:
+                if(ok != nullptr) *ok = false;
+                return -1;
+        }
     }
 
     QByteArray getData() const {
@@ -320,7 +375,7 @@ public:
         else {
             QByteArray reverse;
             reverse.reserve(m_value.size());
-            for(int i = m_value.size(); i >= 0; i--) {
+            for(int i = m_value.size()-1; i >= 0; i--) {
                 reverse.append(m_value[i]);
             }
             return reverse;
@@ -364,7 +419,7 @@ public:
 
     void setValue(const QString & value, bool *ok = nullptr, bool asHex = false, bool asAscii = false){
         static QRegularExpression asciiRegExp("^([\\x00-\\x7F])+$");
-        static QRegularExpression hexRegExp("^([A-Fa-f0-9]{2})+$");
+        static QRegularExpression hexRegExp("^([A-Fa-f0-9]|([A-Fa-f0-9]{2})+)$");
 
         if(!isHexOrAsciiSensibleType() && (asHex || asAscii)) {
             if(ok != nullptr) *ok = false;

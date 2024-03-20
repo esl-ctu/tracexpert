@@ -30,8 +30,9 @@ public:
                 case TMessagePart::TType::TBool:
                     return QStringLiteral("Boolean");
                 case TMessagePart::TType::TByte:
-                case TMessagePart::TType::TUChar:
                     return QStringLiteral("Byte");
+                case TMessagePart::TType::TUChar:
+                    return QStringLiteral("Unsigned character");
                 case TMessagePart::TType::TChar:
                     return QStringLiteral("Character");
                 case TMessagePart::TType::TByteArray:

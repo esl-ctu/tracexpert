@@ -44,6 +44,8 @@ private slots:
 
     void onEditorFinished(int finished);
 
+    void validateMessage();
+
 private:
     void openEditor();
 

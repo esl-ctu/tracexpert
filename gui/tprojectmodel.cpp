@@ -10,7 +10,8 @@ TProjectModel::TProjectModel(QObject * parent)
     m_typeName = "project";
 
     loadPlugins();
-    loadProtocols();
+
+    m_protocolContainer = new TProtocolContainer(this);
 }
 
 TProjectModel::~TProjectModel()
@@ -222,6 +223,9 @@ void TProjectModel::load(QDomElement * element)
 
         if (child.tagName() == "components")
             loadComponents(&child);
+
+        if (child.tagName() == "protocols")
+            loadProtocols(&child);
     }
 }
 
@@ -295,6 +299,48 @@ void TProjectModel::loadComponent(QDomElement * element)
     }
 }
 
+void TProjectModel::loadProtocols(QDomElement * element)
+{
+    if (!element)
+        return;
+
+    if (element->tagName() != "protocols")
+        throw tr("Unexpected node name");
+
+    QDomNodeList children = element->childNodes();
+
+    for (int i = 0; i < children.count(); i++) {
+        QDomElement child = children.at(i).toElement();
+        if (child.isNull())
+            throw tr("Unexpected node type");
+
+        if (child.tagName() == "protocol")
+            loadProtocol(&child);
+        else
+            throw tr("Unexpected node name");
+    }
+}
+
+void TProjectModel::loadProtocol(QDomElement * element)
+{
+    if (!element)
+        return;
+
+    if (element->tagName() != "protocol")
+        throw tr("Unexpected node name");
+
+    TProtocolModel * protocolModel = new TProtocolModel(m_protocolContainer);
+    protocolModel->load(element);
+
+    bool wasAdded = m_protocolContainer->add(protocolModel);
+
+    if(!wasAdded) {
+        qWarning("Failed to load protocol because of duplicit name \"%s\".", qPrintable(protocolModel->name()));
+        delete protocolModel;
+    }
+}
+
+/*
 void TProjectModel::loadProtocols()
 {
     m_protocolContainer = new TProtocolContainer(this);
@@ -322,3 +368,4 @@ void TProjectModel::loadProtocols()
     m_protocolContainer->add(TProtocol("Dummy protocol 2", "Description of dummy protocol.", messages2));
     m_protocolContainer->add(TProtocol("Dummy protocol 3", "Description of dummy protocol.", messages3));
 }
+*/

@@ -12,6 +12,7 @@
 #include <QHeaderView>
 #include <QCheckBox>
 
+#include "qtimer.h"
 #include "tmessageparteditor.h"
 #include "tdialog.h"
 
@@ -43,7 +44,6 @@ TMessagePartEditorDetailsPage::TMessagePartEditorDetailsPage(const TMessagePart 
 
     m_payloadCheckBox = new QCheckBox();
     m_payloadCheckBox->setChecked(messagePart.isPayload());
-
 
     bool variableLengthTypeSelected = (messagePart.getType() == TMessagePart::TType::TString || messagePart.getType() == TMessagePart::TType::TByteArray);
     bool valueEditingAllowed = !m_payloadCheckBox->isChecked();
@@ -101,13 +101,18 @@ TMessagePartEditorDetailsPage::TMessagePartEditorDetailsPage(const TMessagePart 
         m_dynamicLengthComboBox->setCurrentIndex(-1);
     }
     else {
-        m_dynamicLengthComboBox->setCurrentIndex(messagePart.getLength());
+        if(messagePart.getLength() >= messagePartList.size()) {
+            qDebug("Message part referenced by index %d does not exist.", messagePart.getLength());
+        }
+        else {
+            m_dynamicLengthComboBox->setCurrentText(messagePartList[messagePart.getLength()].getName());
+        }
     }
 
-    QComboBox * endiannessComboBox = new QComboBox();
-    endiannessComboBox->addItem(tr("Little endian"), true);
-    endiannessComboBox->addItem(tr("Big endian"), false);
-    endiannessComboBox->setCurrentIndex(messagePart.isLittleEndian() ? 0 : 1);
+    m_endiannessComboBox = new QComboBox();
+    m_endiannessComboBox->addItem(tr("Little endian"), true);
+    m_endiannessComboBox->addItem(tr("Big endian"), false);
+    m_endiannessComboBox->setCurrentIndex(messagePart.isLittleEndian() ? 0 : 1);
 
     m_formLayout = new QFormLayout(this);
     m_formLayout->addRow(tr("&Name:"), nameLineEdit);
@@ -120,7 +125,7 @@ TMessagePartEditorDetailsPage::TMessagePartEditorDetailsPage(const TMessagePart 
     m_formLayout->addRow(tr("&Has static length:"), m_staticLengthCheckBox);
     m_formLayout->addRow(tr("&Length:"), m_lengthLineEdit);
     m_formLayout->addRow(tr("&Length determined by:"), m_dynamicLengthComboBox);
-    m_formLayout->addRow(tr("&Endianness:"), endiannessComboBox);
+    m_formLayout->addRow(tr("&Endianness:"), m_endiannessComboBox);
     setLayout(m_formLayout);
 
     registerField("name", nameLineEdit);
@@ -130,8 +135,8 @@ TMessagePartEditorDetailsPage::TMessagePartEditorDetailsPage(const TMessagePart 
     registerField("value", m_valueLineEdit);
     registerField("hasStaticLength", m_staticLengthCheckBox);
     registerField("length", m_lengthLineEdit);
-    registerField("endianness", endiannessComboBox, "currentData", "currentIndexChanged");
-    registerField("dynamicLength", m_dynamicLengthComboBox);
+    registerField("endianness", m_endiannessComboBox, "currentData", "currentIndexChanged");
+    registerField("dynamicLength", m_dynamicLengthComboBox, "currentData", "currentIndexChanged");
     registerField("asHex", m_hexRadioButton);
     registerField("asAscii", m_asciiRadioButton);
 
@@ -144,15 +149,9 @@ TMessagePartEditorDetailsPage::TMessagePartEditorDetailsPage(const TMessagePart 
     connect(m_staticLengthCheckBox, &QCheckBox::stateChanged, this, &TMessagePartEditorDetailsPage::updateDisplayedFields);
     connect(m_lengthLineEdit, &QLineEdit::textEdited, this, &TMessagePartEditorDetailsPage::updateDisplayedFields);
 
-    m_formLayout->setRowVisible(m_lengthLineEdit, messagePart.hasStaticLength() && variableLengthTypeSelected);
-    m_formLayout->setRowVisible(m_dynamicLengthComboBox, !messagePart.hasStaticLength());
-    m_formLayout->setRowVisible(m_staticLengthCheckBox, variableLengthTypeSelected);
-
     setFixedHeight(sizeHint().height());
 
-    m_formLayout->setRowVisible(m_valueLineEdit, valueEditingAllowed);
-    m_formLayout->setRowVisible(m_radioWidget, valueEditingAllowed && messagePart.isHexOrAsciiSensibleType());
-    m_formLayout->setRowVisible(m_interpretedValueLineEdit, valueEditingAllowed);
+    QTimer::singleShot(0, this, &TMessagePartEditorDetailsPage::updateDisplayedFields);
 }
 
 void TMessagePartEditorDetailsPage::updateDisplayedFields() {
@@ -160,6 +159,19 @@ void TMessagePartEditorDetailsPage::updateDisplayedFields() {
     TMessagePart tmpMessagePart("", "", type);
 
     bool variableLengthTypeSelected = (type == TMessagePart::TType::TString || type == TMessagePart::TType::TByteArray);
+
+    if(variableLengthTypeSelected ||
+        type == TMessagePart::TType::TChar ||
+        type == TMessagePart::TType::TUChar ||
+        type == TMessagePart::TType::TByte)
+    {
+        m_formLayout->setRowVisible(m_endiannessComboBox, false);
+        m_endiannessComboBox->setCurrentIndex(0);
+    }
+    else {
+        m_formLayout->setRowVisible(m_endiannessComboBox, true);
+    }
+
     m_formLayout->setRowVisible(m_staticLengthCheckBox, variableLengthTypeSelected);
 
     bool isPayload = m_payloadCheckBox->isChecked();

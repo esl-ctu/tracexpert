@@ -42,7 +42,8 @@ private:
 
     void unloadComponents();
     
-    void loadProtocols();
+    void loadProtocols(QDomElement * element);
+    void loadProtocol(QDomElement * element);
 
     TComponentContainer * m_componentContainer;
     TProtocolContainer * m_protocolContainer;

@@ -13,6 +13,8 @@ class TProtocolWidget : public QWidget {
 public:
     explicit TProtocolWidget(TProtocolContainer * protocolContainer, QWidget * parent = nullptr);
 
+    void openEditor(const QString & protocolName);
+
 signals:
 
 private slots:
@@ -20,7 +22,7 @@ private slots:
     void onEditButtonClicked();
     void onRowDoubleClicked(const QModelIndex & index);
     void onRemoveButtonClicked();
-    void onEditorFinished(int finished);
+    void onEditorFinished(int finished);  
 
 private:
     void openEditor();

@@ -12,10 +12,12 @@ public:
     ~TProtocolContainer();
 
     TProtocol getByName(const QString &name, bool *ok = nullptr) const;
+    int getIndexByName(const QString &name, bool *ok = nullptr) const;
 
     int count() const;
     const TProtocol & at(int index) const;
 
+    bool add(TProtocolModel * protocolModel);
     bool add(const TProtocol & protocol);
     bool update(int index, const TProtocol & protocol);
     bool remove(int index);

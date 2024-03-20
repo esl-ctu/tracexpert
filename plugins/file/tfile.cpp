@@ -3,7 +3,8 @@
 TFile::TFile(): m_files(), m_preInitParams(), m_postInitParams() { }
 
 TFile::~TFile() {
-    (*this).TFile::deInit();
+    qDeleteAll(m_files.begin(), m_files.end());
+    m_files.clear();
 }
 
 QString TFile::getName() const {
@@ -29,8 +30,6 @@ void TFile::init(bool *ok) {
 }
 
 void TFile::deInit(bool *ok) {
-    qDeleteAll(m_files.begin(), m_files.end());
-    m_files.clear();
     if(ok != nullptr) *ok = true;
 }
 

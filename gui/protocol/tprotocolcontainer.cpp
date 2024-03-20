@@ -2,7 +2,9 @@
 #include "tprotocolmodel.h"
 #include "tprojectmodel.h"
 
-TProtocolContainer::TProtocolContainer(TProjectModel * parent) : QAbstractTableModel(parent), TProjectItem(parent->model(), parent) { }
+TProtocolContainer::TProtocolContainer(TProjectModel * parent) : QAbstractTableModel(parent), TProjectItem(parent->model(), parent) {
+    m_typeName = "protocols";
+}
 
 TProtocolContainer::~TProtocolContainer() {
     qDeleteAll(m_protocolModels);
@@ -20,12 +22,45 @@ TProtocol TProtocolContainer::getByName(const QString &name, bool *ok) const {
     return TProtocol();
 }
 
+int TProtocolContainer::getIndexByName(const QString &name, bool *ok) const {
+    int count = m_protocolModels.size();
+    for(int i = 0; i < count; i++) {
+        if(m_protocolModels[i]->name() == name) {
+            if(ok != nullptr) *ok = true;
+            return i;
+        }
+    }
+
+    if(ok != nullptr) *ok = false;
+    return -1;
+}
+
 const TProtocol & TProtocolContainer::at(int index) const {
     return m_protocolModels[index]->protocol();
 }
 
 int TProtocolContainer::count() const{
     return m_protocolModels.size();
+}
+
+bool TProtocolContainer::add(TProtocolModel * protocolModel) {
+    bool nameFound;
+    getByName(protocolModel->name(), &nameFound);
+
+    if(nameFound) {
+        return false;
+    }
+
+    int index = m_protocolModels.size();
+
+    beginInsertChild(index);
+    beginInsertRows(QModelIndex(), index, index);
+    m_protocolModels.insert(index, protocolModel);
+    endInsertRows();
+    endInsertChild();
+
+    sort();
+    return true;
 }
 
 bool TProtocolContainer::add(const TProtocol & protocol) {

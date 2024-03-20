@@ -22,7 +22,10 @@ public slots:
     void createIODeviceDockWidget(TIODeviceModel * IODevice);
     void createScopeDockWidget(TScopeModel * scope);
 
-    void openProtocolManagerWidget();
+    void createProtocolManagerWidget();
+    void openProtocolEditor(const QString & protocolName);
+
+    // void createScenarioEditorWidget();
 
 private slots:
     void showDeviceWizard();
@@ -59,6 +62,7 @@ private:
     TDockManager * m_dockManager;
 
     TDockWidget * m_projectDockWidget;
+    TDockWidget * m_protocolWidget;
 
     QString m_projectFileName;
     QDir m_projectDirectory;

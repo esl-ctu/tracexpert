@@ -7,12 +7,9 @@
 #include "tmainwindow.h"
 #include "tprojectmodel.h"
 
-TProjectView::TProjectView(QWidget * parent)
+TProjectView::TProjectView(QWidget * parent) : QTreeView(parent), m_mainWindow((TMainWindow *) parent)
 {
     createActions();
-
-    m_openProtocolManagerAction = new QAction(tr("Open Protocol Manager"), this);
-    connect(m_openProtocolManagerAction, &QAction::triggered, (TMainWindow *)parent, &TMainWindow::openProtocolManagerWidget);
 
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &TProjectView::customContextMenuRequested, this, &TProjectView::showContextMenu);
@@ -47,6 +44,11 @@ void TProjectView::createActions()
     connect(m_deinitScopeAction, &QAction::triggered, this, &TProjectView::deinitScope);
     m_showScopeAction = new QAction(tr("Show"), this);
     connect(m_showScopeAction, &QAction::triggered, this, &TProjectView::showScope);
+
+    m_openProtocolManagerAction = new QAction(tr("Open Protocol Manager"), this);
+    connect(m_openProtocolManagerAction, &QAction::triggered, m_mainWindow, &TMainWindow::createProtocolManagerWidget);
+    m_editProtocolAction = new QAction(tr("Edit"), this);
+    connect(m_editProtocolAction, &QAction::triggered, this, &TProjectView::editProtocol);
 }
 
 void TProjectView::showContextMenu(const QPoint &point)
@@ -134,6 +136,7 @@ void TProjectView::runDefaultAction(const QModelIndex & index) {
     m_component = nullptr;
     m_IODevice = nullptr;
     m_scope = nullptr;
+    m_protocol = nullptr;
 
     if ((m_component = dynamic_cast<TComponentModel *>(item))) {
         defaultAction = chooseDefaultAction(m_component);
@@ -143,6 +146,9 @@ void TProjectView::runDefaultAction(const QModelIndex & index) {
     }
     else if ((m_scope = dynamic_cast<TScopeModel *>(item))) {
         defaultAction = chooseDefaultAction(m_scope);
+    }
+    else if ((m_protocol = dynamic_cast<TProtocolModel *>(item))) {
+        defaultAction = m_editProtocolAction;
     }
 
     if (defaultAction) {
@@ -348,4 +354,13 @@ void TProjectView::deinitScope()
 void TProjectView::showScope()
 {
     m_scope->show();
+}
+
+void TProjectView::editProtocol()
+{
+    if (!m_protocol) {
+        return;
+    }
+
+    m_mainWindow->openProtocolEditor(m_protocol->name());
 }

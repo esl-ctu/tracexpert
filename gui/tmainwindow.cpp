@@ -8,6 +8,7 @@
 #include "qfiledialog.h"
 #include "tdevicewizard.h"
 #include "tiodevicewidget.h"
+#include "scenario/tscenarioeditorwidget.h"
 #include "tscopewidget.h"
 #include "tprojectview.h"
 #include "tprojectmodel.h"
@@ -22,10 +23,14 @@ TMainWindow::TMainWindow(QWidget * parent)
     m_projectModel = nullptr;
     m_projectView = nullptr;
 
+    m_protocolWidget = nullptr;
+
     createActions();
     createMenus();
 
     readSettings();
+
+    // createScenarioEditorWidget();
 }
 
 TMainWindow::~TMainWindow()
@@ -135,14 +140,43 @@ void TMainWindow::createScopeDockWidget(TScopeModel * scope)
     m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
 }
 
-void TMainWindow::openProtocolManagerWidget()
+
+void TMainWindow::openProtocolEditor(const QString & protocolName)
 {
+    createProtocolManagerWidget();
+    ((TProtocolWidget *)m_protocolWidget->widget())->openEditor(protocolName);
+}
+
+void TMainWindow::createProtocolManagerWidget()
+{
+    if(m_protocolWidget) {
+        if(!m_protocolWidget->isClosed()) {
+            m_protocolWidget->focusWidget();
+            return;
+        }
+        else {
+            delete m_protocolWidget;
+            m_protocolWidget = nullptr;
+        }
+    }
+
     //create dock widget with Protocol Widget
     TProtocolWidget * widget = new TProtocolWidget(m_projectModel->protocolContainer(), this);
-    TDockWidget * dockWidget = new TDockWidget(tr("Protocol manager"), this);
+    m_protocolWidget = new TDockWidget(tr("Protocol manager"), this);
+    m_protocolWidget->setWidget(widget);
+    m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, m_protocolWidget);
+}
+
+/*
+void TMainWindow::createScenarioEditorWidget()
+{
+    //create dock widget with Scenario Editor Widget
+    TScenarioEditorWidget * widget = new TScenarioEditorWidget(this);
+    TDockWidget * dockWidget = new TDockWidget(tr("Scenario editor"), this);
     dockWidget->setWidget(widget);
     m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
 }
+*/
 
 //void TMainWindow::closeDockWidget(TDockWidget * widget)
 //{
@@ -271,6 +305,7 @@ void TMainWindow::closeProject()
 
     m_viewMenu->removeAction(m_projectDockWidget->toggleViewAction());
     m_projectDockWidget->close();
+    m_protocolWidget->close();
 
     m_saveProjectAction->setEnabled(false);
     m_saveProjectAsAction->setEnabled(false);

@@ -24,8 +24,8 @@ class TMessagePartEditorDetailsPage : public QWizardPage {
 
 public:
     TMessagePartEditorDetailsPage(const TMessagePart & messagePart, const QList<TMessagePart> & messagePartList, QWidget * parent = nullptr);
-    void updateDisplayedFields();
     bool validatePage() override;
+    void updateDisplayedFields();
 
 private:
     QCheckBox * m_payloadCheckBox;
@@ -37,6 +37,7 @@ private:
     QCheckBox * m_staticLengthCheckBox;
     QLineEdit * m_lengthLineEdit;
     QComboBox * m_dynamicLengthComboBox;
+    QComboBox * m_endiannessComboBox;
 
     QFormLayout * m_formLayout;
 
