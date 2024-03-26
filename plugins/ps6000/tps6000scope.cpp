@@ -171,7 +171,7 @@ void TPS6000Scope::deInit(bool *ok){
         if(picoStatus != PICO_OK){
             qWarning("Error occured while closing the Picoscope");
         } else {
-            if(ok != nullptr) *ok = false;
+            if(ok != nullptr) *ok = true;
         }
 
     } else {
@@ -913,9 +913,9 @@ QList<TScope::TChannelStatus> TPS6000Scope::getChannelsStatus() {
     }
 
     bool enabledA = (channelASettings->getValue() == "Enabled") ? true : false;
-    bool enabledB = (channelASettings->getValue() == "Enabled") ? true : false;
-    bool enabledC = (channelASettings->getValue() == "Enabled") ? true : false;
-    bool enabledD = (channelASettings->getValue() == "Enabled") ? true : false;
+    bool enabledB = (channelBSettings->getValue() == "Enabled") ? true : false;
+    bool enabledC = (channelCSettings->getValue() == "Enabled") ? true : false;
+    bool enabledD = (channelDSettings->getValue() == "Enabled") ? true : false;
 
     TConfigParam * rangeASub = channelASettings->getSubParamByName("Range", &iok);
     if(!iok){
@@ -986,10 +986,10 @@ QList<TScope::TChannelStatus> TPS6000Scope::getChannelsStatus() {
     }
 
 
-    TPS6000Scope::TChannelStatus channelA(1, "Channel A", enabledA, rangeStrToReal(rangeAVal), offsetAVal);
-    TPS6000Scope::TChannelStatus channelB(2, "Channel B", enabledB, rangeStrToReal(rangeBVal), offsetBVal);
-    TPS6000Scope::TChannelStatus channelC(3, "Channel C", enabledC, rangeStrToReal(rangeCVal), offsetCVal);
-    TPS6000Scope::TChannelStatus channelD(4, "Channel D", enabledD, rangeStrToReal(rangeDVal), offsetDVal);
+    TPS6000Scope::TChannelStatus channelA(1, "Channel A", enabledA, rangeStrToReal(rangeAVal), offsetAVal, PS6000_MIN_VALUE, PS6000_MAX_VALUE);
+    TPS6000Scope::TChannelStatus channelB(2, "Channel B", enabledB, rangeStrToReal(rangeBVal), offsetBVal, PS6000_MIN_VALUE, PS6000_MAX_VALUE);
+    TPS6000Scope::TChannelStatus channelC(3, "Channel C", enabledC, rangeStrToReal(rangeCVal), offsetCVal, PS6000_MIN_VALUE, PS6000_MAX_VALUE);
+    TPS6000Scope::TChannelStatus channelD(4, "Channel D", enabledD, rangeStrToReal(rangeDVal), offsetDVal, PS6000_MIN_VALUE, PS6000_MAX_VALUE);
 
 
     channelList.append(channelA);
@@ -998,6 +998,101 @@ QList<TScope::TChannelStatus> TPS6000Scope::getChannelsStatus() {
     channelList.append(channelD);
 
     return channelList;
+}
+
+TScope::TTimingStatus TPS6000Scope::getTimingStatus(){
+    return TPS6000Scope::TTimingStatus(m_samplingPeriod, m_preTrigSamples, m_postTrigSamples, m_captures);
+}
+
+TScope::TTriggerStatus TPS6000Scope::getTriggerStatus(){
+    bool iok;
+
+    TPS6000Scope::TTriggerStatus errorStatus(TScope::TTriggerStatus::TTriggerType::TNone, 0, 0);
+
+    TConfigParam * triggerSettings = m_postInitParams.getSubParamByName("Trigger", &iok);
+
+    if(!iok){
+        qCritical("Trigger settings not found in the post-init params");
+        return errorStatus;
+    }
+
+    // Enabled
+
+    bool triggerEnabled = (triggerSettings->getValue() == "Enabled") ? true : false;
+
+    // Source
+
+    TConfigParam * sourcePar = triggerSettings->getSubParamByName("Source", &iok);
+    if(!iok){
+        qCritical("Trigger source not found in the post-init params");
+        return errorStatus;
+    }
+
+    QString sourceVal = sourcePar->getValue();
+    uint32_t triggerSource;
+    if(sourceVal == "Channel 1 (A)"){
+        triggerSource = 1;
+    } else if(sourceVal == "Channel 2 (B)"){
+        triggerSource = 2;
+    } else if(sourceVal == "Channel 3 (C)"){
+        triggerSource = 3;
+    } else if(sourceVal == "Channel 4 (D)"){
+        triggerSource = 4;
+    } else if(sourceVal == "AUX input"){
+        triggerSource = 0;
+    } else {
+        qCritical("Unexpected trigger source parameter");
+        return errorStatus;
+    }
+    if(!iok){
+        qCritical("Failed to obtain the trigger source channel settings");
+        return errorStatus;
+    }
+
+    // Level
+
+    TConfigParam * voltagePar = triggerSettings->getSubParamByName("Voltage threshold", &iok);
+    if(!iok){
+        qCritical("Trigger voltage threshold not found in the post-init params");
+        return errorStatus;
+    }
+
+    qreal triggerVoltage = voltagePar->getValue().toFloat(&iok);
+    if(!iok){
+        qCritical("Failed to convert the trigger voltage threshold to float");
+        return errorStatus;
+    }
+
+    // Direction
+
+    TConfigParam * directionPar = triggerSettings->getSubParamByName("Direction", &iok);
+    if(!iok){
+        qCritical("Trigger direction not found in the post-init params");
+        return errorStatus;
+    }
+
+    QString directionVal = directionPar->getValue();
+    TScope::TTriggerStatus::TTriggerType triggerType = TScope::TTriggerStatus::TTriggerType::TNone;
+
+    if(triggerEnabled == true){
+        if(directionVal == "Rising"){
+            triggerType = TScope::TTriggerStatus::TTriggerType::TRising;
+        } else if(directionVal == "Falling"){
+            triggerType = TScope::TTriggerStatus::TTriggerType::TFalling;
+        } else if(directionVal == "Rising or falling"){
+            triggerType = TScope::TTriggerStatus::TTriggerType::TRisingOrFalling;
+        } else if(directionVal == "Above"){
+            triggerType = TScope::TTriggerStatus::TTriggerType::TAbove;
+        } else if(directionVal == "Below"){
+            triggerType = TScope::TTriggerStatus::TTriggerType::TBelow;
+        } else {
+            qCritical("Unexpected trigger direction parameter value.");
+            return errorStatus;
+        }
+    }
+
+    return TPS6000Scope::TTriggerStatus(triggerType, triggerVoltage, triggerSource);
+
 }
 
 // + TODO getScopeTiming, getScopeTrigger methods in TScope; requires a refactoring of other plugins and GUI
