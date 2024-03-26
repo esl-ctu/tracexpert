@@ -193,6 +193,7 @@ void TSerialPortDevice::deInit(bool *ok) {
 
     m_port.close();
     m_initialized = true;
+    *ok = true;
 
 }
 
