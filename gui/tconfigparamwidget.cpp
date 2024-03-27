@@ -62,7 +62,7 @@ void TConfigParamWidget::refreshParam()
     resizeColumnToContents(2);
 
     header()->setSectionResizeMode(0, QHeaderView::Interactive);
-    header()->setSectionResizeMode(1, QHeaderView::Stretch);
+    header()->setSectionResizeMode(1, QHeaderView::Interactive);
     header()->setSectionResizeMode(2, QHeaderView::Fixed);
     header()->setStretchLastSection(false);
 
