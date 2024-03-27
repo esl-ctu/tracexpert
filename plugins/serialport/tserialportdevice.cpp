@@ -192,8 +192,8 @@ bool TSerialPortDevice::_validatePostInitParamsStructure(TConfigParam & params) 
 void TSerialPortDevice::deInit(bool *ok) {
 
     m_port.close();
-    m_initialized = true;
-    *ok = true;
+    m_initialized = false;
+    if(ok != nullptr) *ok = true;
 
 }
 
