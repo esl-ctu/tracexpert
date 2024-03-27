@@ -45,6 +45,10 @@ bool TPluginUnitModel::init()
         m_wasInit = false;
     }
 
+    if (!m_postInitParam.isEmpty()) {
+        m_unit->setPostInitParams(m_postInitParam);
+    }
+
     return ok;
 }
 
