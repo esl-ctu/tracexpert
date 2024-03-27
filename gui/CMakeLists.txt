@@ -77,6 +77,7 @@ add_library(${PROJECT_NAME} OBJECT
   protocol/tprotocoltableview.h
   tmessageformmanager.h
   tmessageformmanager.cpp
+  tcombobox.h tcombobox.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ads/src)

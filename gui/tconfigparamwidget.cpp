@@ -10,6 +10,7 @@
 #include <limits>
 
 #include "ttimeedit.h"
+#include "tcombobox.h"
 #include "tfilenameedit.h"
 
 TConfigParamWidget::TConfigParamWidget(const TConfigParam & param, QWidget * parent)
@@ -134,7 +135,7 @@ void TConfigParamWidget::drawInput(const TConfigParam & param, QTreeWidgetItem *
     if (type == TConfigParam::TType::TBool || type == TConfigParam::TType::TEnum || type == TConfigParam::TType::TTime || type == TConfigParam::TType::TFileName || type == TConfigParam::TType::TString || type == TConfigParam::TType::TReal || type == TConfigParam::TType::TInt || type == TConfigParam::TType::TLongLong || type == TConfigParam::TType::TShort || type == TConfigParam::TType::TUInt || type == TConfigParam::TType::TULongLong ||type == TConfigParam::TType::TUShort) {
         QWidget * input;
         if (type == TConfigParam::TType::TBool || type == TConfigParam::TType::TEnum) {
-            QComboBox * comboBox = new QComboBox(this);
+            QComboBox * comboBox = new TComboBox(this);
             if (type == TConfigParam::TType::TBool) {
                 comboBox->addItem(tr("True"));
                 comboBox->addItem(tr("False"));

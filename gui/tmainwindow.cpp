@@ -8,7 +8,7 @@
 #include "qfiledialog.h"
 #include "tdevicewizard.h"
 #include "tiodevicewidget.h"
-#include "scenario/tscenarioeditorwidget.h"
+//#include "scenario/tscenarioeditorwidget.h"
 #include "tscopewidget.h"
 #include "tprojectview.h"
 #include "tprojectmodel.h"
