@@ -23,7 +23,7 @@ class TConfigParamWidget : public QTreeWidget
     Q_OBJECT
 
 public:
-    explicit TConfigParamWidget(const TConfigParam & param, QWidget * parent = nullptr);
+    explicit TConfigParamWidget(const TConfigParam & param, QWidget * parent = nullptr, bool readOnly = false);
     ~TConfigParamWidget();
 
 public slots:
@@ -43,6 +43,8 @@ private:
     bool checkInput(TConfigParam & param, QTreeWidgetItem * parent);
 
     TConfigParam m_param;
+
+    bool m_readOnly;
 
     static QIcon stateIcon(TConfigParam::TState state, bool isLightened = false);
     static QString stateColor(TConfigParam::TState state);

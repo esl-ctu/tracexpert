@@ -13,8 +13,8 @@
 #include "tcombobox.h"
 #include "tfilenameedit.h"
 
-TConfigParamWidget::TConfigParamWidget(const TConfigParam & param, QWidget * parent)
-    : QTreeWidget(parent)
+TConfigParamWidget::TConfigParamWidget(const TConfigParam & param, QWidget * parent, bool readOnly)
+    : QTreeWidget(parent), m_readOnly(readOnly)
 {
     setParam(param);
 }
@@ -206,7 +206,7 @@ void TConfigParamWidget::drawInput(const TConfigParam & param, QTreeWidgetItem *
             input = edit;
         }
         input->setToolTip(param.getHint());
-        input->setDisabled(param.isReadonly());
+        input->setDisabled(param.isReadonly() || m_readOnly);
         setItemWidget(parent, 1, input);
     }
 }

@@ -8,8 +8,6 @@
 #include <QPushButton>
 #include <QMessageBox>
 
-#include "tconfigparamwidget.h"
-
 bool TDialog::addDeviceDialog(QWidget * parent, QString &name, QString &info)
 {
     QDialog * addDeviceDialog = new QDialog(parent);
@@ -17,7 +15,6 @@ bool TDialog::addDeviceDialog(QWidget * parent, QString &name, QString &info)
     QLabel * infoLabel = new QLabel(parent->tr("Info"));
 
     QLineEdit * nameEdit = new QLineEdit;
-    //nameEdit->setValidator(new QRegularExpressionValidator(QRegularExpression(".+")));
     QLineEdit * infoEdit = new QLineEdit;
 
     QGridLayout * dialogGridLayout = new QGridLayout;
@@ -150,10 +147,12 @@ void TDialog::criticalMessage(QWidget * parent, const QString &title, const QStr
     QMessageBox::critical(parent, title, text);
 }
 
-TConfigParamDialog::TConfigParamDialog(QString acceptText, QString title, QWidget * parent)
-    : QDialog(parent)
+TConfigParamDialog::TConfigParamDialog(QString acceptText, QString title, TPluginUnitModel * unit, bool preInit, QWidget * parent)
+    : QDialog(parent), m_unit(unit), m_preInit(preInit)
 {
-    m_paramWidget = new TConfigParamWidget(TConfigParam());
+    TConfigParam param = m_preInit ? m_unit->preInitParams() : m_unit->postInitParams();
+
+    m_paramWidget = new TConfigParamWidget(param);
     setWindowTitle(title);
 
     QDialogButtonBox * buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -171,14 +170,14 @@ TConfigParamDialog::TConfigParamDialog(QString acceptText, QString title, QWidge
 
 void TConfigParamDialog::accept()
 {
-    TConfigParam param = setParam();
+    TConfigParam param = m_preInit ? m_unit->setPreInitParams(m_paramWidget->param()) : m_unit->setPostInitParams(m_paramWidget->param());
 
     TConfigParam::TState state = param.getState();
     if (state == TConfigParam::TState::TError) {
         m_paramWidget->setParam(param);
         return;
     }
-    else if (state == TConfigParam::TState::TError) {
+    else if (state == TConfigParam::TState::TWarning) {
         if (!TDialog::paramWarningQuestion(this)) {
             m_paramWidget->setParam(param);
             return;
@@ -190,68 +189,41 @@ void TConfigParamDialog::accept()
 }
 
 TInitComponentDialog::TInitComponentDialog(TComponentModel * component, QWidget * parent)
-    : TConfigParamDialog(tr("Initialize"), tr("Initialize Component"), parent), m_component(component)
+    : TConfigParamDialog(tr("Initialize"), tr("Initialize Component"), component, true, parent)
 {
-    m_paramWidget->setParam(param());
-    adjustSize();
-}
-
-TConfigParam TInitComponentDialog::param()
-{
-    return m_component->preInitParams();
-}
-
-TConfigParam TInitComponentDialog::setParam()
-{
-    return m_component->setPreInitParams(m_paramWidget->param());
 }
 
 TComponentSettingsDialog::TComponentSettingsDialog(TComponentModel * component, QWidget * parent)
-    : TConfigParamDialog(tr("Apply"), tr("Component Settings"), parent), m_component(component)
+    : TConfigParamDialog(tr("Apply"), tr("Component Settings"), component, false, parent)
 {
-    m_paramWidget->setParam(param());
-}
-
-TConfigParam TComponentSettingsDialog::param()
-{
-    return m_component->postInitParams();
-}
-
-TConfigParam TComponentSettingsDialog::setParam()
-{
-    return m_component->setPostInitParams(m_paramWidget->param());
 }
 
 TInitIODeviceDialog::TInitIODeviceDialog(TIODeviceModel * IOdevice, QWidget * parent)
-    : TConfigParamDialog(tr("Initialize"), tr("Initialize IO Device"), parent), m_IODevice(IOdevice)
+    : TConfigParamDialog(tr("Initialize"), tr("Initialize IO Device"), IOdevice, true, parent)
 {
-    m_paramWidget->setParam(param());
-    adjustSize();
-}
-
-TConfigParam TInitIODeviceDialog::param()
-{
-    return m_IODevice->preInitParams();
-}
-
-TConfigParam TInitIODeviceDialog::setParam()
-{
-    return m_IODevice->setPreInitParams(m_paramWidget->param());
 }
 
 TInitScopeDialog::TInitScopeDialog(TScopeModel * scope, QWidget * parent)
-    : TConfigParamDialog(tr("Initialize"), tr("Initialize Oscilloscope"), parent), m_scope(scope)
+    : TConfigParamDialog(tr("Initialize"), tr("Initialize Oscilloscope"), scope, true, parent)
 {
-    m_paramWidget->setParam(param());
-    adjustSize();
 }
 
-TConfigParam TInitScopeDialog::param()
+TPluginUnitInfoDialog::TPluginUnitInfoDialog(TPluginUnitModel * unit, QWidget * parent)
 {
-    return m_scope->preInitParams();
-}
+    setWindowTitle(unit->name());
 
-TConfigParam TInitScopeDialog::setParam()
-{
-    return m_scope->setPreInitParams(m_paramWidget->param());
+    QLabel * label = new QLabel(unit->info(), this);
+
+    TConfigParamWidget * paramWidget = new TConfigParamWidget(unit->preInitParams(), parent, true);
+
+    QDialogButtonBox * buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
+
+    parent->connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
+
+    QVBoxLayout * dialogLayout = new QVBoxLayout;
+    dialogLayout->addWidget(label);
+    dialogLayout->addWidget(paramWidget);
+    dialogLayout->addWidget(buttonBox);
+
+    setLayout(dialogLayout);
 }
