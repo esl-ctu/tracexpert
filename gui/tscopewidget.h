@@ -5,11 +5,16 @@
 #include <QPushButton>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QValueAxis>
+#include <QtCharts/QCategoryAxis>
 
 #include "tscopemodel.h"
 #include "tconfigparamwidget.h"
 
 struct TScopeTraceData {
+    ~TScopeTraceData() {
+        qDeleteAll(buffers);
+    }
+
     size_t firstTraceIndex;
     size_t traces;
     size_t samples;
@@ -49,22 +54,25 @@ private slots:
     void nextTraceButtonClicked();
 
 private:
-    const QList<QColor> channelColors = { Qt::blue, Qt::green, Qt::magenta, Qt::darkYellow };
+    const QList<const char *> channelColorCodes = { "#711415", "#f8cc1b", "#ae311e", "#b5be2f", "#f37324", "#72b043", "#f6a020", "#007f4e" };
 
     TScopeModel * m_scopeModel;
 
-    // QList<QLineSeries> m_lineSeriesList;
     QChart * m_chart;
     QValueAxis * m_axisX;
     QValueAxis * m_axisY;
+    QCategoryAxis * m_iconAxis;
+
+    void updateAxes();
+    void updateIconAxis();    
 
     template <class T>
-    void createLineSeries(TScope::TChannelStatus channel, T * buffer, size_t offset, size_t sampleCount, qreal typeMinValue, qreal typeMaxValue);
+    void createLineSeries(QLineSeries * lineSeries, TScope::TChannelStatus channel, T * buffer, size_t sampleOffset, size_t sampleCount);
 
     void setGUItoReady();
     void setGUItoRunning();
 
-    QList<TScopeTraceData> m_traceDataList;
+    QList<TScopeTraceData *> m_traceDataList;
     void displayTrace(size_t traceIndex);
 
     size_t m_currentTraceNumber;

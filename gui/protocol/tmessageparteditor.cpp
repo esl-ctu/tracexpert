@@ -163,7 +163,8 @@ void TMessagePartEditorDetailsPage::updateDisplayedFields() {
     if(variableLengthTypeSelected ||
         type == TMessagePart::TType::TChar ||
         type == TMessagePart::TType::TUChar ||
-        type == TMessagePart::TType::TByte)
+        type == TMessagePart::TType::TByte ||
+        type == TMessagePart::TType::TBool)
     {
         m_formLayout->setRowVisible(m_endiannessComboBox, false);
         m_endiannessComboBox->setCurrentIndex(0);

@@ -30,7 +30,7 @@ TMainWindow::TMainWindow(QWidget * parent)
 
     readSettings();
 
-    // createScenarioEditorWidget();
+    //createScenarioEditorWidget();
 }
 
 TMainWindow::~TMainWindow()
@@ -155,8 +155,8 @@ void TMainWindow::createProtocolManagerWidget()
             return;
         }
         else {
+            m_viewMenu->removeAction(m_protocolWidget->toggleViewAction());
             delete m_protocolWidget;
-            m_protocolWidget = nullptr;
         }
     }
 
@@ -164,6 +164,7 @@ void TMainWindow::createProtocolManagerWidget()
     TProtocolWidget * widget = new TProtocolWidget(m_projectModel->protocolContainer(), this);
     m_protocolWidget = new TDockWidget(tr("Protocol manager"), this);
     m_protocolWidget->setWidget(widget);
+    m_viewMenu->addAction(m_protocolWidget->toggleViewAction());
     m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, m_protocolWidget);
 }
 
@@ -304,8 +305,12 @@ void TMainWindow::closeProject()
     }
 
     m_viewMenu->removeAction(m_projectDockWidget->toggleViewAction());
-    m_projectDockWidget->close();
-    m_protocolWidget->close();
+    if(m_protocolWidget) {
+        m_viewMenu->removeAction(m_protocolWidget->toggleViewAction());
+        m_protocolWidget->close();
+    }
+
+    m_projectDockWidget->close();    
 
     m_saveProjectAction->setEnabled(false);
     m_saveProjectAsAction->setEnabled(false);

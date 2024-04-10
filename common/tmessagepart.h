@@ -190,6 +190,10 @@ public:
         }
     }
 
+    qsizetype getDataLength() const {
+        return m_value.length();
+    }
+
     bool isPayload() const {
         return m_isPayload;
     }
@@ -228,8 +232,18 @@ public:
         }
     }
 
-    const QByteArray & getValue() const {
-        return m_value;
+    const QByteArray getValue() const {
+        if(m_isLittleEndian) {
+            return m_value;
+        }
+        else {
+            QByteArray reverse;
+            reverse.reserve(m_value.size());
+            for(int i = m_value.size()-1; i >= 0; i--) {
+                reverse.append(m_value[i]);
+            }
+            return reverse;
+        }
     }
 
     QString getHumanReadableValue() const {
@@ -247,7 +261,7 @@ public:
             else {
                 QByteArray reverse;
                 reverse.reserve(m_value.size());
-                for(int i = m_value.size(); i >= 0; i--) {
+                for(int i = m_value.size()-1; i >= 0; i--) {
                     reverse.append(m_value[i]);
                 }
                 return (QString)reverse.toHex();

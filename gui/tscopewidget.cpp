@@ -40,6 +40,10 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
     m_axisY->setTitleText("Voltage");
     m_chart->addAxis(m_axisY, Qt::AlignLeft);
 
+    m_iconAxis = new QCategoryAxis();
+    m_iconAxis->setLabelsPosition(QCategoryAxis::AxisLabelsPositionOnValue);
+    m_chart->addAxis(m_iconAxis, Qt::AlignRight);
+
     m_paramWidget = new TConfigParamWidget(m_scopeModel->postInitParams());
 
     QPushButton * applyButton = new QPushButton(tr("Apply"));
@@ -130,6 +134,7 @@ void TScopeWidget::setGUItoRunning() {
     m_runButton->setEnabled(false);
     m_stopButton->setEnabled(true);
 
+    qDeleteAll(m_traceDataList);
     m_traceDataList.clear();
 
     m_totalTraceCount = 0;
@@ -224,7 +229,9 @@ void TScopeWidget::receiveTraces(size_t traces, size_t samples, TScope::TSampleT
     qDebug() << "Received traces! " << std::time(nullptr) << Qt::endl;
 
     // save data to internal buffers
-    m_traceDataList.append({m_totalTraceCount, traces, samples, type, buffers, overvoltage});
+    m_traceDataList.append(
+        new TScopeTraceData{m_totalTraceCount, traces, samples, type, buffers, overvoltage}
+    );
 
     // update GUI
     m_totalTraceCount += traces;
@@ -244,7 +251,7 @@ void TScopeWidget::displayTrace(size_t traceIndex) {
     bool found = false;
     size_t traceDataListIndex = 0;
     while(traceDataListIndex < (size_t)m_traceDataList.size()) {
-        if(m_traceDataList[traceDataListIndex].firstTraceIndex + m_traceDataList[traceDataListIndex].traces > traceIndex) {
+        if(m_traceDataList[traceDataListIndex]->firstTraceIndex + m_traceDataList[traceDataListIndex]->traces > traceIndex) {
             found = true;
             break;
         }
@@ -257,83 +264,169 @@ void TScopeWidget::displayTrace(size_t traceIndex) {
         return;
     }
 
-    const TScopeTraceData & traceData = m_traceDataList[traceDataListIndex];
-    size_t sampleOffset = traceIndex - m_traceDataList[traceDataListIndex].firstTraceIndex;
+    const TScopeTraceData * traceData = m_traceDataList[traceDataListIndex];
+    size_t sampleOffset = traceIndex - m_traceDataList[traceDataListIndex]->firstTraceIndex;
 
     m_chart->removeAllSeries();
 
-    qreal maxRange = 0;
-    size_t maxSamples = 0;
-    for(TScope::TChannelStatus channel : m_scopeModel->channelsStatus()) {
-        if(channel.getRange() > maxRange)
-            maxRange = channel.getRange();
+    m_axisX->setRange(0, traceData->samples);
+    updateAxes();
 
-        if(traceData.samples > maxSamples)
-            maxSamples = traceData.samples;
+    QList<QLineSeries *> preparedLineSeries;
+    for(TScope::TChannelStatus channel : m_scopeModel->channelsStatus()) {
+        if(!channel.isEnabled())
+            continue;
+
+        preparedLineSeries.append(new QLineSeries());
     }
 
-    m_axisX->setRange(0, maxSamples);
-    m_axisY->setRange(-maxRange*1.2f, maxRange*1.2f);
-
+    // this is used to control the order of appearance of the series,
+    // as they are internally sorted by pointer inside QChart...
+    std::sort(preparedLineSeries.begin(), preparedLineSeries.end());
 
     size_t channelIndex = 0;
     for(TScope::TChannelStatus channel : m_scopeModel->channelsStatus()) {
 
-        if(!channel.isEnabled() || traceData.buffers[channelIndex] == nullptr) {
+        if(!channel.isEnabled() || traceData->buffers[channelIndex] == nullptr) {
             channelIndex++;
             continue;
         }
 
-        switch(traceData.type) {
+        QLineSeries * lineSeries = preparedLineSeries.first();
+        preparedLineSeries.pop_front();
+
+        switch(traceData->type) {
             case TScope::TSampleType::TUInt8:
-                createLineSeries(channel, (uint8_t*) traceData.buffers[channelIndex], sampleOffset, traceData.samples, 0, UINT8_MAX); break;
+                createLineSeries(lineSeries, channel, (uint8_t*) traceData->buffers[channelIndex], sampleOffset, traceData->samples); break;
             case TScope::TSampleType::TInt8:
-                createLineSeries(channel, (int8_t*)  traceData.buffers[channelIndex], sampleOffset, traceData.samples, INT8_MIN, INT8_MAX); break;
+                createLineSeries(lineSeries, channel, (int8_t*)  traceData->buffers[channelIndex], sampleOffset, traceData->samples); break;
             case TScope::TSampleType::TUInt16:
-                createLineSeries(channel, (uint16_t*)traceData.buffers[channelIndex], sampleOffset, traceData.samples, 0, UINT16_MAX); break;
+                createLineSeries(lineSeries, channel, (uint16_t*)traceData->buffers[channelIndex], sampleOffset, traceData->samples); break;
             case TScope::TSampleType::TInt16:
-                createLineSeries(channel, (int16_t*) traceData.buffers[channelIndex], sampleOffset, traceData.samples, INT16_MIN, INT16_MAX); break;
+                createLineSeries(lineSeries, channel, (int16_t*) traceData->buffers[channelIndex], sampleOffset, traceData->samples); break;
             case TScope::TSampleType::TUInt32:
-                createLineSeries(channel, (uint32_t*)traceData.buffers[channelIndex], sampleOffset, traceData.samples, 0, UINT32_MAX); break;
+                createLineSeries(lineSeries, channel, (uint32_t*)traceData->buffers[channelIndex], sampleOffset, traceData->samples); break;
             case TScope::TSampleType::TInt32:
-                createLineSeries(channel, (int32_t*) traceData.buffers[channelIndex], sampleOffset, traceData.samples, INT32_MIN, INT32_MAX); break;
+                createLineSeries(lineSeries, channel, (int32_t*) traceData->buffers[channelIndex], sampleOffset, traceData->samples); break;
             case TScope::TSampleType::TReal32:
-                createLineSeries(channel, (float*)   traceData.buffers[channelIndex], sampleOffset, traceData.samples, 0, 0); break;
+                createLineSeries(lineSeries, channel, (float*)   traceData->buffers[channelIndex], sampleOffset, traceData->samples); break;
             case TScope::TSampleType::TReal64:
-                createLineSeries(channel, (double*)  traceData.buffers[channelIndex], sampleOffset, traceData.samples, 0, 0); break;
+                createLineSeries(lineSeries, channel, (double*)  traceData->buffers[channelIndex], sampleOffset, traceData->samples); break;
         }
 
         channelIndex++;
     }
+
+    // delete possible leftover prepared LineSeries
+    qDeleteAll(preparedLineSeries);
+}
+
+void TScopeWidget::updateAxes() {
+    qreal maxRange = 0;
+    for(TScope::TChannelStatus channel : m_scopeModel->channelsStatus()) {
+        if(!channel.isEnabled())
+            continue;
+
+        qreal range = channel.getRange() + abs(channel.getOffset());
+        if(range > maxRange)
+            maxRange = range;
+    }
+
+    m_axisY->setRange(-maxRange*1.2f, maxRange*1.2f);
+
+    updateIconAxis();
+}
+
+
+void TScopeWidget::updateIconAxis() {
+    const QStringList oldLabels = m_iconAxis->categoriesLabels();
+    for(const QString & label : oldLabels) {
+        m_iconAxis->remove(label);
+    }
+
+    QMap<qreal, QString> newLabels;
+
+    TScope::TTriggerStatus trigger = m_scopeModel->triggerStatus();
+    if(trigger.getTriggerType() != TScope::TTriggerStatus::TTriggerType::TNone) {
+        newLabels[trigger.getTriggerVoltage()] = "<span style=\"color: red; font-size: 18px\">&#129032;</span>";
+    }
+
+    for(TScope::TChannelStatus channel : m_scopeModel->channelsStatus()) {
+        if(!channel.isEnabled())
+            continue;
+
+        if(channel.getOffset() != 0) {
+            if(newLabels.contains(channel.getOffset())) {
+                newLabels[channel.getOffset()] +=
+                    QString("<span style=\"color: %1; font-size: 18px\">&#9178; %2</span>")
+                        .arg(
+                            channelColorCodes[channel.getIndex() % 8],
+                            channel.getAlias()
+                        );
+            }
+            else {
+                newLabels[channel.getOffset()] =
+                    QString("<span style=\"color: %1; font-size: 18px\">&#9178; %2</span>")
+                        .arg(
+                            channelColorCodes[channel.getIndex() % 8],
+                            channel.getAlias()
+                        );
+            }
+        }
+    }
+
+    if(!newLabels.isEmpty()) {
+        m_iconAxis->setMin(m_axisY->min());
+        m_iconAxis->setMax(m_axisY->max());
+
+        // this has to be done in ascending order!
+        for(auto [key, value] : newLabels.asKeyValueRange()) {
+            m_iconAxis->append(value, key);
+        }
+    }
 }
 
 template <class T>
-void TScopeWidget::createLineSeries(TScope::TChannelStatus channel, T * buffer, size_t sampleOffset, size_t sampleCount, qreal typeMinValue, qreal typeMaxValue) {
-
-    QLineSeries * lineSeries = new QLineSeries();
+void TScopeWidget::createLineSeries(QLineSeries * lineSeries, TScope::TChannelStatus channel, T * buffer, size_t sampleOffset, size_t sampleCount) {
     lineSeries->setUseOpenGL(true);
     lineSeries->setName(QString(tr("%1 [channel %2]")).arg(channel.getAlias()).arg(channel.getIndex()));
-    lineSeries->setColor(channelColors[channel.getIndex()]);
+    lineSeries->setColor(QColor(channelColorCodes[channel.getIndex() % 8]));
 
     QVector<QPointF> pointList;
+    qreal slope = (channel.getRange() * 2) / (channel.getMaxValue() - channel.getMinValue());
 
-    if(typeMaxValue == 0) { // TReal32, TReal64
-        for (size_t i = sampleOffset; i < sampleCount; i++) {
-            pointList.append(QPointF(i, buffer[i]));
+    qint32 idealPointCount = m_chart->plotArea().width();
+
+    if(sampleCount < idealPointCount) {
+        // not too many samples, draw every sample as single point
+        for (size_t i = sampleOffset; i < sampleOffset + sampleCount; i++) {
+            pointList.append(QPointF(i, slope * (buffer[i] - channel.getMinValue()) - channel.getRange() + channel.getOffset()));
         }
     }
-    else if(typeMinValue == 0) { // unsigned types
-        for (size_t i = sampleOffset; i < sampleCount; i++) {
-            qreal lambda = buffer[i] / typeMaxValue;
-            qreal value = lambda * (2 * channel.getRange()) - channel.getRange();
-            pointList.append(QPointF(i, value));
-        }
-    }
-    else { // signed types
-        for (size_t i = sampleOffset; i < sampleCount; i++) {
-            qreal lambda = buffer[i] > 0 ? (buffer[i] / typeMaxValue) : -(buffer[i] / typeMinValue);
-            qreal value = lambda * channel.getRange();
-            pointList.append(QPointF(i, value));
+    else {
+        // too many samples, use min/max downsampling
+        size_t groupSampleSize = sampleCount / idealPointCount;
+
+        qreal min, max;
+        size_t sampleIndex = sampleOffset;
+        while(sampleIndex < sampleOffset + sampleCount) {
+            qreal firstValue = slope * (buffer[sampleIndex] - channel.getMinValue()) - channel.getRange() + channel.getOffset();
+            min = firstValue;
+            max = firstValue;
+
+            size_t loopEndIndex = (sampleIndex + groupSampleSize) > sampleCount ? sampleCount : sampleIndex + groupSampleSize;
+            qDebug() << loopEndIndex;
+            for (size_t i = sampleIndex + 1; i < loopEndIndex; i++) {
+                qreal value = slope * (buffer[i] - channel.getMinValue()) - channel.getRange() + channel.getOffset();
+
+                min = value < min ? value : min;
+                max = value > max ? value : max;
+            }
+
+            pointList.append(QPointF(sampleIndex, min));
+            pointList.append(QPointF(sampleIndex, max));
+
+            sampleIndex += groupSampleSize;
         }
     }
 

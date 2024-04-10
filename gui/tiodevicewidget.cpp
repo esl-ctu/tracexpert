@@ -209,22 +209,19 @@ void TIODeviceWidget::sendProtocolChanged(int index)
     m_sendMessageComboBox->clear();    
     m_sendFormLayout->setRowVisible(m_rawMessageEditLayout, false);
 
-
-    auto messageList = m_selectedProtocol.getMessages();
-
-    if(messageList.isEmpty()) {
-        m_sendFormLayout->setRowVisible(m_noMessagesLabel, true);
-        m_sendFormLayout->setRowVisible(m_sendMessageComboBox, false);
-        m_sendButton->setEnabled(false);
-        return;
-    }
-
     for(const TMessage & message : m_selectedProtocol.getMessages()) {
         if(message.isResponse()) {
             continue;
         }
 
         m_sendMessageComboBox->addItem(message.getName());
+    }
+
+    if(m_sendMessageComboBox->count() == 0) {
+        m_sendFormLayout->setRowVisible(m_noMessagesLabel, true);
+        m_sendFormLayout->setRowVisible(m_sendMessageComboBox, false);
+        m_sendButton->setEnabled(false);
+        return;
     }
 
     m_sendFormLayout->setRowVisible(m_noMessagesLabel, false);

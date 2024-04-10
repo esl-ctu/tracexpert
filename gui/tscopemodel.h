@@ -50,6 +50,7 @@ public:
     virtual void release() override;
 
     QList<TScope::TChannelStatus> channelsStatus();
+    TScope::TTriggerStatus triggerStatus();
 
 signals:
     void initialized(TScopeModel * scope);
