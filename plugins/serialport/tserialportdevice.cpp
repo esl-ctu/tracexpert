@@ -449,7 +449,7 @@ size_t TSerialPortDevice::readData(uint8_t * buffer, size_t len) {
     QElapsedTimer stopwatch;
     stopwatch.start();
 
-    if(m_port.waitForReadyRead(m_readTimeout)){
+    if(m_port.bytesAvailable() > 0 || m_port.waitForReadyRead(m_readTimeout)){
 
         readLen = m_port.read((char *) buffer, len);      
 
@@ -462,7 +462,7 @@ size_t TSerialPortDevice::readData(uint8_t * buffer, size_t len) {
             //qWarning("Failed to read as much data as requested from the serial port (timeout).");
         }
         if(m_port.bytesAvailable() > 0){
-            qWarning("Unread data left in the serial port buffer after reading.");
+            //qDebug("Unread data left in the serial port buffer after reading.");  // isnt this flooding the debug channel?
         }
 
         return readLen;
