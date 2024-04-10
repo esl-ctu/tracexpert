@@ -61,9 +61,9 @@ bool TPluginUnitModel::deInit()
     m_unit->deInit(&ok);
 
     if (ok) {
-        m_wasInit = true;
         m_preInitParam = preInitParams();
         m_postInitParam = postInitParams();
+        m_wasInit = true;
     }
 
     return ok;
