@@ -1,6 +1,6 @@
 #include "tpluginunitmodel.h"
 
-TPluginUnitModel::TPluginUnitModel(TCommon * unit, bool manual, QObject * parent)
+TPluginUnitModel::TPluginUnitModel(TCommon * unit, QObject * parent, bool manual)
     : QObject(parent), m_unit(unit), m_isManual(manual)
 {
     m_isInit = false;
