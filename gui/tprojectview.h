@@ -42,6 +42,8 @@ private slots:
     void deinitScope();
     void showScope();
 
+    void showInfo();
+
     void editProtocol();
 
 private:
@@ -50,6 +52,7 @@ private:
     TComponentModel * m_component;
     TIODeviceModel * m_IODevice;
     TScopeModel * m_scope;
+    TPluginUnitModel * m_unit;
     TProtocolModel * m_protocol;
 
     QAction * m_initComponentAction;
@@ -69,6 +72,8 @@ private:
 
     QAction * m_openProtocolManagerAction;
     QAction * m_editProtocolAction;
+
+    QAction * m_showInfoAction;
 
     QAction * chooseDefaultAction(TComponentModel * component);
     QAction * chooseDefaultAction(TIODeviceModel * component);

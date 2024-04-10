@@ -47,63 +47,45 @@ protected:
 class TConfigParamDialog : public QDialog
 {
 public:
-    explicit TConfigParamDialog(QString acceptText, QString title, QWidget * parent = nullptr);
-
-    virtual TConfigParam param() = 0;
-    virtual TConfigParam setParam() = 0;
-
-    virtual void accept();
+    explicit TConfigParamDialog(QString acceptText, QString title, TPluginUnitModel * unit, bool preInit, QWidget * parent = nullptr);
 
 protected:
+    void accept() override;
+
+private:
+    TPluginUnitModel * m_unit;
     TConfigParamWidget * m_paramWidget;
+    bool m_preInit;
 };
 
 class TInitComponentDialog : public TConfigParamDialog
 {
 public:
     explicit TInitComponentDialog(TComponentModel * component, QWidget * parent = nullptr);
-
-    virtual TConfigParam param();
-    virtual TConfigParam setParam();
-
-private:
-    TComponentModel * m_component;
 };
 
 class TComponentSettingsDialog : public TConfigParamDialog
 {
 public:
     explicit TComponentSettingsDialog(TComponentModel * component, QWidget * parent = nullptr);
-
-    virtual TConfigParam param();
-    virtual TConfigParam setParam();
-
-private:
-    TComponentModel * m_component;
 };
 
 class TInitIODeviceDialog : public TConfigParamDialog
 {
 public:
     explicit TInitIODeviceDialog(TIODeviceModel * device, QWidget * parent = nullptr);
-
-    virtual TConfigParam param();
-    virtual TConfigParam setParam();
-
-private:
-    TIODeviceModel * m_IODevice;
 };
 
 class TInitScopeDialog : public TConfigParamDialog
 {
 public:
     explicit TInitScopeDialog(TScopeModel * scope, QWidget * parent = nullptr);
+};
 
-    virtual TConfigParam param();
-    virtual TConfigParam setParam();
-
-private:
-    TScopeModel * m_scope;
+class TPluginUnitInfoDialog : public QDialog
+{
+public:
+    explicit TPluginUnitInfoDialog(TPluginUnitModel * unit, QWidget * parent = nullptr);
 };
 
 #endif // TDIALOG_H
