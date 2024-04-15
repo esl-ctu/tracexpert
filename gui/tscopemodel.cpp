@@ -100,6 +100,12 @@ QList<TScope::TChannelStatus> TScopeModel::channelsStatus()
     return m_scope->getChannelsStatus();
 }
 
+TScope::TTriggerStatus TScopeModel::triggerStatus()
+{
+    return m_scope->getTriggerStatus();
+}
+
+
 void TScopeModel::run()
 {
     run(true);

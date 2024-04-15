@@ -2,11 +2,13 @@
 #include <QMenuBar>
 #include <QFile>
 #include <QMessageBox>
+#include <QSettings>
 
 #include "tmainwindow.h"
 #include "qfiledialog.h"
 #include "tdevicewizard.h"
 #include "tiodevicewidget.h"
+//#include "scenario/tscenarioeditorwidget.h"
 #include "tscopewidget.h"
 #include "tprojectview.h"
 #include "tprojectmodel.h"
@@ -17,19 +19,18 @@ TMainWindow::TMainWindow(QWidget * parent)
 {
     setCentralWidget(nullptr);
 
+    m_dockManager = TDockManagerInstance;
+    m_projectModel = nullptr;
+    m_projectView = nullptr;
+
+    m_protocolWidget = nullptr;
+
     createActions();
     createMenus();
 
-    m_dockManager = TDockManagerInstance;
+    readSettings();
 
-    //create dock widget with Project Widget
-    TDockWidget * projectDockWidget = new TDockWidget(tr("Project"), this);
-    m_projectView = new TProjectView(this);
-    m_projectModel = nullptr;
-    m_projectDirectory = QDir::current();
-    m_projectView->setModel(m_projectModel);
-    projectDockWidget->setWidget(m_projectView);
-    m_dockManager->addDockWidget(TDockArea::LeftDockWidgetArea, projectDockWidget);
+    //createScenarioEditorWidget();
 }
 
 TMainWindow::~TMainWindow()
@@ -45,6 +46,9 @@ void TMainWindow::createMenus()
     fileMenu->addAction(m_saveProjectAsAction);
     fileMenu->addAction(m_closeProjectAction);
     menuBar()->addMenu(fileMenu);
+
+    m_viewMenu = new QMenu(tr("View"), this);
+    menuBar()->addMenu(m_viewMenu);
 
     QMenu * devicesMenu = new QMenu(tr("Devices"), this);
     devicesMenu->addAction(m_openDeviceAction);
@@ -88,7 +92,26 @@ void TMainWindow::createActions()
 
     m_openDeviceAction = new QAction(tr("Open device"), this);
     m_openDeviceAction->setStatusTip(tr("Open a device using device wizard"));
+    m_openDeviceAction->setEnabled(false);
     connect(m_openDeviceAction, SIGNAL(triggered()), this, SLOT(showDeviceWizard()));
+}
+
+void TMainWindow::createProjectDockWidget(TProjectModel * model)
+{
+    m_projectDockWidget = new TDockWidget(tr("Project"), this);
+    m_projectView = new TProjectView(this);
+    m_projectModel = model;
+    m_projectDirectory = QDir::current();
+    m_projectView->setModel(m_projectModel);
+    m_projectView->expandAll();
+    m_projectView->resizeColumnToContents(0);
+    m_projectDockWidget->setWidget(m_projectView);
+    m_dockManager->addDockWidget(TDockArea::LeftDockWidgetArea, m_projectDockWidget);
+    m_viewMenu->insertAction(m_viewMenu->actions().isEmpty() ? nullptr : m_viewMenu->actions().constFirst(), m_projectDockWidget->toggleViewAction());
+
+    m_saveProjectAction->setEnabled(true);
+    m_saveProjectAsAction->setEnabled(true);
+    m_openDeviceAction->setEnabled(true);
 }
 
 void TMainWindow::createIODeviceDockWidget(TIODeviceModel * IODevice)
@@ -97,6 +120,8 @@ void TMainWindow::createIODeviceDockWidget(TIODeviceModel * IODevice)
     QString title = widget->windowTitle();
     TDockWidget * dockWidget = new TDockWidget(title);
     dockWidget->setWidget(widget);
+    m_viewMenu->addAction(dockWidget->toggleViewAction());
+    connect(IODevice, &TIODeviceModel::deinitialized, dockWidget, [=](){ m_viewMenu->removeAction(dockWidget->toggleViewAction()); });
     connect(IODevice, &TIODeviceModel::deinitialized, dockWidget, &TDockWidget::close);
     connect(IODevice, &TIODeviceModel::showRequested, dockWidget, &TDockWidget::show);
     m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
@@ -108,19 +133,51 @@ void TMainWindow::createScopeDockWidget(TScopeModel * scope)
     QString title = widget->windowTitle();
     TDockWidget * dockWidget = new TDockWidget(title);
     dockWidget->setWidget(widget);
+    m_viewMenu->addAction(dockWidget->toggleViewAction());
+    connect(scope, &TScopeModel::deinitialized, dockWidget, [=](){ m_viewMenu->removeAction(dockWidget->toggleViewAction()); });
     connect(scope, &TScopeModel::deinitialized, dockWidget, &TDockWidget::close);
     connect(scope, &TScopeModel::showRequested, dockWidget, &TDockWidget::show);
     m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
 }
 
-void TMainWindow::openProtocolManagerWidget()
+
+void TMainWindow::openProtocolEditor(const QString & protocolName)
 {
+    createProtocolManagerWidget();
+    ((TProtocolWidget *)m_protocolWidget->widget())->openEditor(protocolName);
+}
+
+void TMainWindow::createProtocolManagerWidget()
+{
+    if(m_protocolWidget) {
+        if(!m_protocolWidget->isClosed()) {
+            m_protocolWidget->focusWidget();
+            return;
+        }
+        else {
+            m_viewMenu->removeAction(m_protocolWidget->toggleViewAction());
+            delete m_protocolWidget;
+        }
+    }
+
     //create dock widget with Protocol Widget
     TProtocolWidget * widget = new TProtocolWidget(m_projectModel->protocolContainer(), this);
-    TDockWidget * dockWidget = new TDockWidget(tr("Protocol manager"), this);
+    m_protocolWidget = new TDockWidget(tr("Protocol manager"), this);
+    m_protocolWidget->setWidget(widget);
+    m_viewMenu->addAction(m_protocolWidget->toggleViewAction());
+    m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, m_protocolWidget);
+}
+
+/*
+void TMainWindow::createScenarioEditorWidget()
+{
+    //create dock widget with Scenario Editor Widget
+    TScenarioEditorWidget * widget = new TScenarioEditorWidget(this);
+    TDockWidget * dockWidget = new TDockWidget(tr("Scenario editor"), this);
     dockWidget->setWidget(widget);
     m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
 }
+*/
 
 //void TMainWindow::closeDockWidget(TDockWidget * widget)
 //{
@@ -148,12 +205,11 @@ void TMainWindow::newProject()
         closeProject();
 
     m_projectModel = new TProjectModel(this);
-    m_projectView->setModel(m_projectModel);
+
     connect(m_projectModel, &TProjectModel::IODeviceInitialized, this, &TMainWindow::createIODeviceDockWidget);
     connect(m_projectModel, &TProjectModel::scopeInitialized, this, &TMainWindow::createScopeDockWidget);
 
-    m_saveProjectAction->setEnabled(true);
-    m_saveProjectAsAction->setEnabled(true);
+    createProjectDockWidget(m_projectModel);
 }
 
 void TMainWindow::openProject()
@@ -195,13 +251,16 @@ void TMainWindow::openProject()
     }
     catch (QString message) {
         QMessageBox::critical(this, tr("Project parsing failed"), tr("Unable to parse selected project file: %1").arg(message));
+
+        if (m_projectModel) {
+            delete m_projectModel;
+            m_projectModel = nullptr;
+        }
+
         return;
     }
 
-    m_projectView->setModel(m_projectModel);
-
-    m_saveProjectAction->setEnabled(true);
-    m_saveProjectAsAction->setEnabled(true);
+    createProjectDockWidget(m_projectModel);
 }
 
 void TMainWindow::saveProject(bool saveAs)
@@ -240,15 +299,52 @@ void TMainWindow::saveProjectAs()
 
 void TMainWindow::closeProject()
 {
-    m_projectView->setModel(nullptr);
-
     if (m_projectModel) {
         delete m_projectModel;
         m_projectModel = nullptr;
     }
 
+    m_viewMenu->removeAction(m_projectDockWidget->toggleViewAction());
+    if(m_protocolWidget) {
+        m_viewMenu->removeAction(m_protocolWidget->toggleViewAction());
+        m_protocolWidget->close();
+    }
+
+    m_projectDockWidget->close();    
+
     m_saveProjectAction->setEnabled(false);
     m_saveProjectAsAction->setEnabled(false);
+    m_openDeviceAction->setEnabled(false);
 
     m_projectFileName = QString();
+}
+
+void TMainWindow::closeEvent(QCloseEvent *event)
+{
+    writeSettings();
+    event->accept();
+}
+
+void TMainWindow::writeSettings()
+{
+    //QSettings settings(QSettings::IniFormat, QSettings::UserScope, "Czech Technical University", "traceXpert");
+    QSettings settings(QString("traceXpert.ini"), QSettings::IniFormat);
+
+    settings.beginGroup("MainWindow");
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("windowState", saveState());
+    settings.setValue("projectDirectory", m_projectDirectory.absolutePath());
+    settings.endGroup();
+}
+
+void TMainWindow::readSettings()
+{
+    //QSettings settings(QSettings::IniFormat, QSettings::UserScope, "Czech Technical University", "traceXpert");
+    QSettings settings(QString("traceXpert.ini"), QSettings::IniFormat);
+
+    settings.beginGroup("MainWindow");
+    restoreState(settings.value("windowState").toByteArray());
+    restoreGeometry(settings.value("geometry").toByteArray());
+    m_projectDirectory = QDir(settings.value("projectDirectory").toString());
+    settings.endGroup();
 }

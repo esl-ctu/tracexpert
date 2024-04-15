@@ -69,6 +69,18 @@ void TProtocolWidget::onEditButtonClicked() {
     openEditor();
 }
 
+void TProtocolWidget::openEditor(const QString & protocolName) {
+    bool ok;
+    m_editedItemIndex = m_protocolContainer->getIndexByName(protocolName, &ok);
+
+    if(!ok) {
+        qDebug("Could not find protocol with such name.");
+        return;
+    }
+
+    openEditor();
+}
+
 void TProtocolWidget::openEditor() {
     m_protocolEditor = new TProtocolEditor(m_protocolContainer->at(m_editedItemIndex), m_protocolContainer, this);
     connect(m_protocolEditor, &QWizard::finished, this, &TProtocolWidget::onEditorFinished);

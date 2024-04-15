@@ -12,7 +12,8 @@ class TProtocolModel : public QObject, public TProjectItem {
     Q_OBJECT
 
 public:
-    explicit TProtocolModel(TProtocol protocol, TProtocolContainer * parent);
+    TProtocolModel(TProtocolContainer * parent);
+    TProtocolModel(TProtocol protocol, TProtocolContainer * parent);
 
     const TProtocol & protocol() const;
     void setProtocol(const TProtocol & protocol);
@@ -23,7 +24,14 @@ public:
     QString name() const override;
     Status status() const override;
 
+    bool toBeSaved() const override;
+    QDomElement save(QDomDocument & document) const override;
+    void load(QDomElement * element);
+
 private:
+    QByteArray saveMessages(const QList<TMessage> & messages) const;
+    QList<TMessage> loadMessages(const QByteArray & array) const;
+
     TProtocol m_protocol;
 };
 

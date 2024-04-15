@@ -134,12 +134,7 @@ public:
                 hasWarnings = true;
             }
 
-            if(!m_isResponse && !messagePart.hasStaticLength()) {
-                messagePart.setState(TMessagePart::TState::TError, "TMessage type is set as command, not response, it is not possible to have dynamic length message parts!");
-                hasErrors = true;
-            }
-
-            if(m_isResponse && !messagePart.hasStaticLength()) {
+            if(!messagePart.hasStaticLength()) {
                 if(messagePart.getLength() >= i || messagePart.getLength() < 0) {
                     messagePart.setState(TMessagePart::TState::TError, "Dynamic length message parts must have their lengths specified by preceding parameters!");
                     hasErrors = true;

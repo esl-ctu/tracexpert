@@ -3,7 +3,9 @@
 
 
 #include <QWidget>
-#include "qformlayout.h"
+#include <QFormLayout>
+#include <QFrame>
+#include <QLineEdit>
 #include "tmessage.h"
 
 class TMessageFormManager : public QObject
@@ -23,10 +25,12 @@ public slots:
     void validateInputValues();
 
 private:
-    QWidget * createInputField(const TMessagePart & messagePart);
+    QWidget * createInputField(const TMessagePart & messagePart, bool isLengthDeterminingMessagePart);
 
     TMessage m_message;
-    QList<QWidget*> m_inputs;
+    QMap<int, QWidget*> m_inputs;
+    QList<int> m_lengthDeterminingMessagePartIndexes;
+    QFrame * m_separatorLine = nullptr;
 
     QFormLayout * m_formLayout;
     int m_insertOffset;

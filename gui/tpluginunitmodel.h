@@ -14,7 +14,7 @@ class TPluginUnitModel : public QObject, public virtual TProjectItem
     Q_OBJECT
 
 public:
-    explicit TPluginUnitModel(TCommon * unit, bool manual = false, QObject * parent = nullptr);
+    explicit TPluginUnitModel(TCommon * unit, QObject * parent = nullptr, bool manual = false);
 
     virtual QString name() const override;
     virtual QString info() const;

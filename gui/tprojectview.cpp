@@ -7,12 +7,9 @@
 #include "tmainwindow.h"
 #include "tprojectmodel.h"
 
-TProjectView::TProjectView(QWidget * parent)
+TProjectView::TProjectView(QWidget * parent) : QTreeView(parent), m_mainWindow((TMainWindow *) parent)
 {
     createActions();
-
-    m_openProtocolManagerAction = new QAction(tr("Open Protocol Manager"), this);
-    connect(m_openProtocolManagerAction, &QAction::triggered, (TMainWindow *)parent, &TMainWindow::openProtocolManagerWidget);
 
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &TProjectView::customContextMenuRequested, this, &TProjectView::showContextMenu);
@@ -47,6 +44,14 @@ void TProjectView::createActions()
     connect(m_deinitScopeAction, &QAction::triggered, this, &TProjectView::deinitScope);
     m_showScopeAction = new QAction(tr("Show"), this);
     connect(m_showScopeAction, &QAction::triggered, this, &TProjectView::showScope);
+
+    m_showInfoAction = new QAction(tr("Info"), this);
+    connect(m_showInfoAction, &QAction::triggered, this, &TProjectView::showInfo);
+
+    m_openProtocolManagerAction = new QAction(tr("Open Protocol Manager"), this);
+    connect(m_openProtocolManagerAction, &QAction::triggered, m_mainWindow, &TMainWindow::createProtocolManagerWidget);
+    m_editProtocolAction = new QAction(tr("Edit"), this);
+    connect(m_editProtocolAction, &QAction::triggered, this, &TProjectView::editProtocol);
 }
 
 void TProjectView::showContextMenu(const QPoint &point)
@@ -66,8 +71,11 @@ void TProjectView::showContextMenu(const QPoint &point)
     m_component = nullptr;
     m_IODevice = nullptr;
     m_scope = nullptr;
+    m_unit = nullptr;
 
     if ((m_component = dynamic_cast<TComponentModel *>(item))) {
+        m_unit = m_component;
+
         m_initComponentAction->setDisabled(m_component->status() != TProjectItem::Uninitialized);
         contextMenu->addAction(m_initComponentAction);
         m_deinitComponentAction->setDisabled(m_component->status() != TProjectItem::Initialized);
@@ -84,6 +92,8 @@ void TProjectView::showContextMenu(const QPoint &point)
         defaultAction = chooseDefaultAction(m_component);
     }
     else if ((m_IODevice = dynamic_cast<TIODeviceModel *>(item))) {
+        m_unit = m_IODevice;
+
         m_initIODeviceAction->setDisabled(m_IODevice->status() != TProjectItem::Uninitialized);
         contextMenu->addAction(m_initIODeviceAction);
         m_deinitIODeviceAction->setDisabled(m_IODevice->status() != TProjectItem::Initialized);
@@ -94,6 +104,8 @@ void TProjectView::showContextMenu(const QPoint &point)
         defaultAction = chooseDefaultAction(m_IODevice);
     }
     else if ((m_scope = dynamic_cast<TScopeModel *>(item))) {
+        m_unit = m_scope;
+
         m_initScopeAction->setDisabled(m_scope->status() != TProjectItem::Uninitialized);
         contextMenu->addAction(m_initScopeAction);
         m_deinitScopeAction->setDisabled(m_scope->status() != TProjectItem::Initialized);
@@ -108,6 +120,11 @@ void TProjectView::showContextMenu(const QPoint &point)
         contextMenu->addAction(m_openProtocolManagerAction);
 
         defaultAction = nullptr;
+    }
+
+    if (m_unit) {
+        m_showInfoAction->setDisabled(m_unit->status() != TProjectItem::Initialized);
+        contextMenu->addAction(m_showInfoAction);
     }
 
     if (contextMenu->isEmpty()) {
@@ -134,6 +151,7 @@ void TProjectView::runDefaultAction(const QModelIndex & index) {
     m_component = nullptr;
     m_IODevice = nullptr;
     m_scope = nullptr;
+    m_protocol = nullptr;
 
     if ((m_component = dynamic_cast<TComponentModel *>(item))) {
         defaultAction = chooseDefaultAction(m_component);
@@ -143,6 +161,9 @@ void TProjectView::runDefaultAction(const QModelIndex & index) {
     }
     else if ((m_scope = dynamic_cast<TScopeModel *>(item))) {
         defaultAction = chooseDefaultAction(m_scope);
+    }
+    else if ((m_protocol = dynamic_cast<TProtocolModel *>(item))) {
+        defaultAction = m_editProtocolAction;
     }
 
     if (defaultAction) {
@@ -348,4 +369,23 @@ void TProjectView::deinitScope()
 void TProjectView::showScope()
 {
     m_scope->show();
+}
+
+void TProjectView::showInfo()
+{
+    if (!m_unit || !m_unit->isInit() || m_unit->preInitParams().isEmpty())
+        return;
+
+    TPluginUnitInfoDialog dialog(m_unit, this);
+
+    dialog.exec();
+}
+
+void TProjectView::editProtocol()
+{
+    if (!m_protocol) {
+        return;
+    }
+
+    m_mainWindow->openProtocolEditor(m_protocol->name());
 }

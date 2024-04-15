@@ -1,6 +1,6 @@
 #include "tpluginunitmodel.h"
 
-TPluginUnitModel::TPluginUnitModel(TCommon * unit, bool manual, QObject * parent)
+TPluginUnitModel::TPluginUnitModel(TCommon * unit, QObject * parent, bool manual)
     : QObject(parent), m_unit(unit), m_isManual(manual)
 {
     m_isInit = false;
@@ -45,6 +45,10 @@ bool TPluginUnitModel::init()
         m_wasInit = false;
     }
 
+    if (!m_postInitParam.isEmpty()) {
+        m_unit->setPostInitParams(m_postInitParam);
+    }
+
     return ok;
 }
 
@@ -57,9 +61,9 @@ bool TPluginUnitModel::deInit()
     m_unit->deInit(&ok);
 
     if (ok) {
-        m_wasInit = true;
         m_preInitParam = preInitParams();
         m_postInitParam = postInitParams();
+        m_wasInit = true;
     }
 
     return ok;

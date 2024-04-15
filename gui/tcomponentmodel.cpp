@@ -3,7 +3,7 @@
 #include "tcomponentcontainer.h"
 
 TComponentModel::TComponentModel(TPlugin * plugin, TComponentContainer * parent)
-    : TProjectItem(parent->model(), parent), TPluginUnitModel(plugin, false, parent), m_plugin(plugin)
+    : TProjectItem(parent->model(), parent), TPluginUnitModel(plugin, parent, false), m_plugin(plugin)
 {
     m_typeName = "component";
 

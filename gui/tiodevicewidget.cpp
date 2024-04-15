@@ -46,6 +46,8 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContaine
     m_sendMessageComboBox = new QComboBox;
     connect(m_sendMessageComboBox, &QComboBox::currentIndexChanged, this, &TIODeviceWidget::sendMessageChanged);
 
+    m_noMessagesLabel = new QLabel(tr("Protocol doesn't contain any commands."));
+
     // Raw message row
     m_rawMessageEdit = new QLineEdit();
     connect(m_rawMessageEdit, &QLineEdit::textEdited, this, &TIODeviceWidget::validateRawInputValues);
@@ -64,15 +66,17 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContaine
 
     m_sendProtocolComboBox = new QComboBox;
 
-    QPushButton * sendButton = new QPushButton("Send");
-    connect(sendButton, &QPushButton::clicked, this, &TIODeviceWidget::sendBytes);
+    m_sendButton = new QPushButton("Send");
+    connect(m_sendButton, &QPushButton::clicked, this, &TIODeviceWidget::sendBytes);
 
     m_sendFormLayout = new QFormLayout;
     m_sendFormLayout->addRow(tr("Protocol"), m_sendProtocolComboBox);
     m_sendFormLayout->addRow(tr("Message"), m_sendMessageComboBox);
     m_sendFormLayout->setRowVisible(m_sendMessageComboBox, false);
+    m_sendFormLayout->addRow(tr("Message"), m_noMessagesLabel);
+    m_sendFormLayout->setRowVisible(m_noMessagesLabel, false);
     m_sendFormLayout->addRow(tr("Payload"), m_rawMessageEditLayout);
-    m_sendFormLayout->addWidget(sendButton);
+    m_sendFormLayout->addWidget(m_sendButton);
     
     m_messageFormManager = new TMessageFormManager(m_sendFormLayout, 3);
 
@@ -159,7 +163,7 @@ bool TIODeviceWidget::validateRawInputValues() {
         iok = asciiRegExp.match(m_rawMessageEdit->text()).hasMatch();
     }
     else {
-        static QRegularExpression hexRegExp("^([A-Fa-f0-9]{2})+$");
+        static QRegularExpression hexRegExp("^([A-Fa-f0-9]|([A-Fa-f0-9]{2})+)$");
         iok = hexRegExp.match(m_rawMessageEdit->text()).hasMatch();
     }
 
@@ -189,6 +193,8 @@ void TIODeviceWidget::sendProtocolChanged(int index)
 
         m_sendFormLayout->setRowVisible(m_rawMessageEditLayout, true);
         m_sendFormLayout->setRowVisible(m_sendMessageComboBox, false);
+        m_sendFormLayout->setRowVisible(m_noMessagesLabel, false);
+        m_sendButton->setEnabled(true);
         return;
     }
 
@@ -200,7 +206,9 @@ void TIODeviceWidget::sendProtocolChanged(int index)
         return;
     }
 
-    m_sendMessageComboBox->clear();
+    m_sendMessageComboBox->clear();    
+    m_sendFormLayout->setRowVisible(m_rawMessageEditLayout, false);
+
     for(const TMessage & message : m_selectedProtocol.getMessages()) {
         if(message.isResponse()) {
             continue;
@@ -209,8 +217,16 @@ void TIODeviceWidget::sendProtocolChanged(int index)
         m_sendMessageComboBox->addItem(message.getName());
     }
 
-    m_sendFormLayout->setRowVisible(m_rawMessageEditLayout, false);
+    if(m_sendMessageComboBox->count() == 0) {
+        m_sendFormLayout->setRowVisible(m_noMessagesLabel, true);
+        m_sendFormLayout->setRowVisible(m_sendMessageComboBox, false);
+        m_sendButton->setEnabled(false);
+        return;
+    }
+
+    m_sendFormLayout->setRowVisible(m_noMessagesLabel, false);
     m_sendFormLayout->setRowVisible(m_sendMessageComboBox, true);
+    m_sendButton->setEnabled(true);
 }
 
 void TIODeviceWidget::sendMessageChanged(int index)

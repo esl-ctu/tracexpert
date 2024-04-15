@@ -17,10 +17,15 @@ public:
     ~TMainWindow();
 
 public slots:
+    void createProjectDockWidget(TProjectModel * model);
+
     void createIODeviceDockWidget(TIODeviceModel * IODevice);
     void createScopeDockWidget(TScopeModel * scope);
 
-    void openProtocolManagerWidget();
+    void createProtocolManagerWidget();
+    void openProtocolEditor(const QString & protocolName);
+
+    //void createScenarioEditorWidget();
 
 private slots:
     void showDeviceWizard();
@@ -35,6 +40,11 @@ private:
     void createMenus();
     void createActions();
 
+    void readSettings();
+    void writeSettings();
+
+    void closeEvent(QCloseEvent * event) override;
+
     QAction * m_newProjectAction;
     QAction * m_openProjectAction;
     QAction * m_saveProjectAction;
@@ -42,12 +52,17 @@ private:
     QAction * m_closeProjectAction;
 
     QAction * m_openDeviceAction;
+
+    QMenu * m_viewMenu;
     
     TProjectModel * m_projectModel;
 
     TProjectView * m_projectView;
 
     TDockManager * m_dockManager;
+
+    TDockWidget * m_projectDockWidget;
+    TDockWidget * m_protocolWidget;
 
     QString m_projectFileName;
     QDir m_projectDirectory;

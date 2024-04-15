@@ -6,6 +6,8 @@
 #include <QPlainTextEdit>
 #include <QBoxLayout>
 #include <QComboBox>
+#include <QLabel>
+#include <QPushButton>
 
 #include "protocol/tprotocolcontainer.h"
 #include "tiodevicemodel.h"
@@ -61,6 +63,8 @@ private:
 
     QComboBox * m_sendProtocolComboBox;
     QComboBox * m_sendMessageComboBox;
+    QLabel * m_noMessagesLabel;    
+    QPushButton * m_sendButton;
     QFormLayout * m_sendFormLayout;
 
     QLineEdit * m_rawMessageEdit;

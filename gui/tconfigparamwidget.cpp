@@ -10,10 +10,11 @@
 #include <limits>
 
 #include "ttimeedit.h"
+#include "tcombobox.h"
 #include "tfilenameedit.h"
 
-TConfigParamWidget::TConfigParamWidget(const TConfigParam & param, QWidget * parent)
-    : QTreeWidget(parent)
+TConfigParamWidget::TConfigParamWidget(const TConfigParam & param, QWidget * parent, bool readOnly)
+    : QTreeWidget(parent), m_readOnly(readOnly)
 {
     setParam(param);
 }
@@ -61,7 +62,7 @@ void TConfigParamWidget::refreshParam()
     resizeColumnToContents(2);
 
     header()->setSectionResizeMode(0, QHeaderView::Interactive);
-    header()->setSectionResizeMode(1, QHeaderView::Stretch);
+    header()->setSectionResizeMode(1, QHeaderView::Interactive);
     header()->setSectionResizeMode(2, QHeaderView::Fixed);
     header()->setStretchLastSection(false);
 
@@ -134,7 +135,7 @@ void TConfigParamWidget::drawInput(const TConfigParam & param, QTreeWidgetItem *
     if (type == TConfigParam::TType::TBool || type == TConfigParam::TType::TEnum || type == TConfigParam::TType::TTime || type == TConfigParam::TType::TFileName || type == TConfigParam::TType::TString || type == TConfigParam::TType::TReal || type == TConfigParam::TType::TInt || type == TConfigParam::TType::TLongLong || type == TConfigParam::TType::TShort || type == TConfigParam::TType::TUInt || type == TConfigParam::TType::TULongLong ||type == TConfigParam::TType::TUShort) {
         QWidget * input;
         if (type == TConfigParam::TType::TBool || type == TConfigParam::TType::TEnum) {
-            QComboBox * comboBox = new QComboBox(this);
+            QComboBox * comboBox = new TComboBox(this);
             if (type == TConfigParam::TType::TBool) {
                 comboBox->addItem(tr("True"));
                 comboBox->addItem(tr("False"));
@@ -205,7 +206,7 @@ void TConfigParamWidget::drawInput(const TConfigParam & param, QTreeWidgetItem *
             input = edit;
         }
         input->setToolTip(param.getHint());
-        input->setDisabled(param.isReadonly());
+        input->setDisabled(param.isReadonly() || m_readOnly);
         setItemWidget(parent, 1, input);
     }
 }

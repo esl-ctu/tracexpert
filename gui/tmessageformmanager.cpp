@@ -2,9 +2,10 @@
 #include <QFormLayout>
 #include <QLineEdit>
 #include <QLabel>
-#include <qcombobox>
-#include <TDialog.h>
+#include <QComboBox>
 #include <QObjectCleanupHandler>
+
+#include "tdialog.h"
 
 
 TMessageFormManager::TMessageFormManager(QFormLayout * formLayout, int insertOffset) {
@@ -15,11 +16,14 @@ TMessageFormManager::TMessageFormManager(QFormLayout * formLayout, int insertOff
 TMessageFormManager::~TMessageFormManager() { }
 
 void TMessageFormManager::clearRows() {
-
-    for(QWidget * widget : m_inputs) {
-        m_formLayout->removeRow(widget);
+    if(m_separatorLine) {
+        m_formLayout->removeRow(m_separatorLine);
+        m_separatorLine = nullptr;
     }
 
+    for(auto [index, widget] : m_inputs.asKeyValueRange()) {
+        m_formLayout->removeRow(widget);
+    }
     m_inputs.clear();
 }
 
@@ -31,16 +35,25 @@ void TMessageFormManager::setMessage(const TMessage & message, bool * ok) {
     clearRows();
 
     m_message = message;
-    m_inputs.clear();
+    QList<TMessagePart> messageParts = m_message.getMessageParts();
+
+    m_lengthDeterminingMessagePartIndexes.clear();
+    for(int i = 0; i < messageParts.size(); i++) {
+        if(messageParts[i].hasStaticLength()) {
+            continue;
+        }
+
+        m_lengthDeterminingMessagePartIndexes.append(messageParts[i].getLength());
+    }
 
     int insertedInputs = 0;
-    QList<TMessagePart> messageParts = m_message.getMessageParts();
     for(int i = 0; i < messageParts.size(); i++) {
-        if(!messageParts[i].isPayload())
+        if(!messageParts[i].isPayload()) {
             continue;
+        }
 
-        QWidget * input = createInputField(messageParts[i]);
-        m_inputs.append(input);
+        QWidget * input = createInputField(messageParts[i], m_lengthDeterminingMessagePartIndexes.contains(i));
+        m_inputs.insert(i, input);
 
         QLabel * label = new QLabel(messageParts[i].getName());
         label->setToolTip(messageParts[i].getDescription());
@@ -54,27 +67,24 @@ void TMessageFormManager::setMessage(const TMessage & message, bool * ok) {
     }
 
     // add a separator line
-    QFrame * separatorLine = new QFrame();
-    separatorLine->setFrameShape(QFrame::HLine);
-    separatorLine->setFrameShadow(QFrame::Sunken);
-
-    m_inputs.append(separatorLine);
-
-    m_formLayout->insertRow(m_insertOffset, separatorLine);
+    m_separatorLine = new QFrame();
+    m_separatorLine->setFrameShape(QFrame::HLine);
+    m_separatorLine->setFrameShadow(QFrame::Sunken);
+    m_formLayout->insertRow(m_insertOffset, m_separatorLine);
 
     validateInputValues();
 }
 
-QWidget * TMessageFormManager::createInputField(const TMessagePart & messagePart) {
+QWidget * TMessageFormManager::createInputField(const TMessagePart & messagePart, bool isLengthDeterminingMessagePart) {
     QWidget * input;
 
-    if (messagePart.getType() == TMessagePart::TType::TBool) {
+    if(messagePart.getType() == TMessagePart::TType::TBool) {
         QComboBox * comboBox = new QComboBox;
         comboBox->addItem(tr("True"));
         comboBox->addItem(tr("False"));
         input = comboBox;
     }
-    else if (messagePart.isHexOrAsciiSensibleType()) {
+    else if(messagePart.isHexOrAsciiSensibleType() && !isLengthDeterminingMessagePart) {
         QLineEdit * lineEdit = new QLineEdit;
         connect(lineEdit, &QLineEdit::textEdited, this, &TMessageFormManager::validateInputValues);
 
@@ -102,44 +112,68 @@ QWidget * TMessageFormManager::createInputField(const TMessagePart & messagePart
         input = lineEdit;
     }
 
+    if(isLengthDeterminingMessagePart) {
+        input->setEnabled(false);
+    }
+
     return input;
 }
 
 bool TMessageFormManager::assignInputValues() {
-
-    qsizetype payloadInputIndex = 0;
     QList<TMessagePart> & messageParts = m_message.getMessageParts();
-    for(TMessagePart & messagePart : messageParts) {
-        if(!messagePart.isPayload())
+    for(int i = 0; i < messageParts.size(); i++) {
+        if(!messageParts[i].isPayload()) {
             continue;
+        }
 
         bool iok;
-        QWidget * input = m_inputs[payloadInputIndex];
+        QWidget * input = m_inputs[i];
 
-        if (messagePart.getType() == TMessagePart::TType::TBool) {
-            QComboBox * comboBox = (QComboBox *)input;
-            messagePart.setBool(comboBox->currentIndex() ? false : true, &iok);
+        if(!input->isEnabled()) {
+            continue;
         }
-        else if (messagePart.isHexOrAsciiSensibleType()) {
+
+        if(messageParts[i].getType() == TMessagePart::TType::TBool) {
+            QComboBox * comboBox = (QComboBox *)input;
+            messageParts[i].setBool(comboBox->currentIndex() ? false : true, &iok);
+        }
+        else if(messageParts[i].isHexOrAsciiSensibleType()) {
             QWidget * widget = (QWidget *)input;
 
             QLineEdit * lineEdit = (QLineEdit *)widget->layout()->itemAt(0)->widget();
             QComboBox * comboBox = (QComboBox *)widget->layout()->itemAt(1)->widget();
 
             bool isAscii = comboBox->currentIndex();
-            messagePart.setValue(lineEdit->text(), &iok, !isAscii, isAscii);
+            messageParts[i].setValue(lineEdit->text(), &iok, !isAscii, isAscii);
         }
         else {
             QLineEdit * lineEdit = (QLineEdit *)input;
-            messagePart.setValue(lineEdit->text(), &iok);
+            messageParts[i].setValue(lineEdit->text(), &iok);
+        }
+
+        if(iok && !messageParts[i].hasStaticLength()) {
+            int lengthMessagePartIndex = messageParts[i].getLength();
+
+            // value of length-determining field can change (is not static)
+            if(m_inputs.contains(lengthMessagePartIndex)) {
+                QLineEdit * lineEdit = (QLineEdit *)m_inputs[lengthMessagePartIndex];
+                lineEdit->setText(QString::number(messageParts[i].getDataLength()));
+                messageParts[lengthMessagePartIndex].setValue(lineEdit->text(), &iok);
+            }
+            // value of length-determining field is static
+            else if(!messageParts[lengthMessagePartIndex].isPayload()) {
+                iok = (messageParts[i].getDataLength() == messageParts[lengthMessagePartIndex].getValueAsLength());
+            }
+            // the value of length-determining field can change (isPayload) but an input field was not generated
+            else {
+                qWarning("Referenced length-determining message part could not be found.");
+            }
         }
 
         if(!iok) {
-            TDialog::parameterValueInvalid(m_formLayout->parentWidget(), messagePart.getName());
+            TDialog::parameterValueInvalid(m_formLayout->parentWidget(), messageParts[i].getName());
             return false;
         }
-
-        payloadInputIndex++;
     }
 
     return true;
@@ -147,37 +181,60 @@ bool TMessageFormManager::assignInputValues() {
 
 void TMessageFormManager::validateInputValues() {
 
-    qsizetype payloadInputIndex = 0;
     QList<TMessagePart> & messageParts = m_message.getMessageParts();
-    for(TMessagePart & messagePart : messageParts) {
-        if(!messagePart.isPayload())
-            continue;
-
-        bool iok;
-        QWidget * input = m_inputs[payloadInputIndex];
-
-        if (messagePart.getType() == TMessagePart::TType::TBool) {
-            payloadInputIndex++;
+    for(int i = 0; i < messageParts.size(); i++) {
+        if(!messageParts[i].isPayload()) {
             continue;
         }
-        else if (messagePart.isHexOrAsciiSensibleType()) {
+
+        bool iok;
+        QWidget * input = m_inputs[i];
+
+        if(!input->isEnabled()) {
+            continue;
+        }
+
+        QLineEdit * lineEdit;
+        if(messageParts[i].getType() == TMessagePart::TType::TBool) {
+            continue;
+        }
+        else if(messageParts[i].isHexOrAsciiSensibleType()) {
             QWidget * widget = (QWidget *)input;
 
-            QLineEdit * lineEdit = (QLineEdit *)widget->layout()->itemAt(0)->widget();
+            lineEdit = (QLineEdit *)widget->layout()->itemAt(0)->widget();
             QComboBox * comboBox = (QComboBox *)widget->layout()->itemAt(1)->widget();
 
             bool isAscii = comboBox->currentIndex();
-            messagePart.setValue(lineEdit->text(), &iok, !isAscii, isAscii);
+            messageParts[i].setValue(lineEdit->text(), &iok, !isAscii, isAscii);
 
             lineEdit->setStyleSheet(iok ? "background-color: white;" : "background-color: rgba(255, 0, 0, 0.3);");
         }
         else {
-            QLineEdit * lineEdit = (QLineEdit *)input;
-            messagePart.setValue(lineEdit->text(), &iok);
+            lineEdit = (QLineEdit *)input;
+            messageParts[i].setValue(lineEdit->text(), &iok);
 
             lineEdit->setStyleSheet(iok ? "background-color: white;" : "background-color: rgba(255, 0, 0, 0.3);");
         }
 
-        payloadInputIndex++;
+        // if this message part's length is determined by another message part
+        if(!messageParts[i].hasStaticLength()) {
+            int lengthMessagePartIndex = messageParts[i].getLength();
+
+            // value of length-determining field can change (is not static)
+            if(m_inputs.contains(lengthMessagePartIndex)) {
+                QLineEdit * lineEdit = (QLineEdit *)m_inputs[lengthMessagePartIndex];
+                lineEdit->setText(QString::number(messageParts[i].getDataLength()));
+                messageParts[lengthMessagePartIndex].setValue(lineEdit->text(), &iok);
+            }
+            // value of length-determining field is static
+            else if(!messageParts[lengthMessagePartIndex].isPayload()) {
+                iok = (messageParts[i].getDataLength() == messageParts[lengthMessagePartIndex].getValueAsLength());
+                lineEdit->setStyleSheet(iok ? "background-color: white;" : "background-color: rgba(255, 0, 0, 0.3);");
+            }
+            // the value of length-determining field can change (isPayload) but an input field was not generated
+            else {
+                qWarning("Referenced length-determining message part could not be found.");
+            }
+        }
     }
 }

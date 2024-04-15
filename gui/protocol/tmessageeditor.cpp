@@ -174,6 +174,8 @@ void TMessageEditor::onMoveUpButtonClicked() {
         QModelIndex newIndex = m_messagePartView->model()->index(index-1, 0);
         m_messagePartView->selectionModel()->select(newIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
     }
+
+    validateMessage();
 }
 
 void TMessageEditor::onMoveDownButtonClicked() {
@@ -186,6 +188,8 @@ void TMessageEditor::onMoveDownButtonClicked() {
         QModelIndex newIndex = m_messagePartView->model()->index(index+1, 0);
         m_messagePartView->selectionModel()->select(newIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
     }
+
+    validateMessage();
 }
 
 void TMessageEditor::onEditorFinished(int finished) {
@@ -200,6 +204,10 @@ void TMessageEditor::onEditorFinished(int finished) {
         m_messagePartContainer->addItem(m_editor->messagePart());
     }
 
+    validateMessage();
+}
+
+void TMessageEditor::validateMessage() {
     const TMessage & validatedMessage = message();
 
     int messageCount = m_messagePartContainer->rowCount();

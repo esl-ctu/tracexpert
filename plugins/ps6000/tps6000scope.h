@@ -32,6 +32,9 @@ public:
     virtual size_t downloadSamples(int channel, uint8_t * buffer, size_t bufferSize, TSampleType * samplesType, size_t * samplesPerTraceDownloaded, size_t * tracesDownloaded, bool * overvoltage) override;
 
     virtual QList<TScope::TChannelStatus> getChannelsStatus() override;
+    virtual TScope::TTimingStatus getTimingStatus() override;
+    virtual TScope::TTriggerStatus getTriggerStatus() override;
+
 
 protected:
 
