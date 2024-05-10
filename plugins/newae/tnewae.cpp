@@ -406,6 +406,7 @@ void TNewae::deInit(bool *ok) {
     qDeleteAll(m_ports.begin(), m_ports.end());
     qDeleteAll(m_scopes.begin(), m_scopes.end());
     m_ports.clear();
+    m_scopes.clear();
     if(ok != nullptr) *ok = true;
 
     bool succ;

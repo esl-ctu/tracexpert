@@ -49,14 +49,14 @@ TnewaeScope::TnewaeScope(const QString & name_in, const QString & info_in, uint8
     stopNow = false;
     running = false;
 
-    chanStatus.append(TChannelStatus(0, "Chipwhisperer ch0", true, 0.5, 0)); //TODO: je to dobře?
+    //chanStatus.append(TChannelStatus(0, "Chipwhisperer ch0", true, 0.5, 0)); //TODO: je to dobře?
 }
 
 TConfigParam TnewaeScope::_createPostInitParams(){
     auto top = TConfigParam("NewAE scope sn: " + sn + " config", "", TConfigParam::TType::TDummy, "");
 
-    auto NewAE = TConfigParam("NewAE", "", TConfigParam::TType::TDummy, "Parameters for the NewAE device");
-    auto TraceXpert = TConfigParam("TraceXpert", "", TConfigParam::TType::TDummy, "Parameters for this SW");
+    auto NewAE = TConfigParam("NewAE", "", TConfigParam::TType::TDummy, "Parameters for the NewAE device. After clicking Apply, the values are written to the NewAE device. First, **all** (non-read-only) parameters are written, then all selected functions are run. The run order of fuctions and the write order of parameters are **not** guaranteed! This also means that functions take precedence over parameters.");
+    auto TraceXpert = TConfigParam("TraceXpert", "", TConfigParam::TType::TDummy, "Parameters for this SW, written immediately after clicking apply.");
 
     auto gain = TConfigParam("Gain", "", TConfigParam::TType::TDummy, "GainSettings");
     auto adc = TConfigParam("ADC", "", TConfigParam::TType::TDummy, "TriggerSettings");
@@ -67,13 +67,13 @@ TConfigParam TnewaeScope::_createPostInitParams(){
 
     //Top
     auto fun1 = TConfigParam("default_setup", QString(""), TConfigParam::TType::TDummy, "");
-    fun1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    fun1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, "See NewAE help string on details for function runs."));
     top.addSubParam(fun1);
     auto fun2 = TConfigParam("cglitch_setup", QString(""), TConfigParam::TType::TDummy, "");
-    fun2.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    fun2.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, "See NewAE help string on details for function runs."));
     top.addSubParam(fun2);
     auto fun3 = TConfigParam("vglitch_setup", QString(""), TConfigParam::TType::TDummy, "");
-    fun3.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    fun3.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, "See NewAE help string on details for function runs."));
     top.addSubParam(fun3);
     auto fun4 = TConfigParam("reset_sam3u", QString(""), TConfigParam::TType::TDummy, "");
     fun4.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, "You cannot call this function here. It would disconnect the scope!", true));
@@ -105,7 +105,7 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     adc.addSubParam(TConfigParam("samples", QString(""), TConfigParam::TType::TInt, ""));
     adc.addSubParam(TConfigParam("state", QString(""), TConfigParam::TType::TBool, "", true));
     adc.addSubParam(TConfigParam("timeout", QString(""), TConfigParam::TType::TReal, ""));
-    adc.addSubParam(TConfigParam("trig_count", QString(""), TConfigParam::TType::TInt, "", true));
+    adc.addSubParam(TConfigParam("trig_count", QString("If you need to see the value of this parameter, you need to click Apply in this window when the measurement is done."), TConfigParam::TType::TInt, "", true));
     //auto funA1 = TConfigParam("clear_clip_errors", QString(""), TConfigParam::TType::TDummy, ""); (husky only)
     //funA1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
     //adc.addSubParam(funA1);
@@ -122,10 +122,10 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     cEnum1.addEnumValue("extclk_x4");
     cEnum1.addEnumValue("extclk_dir");
     clock.addSubParam(cEnum1);
-    clock.addSubParam(TConfigParam("clkgen_div", QString(""), TConfigParam::TType::TInt, ""));
+    clock.addSubParam(TConfigParam("clkgen_div", QString(""), TConfigParam::TType::TInt, "", true));
     clock.addSubParam(TConfigParam("clkgen_freq", QString(""), TConfigParam::TType::TReal, ""));
     clock.addSubParam(TConfigParam("clkgen_locked", QString(""), TConfigParam::TType::TBool, "", true));
-    clock.addSubParam(TConfigParam("clkgen_mul", QString(""), TConfigParam::TType::TInt, ""));
+    clock.addSubParam(TConfigParam("clkgen_mul", QString(""), TConfigParam::TType::TInt, "", true));
     auto cEnum2 = TConfigParam("clkgen_src", QString(""), TConfigParam::TType::TEnum, "");
     cEnum2.addEnumValue("extclk");
     cEnum2.addEnumValue("system");
@@ -139,13 +139,13 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     cEnum3.addEnumValue("extclk");
     clock.addSubParam(cEnum3);
     auto funC1 = TConfigParam("reset_adc", QString(""), TConfigParam::TType::TDummy, "");
-    funC1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    funC1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, "See NewAE help string on details for function runs."));
     clock.addSubParam(funC1);
     auto funC2 = TConfigParam("reset_clkgen", QString(""), TConfigParam::TType::TDummy, "");
-    funC2.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    funC2.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, "See NewAE help string on details for function runs."));
     clock.addSubParam(funC2);
     auto funC3 = TConfigParam("reset_dcms", QString(""), TConfigParam::TType::TDummy, "");
-    funC3.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    funC3.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, "See NewAE help string on details for function runs."));
     clock.addSubParam(funC3);
 
     //IO
@@ -209,10 +209,10 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     //io.addSubParam(TConfigParam("tio_states", QString(""), TConfigParam::TType::TBool, ""));
     //io.addSubParam(TConfigParam("vcc_glitcht", QString(""), TConfigParam::TType::TInt, "", true));
     auto funI1 = TConfigParam("vglitch_disable", QString(""), TConfigParam::TType::TDummy, "");
-    funI1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    funI1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, "See NewAE help string on details for function runs."));
     io.addSubParam(funI1);
     auto funI2 = TConfigParam("vglitch_reset", QString(""), TConfigParam::TType::TDummy, "");
-    funI2.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    funI2.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, "See NewAE help string on details for function runs."));
     io.addSubParam(funI2);
 
     //Trigger
@@ -253,7 +253,7 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     //DO NOT change the hint string! It is used to recognize a write only parameter in the code later on!
     glitch.addSubParam(TConfigParam("width_fine", QString("0"), TConfigParam::TType::TInt, "Write-only, reads return zero"));
     auto funG1 = TConfigParam("manual_trigger", QString(""), TConfigParam::TType::TDummy, "");
-    funG1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+    funG1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, "See NewAE help string on details for function runs."));
     glitch.addSubParam(funG1);
     //read_status()??
 
@@ -295,11 +295,28 @@ QList<TScope::TChannelStatus> TnewaeScope::getChannelsStatus(){
     bool ok = plugin->getPythonSubparameter(cwId, "ADC", "offset", out);
     offset = out.toDouble();
 
-    TChannelStatus channelA(index, alias, enabled, range, offset);
-
     QList<TnewaeScope::TChannelStatus> channelList;
-    channelList.append(channelA);
+
+    bool tracesAsInt = m_postInitParams.getSubParamByName("TraceXpert")->getSubParamByName("Get traces as int")->getValue() == "true";
+    if(tracesAsInt){
+        TChannelStatus channelA(index, alias, enabled, range, offset, 0, 1023);
+        channelList.append(channelA);
+    } else{
+        TChannelStatus channelA(index, alias, enabled, range, offset, -0.5, 0.5);
+        channelList.append(channelA);
+    }
+
     return channelList;
+}
+
+TScope::TTimingStatus TnewaeScope::getTimingStatus() {
+    //TODO
+    return TScope::TTimingStatus(0,0,0,0);
+}
+
+TScope::TTriggerStatus TnewaeScope::getTriggerStatus() {
+    //TODO
+    return TScope::TTriggerStatus(TScope::TTriggerStatus::TTriggerType::TNone, 0, 0);
 }
 
 void TnewaeScope::notConnectedError() {
@@ -373,81 +390,76 @@ bool TnewaeScope::_validatePostInitParamsStructure(TConfigParam & params){
     TConfigParam * newAEparams = params.getSubParamByName("NewAE");
 
     if(!validateParamD(newAEparams->getSubParamByName("Gain")->getSubParamByName("db")->getValue(), -6.5, 56)){
-        newAEparams->getSubParamByName("Gain")->getSubParamByName("db")->setState(TConfigParam::TState::TError);
+        newAEparams->getSubParamByName("Gain")->getSubParamByName("db")->setState(TConfigParam::TState::TWarning);
         ok = false;
     }
 
     if(!validateParamLL(newAEparams->getSubParamByName("Gain")->getSubParamByName("gain")->getValue(), 0, 78)){
-        newAEparams->getSubParamByName("Gain")->getSubParamByName("gain")->setState(TConfigParam::TState::TError);
+        newAEparams->getSubParamByName("Gain")->getSubParamByName("gain")->setState(TConfigParam::TState::TWarning);
         ok = false;
     }
 
     if(!validateParamLL(newAEparams->getSubParamByName("ADC")->getSubParamByName("presamples")->getValue(), 0, cwBufferSize)){
-        newAEparams->getSubParamByName("ADC")->getSubParamByName("presamples")->setState(TConfigParam::TState::TError);
+        newAEparams->getSubParamByName("ADC")->getSubParamByName("presamples")->setState(TConfigParam::TState::TWarning);
         ok = false;
     }
 
     if(!validateParamLL(newAEparams->getSubParamByName("ADC")->getSubParamByName("samples")->getValue(), 0, cwBufferSize)){
-        newAEparams->getSubParamByName("ADC")->getSubParamByName("samples")->setState(TConfigParam::TState::TError);
+        newAEparams->getSubParamByName("ADC")->getSubParamByName("samples")->setState(TConfigParam::TState::TWarning);
         ok = false;
     }
 
     if(!validateParamD(newAEparams->getSubParamByName("ADC")->getSubParamByName("timeout")->getValue(), 0, INT32_MAX)){
-        newAEparams->getSubParamByName("ADC")->getSubParamByName("timeout")->setState(TConfigParam::TState::TError);
+        newAEparams->getSubParamByName("ADC")->getSubParamByName("timeout")->setState(TConfigParam::TState::TWarning);
+        ok = false;
+    }
+
+    if(!validateParamD(newAEparams->getSubParamByName("ADC")->getSubParamByName("decimate")->getValue(), 0.0001, 1024)){
+        newAEparams->getSubParamByName("ADC")->getSubParamByName("timeout")->setState(TConfigParam::TState::TWarning);
         ok = false;
     }
 
     if(!validateParamLL(newAEparams->getSubParamByName("Clock")->getSubParamByName("adc_phase")->getValue(), -255, 255)){
-        newAEparams->getSubParamByName("Clock")->getSubParamByName("adc_phase")->setState(TConfigParam::TState::TError);
-        ok = false;
-    }
-
-    if(!validateParamLL(newAEparams->getSubParamByName("Clock")->getSubParamByName("clkgen_div")->getValue(), 1, 256)){
-        newAEparams->getSubParamByName("Clock")->getSubParamByName("clkgen_div")->setState(TConfigParam::TState::TError);
+        newAEparams->getSubParamByName("Clock")->getSubParamByName("adc_phase")->setState(TConfigParam::TState::TWarning);
         ok = false;
     }
 
     if(!validateParamD(newAEparams->getSubParamByName("Clock")->getSubParamByName("clkgen_freq")->getValue(), 3200000, INT32_MAX)){
-        newAEparams->getSubParamByName("Clock")->getSubParamByName("clkgen_freq")->setState(TConfigParam::TState::TError);
-        ok = false;
-    }
-
-    if(!validateParamLL(newAEparams->getSubParamByName("Clock")->getSubParamByName("clkgen_mul")->getValue(), 2, 256)){
-        newAEparams->getSubParamByName("Clock")->getSubParamByName("clkgen_mul")->setState(TConfigParam::TState::TError);
+        newAEparams->getSubParamByName("Clock")->getSubParamByName("clkgen_freq")->setState(TConfigParam::TState::TWarning);
         ok = false;
     }
 
     if(!validateParamLL(newAEparams->getSubParamByName("Glitch")->getSubParamByName("ext_offset")->getValue(), 0, INT32_MAX)){
-        newAEparams->getSubParamByName("Glitch")->getSubParamByName("ext_offset")->setState(TConfigParam::TState::TError);
+        newAEparams->getSubParamByName("Glitch")->getSubParamByName("ext_offset")->setState(TConfigParam::TState::TWarning);
         ok = false;
     }
 
     if(!validateParamD(newAEparams->getSubParamByName("Glitch")->getSubParamByName("offset")->getValue(), -50, 50)){
-        newAEparams->getSubParamByName("Glitch")->getSubParamByName("offset")->setState(TConfigParam::TState::TError);
+        newAEparams->getSubParamByName("Glitch")->getSubParamByName("offset")->setState(TConfigParam::TState::TWarning);
         ok = false;
     }
 
     if (newAEparams->getSubParamByName("Glitch")->getSubParamByName("offset_fine")->getValue() != ""){
         if(!validateParamLL(newAEparams->getSubParamByName("Glitch")->getSubParamByName("offset_fine")->getValue(), -255, 255)){
-            newAEparams->getSubParamByName("Glitch")->getSubParamByName("offset_fine")->setState(TConfigParam::TState::TError);
+            newAEparams->getSubParamByName("Glitch")->getSubParamByName("offset_fine")->setState(TConfigParam::TState::TWarning);
             ok = false;
         }
     }
 
     if (newAEparams->getSubParamByName("Glitch")->getSubParamByName("width_fine")->getValue() != ""){
         if(!validateParamLL(newAEparams->getSubParamByName("Glitch")->getSubParamByName("width_fine")->getValue(), -255, 255)){
-            newAEparams->getSubParamByName("Glitch")->getSubParamByName("width_fine")->setState(TConfigParam::TState::TError);
+            newAEparams->getSubParamByName("Glitch")->getSubParamByName("width_fine")->setState(TConfigParam::TState::TWarning);
             ok = false;
         }
     }
 
     if(!validateParamLL(newAEparams->getSubParamByName("Glitch")->getSubParamByName("repeat")->getValue(), 1, 8192)){
-        newAEparams->getSubParamByName("Glitch")->getSubParamByName("repeat")->setState(TConfigParam::TState::TError);
+        newAEparams->getSubParamByName("Glitch")->getSubParamByName("repeat")->setState(TConfigParam::TState::TWarning);
         ok = false;
     }
 
     if(!validateParamD(newAEparams->getSubParamByName("Glitch")->getSubParamByName("width")->getValue(), -49.8, 49.8)){
-        newAEparams->getSubParamByName("Glitch")->getSubParamByName("width")->setState(TConfigParam::TState::TError);
+        newAEparams->getSubParamByName("Glitch")->getSubParamByName("width")->setState(TConfigParam::TState::TWarning);
         ok = false;
     }
 
@@ -457,7 +469,8 @@ bool TnewaeScope::_validatePostInitParamsStructure(TConfigParam & params){
 }
 
 TnewaeScope::~TnewaeScope() {
-    TnewaeScope::deInit();
+    if(isInitialized())
+        TnewaeScope::deInit();
 }
 
 QString TnewaeScope::getName() const{
@@ -566,8 +579,8 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
     }
     QList<TConfigParam> prms = topPrm->getSubParams();
 
-    //state == 0 -> call any FUNCTIONs that shoulf be called
-    //state == 1 -> set any PARAMs that should be set
+    //state == 1 -> call any FUNCTIONs that shoulf be called
+    //state == 0 -> set any PARAMs that should be set
     //This ensures that functions are called first
     for(int state = 0; state <= 1; state++) {
 
@@ -575,7 +588,7 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
             QString prmName = prms[i].getName();
             QList<TConfigParam> subPrms = prms[i].getSubParams();
 
-            if (state == 1) { //PARAMs
+            if (state == 0) { //PARAMs
                 if (subPrms.length() == 0){
                     QString out;
                     if (write && !(prms[i].isReadonly())) {
@@ -614,7 +627,7 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
 
                     QString subPrmName = subPrms[j].getName();
                     if (subSubPrms.length() == 0){
-                        if (state == 1) { //PARAMs
+                        if (state == 0) { //PARAMs
                             QString out;
                             if (write && !(subPrms[j].isReadonly())) {
                                 bool ok, ok2, ok3, ok4;
@@ -637,8 +650,10 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                                     ok = plugin->getPythonSubparameter(cwId, prmName, subPrmName, out);
                                     topPrm->getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue(out.toLower(), &ok4);
                                     if (!(ok & ok2 & ok3 & ok4)) {
-                                        topPrm->setState(TConfigParam::TState::TWarning, "Cannot read some params.");
-                                        qDebug("%s", ("Error reading subparam " + prmName + "->" + subPrmName).toLocal8Bit().constData());
+                                        if (!(prmName == "adc" && subPrmName == "trig_count")) {
+                                            topPrm->setState(TConfigParam::TState::TWarning, "Cannot read some params.");
+                                            qDebug("%s", ("Error reading subparam " + prmName + "->" + subPrmName).toLocal8Bit().constData());
+                                        }
                                     }
                                 } else { //Do nothing - keep old value
                                     //topPrm->getSubParamByName(prmName, &ok2)->getSubParamByName(subPrmName, &ok3)->setValue("0", &ok4);
@@ -647,7 +662,7 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                             }
                         }
                     } else { //Call function
-                        if (state == 0) { //FUNCTIONs
+                        if (state == 1) { //FUNCTIONs
                             if (subSubPrms[0].getValue() == "true" && write){
                                 size_t len;
                                 QString out;
@@ -663,7 +678,7 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                     }
                 }
             } else { //Call function
-                if (state == 0) { //FUNCTIONs
+                if (state == 1) { //FUNCTIONs
                     if (subPrms[0].getValue() == "true" && write){
                         QList<QString> tmp;
                         size_t len;
@@ -694,10 +709,14 @@ TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){
     bool ok = _validatePostInitParamsStructure(params);
     if (ok) {
         m_postInitParams = updatePostInitParams(params, true);
+        QEventLoop loop; // Wait 0.5s for new params (see newae docu)
+        QTimer::singleShot(500, &loop, &QEventLoop::quit);
+        loop.exec();
         m_postInitParams = updatePostInitParams(params);
     }
     else {
         m_postInitParams = params;
+        qWarning("Post init params vadiation not successful, nothing was stored");
     }
     return m_postInitParams;
 }

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "tnewae_global.h"
+#include <QTimer>
 
 //#include "tnewae.h"
 
@@ -38,6 +39,8 @@ public:
 
     /// Get channel info
     virtual QList<TChannelStatus> getChannelsStatus() override;
+    virtual TTimingStatus getTimingStatus() override;
+    virtual TTriggerStatus getTriggerStatus() override;
 
     uint8_t getId();
     QString getSn();

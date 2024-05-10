@@ -9,12 +9,14 @@ TnewaeDevice::TnewaeDevice(const QString & name_in, const QString & sn_in, TNewa
     scopeParent = NULL;
     cwId = NO_CW_ID;
 
-    //create empty pre init params TODO
-    //create post init params TODO
+    m_preInitParams = TConfigParam("NewAE target " + name_in + " pre-init config", "", TConfigParam::TType::TDummy, "");
+    m_postInitParams = TConfigParam("NewAE target " + name_in + " post-init config", "", TConfigParam::TType::TDummy, "");
 }
 
 
 TnewaeDevice::~TnewaeDevice(){
+    //if(m_initialized)
+    //  deInit();
     //TODO
 }
 
@@ -99,6 +101,20 @@ void TnewaeDevice::init(bool *ok/* = nullptr*/){
     m_initialized = true;
 
 
+}
+
+TConfigParam TnewaeDevice::_createPostInitParams(){
+    TConfigParam prms = TConfigParam("NewAE target " + m_name + " post-init config", "", TConfigParam::TType::TDummy, "");
+    //TODO
+
+    return prms;
+
+}
+
+bool _validatePostInitParamsStructure(TConfigParam & params){
+    //TODO
+
+    return true;
 }
 
 void TnewaeDevice::deInit(bool *ok/* = nullptr*/){

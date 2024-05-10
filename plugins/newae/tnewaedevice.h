@@ -38,9 +38,9 @@ public:
     QString getDeviceSn();
 
 protected:
-    /*void _openPort(bool *ok = nullptr);
-    void _createPostInitParams();
-    bool _validatePostInitParamsStructure(TConfigParam & params);*/
+    //void _openPort(bool *ok = nullptr);
+    TConfigParam _createPostInitParams();
+    bool _validatePostInitParamsStructure(TConfigParam & params);
 
     bool m_createdManually;
     //
