@@ -310,13 +310,22 @@ QList<TScope::TChannelStatus> TnewaeScope::getChannelsStatus(){
 }
 
 TScope::TTimingStatus TnewaeScope::getTimingStatus() {
-    //TODO
-    return TScope::TTimingStatus(0,0,0,0);
+    TConfigParam prms = getPostInitParams();
+    qreal samplePeriod = 1 / prms.getSubParamByName("Clock")->getSubParamByName("adc_phase")->getValue().toDouble();
+    uint32_t preTriggerSamples = prms.getSubParamByName("ADC")->getSubParamByName("presamples")->getValue().toUInt();
+    uint32_t postTriggerSamples = prms.getSubParamByName("ADC")->getSubParamByName("samples")->getValue().toUInt() - preTriggerSamples;
+    uint32_t capturesPerRun = 1;
+
+    return TScope::TTimingStatus(samplePeriod, preTriggerSamples, postTriggerSamples, capturesPerRun);
 }
 
 TScope::TTriggerStatus TnewaeScope::getTriggerStatus() {
-    //TODO
-    return TScope::TTriggerStatus(TScope::TTriggerStatus::TTriggerType::TNone, 0, 0);
+    if (running){
+        return TScope::TTriggerStatus(TScope::TTriggerStatus::TTriggerType::TRisingOrFalling, 0.5, 0);
+    } else {
+        return TScope::TTriggerStatus(TScope::TTriggerStatus::TTriggerType::TNone, 0.5, 0);
+    }
+
 }
 
 void TnewaeScope::notConnectedError() {
