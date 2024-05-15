@@ -15,6 +15,8 @@ TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     for (int i = 0; i <= NO_CW_ID; ++i){
         pythonReady[i] = false;
         pythonError[i] = false;
+        pythonTargetReady[i] = false;
+        pythonTargetError[i] = false;
     }
 
     //deviceWaitingForRead = false;
@@ -48,6 +50,11 @@ void TNewae::_createPreInitParams(){
                                              Traces from scope stay doubles.", false);
     m_preInitParams.addSubParam(tmp);
 
+    TConfigParam tmp2 = TConfigParam("Shared memory size for target", "4", TConfigParam::TType::TInt, "Size of the memory shared between the python NewAE libraries and TraceXpert when communicating with a target. \
+                                             In kilobytes.", false);
+
+    m_preInitParams.addSubParam(tmp2);
+
     m_preInitParams.addSubParam(TConfigParam("Path to python executable (3.11 or newer)", QString(""), TConfigParam::TType::TString,
                                              "Path at which the python executable is located. At least python 3.11 is needed. \
                                              Leave blank to use python that is already installed and can be found in PATH. QT for python must also be installed",
@@ -70,12 +77,14 @@ bool TNewae::_validatePreInitParamsStructure(TConfigParam & params){
         return false;
     }
 
-    auto tmp = m_preInitParams.getSubParamByName("Shared memory size", &iok);
+    auto shmprm = m_preInitParams.getSubParamByName("Shared memory size", &iok);
+    auto shmTargetPrm = m_preInitParams.getSubParamByName("Shared memory size for target", &iok);
     if(!iok) return false;
 
-    shmSize = 1024 * tmp->getValue().toInt();
+    shmSize = 1024 * shmprm->getValue().toInt();
+    targetShmSize = 1024 * shmTargetPrm->getValue().toInt();
 
-    if (shmSize == 0) {
+    if (shmSize == 0 || targetShmSize == 0) {
         params.setState(TConfigParam::TState::TError, "Wrong structure of the pre-init params for NewAE plugin/component.");
         return false;
     }
@@ -150,8 +159,11 @@ bool TNewae::setUpSHM(uint8_t cwId){
     sprintf(cwIdShmKey, "%03d", cwId);
 
     QSharedMemory * cwSHM = new QSharedMemory();
+    QSharedMemory * targetSHM = new QSharedMemory();
     QString wholeShmKey = shmKey + QString(cwIdShmKey);
+    QString wholeTargetShmKey = wholeShmKey + QString("t");
     cwSHM->setKey(wholeShmKey);
+    targetSHM->setKey(wholeTargetShmKey);
 
     bool succ = cwSHM->create(shmSize); //this also attaches the segment on success
     if (!succ && cwSHM->error() == QSharedMemory::AlreadyExists){
@@ -161,20 +173,42 @@ bool TNewae::setUpSHM(uint8_t cwId){
         return false;
     }
 
+    succ = targetSHM->create(targetShmSize);
+    if (!succ && targetSHM->error() == QSharedMemory::AlreadyExists){
+        targetSHM->attach();
+    } else if (!succ) {
+        qCritical("Failed to set up shared memory in C++.");
+        return false;
+    }
+
     shmMap.insert(cwId, cwSHM);
+    targetShmMap.insert(cwId, targetSHM);
 
     //Finish setting up the SHM in Python
     QString toSend;
     QList<QString> params;
     packageDataForPython(cwId, "SMSET:" + QString::number(shmSize), 0, params, toSend);
-    succ = writeToPython(cwId ,toSend);
+    succ = writeToPython(cwId, toSend);
     if (!succ){
         return false;
     }
     waitForPythonDone(cwId);
 
     if (pythonError[cwId]) {
-        qCritical("Failed to set up shared memory in Python.");
+        qCritical("Failed to set up scope shared memory in Python.");
+        return false;
+    }
+
+    params.clear();
+    packageDataForPython(cwId, "T-SMSET:" + QString::number(targetShmSize), 0, params, toSend);
+    succ = writeToPython(cwId, toSend);
+    if (!succ){
+        return false;
+    }
+    waitForPythonTargetDone(cwId);
+
+    if (pythonTargetError[cwId]) {
+        qCritical("Failed to set up target shared memory in Python.");
         return false;
     }
 
@@ -230,29 +264,65 @@ bool TNewae::testSHM(uint8_t cwId) {
     QString tmpstr = QString::number(tmpval);
     QString toSend;
     QList<QString> params;
+
+    //Scope
     packageDataForPython(cwId, "SMTEST:" + tmpstr, 0, params, toSend);
-    bool succ = writeToPython(cwId ,toSend);
+    bool succ = writeToPython(cwId, toSend);
 
     if (!succ){
-        qCritical("Failed to send data to Python when setting up the shared memory.");
+        qCritical("Failed to send data to Python when setting up the shared memory (scope).");
         return false;
     }
 
     succ = waitForPythonDone(cwId);
     succ &= !pythonError[cwId];
     if (!succ){
-        qCritical("Python did not respond to SHM read request.");
+        qCritical("Python did not respond to SHM read request (scope).");
         return false;
     }
 
+    //Target
+    tmpval = QRandomGenerator::global()->generate();
+    QString tmpstrTarget = QString::number(tmpval);
+    packageDataForPython(cwId, "T-SMTEST:" + tmpstr, 0, params, toSend);
+    succ = writeToPython(cwId, toSend);
+
+    if (!succ){
+        qCritical("Failed to send data to Python when setting up the shared memory (target).");
+        return false;
+    }
+
+    succ = waitForPythonTargetDone(cwId);
+    succ &= !pythonTargetError[cwId];
+    if (!succ){
+        qCritical("Python did not respond to SHM read request (target).");
+        return false;
+    }
+
+
+    //Scope
     size_t dataLen;
     QString data = "";
     succ = getDataFromShm(dataLen, data, cwId);
-    if (!succ) qCritical("Error reading from shared memory");
-    if (!dataLen) qCritical("No data from shared memory");
+    if (!succ) qCritical("Error reading from shared memory (scope)");
+    if (!dataLen) qCritical("No data from shared memory (scope)");
     succ &= data.contains(tmpstr);
     if (!succ){
-        qCritical("%s", (("Failed to test the shared memory that was already set up. Do you have Qt for Python installed? "
+        qCritical("%s", (("Failed to test the shared memory that was already set up (scope). Do you have Qt for Python installed? "
+                          "If you do, please reboot your computer. SM data: " + data)).toLocal8Bit().constData());
+
+        return false;
+    }
+
+    //Target
+    dataLen = 0;
+    data = "";
+    succ = getDataFromShm(dataLen, data, cwId, true);
+    if (!succ) qCritical("Error reading from shared memory (target)");
+    if (!dataLen) qCritical("No data from shared memory (target)");
+    succ &= data.contains(tmpstrTarget);
+    if (!succ){
+        qCritical("%s", (("Failed to test the shared memory that was already set up (target). Do you have Qt for Python installed? "
                           "If you do, please reboot your computer. SM data: " + data)).toLocal8Bit().constData());
 
         return false;
@@ -426,6 +496,13 @@ void TNewae::deInit(bool *ok) {
 
     //Detach shm
     for (auto it = shmMap.begin(); it != shmMap.end(); ++it) {
+        succ = (*it)->detach();
+        if (!succ){
+            if(ok != nullptr) *ok = false;
+        }
+        delete (QSharedMemory *) *it;
+    }
+    for (auto it = targetShmMap.begin(); it != targetShmMap.end(); ++it) {
         succ = (*it)->detach();
         if (!succ){
             if(ok != nullptr) *ok = false;
@@ -799,7 +876,8 @@ void TNewae::checkForPythonState(){
             uint8_t idUint = id.toUShort();
 
             if (type == "IO"){
-                //TODO
+                pythonTargetReady[idUint] = true;
+                pythonTargetError[idUint] = false;
             }
 
             if (type == "SC") {
@@ -823,7 +901,8 @@ void TNewae::checkForPythonState(){
             uint8_t idUint = id.toUShort();
 
             if (type == "IO"){
-                //TODO
+                pythonTargetReady[idUint] = true;
+                pythonTargetError[idUint] = true;
             }
 
             if (type == "SC") {
@@ -844,7 +923,8 @@ void TNewae::checkForPythonState(){
             id.truncate(3);
             uint8_t idUint = id.toUShort();
             if (type == "IO"){
-                //TODO
+                pythonTargetReady[idUint] = true;
+                pythonTargetError[idUint] = true;
             }
 
             if (type == "SC") {
@@ -871,6 +951,17 @@ bool TNewae::waitForPythonDone(uint8_t cwId, int timeout/* = 30000*/){
     }
 
     return pythonReady[cwId];
+}
+
+bool TNewae::waitForPythonTargetDone(uint8_t cwId, int timeout/* = 30000*/){
+    for (int i = 0; i < 15; ++i) {
+        if (pythonTargetReady[cwId]){
+            break;
+        }
+        pythonProcess->waitForReadyRead(timeout/15);
+    }
+
+    return pythonTargetReady[cwId];
 }
 
 /*bool TNewae::getTracesFromShm(size_t &numTraces, size_t &traceSize, QList<double> &data){
@@ -915,11 +1006,16 @@ bool TNewae::waitForPythonDone(uint8_t cwId, int timeout/* = 30000*/){
     return succ;
 }*/
 
-bool TNewae::getDataFromShm(size_t &size, QString &data, uint8_t cwId){
+bool TNewae::getDataFromShm(size_t &size, QString &data, uint8_t cwId, bool asTarget /* = false */){
     char* dataLenAddr;
     bool succ, succ2;
 
-    QSharedMemory * shm = shmMap.value(cwId, NULL);
+    QSharedMemory * shm;
+    if(asTarget)
+        shm = targetShmMap.value(cwId, NULL);
+    else
+        shm = shmMap.value(cwId, NULL);
+
     if (shm == NULL)
         return false;
 
@@ -954,11 +1050,16 @@ bool TNewae::getDataFromShm(size_t &size, QString &data, uint8_t cwId){
     return succ;
 }
 
-bool TNewae::getDataFromShm(size_t * size, void * data, uint8_t cwId, size_t bufferSize){
+bool TNewae::getDataFromShm(size_t * size, void * data, uint8_t cwId, size_t bufferSize, bool asTarget /* = false */){
     char* dataLenAddr;
     bool succ, succ2;
 
-    QSharedMemory * shm = shmMap.value(cwId, NULL);
+    QSharedMemory * shm;
+    if(asTarget)
+        shm = targetShmMap.value(cwId, NULL);
+    else
+        shm = shmMap.value(cwId, NULL);
+
     if (shm == NULL)
         return false;
 

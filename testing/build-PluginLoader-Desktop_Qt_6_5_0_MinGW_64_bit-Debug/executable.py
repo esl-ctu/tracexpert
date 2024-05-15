@@ -18,6 +18,7 @@ FIELD_SEPARATOR = ','
 LINE_SEPARATOR = '\n'
 shmKey = PLUGIN_ID + "shm2"
 shmSize = 1024*1024*1024
+targetShmSize = 256
 #shm = QSharedMemory()
 stdoutMutex = QMutex()
 stderrMutex = QMutex()
@@ -127,35 +128,51 @@ def parseParameter(parameter):
 ##Test shared memory##
 def smTest(line, shm):
     cwID = line[0:3]
+    if line[4] == 'T' and line[5] == '-':
+        asTarget = True
+        line = line[13:]
+    else:
+        line = line[11:]
 
-    line = line[11:]
     line = line.rstrip('\r\n')
 
     line = "{:016x}".format(len(line)) + line
 
     writeToSHM(line, shm)
-    printToStdout("DONE", False, cwID)
+    if asTarget:
+        printToStdout("DONE", True, cwID)
+    else:
+        printToStdout("DONE", False, cwID)
 
 def smSet(line, shm):
     global shmSize
 
     cwID = line[0:3]
+    if line[4] == 'T' and line[5] == '-':
+        asTarget = True
+        line = line[12:]
+    else:
+        line = line[10:]
 
-    line = line[10:]
     line = line.rstrip('\r\n')
     try:
         shmSize = int(line)
     except:
         printToStderr("Invalid SM size")
-        printToStdout("ERROR", False, cwID)
+        if asTarget:
+            printToStdout("ERROR", True, cwID)
+        else:
+            printToStdout("ERROR", False, cwID)
 
-    shm.setKey(shmKey + cwID)
+    shm.setKey(shmKey + cwID + "t")
     shm.attach()
 
     if not shm.isAttached():
         printToStderr("Unable to attach SHM.")
-
-    printToStdout("DONE", False, cwID)    
+    if asTarget:
+        printToStdout("DONE", True, cwID)
+    else:
+        printToStdout("DONE", False, cwID)    
 
 
 ##Detect connected CW devices##

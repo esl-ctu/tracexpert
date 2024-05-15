@@ -9,8 +9,7 @@ TnewaeDevice::TnewaeDevice(const QString & name_in, const QString & sn_in, TNewa
     scopeParent = NULL;
     cwId = NO_CW_ID;
 
-    m_preInitParams = TConfigParam("NewAE target " + name_in + " pre-init config", "", TConfigParam::TType::TDummy, "");
-    m_postInitParams = TConfigParam("NewAE target " + name_in + " post-init config", "", TConfigParam::TType::TDummy, "");
+    m_preInitParams = TConfigParam("NewAE target " + name_in + " pre-init config", "", TConfigParam::TType::TDummy, "Nothing to set here");
 }
 
 
@@ -20,12 +19,8 @@ TnewaeDevice::~TnewaeDevice(){
     //TODO
 }
 
-void TnewaeDevice::setId(){
-//TODO
-}
-
 uint8_t TnewaeDevice::getId(){
-//TODO
+    return cwId;
 }
 
 QString TnewaeDevice::getDeviceSn(){
@@ -53,6 +48,10 @@ TConfigParam TnewaeDevice::setPreInitParams(TConfigParam params){
         m_preInitParams.resetState();
     }
     return m_preInitParams;
+}
+
+TConfigParam TnewaeDevice::updatePostInitParams(TConfigParam paramsIn, bool write /*= false*/) const {
+    //TODO
 }
 
 void TnewaeDevice::init(bool *ok/* = nullptr*/){
@@ -90,12 +89,12 @@ void TnewaeDevice::init(bool *ok/* = nullptr*/){
 
     if(!succ) {
         if(ok != nullptr) *ok = false;
+        qCritical("Error setting target up in Python");
         return;
     }
 
-    //TODO
-    //m_postInitParams = _createPostInitParams();
-    //m_postInitParams = updatePostInitParams(m_postInitParams);
+    m_postInitParams = _createPostInitParams();
+    m_postInitParams = updatePostInitParams(m_postInitParams);
 
     if(ok != nullptr) *ok = true;
     m_initialized = true;
@@ -104,10 +103,12 @@ void TnewaeDevice::init(bool *ok/* = nullptr*/){
 }
 
 TConfigParam TnewaeDevice::_createPostInitParams(){
-    TConfigParam prms = TConfigParam("NewAE target " + m_name + " post-init config", "", TConfigParam::TType::TDummy, "");
-    //TODO
+    TConfigParam postInitParams = TConfigParam("NewAE target " + m_name + " post-init config", "", TConfigParam::TType::TDummy, "");
+    postInitParams.addSubParam(TConfigParam("Baudrate", "38400", TConfigParam::TType::TInt, "Baudrate for the target"));
+    postInitParams.addSubParam(TConfigParam("simpleserial_last_sent", "", TConfigParam::TType::TString, "The last raw string read by a simpleserial_read* command"));
+    postInitParams.addSubParam(TConfigParam("simpleserial_last_sent", "", TConfigParam::TType::TString, "The last raw string written via simpleserial_write"));
 
-    return prms;
+    return postInitParams;
 
 }
 

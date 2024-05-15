@@ -41,6 +41,7 @@ protected:
     //void _openPort(bool *ok = nullptr);
     TConfigParam _createPostInitParams();
     bool _validatePostInitParamsStructure(TConfigParam & params);
+    TConfigParam updatePostInitParams(TConfigParam paramsIn, bool write = false) const;
 
     bool m_createdManually;
     //

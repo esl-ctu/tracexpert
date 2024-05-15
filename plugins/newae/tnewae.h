@@ -92,6 +92,7 @@ public:
     bool writeToPython(uint8_t cwId, const QString &data, bool responseExpected = true, bool wait = true);
     //bool readFromPython(uint8_t cwId, QString &data, bool wait = true);
     bool waitForPythonDone(uint8_t cwId, int timeout = 30000);
+    bool waitForPythonTargetDone(uint8_t cwId, int timeout = 30000);
 
     //In this block, CW is super important
     void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
@@ -123,8 +124,8 @@ protected:
     bool autodetectDevices(QList<std::pair<QString, QString>> & devices);
     bool setUpAndTestSHM(uint8_t cwId);
 
-    bool getDataFromShm(size_t &size, QString &data, uint8_t cwId);
-    bool getDataFromShm(size_t * size, void * data, uint8_t cwId, size_t bufferSize);
+    bool getDataFromShm(size_t &size, QString &data, uint8_t cwId, bool asTarget = false);
+    bool getDataFromShm(size_t * size, void * data, uint8_t cwId, size_t bufferSize, bool asTarget = false);
 
     //In this block, CW is super important
     void packagePythonFunction(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
@@ -136,6 +137,8 @@ protected:
     uint8_t numActiveDevices;
     bool pythonReady[NO_CW_ID + 1];
     bool pythonError[NO_CW_ID + 1];
+    bool pythonTargetReady[NO_CW_ID + 1];
+    bool pythonTargetError[NO_CW_ID + 1];
     //bool deviceWaitingForRead;
     //uint8_t waitingForReadDeviceId;
     uint8_t lastCWActive;
@@ -148,12 +151,14 @@ protected:
     bool m_initialized;
 
     QMap<uint8_t, QSharedMemory *> shmMap;
+    QMap<uint8_t, QSharedMemory *> targetShmMap;
 
     //QSharedMemory shm;
     QProcess *pythonProcess;
 
     QString shmKey = PLUGIN_ID + "shm2";
     size_t shmSize;
+    size_t targetShmSize;
 
     QMutex pythonProcessStdOutMutex;
     //QString pythonProcessStdOutData;
