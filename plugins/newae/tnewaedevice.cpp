@@ -14,9 +14,8 @@ TnewaeDevice::TnewaeDevice(const QString & name_in, const QString & sn_in, TNewa
 
 
 TnewaeDevice::~TnewaeDevice(){
-    //if(m_initialized)
-    //  deInit();
-    //TODO
+    if(m_initialized)
+        TnewaeDevice::deInit();
 }
 
 uint8_t TnewaeDevice::getId(){
@@ -24,8 +23,7 @@ uint8_t TnewaeDevice::getId(){
 }
 
 QString TnewaeDevice::getDeviceSn(){
-//TODO
-    return "";
+    return sn;
 }
 
 QString TnewaeDevice::getName() const{
@@ -51,7 +49,38 @@ TConfigParam TnewaeDevice::setPreInitParams(TConfigParam params){
 }
 
 TConfigParam TnewaeDevice::updatePostInitParams(TConfigParam paramsIn, bool write /*= false*/) const {
-    //TODO
+    if (write){
+        QString out;
+        bool ok1;
+        plugin->setPythonParameter(cwId, "baud", paramsIn.getSubParamByName("Baudrate", &ok1)->getValue(), out, true);
+        if (!ok1) {
+            paramsIn.setState(TConfigParam::TState::TError, "Write error: Unable to obtain data from the postinitparams structure.");
+            return paramsIn;
+        }
+
+    }
+
+    bool ok1, ok2, ok3, ok11, ok22, ok33, ook1, ook2, ook3;
+    QString out1, out2, out3;
+
+    ook1 = plugin->getPythonParameter(cwId, "baud", out1, true);
+    ook2 = plugin->getPythonParameter(cwId, "simpleserial_last_sent", out2, true);
+    ook3 = plugin->getPythonParameter(cwId, "simpleserial_last_read", out3, true);
+
+    paramsIn.getSubParamByName("baud", &ok1)->setValue(out1, &ok11);
+    paramsIn.getSubParamByName("simpleserial_last_sent", &ok2)->setValue(out2, &ok22);
+    paramsIn.getSubParamByName("simpleserial_last_read", &ok3)->setValue(out3, &ok33);
+
+    if (!ook1 || !ook2 || ook3) {
+        paramsIn.setState(TConfigParam::TState::TError, "Read error: Unable to obtain data from the NewAE device.");
+        return paramsIn;
+    }
+
+    if (!ok1 || !ok2 || !ok3 || !ok11 || !ok22 || !ok33){
+        paramsIn.setState(TConfigParam::TState::TError, "Read error: Unable to write data to the postinitparams structure.");
+    }
+
+    return paramsIn;
 }
 
 void TnewaeDevice::init(bool *ok/* = nullptr*/){
@@ -106,37 +135,77 @@ TConfigParam TnewaeDevice::_createPostInitParams(){
     TConfigParam postInitParams = TConfigParam("NewAE target " + m_name + " post-init config", "", TConfigParam::TType::TDummy, "");
     postInitParams.addSubParam(TConfigParam("Baudrate", "38400", TConfigParam::TType::TInt, "Baudrate for the target"));
     postInitParams.addSubParam(TConfigParam("simpleserial_last_sent", "", TConfigParam::TType::TString, "The last raw string read by a simpleserial_read* command"));
-    postInitParams.addSubParam(TConfigParam("simpleserial_last_sent", "", TConfigParam::TType::TString, "The last raw string written via simpleserial_write"));
+    postInitParams.addSubParam(TConfigParam("simpleserial_last_read", "", TConfigParam::TType::TString, "The last raw string written via simpleserial_write"));
 
     return postInitParams;
 
 }
 
-bool _validatePostInitParamsStructure(TConfigParam & params){
-    //TODO
+bool TnewaeDevice::_validatePostInitParamsStructure(TConfigParam & params){
+    bool ok = true, ok2;
 
-    return true;
+    int val = params.getSubParamByName("Baudrate")->getValue().toInt(&ok2);
+
+    if (!(val >= 500 && val <= 2000000))
+        ok = false;
+
+    if (!ok || !ok2)
+        params.getSubParamByName("Baudrate")->setState(TConfigParam::TState::TWarning);
+
+    return ok;
 }
 
 void TnewaeDevice::deInit(bool *ok/* = nullptr*/){
-    //TODO
+    m_initialized = false;
+
+    QString toSend;
+    QList<QString> params;
+    plugin->packageDataForPython(cwId, "T-DEINI", 0, params, toSend);
+    bool succ = plugin->writeToPython(cwId, toSend);
+    succ &= plugin->waitForPythonTargetDone(cwId);
+
+    if(ok != nullptr) *ok = succ;
 }
 
 TConfigParam TnewaeDevice::getPostInitParams() const{
-    return m_postInitParams;
+    TConfigParam params = m_postInitParams;
+    return updatePostInitParams(params);
 }
 
 TConfigParam TnewaeDevice::setPostInitParams(TConfigParam params){
-    //TODO
-    return TConfigParam();
+    bool ok = _validatePostInitParamsStructure(params);
+    if (ok) {
+        m_postInitParams = updatePostInitParams(params);
+    } else {
+        m_postInitParams = params;
+        qWarning("Post init params vadiation for target not successful, nothing was stored");
+    }
+    return m_postInitParams;
 }
 
 size_t TnewaeDevice::writeData(const uint8_t * buffer, size_t len){
-    //TODO
-    return 0;
+    if (len == 0)
+        return 0;
+
+    QString toSend = QString::fromLocal8Bit((char *) buffer, len);
+    QString out;
+    QList<QString> prms;
+    prms.append(toSend);
+    size_t lenOut;
+    bool ok = plugin->runPythonFunctionAndGetStringOutput(cwId, "write", 1, prms, lenOut, out, true);
+
+    if (!ok)
+        return 0;
+
+    return lenOut;
 }
 
 size_t TnewaeDevice::readData(uint8_t * buffer, size_t len){
-    //TODO
-    return 0;
+    size_t size;
+    bool ok = plugin->readFromTarget(cwId, &size, buffer, len);
+
+    if (ok)
+        return size;
+    else
+        return 0;
 }
