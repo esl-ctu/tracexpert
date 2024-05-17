@@ -98,7 +98,7 @@ def sendCWNotConnected(line):
     targetDict[cwID] = None
 
     try:
-        if line[4] == 'T' and line[5] == '-':
+        if line[4] == 't' and line[5] == '-':
             printToStdout("NOTCN", True, cwID)
         else:
             printToStdout("NOTCN", False, cwID)
@@ -128,7 +128,8 @@ def parseParameter(parameter):
 ##Test shared memory##
 def smTest(line, shm):
     cwID = line[0:3]
-    if line[4] == 'T' and line[5] == '-':
+    asTarget = False
+    if line[4] == 't' and line[5] == '-':
         asTarget = True
         line = line[13:]
     else:
@@ -148,7 +149,8 @@ def smSet(line, shm):
     global shmSize
 
     cwID = line[0:3]
-    if line[4] == 'T' and line[5] == '-':
+    asTarget = False
+    if line[4] == 't' and line[5] == '-':
         asTarget = True
         line = line[12:]
     else:
@@ -159,12 +161,17 @@ def smSet(line, shm):
         shmSize = int(line)
     except:
         printToStderr("Invalid SM size")
+        printToStderr(line)
         if asTarget:
             printToStdout("ERROR", True, cwID)
         else:
             printToStdout("ERROR", False, cwID)
 
-    shm.setKey(shmKey + cwID + "t")
+    if asTarget:
+        shm.setKey(shmKey + cwID + "t")
+    else:
+        shm.setKey(shmKey + cwID)
+
     shm.attach()
 
     if not shm.isAttached():
@@ -241,7 +248,7 @@ def targetSetup(line, shm, targetDict, sc):
         printToStdout("ERROR", True, cwID)
         return False
 
-    if cwDict[cwID] == None:
+    if targetDict[cwID] == None:
         printToStdout("ERROR", True, cwID)
         printToStderr("CW does not exist)")
         return False
@@ -313,7 +320,8 @@ def callCwFuncOnAnObject(line, shm, cwDict):
 ##Outputs: DONE/ERROR, data to shm
 def callCwFunc(line, shm, dct):
     cwID = line[0:3]
-    if line[4] == 'T' and line[5] == '-':
+    asTarget = False
+    if line[4] == 't' and line[5] == '-':
         asTarget = True
         taget = dct[cwID]
         if target == None:
@@ -326,13 +334,6 @@ def callCwFunc(line, shm, dct):
             return
 
     noParams = False
-    asTarget = False
-
-    if line[4] == 'T' and line[5] == '-':
-        asTarget = True
-        if target == None:
-            sendCWNotConnected(line)
-            return
 
     functionName = ""
     if asTarget == True:
@@ -346,7 +347,7 @@ def callCwFunc(line, shm, dct):
         functionName = splitLine[0]
         functionName = functionName.rstrip('\r\n')
     except:
-        if asTarget == true:
+        if asTarget == True:
             printToStdout("ERROR", True, cwID)
         else:
             printToStdout("ERROR", False, cwID) 
@@ -359,7 +360,7 @@ def callCwFunc(line, shm, dct):
         noParams = True
 
     if functionName == "":
-        if asTarget == true:
+        if asTarget == True:
             printToStdout("ERROR", True, cwID) 
         else:
             printToStdout("ERROR", False, cwID) 
@@ -367,12 +368,12 @@ def callCwFunc(line, shm, dct):
         return
 
     try:
-        if asTarget == true:
+        if asTarget == True:
             function = getattr(target, functionName)
         else:
             function = getattr(scope, functionName)
     except AttributeError:
-        if asTarget == true:
+        if asTarget == True:
             printToStdout("ERROR", True, cwID)
         else:
             printToStdout("ERROR", False, cwID) 
@@ -390,7 +391,7 @@ def callCwFunc(line, shm, dct):
                 parameter = lineParameters.split(LINE_SEPARATOR, 1)[0]
                 parameter = parameters[numParams].rstrip('\r\n')
             except:
-                if asTarget == true:
+                if asTarget == True:
                     printToStdout("ERROR", True, cwID) 
                 else:
                     printToStdout("ERROR", False, cwID) 
@@ -471,14 +472,14 @@ def callCwFunc(line, shm, dct):
             tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7], parameters[8])
             ret = cwToStr(tmp)
         else:
-            if asTarget == true:
+            if asTarget == True:
                 printToStdout("ERROR", True, cwID) 
             else:
                 printToStdout("ERROR", False, cwID) 
             printToStderr("Too many parameters passed to a Python function")
     except:
         if functionName != "capture":
-            if asTarget == true:
+            if asTarget == True:
                 printToStdout("ERROR", True, cwID) 
             else:
                 printToStdout("ERROR", False, cwID) 
@@ -496,7 +497,7 @@ def callCwFunc(line, shm, dct):
     
     writeToSHM(ret, shm)
 
-    if asTarget == true:
+    if asTarget == True:
         printToStdout("DONE", True, cwID) 
     else:
         printToStdout("DONE", False, cwID)
@@ -507,7 +508,8 @@ def callCwFunc(line, shm, dct):
 ##Outputs: DONE/ERROR, parameter value (to shm)
 def cwParam(line, shm, dct):
     cwID = line[0:3]
-    if line[4] == 'T' and line[5] == '-':
+    asTarget = False
+    if line[4] == 't' and line[5] == '-':
         asTarget = True
         taget = dct[cwID]
         if target == None:
@@ -731,8 +733,10 @@ def main():
     targetShmDict = dict()
 
     cwQueueDict = dict()
+    targetQueueDict = dict()
 
     cwConsumerDict = dict()
+    targetConsumerDict = dict()
 
     for line in sys.stdin:
         #print(line, flush=True, file=sys.stderr) # TODO!!! Remove!!
@@ -774,10 +778,10 @@ def main():
         ## Initialize one CW taget
         elif line.startswith("T-SETUP", 4, 12):
             cwID = line[0:3]
-            if targetSetup(line.lower(), targetShmDict[cwID], taregtDict, cwDict[cwID]):
+            if targetSetup(line.lower(), targetShmDict[cwID], targetDict, cwDict[cwID]):
                 targetQueueDict[cwID] = Queue()
-                taregrConsumerDict[cwID] = Thread(target=consumerTarget, args=(targetQueueDict[cwID], targetShmDict, targetDict))
-                targerConsumerDict[cwID].start()
+                targetConsumerDict[cwID] = Thread(target=consumerTarget, args=(targetQueueDict[cwID], targetShmDict, targetDict))
+                targetConsumerDict[cwID].start()
 
         ## Deinitialize one CW
         elif line.startswith("DEINI", 4, 10):

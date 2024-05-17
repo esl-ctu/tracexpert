@@ -100,13 +100,21 @@ void TnewaeDevice::init(bool *ok/* = nullptr*/){
     if (matchingScope) {
         scopeParent = matchingScope;
         cwId = scopeParent->getId();
+        if(!scopeParent->isInitialized()) {
+            qWarning("Matching scope was found but was not initialized yet. Please initialize the scope first!");
+            if (ok != nullptr) {
+                //TODO okýnko
+                *ok = false;
+                return;
+            }
+        }
     } else {
-        qWarning("Matching scope was not initialized. Please initialize the scope first!");
+        qWarning("Matching scope was not found. Please set up and initialize the scope first!");
         if (ok != nullptr) {
             *ok = false;
+            //TODO okýnko
             return;
         }
-        //TODO okýnko
     }
 
     QString toSend;

@@ -201,7 +201,7 @@ bool TNewae::setUpSHM(uint8_t cwId){
 
     params.clear();
     packageDataForPython(cwId, "T-SMSET:" + QString::number(targetShmSize), 0, params, toSend);
-    succ = writeToPython(cwId, toSend);
+    succ = writeToPython(cwId, toSend, true);
     if (!succ){
         return false;
     }
@@ -281,26 +281,6 @@ bool TNewae::testSHM(uint8_t cwId) {
         return false;
     }
 
-    //Target
-    tmpval = QRandomGenerator::global()->generate();
-    QString tmpstrTarget = QString::number(tmpval);
-    packageDataForPython(cwId, "T-SMTEST:" + tmpstr, 0, params, toSend);
-    succ = writeToPython(cwId, toSend);
-
-    if (!succ){
-        qCritical("Failed to send data to Python when setting up the shared memory (target).");
-        return false;
-    }
-
-    succ = waitForPythonTargetDone(cwId);
-    succ &= !pythonTargetError[cwId];
-    if (!succ){
-        qCritical("Python did not respond to SHM read request (target).");
-        return false;
-    }
-
-
-    //Scope
     size_t dataLen;
     QString data = "";
     succ = getDataFromShm(dataLen, data, cwId);
@@ -315,6 +295,23 @@ bool TNewae::testSHM(uint8_t cwId) {
     }
 
     //Target
+    tmpval = QRandomGenerator::global()->generate();
+    QString tmpstrTarget = QString::number(tmpval);
+    packageDataForPython(cwId, "T-SMTEST:" + tmpstrTarget, 0, params, toSend);
+    succ = writeToPython(cwId, toSend, true);
+
+    if (!succ){
+        qCritical("Failed to send data to Python when setting up the shared memory (target).");
+        return false;
+    }
+
+    succ = waitForPythonTargetDone(cwId);
+    succ &= !pythonTargetError[cwId];
+    if (!succ){
+        qCritical("Python did not respond to SHM read request (target).");
+        return false;
+    }
+
     dataLen = 0;
     data = "";
     succ = getDataFromShm(dataLen, data, cwId, true);
@@ -585,6 +582,9 @@ TScope * TNewae::addScopeAutomatically(QString name, QString info, bool *ok) {
         sc = new TnewaeScope(name, info, numDevices, this, false);
         m_scopes.append(sc);
         pythonReady[numDevices] = true;
+        pythonError[numDevices] = false;
+        pythonTargetError[numDevices] = false;
+        pythonTargetReady[numActiveDevices] = true;
         bool succ = setUpAndTestSHM(numDevices);
         numDevices++;
         if(ok != nullptr) *ok = succ;
@@ -662,7 +662,7 @@ bool TNewae::runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionNa
     bool succ;
 
     packagePythonFunction(cwId, functionName, numParams, params, toSend, asTarget);
-    succ = writeToPython(cwId, toSend);
+    succ = writeToPython(cwId, toSend, asTarget);
     if(!succ) {
         return false;
     }
@@ -700,7 +700,7 @@ bool TNewae::readFromTarget(uint8_t cwId, size_t * size, void * out, size_t buff
     QList<QString> params;
 
     packagePythonFunction(cwId, "read", 0, params , toSend, true);
-    succ = writeToPython(cwId, toSend);
+    succ = writeToPython(cwId, toSend, true);
     if(!succ) {
         qDebug("Error sending the get_last_trace command.");
         return false;
@@ -805,7 +805,7 @@ bool TNewae::setPythonParameter(int8_t cwId, QString paramName, QString value, Q
     bool succ;
 
     packagePythonParam(cwId, paramName, value, toSend, asTarget);
-    succ = writeToPython(cwId, toSend);
+    succ = writeToPython(cwId, toSend, asTarget);
 
     if(!succ) {
         return false;
@@ -870,22 +870,32 @@ bool TNewae::setPythonSubparameter(int8_t cwId, QString paramName, QString subPa
     return true;
 }
 
-bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpected/* = true*/, bool wait/* = true*/){
-    waitForPythonDone(cwId, 1000);
-    if (!pythonReady[cwId]){
-        qDebug("Python not ready!");
-        return false;
+bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool asTarget /*= false*/, bool responseExpected/* = true*/, bool wait/* = true*/){
+    if(asTarget) {
+        waitForPythonTargetDone(cwId, 1000);
+
+        if (!pythonTargetReady[cwId]){
+            qDebug("Python not ready! (target)");
+            return false;
+        }
+        pythonTargetReady[cwId] = false;
+    } else {
+        waitForPythonDone(cwId, 1000);
+
+        if (!pythonReady[cwId]){
+            qDebug("Python not ready!");
+            return false;
+        }
+        pythonReady[cwId] = false;
     }
-    pythonReady[cwId] = false;
+
     wait = true; //!!!!!
-    lastCWActive = cwId;
 
     int succ;
 
     succ = pythonProcess->write(data.toLocal8Bit().constData());
 
     if (succ == -1){
-        qDebug("2");
         return false;
     }
 
@@ -894,11 +904,14 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool responseExpec
     }
 
     if (succ == -1){
-        qDebug("3");
         return false;
     }
 
-    if (!responseExpected){
+    if (!responseExpected && asTarget){
+        pythonTargetReady[cwId] = true;
+    }
+
+    if (!responseExpected && !asTarget){
         pythonReady[cwId] = true;
     }
 
@@ -953,6 +966,8 @@ void TNewae::checkForPythonState(){
         if (indexStarted != -1){
             pythonReady[NO_CW_ID] = true;
             pythonError[NO_CW_ID] = false;
+            pythonTargetReady[NO_CW_ID] = true;
+            pythonTargetError[NO_CW_ID] = false;
 
             fromIndexStarted = indexStarted + 7;
         }

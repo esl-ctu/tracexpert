@@ -89,7 +89,7 @@ public:
     TnewaeScope * getCWScopeObjectById(uint8_t id);
 
     //In this block, cwId is only used for identification if the correct CW is being accessed
-    bool writeToPython(uint8_t cwId, const QString &data, bool responseExpected = true, bool wait = true);
+    bool writeToPython(uint8_t cwId, const QString &data, bool asTarget = false, bool responseExpected = true, bool wait = true);
     //bool readFromPython(uint8_t cwId, QString &data, bool wait = true);
     bool waitForPythonDone(uint8_t cwId, int timeout = 30000);
     bool waitForPythonTargetDone(uint8_t cwId, int timeout = 30000);
