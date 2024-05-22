@@ -24,6 +24,7 @@ TMainWindow::TMainWindow(QWidget * parent)
     m_projectView = nullptr;
 
     m_protocolWidget = nullptr;
+    m_projectDockWidget = nullptr;
 
     createActions();
     createMenus();
@@ -88,6 +89,7 @@ void TMainWindow::createActions()
     m_closeProjectAction->setShortcuts(QKeySequence::Close);
     m_closeProjectAction->setIcon(QIcon::fromTheme("document-close"));
     m_closeProjectAction->setStatusTip(tr("Close the current project"));
+    m_closeProjectAction->setEnabled(false);
     connect(m_closeProjectAction, SIGNAL(triggered()), this, SLOT(closeProject()));
 
     m_openDeviceAction = new QAction(tr("Open device"), this);
@@ -111,6 +113,7 @@ void TMainWindow::createProjectDockWidget(TProjectModel * model)
 
     m_saveProjectAction->setEnabled(true);
     m_saveProjectAsAction->setEnabled(true);
+    m_closeProjectAction->setEnabled(true);
     m_openDeviceAction->setEnabled(true);
 }
 
@@ -304,13 +307,15 @@ void TMainWindow::closeProject()
         m_projectModel = nullptr;
     }
 
-    m_viewMenu->removeAction(m_projectDockWidget->toggleViewAction());
-    if(m_protocolWidget) {
+    if (m_projectDockWidget) {
+        m_viewMenu->removeAction(m_projectDockWidget->toggleViewAction());
+        m_projectDockWidget->close();
+    }
+
+    if (m_protocolWidget) {
         m_viewMenu->removeAction(m_protocolWidget->toggleViewAction());
         m_protocolWidget->close();
     }
-
-    m_projectDockWidget->close();    
 
     m_saveProjectAction->setEnabled(false);
     m_saveProjectAsAction->setEnabled(false);
