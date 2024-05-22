@@ -22,6 +22,8 @@ public:
     virtual bool init();
     virtual bool deInit();
 
+    virtual bool remove();
+
     bool isInit() const;
     bool initWhenAvailable() const;
     bool isAvailable() const;

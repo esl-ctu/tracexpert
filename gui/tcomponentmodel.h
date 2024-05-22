@@ -34,6 +34,9 @@ public:
     bool addIODevice(QString name, QString info);
     bool addScope(QString name, QString info);
 
+    bool removeIODevice(TIODeviceModel * IODevice);
+    bool removeScope(TScopeModel * scope);
+
     TIODeviceContainer * IODeviceContainer() const;
     TScopeContainer * scopeContainer() const;
 
@@ -50,8 +53,8 @@ signals:
     void scopeDeinitialized(TScopeModel * scope);
 
 private:
-    void appendIODevice(TIODevice * IODevice, QDomElement * element = nullptr);
-    void appendScope(TScope * scope, QDomElement * element = nullptr);
+    void appendIODevice(TIODevice * IODevice, bool manual = false, QDomElement * element = nullptr);
+    void appendScope(TScope * scope, bool manual = false, QDomElement * element = nullptr);
 
     void loadIODevices(QDomElement * element);
     void loadIODevice(QDomElement * element);

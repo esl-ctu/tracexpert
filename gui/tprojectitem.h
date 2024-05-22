@@ -41,7 +41,7 @@ protected:
 
     QString m_typeName = "unknown";
 
-private:
+protected:
     TProjectModel * m_model;
     TProjectItem * m_parent;
 };

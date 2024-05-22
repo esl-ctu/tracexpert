@@ -37,6 +37,8 @@ void TProjectView::createActions()
     connect(m_deinitIODeviceAction, &QAction::triggered, this, &TProjectView::deinitIODevice);
     m_showIODeviceAction = new QAction(tr("Show"), this);
     connect(m_showIODeviceAction, &QAction::triggered, this, &TProjectView::showIODevice);
+    m_removeIODeviceAction = new QAction(tr("Remove"), this);
+    connect(m_removeIODeviceAction, &QAction::triggered, this, &TProjectView::removeIODevice);
 
     m_initScopeAction = new QAction(tr("Initialize"), this);
     connect(m_initScopeAction, &QAction::triggered, this, &TProjectView::initScope);
@@ -44,6 +46,8 @@ void TProjectView::createActions()
     connect(m_deinitScopeAction, &QAction::triggered, this, &TProjectView::deinitScope);
     m_showScopeAction = new QAction(tr("Show"), this);
     connect(m_showScopeAction, &QAction::triggered, this, &TProjectView::showScope);
+    m_removeScopeAction = new QAction(tr("Remove"), this);
+    connect(m_removeScopeAction, &QAction::triggered, this, &TProjectView::removeScope);
 
     m_showInfoAction = new QAction(tr("Info"), this);
     connect(m_showInfoAction, &QAction::triggered, this, &TProjectView::showInfo);
@@ -100,6 +104,8 @@ void TProjectView::showContextMenu(const QPoint &point)
         contextMenu->addAction(m_deinitIODeviceAction);
         m_showIODeviceAction->setDisabled(m_IODevice->status() != TProjectItem::Initialized);
         contextMenu->addAction(m_showIODeviceAction);
+        m_removeIODeviceAction->setDisabled(!m_IODevice->isManual() && m_IODevice->isAvailable());
+        contextMenu->addAction(m_removeIODeviceAction);
 
         defaultAction = chooseDefaultAction(m_IODevice);
     }
@@ -112,6 +118,8 @@ void TProjectView::showContextMenu(const QPoint &point)
         contextMenu->addAction(m_deinitScopeAction);
         m_showScopeAction->setDisabled(m_scope->status() != TProjectItem::Initialized);
         contextMenu->addAction(m_showScopeAction);
+        m_removeScopeAction->setDisabled(!m_scope->isManual() && m_scope->isAvailable());
+        contextMenu->addAction(m_removeScopeAction);
 
         defaultAction = chooseDefaultAction(m_scope);
     }
@@ -334,6 +342,11 @@ void TProjectView::showIODevice()
     m_IODevice->show();
 }
 
+void TProjectView::removeIODevice()
+{
+    m_IODevice->remove();
+}
+
 void TProjectView::initScope()
 {
     if (!m_scope || m_scope->isInit()) {
@@ -369,6 +382,11 @@ void TProjectView::deinitScope()
 void TProjectView::showScope()
 {
     m_scope->show();
+}
+
+void TProjectView::removeScope()
+{
+    m_scope->remove();
 }
 
 void TProjectView::showInfo()

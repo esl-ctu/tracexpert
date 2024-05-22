@@ -55,13 +55,15 @@ class TIODeviceModel : public TPluginUnitModel
     Q_OBJECT
 
 public:
-    explicit TIODeviceModel(TIODevice * IODevice, TIODeviceContainer * parent);
+    explicit TIODeviceModel(TIODevice * IODevice, TIODeviceContainer * parent, bool manual = false);
     ~TIODeviceModel();
 
     void show();
 
     bool init() override;
     bool deInit() override;
+
+    bool remove() override;
 
     int childrenCount() const override;
     TProjectItem * child(int row) const override;
