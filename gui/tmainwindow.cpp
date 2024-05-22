@@ -213,6 +213,7 @@ void TMainWindow::newProject()
     connect(m_projectModel, &TProjectModel::scopeInitialized, this, &TMainWindow::createScopeDockWidget);
 
     createProjectDockWidget(m_projectModel);
+    createProtocolManagerWidget();
 }
 
 void TMainWindow::openProject()
@@ -264,6 +265,7 @@ void TMainWindow::openProject()
     }
 
     createProjectDockWidget(m_projectModel);
+    createProtocolManagerWidget();
 }
 
 void TMainWindow::saveProject(bool saveAs)
