@@ -11,6 +11,11 @@ TComponentModel::TComponentModel(TPlugin * plugin, TComponentContainer * parent)
     m_scopes = new TScopeContainer(this);
 }
 
+TComponentModel::~TComponentModel()
+{
+    delete m_unit;
+}
+
 bool TComponentModel::init()
 {
     if (isInit() || !TPluginUnitModel::init()) {

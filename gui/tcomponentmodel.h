@@ -18,6 +18,7 @@ class TComponentModel : public TPluginUnitModel
 
 public:
     explicit TComponentModel(TPlugin * plugin, TComponentContainer * parent);
+    ~TComponentModel();
 
     bool init() override;
     bool deInit() override;
