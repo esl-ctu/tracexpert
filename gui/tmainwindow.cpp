@@ -217,9 +217,6 @@ void TMainWindow::newProject()
 
 void TMainWindow::openProject()
 {
-    if (m_projectModel)
-        closeProject();
-
     QStringList filters;
     filters << "TraceXpert project file (*.txp)"
             << "Any files (*)";
@@ -230,6 +227,9 @@ void TMainWindow::openProject()
     openDialog.setFileMode(QFileDialog::ExistingFile);
     openDialog.setDirectory(m_projectDirectory);
     if (!openDialog.exec()) return;
+
+    if (m_projectModel)
+        closeProject();
 
     m_projectFileName = openDialog.selectedFiles().constFirst();
     m_projectDirectory = openDialog.directory();
