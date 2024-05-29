@@ -254,10 +254,12 @@ void TIODeviceWidget::sendMessageChanged(int index)
 bool TIODeviceWidget::applyPostInitParam()
 {
     TConfigParam param = m_deviceModel->setPostInitParams(m_paramWidget->param());
+    m_paramWidget->setParam(param);
+
     if (param.getState(true) == TConfigParam::TState::TError) {
+        qWarning("TIODevice parameters not set due to error state!");
         return false;
     };
-    m_paramWidget->setParam(param);
 
     return true;
 }
