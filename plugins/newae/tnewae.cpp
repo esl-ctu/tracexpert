@@ -25,10 +25,6 @@ TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     m_initialized = false;
     numActiveDevices = 0;
     //pythonProcessStdOutData = "";
-
-    QSharedMemory * tmp = new QSharedMemory();
-
-    shmMap.insert(NO_CW_ID, tmp);
 }
 
 TnewaeScope * TNewae::getCWScopeObjectById(uint8_t id){
@@ -414,6 +410,9 @@ void TNewae::init(bool *ok) {
     bool succ;
     bool autodetect = m_preInitParams.getSubParamByName("Auto-detect")->getValue() == "true";
 
+    QSharedMemory * tmp = new QSharedMemory();
+    shmMap.insert(NO_CW_ID, tmp);
+
     succ = _validatePreInitParamsStructure(m_preInitParams);
     if(!succ) {
         if(ok != nullptr) *ok = false;
@@ -491,21 +490,11 @@ void TNewae::deInit(bool *ok) {
 
     pythonReady[NO_CW_ID] = false;
 
-    //Detach shm
-    for (auto it = shmMap.begin(); it != shmMap.end(); ++it) {
-        succ = (*it)->detach();
-        if (!succ){
-            if(ok != nullptr) *ok = false;
-        }
-        delete (QSharedMemory *) *it;
-    }
-    for (auto it = targetShmMap.begin(); it != targetShmMap.end(); ++it) {
-        succ = (*it)->detach();
-        if (!succ){
-            if(ok != nullptr) *ok = false;
-        }
-        delete (QSharedMemory *) *it;
-    }
+    //Detach nad delete shm
+    qDeleteAll(shmMap);
+    qDeleteAll(targetShmMap);
+    shmMap.clear();
+    targetShmMap.clear();
 }
 
 TConfigParam TNewae::getPostInitParams() const {
@@ -584,7 +573,7 @@ TScope * TNewae::addScopeAutomatically(QString name, QString info, bool *ok) {
         pythonReady[numDevices] = true;
         pythonError[numDevices] = false;
         pythonTargetError[numDevices] = false;
-        pythonTargetReady[numActiveDevices] = true;
+        pythonTargetReady[numDevices] = true;
         bool succ = setUpAndTestSHM(numDevices);
         numDevices++;
         if(ok != nullptr) *ok = succ;

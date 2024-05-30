@@ -17,8 +17,6 @@ NO_CW_ID = 255
 FIELD_SEPARATOR = ','
 LINE_SEPARATOR = '\n'
 shmKey = PLUGIN_ID + "shm2"
-shmSize = 1024*1024*1024
-targetShmSize = 256
 #shm = QSharedMemory()
 stdoutMutex = QMutex()
 stderrMutex = QMutex()
@@ -53,34 +51,39 @@ def writeToSHM(line, shm):
         if isinstance(line[0], np.int16):
             tmpLen = "{:016x}".format(line.size * 2)
             leng = bytes(tmpLen, 'ascii')
-            _from = QByteArray(leng)
+            buffer = QByteArray(leng)
+            _from = memoryview(buffer).cast('c')
             _to[0:16] = _from[0:16]
 
             _to = memoryview(shm.data()).cast('h')
-            size = line.size
-            if size + 16 > shmSize:
+            _from = line #memoryview(line).cast('h')
+            size = _from.size
+            if size + 16 > shm.size():
                 printToStderr("SHM is not large enough. Data would not fit!")
                 return
             _to[8:(size+8)] = line[0:size]
         else:
             tmpLen = "{:016x}".format(line.size * 8)
             leng = bytes(tmpLen, 'ascii')
-            _from = QByteArray(leng)
+            buffer = QByteArray(leng)
+            _from = memoryview(buffer).cast('c')
             _to[0:16] = _from[0:16]
 
             _to = memoryview(shm.data()).cast('d')
-            size = line.size
-            if size + 16 > shmSize:
+            _from = line #memoryview(line).cast('d')
+            size = _from.size
+            if size + 16 > shm.size():
                 printToStderr("SHM is not large enough. Data would not fit!")
                 return
-            _to[2:(size+2)] = line[0:size]
+            _to[2:(size+2)] = _from[0:size]
     else:    
         buffer = QByteArray(line)  
+        _from = memoryview(buffer).cast('c')
         size = buffer.size() 
-        if size > shmSize:
+        if size > shm.size():
             printToStderr("SHM is not large enough. Data would not fit!")
             return
-        _to[0:size] = buffer[0:size]
+        _to[0:size] = _from[0:size]
     shm.unlock()
 
 ##Helper to potentially convert a numpy array to string##
@@ -146,7 +149,7 @@ def smTest(line, shm):
         printToStdout("DONE", False, cwID)
 
 def smSet(line, shm):
-    global shmSize
+    shmSize = 0
 
     cwID = line[0:3]
     asTarget = False
@@ -253,6 +256,7 @@ def targetSetup(line, shm, targetDict, sc):
         printToStderr("CW does not exist)")
         return False
 
+    printToStdout("DONE", True, cwID)
     return True
 
 ##Call a method on an object from the CW package
@@ -323,7 +327,7 @@ def callCwFunc(line, shm, dct):
     asTarget = False
     if line[4] == 't' and line[5] == '-':
         asTarget = True
-        taget = dct[cwID]
+        target = dct[cwID]
         if target == None:
             sendCWNotConnected(line)
             return
@@ -511,7 +515,7 @@ def cwParam(line, shm, dct):
     asTarget = False
     if line[4] == 't' and line[5] == '-':
         asTarget = True
-        taget = dct[cwID]
+        target = dct[cwID]
         if target == None:
             sendCWNotConnected(line)
             return
@@ -563,9 +567,11 @@ def cwParam(line, shm, dct):
 
     if not noValue:
         convParamValue = parseParameter(paramValue)
-        setattr(scope, paramName, convParamValue)
+        if asTarget == True:
+            setattr(target, paramName, convParamValue)
+        else:
+            setattr(scope, paramName, convParamValue)
 
-    param = getattr(scope, paramName)
     realParamValue = str(param)
     realParamValue = "{:016x}".format(len(realParamValue)) + realParamValue
     writeToSHM(realParamValue, shm)
@@ -805,7 +811,7 @@ def main():
             targetDict[cwID] = None
             targetQueueDict[cwID].put("DIE")
             targetConsumerDict[cwID].join()
-            printToStdout("DONE", False, cwID)
+            printToStdout("DONE", True, cwID)
 
         ## Call a method from the CW package
         elif line.startswith("FUNC-", 4, 10):

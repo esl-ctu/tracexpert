@@ -565,7 +565,18 @@ void TnewaeScope::init(bool *ok/* = nullptr*/){
 }
 
 void TnewaeScope::deInit(bool *ok/* = nullptr*/){
+    m_postInitParams = updatePostInitParams(m_postInitParams);
+
     m_initialized = false;
+
+    //TODO!!!
+    /*auto ios = plugin->getIODevices();
+    for (auto it = ios.begin(); it != ios.end(); ++it) {
+        TnewaeDevice * tmp =  (TnewaeDevice *) *it;
+        if (tmp->getId() == cwId) {
+            tmp->deInit();
+        }
+    }*/
 
     QString toSend;
     QList<QString> params;
@@ -709,11 +720,21 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
 }
 
 TConfigParam TnewaeScope::getPostInitParams() const{
+    if(!m_initialized){
+        //qWarning("Device not initalized! (get)");
+        return m_postInitParams;
+    }
+
     TConfigParam params = m_postInitParams;
     return updatePostInitParams(params);
 }
 
 TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){
+    if(!m_initialized){
+        qWarning("Device not initalized! (set)");
+        return m_postInitParams;
+    }
+
     m_postInitParams.resetState(true);
     bool ok = _validatePostInitParamsStructure(params);
     if (ok) {
