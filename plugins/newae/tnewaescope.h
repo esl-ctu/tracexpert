@@ -39,8 +39,8 @@ public:
 
     /// Get channel info
     virtual QList<TChannelStatus> getChannelsStatus() override;
-    virtual TTimingStatus getTimingStatus() override;
-    virtual TTriggerStatus getTriggerStatus() override;
+    virtual TScope::TTimingStatus getTimingStatus() override;
+    virtual TScope::TTriggerStatus getTriggerStatus() override;
 
     uint8_t getId();
     QString getSn();
