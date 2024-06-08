@@ -33,13 +33,15 @@ class TScopeModel : public TPluginUnitModel
     Q_OBJECT
 
 public:
-    explicit TScopeModel(TScope * scope, TScopeContainer * parent);
+    explicit TScopeModel(TScope * scope, TScopeContainer * parent, bool manual = false);
     ~TScopeModel();
 
     void show();
 
     bool init() override;
     bool deInit() override;
+
+    bool remove() override;
 
     virtual TConfigParam setPostInitParams(const TConfigParam & param) override;
 

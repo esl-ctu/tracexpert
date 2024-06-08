@@ -11,6 +11,11 @@ TComponentModel::TComponentModel(TPlugin * plugin, TComponentContainer * parent)
     m_scopes = new TScopeContainer(this);
 }
 
+TComponentModel::~TComponentModel()
+{
+    delete m_unit;
+}
+
 bool TComponentModel::init()
 {
     if (isInit() || !TPluginUnitModel::init()) {
@@ -164,7 +169,7 @@ bool TComponentModel::addIODevice(QString name, QString info)
         TIODevice * IODevice = m_plugin->addIODevice(name, info, &ok);
 
         if (ok) {
-            appendIODevice(IODevice);
+            appendIODevice(IODevice, true);
             return true;
         }
     }
@@ -179,12 +184,42 @@ bool TComponentModel::addScope(QString name, QString info)
         TScope * scope = m_plugin->addScope(name, info, &ok);
 
         if (ok) {
-            appendScope(scope);
+            appendScope(scope, true);
             return true;
         }
     }
 
     return false;
+}
+
+bool TComponentModel::removeIODevice(TIODeviceModel * IODevice)
+{
+    if (IODevice->isInit() && !IODevice->deInit())
+        return false;
+
+    if (!IODevice->isManual() && IODevice->isAvailable())
+        return false;
+
+    if (!m_IOdevices->remove(IODevice))
+        return false;
+
+    delete IODevice;
+    return true;
+}
+
+bool TComponentModel::removeScope(TScopeModel * scope)
+{
+    if (scope->isInit() && !scope->deInit())
+        return false;
+
+    if (!scope->isManual() && scope->isAvailable())
+        return false;
+
+    if (!m_scopes->remove(scope))
+        return false;
+
+    delete scope;
+    return true;
 }
 
 TIODeviceContainer * TComponentModel::IODeviceContainer() const
@@ -253,9 +288,9 @@ void TComponentModel::load(QDomElement * element)
     }
 }
 
-void TComponentModel::appendIODevice(TIODevice * IODevice, QDomElement * element)
+void TComponentModel::appendIODevice(TIODevice * IODevice, bool manual, QDomElement * element)
 {
-    TIODeviceModel * IODeviceModel = new TIODeviceModel(IODevice, m_IOdevices);
+    TIODeviceModel * IODeviceModel = new TIODeviceModel(IODevice, m_IOdevices, manual);
     connect(IODeviceModel, &TIODeviceModel::initialized, this, &TComponentModel::IODeviceInitialized);
     connect(IODeviceModel, &TIODeviceModel::deinitialized, this, &TComponentModel::IODeviceDeinitialized);
 
@@ -265,9 +300,9 @@ void TComponentModel::appendIODevice(TIODevice * IODevice, QDomElement * element
     m_IOdevices->add(IODeviceModel);
 }
 
-void TComponentModel::appendScope(TScope * scope, QDomElement * element)
+void TComponentModel::appendScope(TScope * scope, bool manual, QDomElement * element)
 {
-    TScopeModel * scopeModel = new TScopeModel(scope, m_scopes);
+    TScopeModel * scopeModel = new TScopeModel(scope, m_scopes, manual);
     connect(scopeModel, &TScopeModel::initialized, this, &TComponentModel::scopeInitialized);
     connect(scopeModel, &TScopeModel::deinitialized, this, &TComponentModel::scopeDeinitialized);
 
@@ -341,7 +376,7 @@ void TComponentModel::loadIODevice(QDomElement * element)
     }
 
     if (!found) {
-        appendIODevice(nullptr, element);
+        appendIODevice(nullptr, false, element);
     }
 }
 
@@ -409,6 +444,6 @@ void TComponentModel::loadScope(QDomElement * element)
     }
 
     if (!found) {
-        appendScope(nullptr, element);
+        appendScope(nullptr, false, element);
     }
 }

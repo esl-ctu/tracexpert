@@ -69,6 +69,11 @@ bool TPluginUnitModel::deInit()
     return ok;
 }
 
+bool TPluginUnitModel::remove()
+{
+    return false;
+}
+
 bool TPluginUnitModel::isAvailable() const
 {
     return m_unit;

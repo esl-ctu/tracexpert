@@ -24,6 +24,7 @@ TMainWindow::TMainWindow(QWidget * parent)
     m_projectView = nullptr;
 
     m_protocolWidget = nullptr;
+    m_projectDockWidget = nullptr;
 
     createActions();
     createMenus();
@@ -88,6 +89,7 @@ void TMainWindow::createActions()
     m_closeProjectAction->setShortcuts(QKeySequence::Close);
     m_closeProjectAction->setIcon(QIcon::fromTheme("document-close"));
     m_closeProjectAction->setStatusTip(tr("Close the current project"));
+    m_closeProjectAction->setEnabled(false);
     connect(m_closeProjectAction, SIGNAL(triggered()), this, SLOT(closeProject()));
 
     m_openDeviceAction = new QAction(tr("Open device"), this);
@@ -111,6 +113,7 @@ void TMainWindow::createProjectDockWidget(TProjectModel * model)
 
     m_saveProjectAction->setEnabled(true);
     m_saveProjectAsAction->setEnabled(true);
+    m_closeProjectAction->setEnabled(true);
     m_openDeviceAction->setEnabled(true);
 }
 
@@ -210,13 +213,11 @@ void TMainWindow::newProject()
     connect(m_projectModel, &TProjectModel::scopeInitialized, this, &TMainWindow::createScopeDockWidget);
 
     createProjectDockWidget(m_projectModel);
+    createProtocolManagerWidget();
 }
 
 void TMainWindow::openProject()
 {
-    if (m_projectModel)
-        closeProject();
-
     QStringList filters;
     filters << "TraceXpert project file (*.txp)"
             << "Any files (*)";
@@ -227,6 +228,9 @@ void TMainWindow::openProject()
     openDialog.setFileMode(QFileDialog::ExistingFile);
     openDialog.setDirectory(m_projectDirectory);
     if (!openDialog.exec()) return;
+
+    if (m_projectModel)
+        closeProject();
 
     m_projectFileName = openDialog.selectedFiles().constFirst();
     m_projectDirectory = openDialog.directory();
@@ -261,6 +265,7 @@ void TMainWindow::openProject()
     }
 
     createProjectDockWidget(m_projectModel);
+    createProtocolManagerWidget();
 }
 
 void TMainWindow::saveProject(bool saveAs)
@@ -304,13 +309,15 @@ void TMainWindow::closeProject()
         m_projectModel = nullptr;
     }
 
-    m_viewMenu->removeAction(m_projectDockWidget->toggleViewAction());
-    if(m_protocolWidget) {
+    if (m_projectDockWidget) {
+        m_viewMenu->removeAction(m_projectDockWidget->toggleViewAction());
+        m_projectDockWidget->close();
+    }
+
+    if (m_protocolWidget) {
         m_viewMenu->removeAction(m_protocolWidget->toggleViewAction());
         m_protocolWidget->close();
     }
-
-    m_projectDockWidget->close();    
 
     m_saveProjectAction->setEnabled(false);
     m_saveProjectAsAction->setEnabled(false);

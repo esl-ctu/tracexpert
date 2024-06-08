@@ -203,6 +203,7 @@ void TProjectModel::unloadComponents()
 {
     for (int i = 0; i < m_componentContainer->count(); i++) {
         m_componentContainer->at(i)->deInit();
+        delete m_componentContainer->at(i);
     }
 }
 

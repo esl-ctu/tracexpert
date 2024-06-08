@@ -1,9 +1,10 @@
 #include "tscopemodel.h"
 
 #include "tscopecontainer.h"
+#include "tcomponentmodel.h"
 
-TScopeModel::TScopeModel(TScope * scope, TScopeContainer * parent)
-    : TProjectItem(parent->model(), parent), TPluginUnitModel(scope, parent), m_scope(scope)
+TScopeModel::TScopeModel(TScope * scope, TScopeContainer * parent, bool manual)
+    : TProjectItem(parent->model(), parent), TPluginUnitModel(scope, parent, manual), m_scope(scope)
 {
     m_typeName = "scope";
 }
@@ -63,6 +64,15 @@ bool TScopeModel::deInit()
     emit deinitialized(this);
 
     return true;
+}
+
+bool TScopeModel::remove()
+{
+    TComponentModel * component = dynamic_cast<TComponentModel *>(TProjectItem::parent()->parent());
+    if (!component)
+        return false;
+
+    return component->removeScope(this);
 }
 
 TConfigParam TScopeModel::setPostInitParams(const TConfigParam & param)
@@ -198,7 +208,7 @@ void TScopeCollector::collectData(size_t bufferSize)
             bool overloadSingle;
             buffer = new uint8_t[bufferSize];
 
-            m_scope->downloadSamples(i, buffer, bufferSize, &type, &samplesPerTrace, &traces, &overloadSingle);
+            m_scope->downloadSamples(status[i].getIndex(), buffer, bufferSize, &type, &samplesPerTrace, &traces, &overloadSingle);
 
             if (!traces) {
                 for (int j = 0; j < buffers.count(); j++)

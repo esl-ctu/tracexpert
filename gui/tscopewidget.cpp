@@ -119,12 +119,12 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
 
 bool TScopeWidget::applyPostInitParam() {
     TConfigParam param = m_scopeModel->setPostInitParams(m_paramWidget->param());
+    m_paramWidget->setParam(param);
+
     if (param.getState(true) == TConfigParam::TState::TError) {
         qWarning("TScope parameters not set due to error state!");
         return false;
     }
-
-    m_paramWidget->setParam(param);
 
     return true;
 }

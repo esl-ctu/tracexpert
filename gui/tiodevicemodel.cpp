@@ -4,9 +4,10 @@
 #include <QVariant>
 
 #include "tiodevicecontainer.h"
+#include "tcomponentmodel.h"
 
-TIODeviceModel::TIODeviceModel(TIODevice * IODevice, TIODeviceContainer * parent)
-    : TProjectItem(parent->model(), parent), TPluginUnitModel(IODevice, parent), m_IODevice(IODevice)
+TIODeviceModel::TIODeviceModel(TIODevice * IODevice, TIODeviceContainer * parent, bool manual)
+    : TProjectItem(parent->model(), parent), TPluginUnitModel(IODevice, parent, manual), m_IODevice(IODevice)
 {
     m_typeName = "iodevice";
 
@@ -79,6 +80,15 @@ bool TIODeviceModel::deInit()
     emit deinitialized(this);
 
     return true;
+}
+
+bool TIODeviceModel::remove()
+{
+    TComponentModel * component = dynamic_cast<TComponentModel *>(TProjectItem::parent()->parent());
+    if (!component)
+        return false;
+
+    return component->removeIODevice(this);
 }
 
 int TIODeviceModel::childrenCount() const

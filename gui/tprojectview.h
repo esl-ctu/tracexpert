@@ -37,10 +37,12 @@ private slots:
     void initIODevice();
     void deinitIODevice();
     void showIODevice();
+    void removeIODevice();
 
     void initScope();
     void deinitScope();
     void showScope();
+    void removeScope();
 
     void showInfo();
 
@@ -65,10 +67,12 @@ private:
     QAction * m_initIODeviceAction;
     QAction * m_deinitIODeviceAction;
     QAction * m_showIODeviceAction;
+    QAction * m_removeIODeviceAction;
 
     QAction * m_initScopeAction;
     QAction * m_deinitScopeAction;
     QAction * m_showScopeAction;
+    QAction * m_removeScopeAction;
 
     QAction * m_openProtocolManagerAction;
     QAction * m_editProtocolAction;
