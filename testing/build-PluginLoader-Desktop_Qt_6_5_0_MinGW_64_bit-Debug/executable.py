@@ -10,6 +10,7 @@ from threading import Thread
 from queue import Queue
 from ctypes import c_uint8 as uint16_t
 from ctypes import c_double as double
+from datetime import datetime
 
 ##GLOBALS##
 PLUGIN_ID = "TraceXpert.NewAE"
@@ -30,7 +31,7 @@ def printToStdout(data, asIODevice, cwID):
     else:
         data += ",SC,"
     data += str(cwID)
-    #printToStderr(data) #TODO remove
+    #☺printToStderr(data + " " + str(datetime.now())) #TODO remove
 
     stdoutMutex.lock()
     print(data, flush=True)
@@ -498,7 +499,6 @@ def callCwFunc(line, shm, dct):
         #ret = bytes(tmpLen, 'ascii') + ret
     else:
         ret = "{:016x}".format(len(ret)) + ret
-    
     writeToSHM(ret, shm)
 
     if asTarget == True:
@@ -745,7 +745,7 @@ def main():
     targetConsumerDict = dict()
 
     for line in sys.stdin:
-        #print(line, flush=True, file=sys.stderr) # TODO!!! Remove!!
+        #print(line + " " + str(datetime.now()), flush=True, file=sys.stderr) # TODO!!! Remove!!
         if line == "\r" or line == "\n" or line == "\r\n":
             continue
 

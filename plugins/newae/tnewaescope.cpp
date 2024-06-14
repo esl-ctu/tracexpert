@@ -67,13 +67,13 @@ TConfigParam TnewaeScope::_createPostInitParams(){
 
     //Top
     auto fun1 = TConfigParam("default_setup", QString(""), TConfigParam::TType::TDummy, "");
-    fun1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, "See NewAE help string on details for function runs."));
+    fun1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, "If set to true, no functions below this one will be run and no custom parameters will be set! See NewAE help string on details for function runs."));
     top.addSubParam(fun1);
     auto fun2 = TConfigParam("cglitch_setup", QString(""), TConfigParam::TType::TDummy, "");
-    fun2.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, "See NewAE help string on details for function runs."));
+    fun2.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, "If set to true, no functions below this one will be run and no custom parameters will be set! See NewAE help string on details for function runs."));
     top.addSubParam(fun2);
     auto fun3 = TConfigParam("vglitch_setup", QString(""), TConfigParam::TType::TDummy, "");
-    fun3.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, "See NewAE help string on details for function runs."));
+    fun3.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, "If set to true, no functions below this one will be run and no custom parameters will be set! See NewAE help string on details for function runs."));
     top.addSubParam(fun3);
     auto fun4 = TConfigParam("reset_sam3u", QString(""), TConfigParam::TType::TDummy, "");
     fun4.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, "You cannot call this function here. It would disconnect the scope!", true));
@@ -104,7 +104,7 @@ TConfigParam TnewaeScope::_createPostInitParams(){
     adc.addSubParam(TConfigParam("presamples", QString(""), TConfigParam::TType::TInt, ""));
     adc.addSubParam(TConfigParam("samples", QString(""), TConfigParam::TType::TInt, ""));
     adc.addSubParam(TConfigParam("state", QString(""), TConfigParam::TType::TBool, "", true));
-    adc.addSubParam(TConfigParam("timeout", QString(""), TConfigParam::TType::TReal, ""));
+    adc.addSubParam(TConfigParam("timeout", QString("0.1"), TConfigParam::TType::TReal, "In seconds"));
     adc.addSubParam(TConfigParam("trig_count", QString("If you need to see the value of this parameter, you need to click Apply in this window when the measurement is done."), TConfigParam::TType::TInt, "", true));
     //auto funA1 = TConfigParam("clear_clip_errors", QString(""), TConfigParam::TType::TDummy, ""); (husky only)
     //funA1.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
@@ -288,21 +288,23 @@ QList<TScope::TChannelStatus> TnewaeScope::getChannelsStatus(){
     int index = 0;
     QString alias = name + " ch0";
     bool enabled = true;
-    qreal range = 0.5;
     qreal offset = 0;
 
     QString out;
     bool ok = plugin->getPythonSubparameter(cwId, "ADC", "offset", out);
+    if (!ok) {
+        qWarning("Scope offset value invalid!");
+    }
     offset = out.toDouble();
 
     QList<TnewaeScope::TChannelStatus> channelList;
 
     bool tracesAsInt = m_postInitParams.getSubParamByName("TraceXpert")->getSubParamByName("Get traces as int")->getValue() == "true";
     if(tracesAsInt){
-        TChannelStatus channelA(index, alias, enabled, range, offset, 0, 1023);
+        TChannelStatus channelA(index, alias, enabled, 512, 512 + offset, 0, 1023);
         channelList.append(channelA);
     } else{
-        TChannelStatus channelA(index, alias, enabled, range, offset, -0.5, 0.5);
+        TChannelStatus channelA(index, alias, enabled, 0.5, offset, -0.5, 0.5);
         channelList.append(channelA);
     }
 
@@ -320,11 +322,7 @@ TScope::TTimingStatus TnewaeScope::getTimingStatus() {
 }
 
 TScope::TTriggerStatus TnewaeScope::getTriggerStatus() {
-    if (running){
-        return TScope::TTriggerStatus(TScope::TTriggerStatus::TTriggerType::TRisingOrFalling, 0.5, 0);
-    } else {
-        return TScope::TTriggerStatus(TScope::TTriggerStatus::TTriggerType::TNone, 0.5, 0);
-    }
+    return TScope::TTriggerStatus(TScope::TTriggerStatus::TTriggerType::TNone, 0, 0);
 
 }
 
@@ -414,7 +412,7 @@ bool TnewaeScope::_validatePostInitParamsStructure(TConfigParam & params){
     }
 
     if(!validateParamLL(newAEparams->getSubParamByName("ADC")->getSubParamByName("samples")->getValue(), 0, cwBufferSize)){
-        newAEparams->getSubParamByName("ADC")->getSubParamByName("samples")->setState(TConfigParam::TState::TWarning);
+        newAEparams->getSubParamByName("ADC")->getSubParamByName("samples")->setState(TConfigParam::TState::TWarning, "Invalid number of samples. For CW lite/UFO/L1, the maximum is 24400. For other scopes, please refer to NewAE documentation.");
         ok = false;
     }
 
@@ -590,13 +588,14 @@ void TnewaeScope::deInit(bool *ok/* = nullptr*/){
 
 //This whole method is ugly. I'm sorry
 TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write /*= false*/) const {
-    bool ook;
+    bool ook, ook2, ook3;
     TConfigParam * topPrm = paramsIn.getSubParamByName("NewAE", &ook);
     if (!ook) {
         paramsIn.setState(TConfigParam::TState::TError, "Error getting scope params!");
-        qWarning("Cannot find postinit params!");
+        qWarning("Cannot find postinit params! (1)");
         return paramsIn;
     }
+
     QList<TConfigParam> prms = topPrm->getSubParams();
 
     //state == 1 -> call any FUNCTIONs that shoulf be called
@@ -725,6 +724,11 @@ TConfigParam TnewaeScope::getPostInitParams() const{
         return m_postInitParams;
     }
 
+    if(!(plugin->waitForPythonDone(cwId))) {
+        qWarning("Python is not ready, cannot update postinit params");
+        return m_postInitParams;
+    }
+
     TConfigParam params = m_postInitParams;
     return updatePostInitParams(params);
 }
@@ -735,8 +739,65 @@ TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){
         return m_postInitParams;
     }
 
-    m_postInitParams.resetState(true);
-    bool ok = _validatePostInitParamsStructure(params);
+    if(!(plugin->waitForPythonDone(cwId))) {
+        qWarning("Python is not ready, cannot update postinit params");
+        return m_postInitParams;
+    }
+
+    bool ook, ook2, ook3;
+    TConfigParam * ds = params.getSubParamByName("default_setup", &ook);
+    TConfigParam * cs = params.getSubParamByName("cglitch_setup", &ook2);
+    TConfigParam * vs = params.getSubParamByName("vglitch_setup", &ook3);
+
+    if (!ook || !ook2 || !ook3) {
+        params.setState(TConfigParam::TState::TError, "Error getting scope params!");
+        qWarning("Cannot find postinit params! (2)");
+        return params;
+    }
+
+    QList<QString> tmp;
+    size_t len;
+    QString out;
+    bool ok, ok2, ok3;
+    if(ds->getSubParamByName("Run?", &ok2)->getValue() == "true") {
+        if(ok2){
+            ok = plugin->runPythonFunctionAndGetStringOutput(cwId, "default_setup", 0, tmp, len, out);
+            ds->getSubParamByName("Run?")->setValue("false", &ok3);
+            if (!ok || !ok3){
+                params.setState(TConfigParam::TState::TError, "Error getting scope params!");
+                qWarning("Funtion not run!");
+            }
+            params.resetState(true);
+            return updatePostInitParams(params);
+        }
+    }
+
+    if(cs->getSubParamByName("Run?", &ok2)->getValue() == "true") {
+        if(ok2){
+            ok = plugin->runPythonFunctionAndGetStringOutput(cwId, "cglitch_setup", 0, tmp, len, out);
+            cs->getSubParamByName("Run?")->setValue("false", &ok3);
+            if (!ok || ok3){
+                params.setState(TConfigParam::TState::TError, "Error getting scope params!");
+                qWarning("Funtion not run!");
+            }
+            return updatePostInitParams(params);
+        }
+    }
+
+    if(vs->getSubParamByName("Run?", &ok2)->getValue() == "true") {
+        if(ok2){
+            ok = plugin->runPythonFunctionAndGetStringOutput(cwId, "vglitch_setup", 0, tmp, len, out);
+            vs->getSubParamByName("Run?")->setValue("false", &ok3);
+            if (!ok || !ok3){
+                params.setState(TConfigParam::TState::TError, "Error getting scope params!");
+                qWarning("Funtion not run!");
+            }
+            return updatePostInitParams(params);
+        }
+    }
+
+    params.resetState(true);
+    ok = _validatePostInitParamsStructure(params);
     if (ok) {
         m_postInitParams = updatePostInitParams(params, true);
         QEventLoop loop; // Wait 0.5s for new params (see newae docu)
@@ -746,7 +807,7 @@ TConfigParam TnewaeScope::setPostInitParams(TConfigParam params){
     }
     else {
         m_postInitParams = params;
-        qWarning("Post init params vadiation not successful, nothing was stored");
+        qWarning("Post init params vadiation not successful, parameters were not sent to scope");
     }
     return m_postInitParams;
 }
@@ -826,7 +887,7 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
         qDebug("Error sending the capture command. This does not necessarily mean a timeout.");
     }
 
-    if (continuous){
+    /*if (continuous){
         if (stopNow) {
             stopNow = false;
             running = false;
@@ -841,9 +902,9 @@ size_t TnewaeScope::downloadSamples(int channel, uint8_t * buffer, size_t buffer
                 running = false;
             }
         }
-    } else {
+    } else {*/
         running = false;
-    }
+    /*}*/
 
     //Get trace
     size_t byteSize;

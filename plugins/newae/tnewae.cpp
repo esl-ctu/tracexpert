@@ -467,7 +467,6 @@ void TNewae::init(bool *ok) {
 }
 
 void TNewae::deInit(bool *ok) {
-    if(ok != nullptr) *ok = true;
     m_initialized = false;
     qDeleteAll(m_ports.begin(), m_ports.end());
     qDeleteAll(m_scopes.begin(), m_scopes.end());
@@ -475,17 +474,21 @@ void TNewae::deInit(bool *ok) {
     m_scopes.clear();
     if(ok != nullptr) *ok = true;
 
-    bool succ;
+    if(m_initialized) {
 
-    //Stop python
-    pythonProcess->write("HALT");
-    pythonProcess->waitForBytesWritten();
-    pythonProcess->closeWriteChannel();
+        bool succ;
 
-    succ = pythonProcess->waitForFinished(PROCESS_WAIT_MSCECS);
-    if (!succ){
-        qWarning("Python component for NewAE devices did not exit gracefully. Killing...");
-        pythonProcess->kill();
+        //Stop python
+        pythonProcess->write("HALT");
+        pythonProcess->waitForBytesWritten();
+        pythonProcess->closeWriteChannel();
+
+        succ = pythonProcess->waitForFinished(PROCESS_WAIT_MSCECS);
+        if (!succ){
+            qWarning("Python component for NewAE devices did not exit gracefully. Killing...");
+            pythonProcess->kill();
+        }
+
     }
 
     pythonReady[NO_CW_ID] = false;
@@ -495,6 +498,7 @@ void TNewae::deInit(bool *ok) {
     qDeleteAll(targetShmMap);
     shmMap.clear();
     targetShmMap.clear();
+
 }
 
 TConfigParam TNewae::getPostInitParams() const {
@@ -1009,22 +1013,23 @@ void TNewae::checkForPythonState(){
 
 
 bool TNewae::waitForPythonDone(uint8_t cwId, int timeout/* = 30000*/){
-    for (int i = 0; i < 15; ++i) {
+    for (int i = 0; i < timeout/50; ++i) {
         if (pythonReady[cwId]){
+
             break;
         }
-        pythonProcess->waitForReadyRead(timeout/15);
+        pythonProcess->waitForReadyRead(50);
     }
 
     return pythonReady[cwId];
 }
 
 bool TNewae::waitForPythonTargetDone(uint8_t cwId, int timeout/* = 30000*/){
-    for (int i = 0; i < 15; ++i) {
+    for (int i = 0; i < timeout/50; ++i) {
         if (pythonTargetReady[cwId]){
             break;
         }
-        pythonProcess->waitForReadyRead(timeout/15);
+        pythonProcess->waitForReadyRead(50);
     }
 
     return pythonTargetReady[cwId];
