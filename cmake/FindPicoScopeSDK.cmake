@@ -18,6 +18,16 @@ find_library(PICOSCOPESDK_LIBRARY
         /opt/picoscope/
     PATH_SUFFIXES
         lib)
+        
+find_library(PICOSCOPE6000A_LIBRARY
+    NAMES ps6000a
+    PATHS
+        ENV "PROGRAMFILES"
+        $ENV{PROGRAMFILES}/Pico\ Technology/SDK
+        /opt/picoscope/
+    PATH_SUFFIXES
+        lib)
+               
 
 find_package_handle_standard_args(
   PicoScopeSDK
