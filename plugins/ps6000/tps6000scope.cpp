@@ -1,6 +1,6 @@
 #include "tps6000scope.h"
 
-TPS6000Scope::TPS6000Scope(const QString & name, const QString & info): m_name(name), m_info(info), m_initialized(false), m_running(false), m_handle(0), m_preTrigSamples(0), m_postTrigSamples(0), m_captures(0), m_timebase(0), m_samplingPeriod(0) {
+TPS6000Scope::TPS6000Scope(const QString & name, const QString & info): m_name(name), m_info(info), m_initialized(false), m_running(false), m_handle(0), m_preTrigSamples(0), m_postTrigSamples(0), m_captures(0), m_timebase(0), m_samplingPeriod(0), m_channelEnabled(false) {
     m_preInitParams = TConfigParam(m_name + " pre-init configuration", "", TConfigParam::TType::TDummy, "");
     m_preInitParams.addSubParam(TConfigParam("Serial number", m_name, TConfigParam::TType::TString, "Serial number of the Picoscope 6000 (e.g., GO021/009, AQ005/139 or VDR61/356). Leave empty for the first scope found to be opened.", false));
 }
@@ -188,6 +188,8 @@ void TPS6000Scope::_setChannels() {
 
     bool iok;
 
+    m_channelEnabled = false;
+
     for (int channel = 1; channel <= 4; channel++){
 
         TConfigParam * channelSettings;
@@ -220,6 +222,9 @@ void TPS6000Scope::_setChannels() {
         // Enabled parameter
 
         int16_t psEnabled = (channelSettings->getValue() == "Enabled") ? true : false;
+        if(channelSettings->getValue() == "Enabled"){
+            m_channelEnabled = true;
+        }
 
         // Coupling parameter
 
@@ -712,8 +717,10 @@ TConfigParam TPS6000Scope::setPostInitParams(TConfigParam params) {
     m_postInitParams.resetState(true); // reset all warnings and errors
 
     _setChannels();
-    _setTrigger();
-    _setTiming();
+    if(m_channelEnabled == true){
+        _setTrigger();
+        _setTiming();
+    }
 
     return m_postInitParams;
 
