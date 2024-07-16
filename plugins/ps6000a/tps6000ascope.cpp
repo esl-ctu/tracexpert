@@ -709,7 +709,7 @@ void TPS6000aScope::_setTrigger() {
 
     // Autotrigger
 
-    TConfigParam * autotriggerPar = triggerSettings->getSubParamByName("Auto trigger (ms)", &iok);
+    TConfigParam * autotriggerPar = triggerSettings->getSubParamByName("Auto trigger (us)", &iok);
     if(!iok){
         qCritical("Autotrigger setup not found in the post-init params");
         return;
