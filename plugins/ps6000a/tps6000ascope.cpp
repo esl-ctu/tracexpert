@@ -44,7 +44,7 @@ void TPS6000aScope::_createPostInitParams() {
     uint32_t bandwidth;
     _getChannelsAndResolution(&channels, &resolution, &bandwidth);
 
-    m_postInitParams = TConfigParam(m_name + "configuration", "", TConfigParam::TType::TDummy, "");
+    m_postInitParams = TConfigParam(m_name + " configuration", "", TConfigParam::TType::TDummy, "");
 
     // Vertical resolution
 
@@ -151,7 +151,7 @@ void TPS6000aScope::_createPostInitParams() {
     triggerDirection.addEnumValue("Below");
     triggerSettings.addSubParam(triggerDirection);
     // Autotrigger
-    TConfigParam triggerAuto = TConfigParam("Auto trigger (ms)", "10000", TConfigParam::TType::TInt, "The number of milliseconds the device will wait if no trigger occurs"); // TODO nula je nekonecno?
+    TConfigParam triggerAuto = TConfigParam("Auto trigger (us)", "0", TConfigParam::TType::TInt, "The number of microseconds the device will wait if no trigger occurs (zero = waits forever)");
     triggerSettings.addSubParam(triggerAuto);
     m_postInitParams.addSubParam(triggerSettings);
 
@@ -715,7 +715,7 @@ void TPS6000aScope::_setTrigger() {
         return;
     }
 
-    int16_t psAutoTrigger = (int16_t)autotriggerPar->getValue().toInt();
+    int32_t psAutoTrigger = (int32_t)autotriggerPar->getValue().toInt();
 
     // Setup
     status = ps6000aSetSimpleTrigger(m_handle, psEnabled, psSource, psADCcount, psDirection, 0, psAutoTrigger);

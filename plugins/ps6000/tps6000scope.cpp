@@ -105,7 +105,7 @@ void TPS6000Scope::_createPostInitParams() {
     triggerDirection.addEnumValue("Below");
     triggerSettings.addSubParam(triggerDirection);
     // Autotrigger
-    TConfigParam triggerAuto = TConfigParam("Auto trigger (ms)", "10000", TConfigParam::TType::TInt, "The number of milliseconds the device will wait if no trigger occurs"); // TODO nula je nekonecno?
+    TConfigParam triggerAuto = TConfigParam("Auto trigger (ms)", "0", TConfigParam::TType::TInt, "The number of milliseconds the device will wait if no trigger occurs (zero = waits forever)"); // TODO nula je nekonecno?
     triggerSettings.addSubParam(triggerAuto);
     m_postInitParams.addSubParam(triggerSettings);
 
