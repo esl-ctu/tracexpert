@@ -1123,7 +1123,6 @@ size_t TPS6000aScope::downloadSamples(int channel, uint8_t * buffer, size_t buff
         status = ps6000aGetNoOfCaptures(m_handle, &capturesR);
         if (status || capturesR != m_captures){
             qWarning((QString("Failed to capture specified number of traces per run: %1 requested, %2 got").arg(m_captures).arg(capturesR)).toStdString().c_str());
-            return 0;
         }
 
         PICO_ACTION psAction = (PICO_ACTION) (PICO_CLEAR_ALL | PICO_ADD);
@@ -1132,6 +1131,8 @@ size_t TPS6000aScope::downloadSamples(int channel, uint8_t * buffer, size_t buff
             status = ps6000aSetDataBuffer(m_handle, psChannel, reinterpret_cast<short *>(buffer) + i * psSamples, psSamples, PICO_INT16_T, i, PICO_RATIO_MODE_RAW, psAction);
             if (status) {
                 qWarning("Failed to set up receiving buffer");
+                *samplesPerTraceDownloaded = 0;
+                *tracesDownloaded = 0;
                 return 0;
             }
             psAction = PICO_ADD;
@@ -1140,6 +1141,8 @@ size_t TPS6000aScope::downloadSamples(int channel, uint8_t * buffer, size_t buff
         status = ps6000aGetValuesBulk(m_handle, 0, &psSamples, 0, capturesR - 1, 1, PICO_RATIO_MODE_RAW, over.get());
         if (status || psSamples != ((m_preTrigSamples + m_postTrigSamples))) {
             qWarning("Failed to receive the data");
+            *samplesPerTraceDownloaded = 0;
+            *tracesDownloaded = 0;
             return 0;
         }
 
@@ -1150,12 +1153,16 @@ size_t TPS6000aScope::downloadSamples(int channel, uint8_t * buffer, size_t buff
         PICO_STATUS status = ps6000aSetDataBuffer(m_handle, psChannel, reinterpret_cast<short *>(buffer), m_preTrigSamples + m_postTrigSamples, PICO_INT16_T, 0, PICO_RATIO_MODE_RAW, psAction);
         if (status){
             qWarning("Failed to set up receiving buffer");
+            *samplesPerTraceDownloaded = 0;
+            *tracesDownloaded = 0;
             return 0;
         }
 
         status = ps6000aGetValues(m_handle, 0, &psSamples, 1, PICO_RATIO_MODE_RAW, 0, over.get());
         if (status || psSamples != (m_preTrigSamples + m_postTrigSamples)){
             qWarning("Failed to receive the data");
+            *samplesPerTraceDownloaded = 0;
+            *tracesDownloaded = 0;
             return 0;
         }
 

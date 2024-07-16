@@ -810,6 +810,7 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
     }
 
     uint32_t psSamples = (m_preTrigSamples + m_postTrigSamples);
+    uint32_t capturesR = m_captures;
 
     std::unique_ptr <int16_t> over(new int16_t[m_captures]);
 
@@ -817,24 +818,26 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
 
         PICO_STATUS status;
 
-        uint32_t capturesR;
         status = ps6000GetNoOfCaptures(m_handle, &capturesR);
         if (status || capturesR != m_captures){
-            qWarning("Failed to capture specified number of traces per run");
-            return 0;
+            qWarning("Failed to capture specified number of traces per run"); // vadi to?
         }
 
-        for (uint32_t i = 0; i < m_captures; i++) {
+        for (uint32_t i = 0; i < capturesR; i++) {
             status = ps6000SetDataBufferBulk(m_handle, psChannel, reinterpret_cast<short *>(buffer) + i * psSamples, psSamples, i, PS6000_RATIO_MODE_NONE);
             if (status) {
                 qWarning("Failed to set up receiving buffer");
+                *samplesPerTraceDownloaded = 0;
+                *tracesDownloaded = 0;
                 return 0;
             }
         }
 
-        status = ps6000GetValuesBulk(m_handle, &psSamples, 0, m_captures - 1, 0, PS6000_RATIO_MODE_NONE, over.get());
+        status = ps6000GetValuesBulk(m_handle, &psSamples, 0, capturesR - 1, 0, PS6000_RATIO_MODE_NONE, over.get());
         if (status || psSamples != ((m_preTrigSamples + m_postTrigSamples))) {
             qWarning("Failed to receive the data");
+            *samplesPerTraceDownloaded = 0;
+            *tracesDownloaded = 0;
             return 0;
         }
 
@@ -843,12 +846,16 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
         PICO_STATUS status = ps6000SetDataBuffer(m_handle, psChannel, reinterpret_cast<short *>(buffer), m_preTrigSamples + m_postTrigSamples, PS6000_RATIO_MODE_NONE);
         if (status){
             qWarning("Failed to set up receiving buffer");
+            *samplesPerTraceDownloaded = 0;
+            *tracesDownloaded = 0;
             return 0;
         }
 
         status = ps6000GetValues(m_handle, 0, &psSamples, 1, PS6000_RATIO_MODE_NONE, 0, over.get());
         if (status || psSamples != (m_preTrigSamples + m_postTrigSamples)){
             qWarning("Failed to receive the data");
+            *samplesPerTraceDownloaded = 0;
+            *tracesDownloaded = 0;
             return 0;
         }
 
@@ -856,7 +863,7 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
 
     *overvoltage = false;
     int channel_bitidx = channel - 1;
-    for(uint32_t i = 0; i < m_captures; i++){
+    for(uint32_t i = 0; i < capturesR; i++){
         if( ((((over.get())[i]) >> channel_bitidx) & 0x01) > 0 ) {
             *overvoltage = true;
         }
@@ -864,8 +871,8 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
 
     *samplesType = TScope::TSampleType::TInt16;
     *samplesPerTraceDownloaded = psSamples;
-    *tracesDownloaded = m_captures;
-    return psSamples * m_captures * sizeof(int16_t);
+    *tracesDownloaded = capturesR;
+    return psSamples * capturesR * sizeof(int16_t);
 
 }
 
