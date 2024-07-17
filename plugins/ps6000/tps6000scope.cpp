@@ -820,7 +820,7 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
 
         status = ps6000GetNoOfCaptures(m_handle, &capturesR);
         if (status || capturesR != m_captures){
-            qWarning("Failed to capture specified number of traces per run"); // vadi to?
+            qWarning("Failed to capture specified number of traces per run");
         }
 
         for (uint32_t i = 0; i < capturesR; i++) {

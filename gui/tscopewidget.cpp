@@ -233,8 +233,10 @@ void TScopeWidget::receiveTraces(size_t traces, size_t samples, TScope::TSampleT
 
     // deleting old trace data moved here
     // due to immediate delete causing problems
-    qDeleteAll(m_traceDataList);
-    m_traceDataList.clear();
+    if(m_totalTraceCount == 0){
+        qDeleteAll(m_traceDataList);
+        m_traceDataList.clear();
+    }
 
     // save data to internal buffers
     m_traceDataList.append(
@@ -273,7 +275,7 @@ void TScopeWidget::displayTrace(size_t traceIndex) {
     }
 
     const TScopeTraceData * traceData = m_traceDataList[traceDataListIndex];
-    size_t sampleOffset = traceIndex - m_traceDataList[traceDataListIndex]->firstTraceIndex;
+    size_t traceBufferIndex = traceIndex - m_traceDataList[traceDataListIndex]->firstTraceIndex;    
 
     m_chart->removeAllSeries();
 
@@ -308,21 +310,21 @@ void TScopeWidget::displayTrace(size_t traceIndex) {
 
         switch(traceData->type) {
             case TScope::TSampleType::TUInt8:
-                createLineSeries(lineSeries, channel, (uint8_t*) traceData->buffers[channelIndex], sampleOffset, traceData->samples, minValue, maxValue); break;
+                createLineSeries(lineSeries, channel, (uint8_t*) traceData->buffers[channelIndex], traceBufferIndex, traceData->samples, minValue, maxValue); break;
             case TScope::TSampleType::TInt8:
-                createLineSeries(lineSeries, channel, (int8_t*)  traceData->buffers[channelIndex], sampleOffset, traceData->samples, minValue, maxValue); break;
+                createLineSeries(lineSeries, channel, (int8_t*)  traceData->buffers[channelIndex], traceBufferIndex, traceData->samples, minValue, maxValue); break;
             case TScope::TSampleType::TUInt16:
-                createLineSeries(lineSeries, channel, (uint16_t*)traceData->buffers[channelIndex], sampleOffset, traceData->samples, minValue, maxValue); break;
+                createLineSeries(lineSeries, channel, (uint16_t*)traceData->buffers[channelIndex], traceBufferIndex, traceData->samples, minValue, maxValue); break;
             case TScope::TSampleType::TInt16:
-                createLineSeries(lineSeries, channel, (int16_t*) traceData->buffers[channelIndex], sampleOffset, traceData->samples, minValue, maxValue); break;
+                createLineSeries(lineSeries, channel, (int16_t*) traceData->buffers[channelIndex], traceBufferIndex, traceData->samples, minValue, maxValue); break;
             case TScope::TSampleType::TUInt32:
-                createLineSeries(lineSeries, channel, (uint32_t*)traceData->buffers[channelIndex], sampleOffset, traceData->samples, minValue, maxValue); break;
+                createLineSeries(lineSeries, channel, (uint32_t*)traceData->buffers[channelIndex], traceBufferIndex, traceData->samples, minValue, maxValue); break;
             case TScope::TSampleType::TInt32:
-                createLineSeries(lineSeries, channel, (int32_t*) traceData->buffers[channelIndex], sampleOffset, traceData->samples, minValue, maxValue); break;
+                createLineSeries(lineSeries, channel, (int32_t*) traceData->buffers[channelIndex], traceBufferIndex, traceData->samples, minValue, maxValue); break;
             case TScope::TSampleType::TReal32:
-                createLineSeries(lineSeries, channel, (float*)   traceData->buffers[channelIndex], sampleOffset, traceData->samples, minValue, maxValue); break;
+                createLineSeries(lineSeries, channel, (float*)   traceData->buffers[channelIndex], traceBufferIndex, traceData->samples, minValue, maxValue); break;
             case TScope::TSampleType::TReal64:
-                createLineSeries(lineSeries, channel, (double*)  traceData->buffers[channelIndex], sampleOffset, traceData->samples, minValue, maxValue); break;
+                createLineSeries(lineSeries, channel, (double*)  traceData->buffers[channelIndex], traceBufferIndex, traceData->samples, minValue, maxValue); break;
         }
 
         channelIndex++;
@@ -384,7 +386,7 @@ void TScopeWidget::updateIconAxis() {
 }
 
 template <class T>
-void TScopeWidget::createLineSeries(QLineSeries * lineSeries, TScope::TChannelStatus channel, T * buffer, size_t sampleOffset, size_t sampleCount, qreal & minValue, qreal & maxValue) {
+void TScopeWidget::createLineSeries(QLineSeries * lineSeries, TScope::TChannelStatus channel, T * buffer, size_t traceBufferIndex, size_t sampleCount, qreal & minValue, qreal & maxValue) {
     lineSeries->setUseOpenGL(true);
     lineSeries->setName(QString(tr("%1 [channel %2]")).arg(channel.getAlias()).arg(channel.getIndex()));
     lineSeries->setColor(QColor(channelColorCodes[channel.getIndex() % 8]));
@@ -397,8 +399,8 @@ void TScopeWidget::createLineSeries(QLineSeries * lineSeries, TScope::TChannelSt
     qreal value;
     if(sampleCount < idealPointCount) {
         // not too many samples, draw every sample as single point
-        for (size_t i = sampleOffset; i < sampleOffset + sampleCount; i++) {
-            value = slope * (buffer[i] - channel.getMinValue()) - channel.getRange() + channel.getOffset();
+        for (size_t i = 0; i < sampleCount; i++) {
+            value = slope * (buffer[i + traceBufferIndex * sampleCount] - channel.getMinValue()) - channel.getRange() + channel.getOffset();
             pointList.append(QPointF(i, value));
 
             minValue = value < minValue ? value : minValue;
@@ -410,15 +412,15 @@ void TScopeWidget::createLineSeries(QLineSeries * lineSeries, TScope::TChannelSt
         size_t groupSampleSize = sampleCount / idealPointCount;
 
         qreal min, max;
-        size_t sampleIndex = sampleOffset;
-        while(sampleIndex < sampleOffset + sampleCount) {
-            qreal firstValue = slope * (buffer[sampleIndex] - channel.getMinValue()) - channel.getRange() + channel.getOffset();
+        size_t sampleIndex = 0;
+        while(sampleIndex < sampleCount) {
+            qreal firstValue = slope * (buffer[sampleIndex + traceBufferIndex * sampleCount] - channel.getMinValue()) - channel.getRange() + channel.getOffset();
             min = firstValue;
             max = firstValue;
 
             size_t loopEndIndex = (sampleIndex + groupSampleSize) > sampleCount ? sampleCount : sampleIndex + groupSampleSize;
             for (size_t i = sampleIndex + 1; i < loopEndIndex; i++) {
-                qreal value = slope * (buffer[i] - channel.getMinValue()) - channel.getRange() + channel.getOffset();
+                qreal value = slope * (buffer[i + traceBufferIndex * sampleCount] - channel.getMinValue()) - channel.getRange() + channel.getOffset();
 
                 min = value < min ? value : min;
                 max = value > max ? value : max;
