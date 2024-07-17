@@ -1046,19 +1046,22 @@ void TPS6000aScope::stop(bool *ok) {
     if(m_initialized == false) {
         qCritical("Cannot stop an uninitialized scope."); // or return with ok=false? ... this should never happen though
     }
-    if(m_running == false){
-        if(ok != nullptr) *ok = false; // the oscilloscope is not running, cannot stop
-    }
+    //if(m_running == false){
+    //   if(ok != nullptr) *ok = false; // the oscilloscope is not running, cannot stop
+    //}
 
-    PICO_STATUS status = ps6000aStop(m_handle);
-    if(status) {
-        if(ok != nullptr) *ok = false;
-        qWarning("Failed to stop the oscilloscope");
-    } else {
-        if(ok != nullptr) *ok = true;
-    }
+    ps6000aStop(m_handle);
 
+    //if(status) {
+        //if(ok != nullptr) *ok = false;
+        //qWarning("Failed to stop the oscilloscope");
+    //} else {
+        //if(ok != nullptr) *ok = true;
+    //}
+
+    // If stop occurs during data download, the ps6000aStop fails (scope aint running). But it still stops the wait for download (m_running). Indicating failure is misleading then...
     m_running = false;
+    if(ok != nullptr) *ok = true; // ... so always indicate success.
 
 }
 
