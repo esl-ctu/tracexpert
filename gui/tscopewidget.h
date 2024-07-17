@@ -11,10 +11,6 @@
 #include "tconfigparamwidget.h"
 
 struct TScopeTraceData {
-    ~TScopeTraceData() {
-        qDeleteAll(buffers);
-    }
-
     size_t firstTraceIndex;
     size_t traces;
     size_t samples;
@@ -30,6 +26,7 @@ class TScopeWidget : public QWidget
 
 public:
     explicit TScopeWidget(TScopeModel * scope, QWidget * parent = nullptr);
+    ~TScopeWidget();
 
 public slots:
     void updateChannelStatus();
@@ -63,11 +60,17 @@ private:
     QValueAxis * m_axisY;
     QCategoryAxis * m_iconAxis;
 
-    void updateAxes();
     void updateIconAxis();    
 
     template <class T>
-    void createLineSeries(QLineSeries * lineSeries, TScope::TChannelStatus channel, T * buffer, size_t sampleOffset, size_t sampleCount);
+    void createLineSeries(
+        QLineSeries * lineSeries,
+        TScope::TChannelStatus channel,
+        T * buffer,
+        size_t sampleOffset,
+        size_t sampleCount,
+        qreal & minValue,
+        qreal & maxValue);
 
     void setGUItoReady();
     void setGUItoRunning();

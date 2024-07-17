@@ -4,6 +4,7 @@
 #include <QThread>
 #include <QString>
 #include <QRandomGenerator>
+#include "qdebug.h"
 #include "tconfigparam.h"
 #include "tscope.h"
 
@@ -17,6 +18,11 @@ public:
         m_postInitParams.addSubParam(TConfigParam("Channel 2 enabled", "true", TConfigParam::TType::TBool, ""));
         m_postInitParams.addSubParam(TConfigParam("Channel 3 enabled", "true", TConfigParam::TType::TBool, ""));
         m_postInitParams.addSubParam(TConfigParam("Channel 4 enabled", "true", TConfigParam::TType::TBool, ""));
+
+        m_postInitParams.addSubParam(TConfigParam("Channel 1 offset", "0", TConfigParam::TType::TReal, ""));
+        m_postInitParams.addSubParam(TConfigParam("Channel 2 offset", "0", TConfigParam::TType::TReal, ""));
+        m_postInitParams.addSubParam(TConfigParam("Channel 3 offset", "0", TConfigParam::TType::TReal, ""));
+        m_postInitParams.addSubParam(TConfigParam("Channel 4 offset", "0", TConfigParam::TType::TReal, ""));
     }
 
     ~TDummyScope() {}
@@ -70,7 +76,7 @@ public:
 
     /// Run the oscilloscope: wait for trigger when set, otherwise capture immediately
     void run(size_t * expectedBufferSize, bool *ok = nullptr) {
-        *expectedBufferSize = 1000*2;
+        *expectedBufferSize = 500000*4;
 
         if(ok != nullptr) {
             *ok = true;
@@ -95,32 +101,45 @@ public:
         TConfigParam * enabledParam = m_postInitParams.getSubParamByName(QString("Channel %1 enabled").arg(channel+1));
 
         if(!m_enabled || !enabledParam || enabledParam->getValue() != "true") {
+
             *tracesDownloaded = 0;
             return 0;
         }
 
-        QThread::msleep(250);
+        //QThread::msleep(250);
 
-        *samplesType = TSampleType::TUInt16;
-        *samplesPerTraceDownloaded = 1000;
+        *samplesType = TSampleType::TInt32;
+        *samplesPerTraceDownloaded = 500000;
         *tracesDownloaded = 1;
 
-        int16_t * internalBuffer = (int16_t *)buffer;
-        for (size_t i = 0; i < 1000; i++) {
-            internalBuffer[i] = QRandomGenerator::global()->generate() % 65535;
+        int32_t * internalBuffer = (int32_t *)buffer;
+        for (size_t i = 0; i < 500000; i++) {
+            internalBuffer[i] = qSin(qDegreesToRadians(i%360))*1000 + (QRandomGenerator::global()->generate() % 500) - 250; //((int16_t)(QRandomGenerator::global()->generate() % 2000))-1000;
         }
 
-        return 1000*2;
+        return 500000*4;
     }
 
     /// Get channel info
     QList<TChannelStatus> getChannelsStatus() {
         auto channelStatusList = QList<TChannelStatus>();
-        channelStatusList.append(TChannelStatus(0, "A", m_postInitParams.getSubParamByName(QString("Channel 1 enabled"))->getValue() == "true",  5, 0));
-        channelStatusList.append(TChannelStatus(1, "B", m_postInitParams.getSubParamByName(QString("Channel 2 enabled"))->getValue() == "true", 10, 0));
-        channelStatusList.append(TChannelStatus(2, "C", m_postInitParams.getSubParamByName(QString("Channel 3 enabled"))->getValue() == "true", 15, 0));
-        channelStatusList.append(TChannelStatus(3, "D", m_postInitParams.getSubParamByName(QString("Channel 4 enabled"))->getValue() == "true", 20, 0));
+        channelStatusList.append(TChannelStatus(0, "A", m_postInitParams.getSubParamByName(QString("Channel 1 enabled"))->getValue() == "true",
+                                                 5, m_postInitParams.getSubParamByName(QString("Channel 1 offset"))->getValue().toDouble(), -1000, 1000));
+        channelStatusList.append(TChannelStatus(1, "B", m_postInitParams.getSubParamByName(QString("Channel 2 enabled"))->getValue() == "true",
+                                                10, m_postInitParams.getSubParamByName(QString("Channel 2 offset"))->getValue().toDouble(), -1000, 1000));
+        channelStatusList.append(TChannelStatus(2, "C", m_postInitParams.getSubParamByName(QString("Channel 3 enabled"))->getValue() == "true",
+                                                15, m_postInitParams.getSubParamByName(QString("Channel 3 offset"))->getValue().toDouble(), -1000, 1000));
+        channelStatusList.append(TChannelStatus(3, "D", m_postInitParams.getSubParamByName(QString("Channel 4 enabled"))->getValue() == "true",
+                                                20, m_postInitParams.getSubParamByName(QString("Channel 4 offset"))->getValue().toDouble(), -1000, 1000));
         return channelStatusList;
+    }
+
+    TTimingStatus getTimingStatus() {
+        return TTimingStatus(0, 0, 0, 0);
+    }
+
+    TTriggerStatus getTriggerStatus() {
+        return TTriggerStatus(TTriggerStatus::TTriggerType::TAbove, 20, 5);
     }
 
 private:

@@ -37,7 +37,8 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
     m_chart->addAxis(m_axisX, Qt::AlignBottom);
 
     m_axisY = new QValueAxis();
-    m_axisY->setTitleText("Voltage");
+    // TODO: decide on a more suitable title text
+    // m_axisY->setTitleText("Voltage");
     m_chart->addAxis(m_axisY, Qt::AlignLeft);
 
     m_iconAxis = new QCategoryAxis();
@@ -117,6 +118,11 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
     setLayout(layout);
 }
 
+TScopeWidget::~TScopeWidget() {
+    qDeleteAll(m_traceDataList);
+    m_traceDataList.clear();
+}
+
 bool TScopeWidget::applyPostInitParam() {
     TConfigParam param = m_scopeModel->setPostInitParams(m_paramWidget->param());
     m_paramWidget->setParam(param);
@@ -133,9 +139,6 @@ void TScopeWidget::setGUItoRunning() {
     m_runOnceButton->setEnabled(false);
     m_runButton->setEnabled(false);
     m_stopButton->setEnabled(true);
-
-    qDeleteAll(m_traceDataList);
-    m_traceDataList.clear();
 
     m_totalTraceCount = 0;
     m_currentTraceNumber = 0;
@@ -226,7 +229,12 @@ void TScopeWidget::updateTraceIndexView() {
 }
 
 void TScopeWidget::receiveTraces(size_t traces, size_t samples, TScope::TSampleType type, QList<quint8 *> buffers, bool overvoltage) {
-    qDebug() << "Received traces! " << std::time(nullptr) << Qt::endl;
+    // qDebug() << "Received traces! " << std::time(nullptr) << Qt::endl;
+
+    // deleting old trace data moved here
+    // due to immediate delete causing problems
+    qDeleteAll(m_traceDataList);
+    m_traceDataList.clear();
 
     // save data to internal buffers
     m_traceDataList.append(
@@ -270,7 +278,8 @@ void TScopeWidget::displayTrace(size_t traceIndex) {
     m_chart->removeAllSeries();
 
     m_axisX->setRange(0, traceData->samples);
-    updateAxes();
+    updateIconAxis();
+    //updateAxes();
 
     QList<QLineSeries *> preparedLineSeries;
     for(TScope::TChannelStatus channel : m_scopeModel->channelsStatus()) {
@@ -285,6 +294,8 @@ void TScopeWidget::displayTrace(size_t traceIndex) {
     std::sort(preparedLineSeries.begin(), preparedLineSeries.end());
 
     size_t channelIndex = 0;
+    qreal minValue = std::numeric_limits<qreal>::max();
+    qreal maxValue = std::numeric_limits<qreal>::min();
     for(TScope::TChannelStatus channel : m_scopeModel->channelsStatus()) {
 
         if(!channel.isEnabled() || traceData->buffers[channelIndex] == nullptr) {
@@ -297,21 +308,21 @@ void TScopeWidget::displayTrace(size_t traceIndex) {
 
         switch(traceData->type) {
             case TScope::TSampleType::TUInt8:
-                createLineSeries(lineSeries, channel, (uint8_t*) traceData->buffers[channelIndex], sampleOffset, traceData->samples); break;
+                createLineSeries(lineSeries, channel, (uint8_t*) traceData->buffers[channelIndex], sampleOffset, traceData->samples, minValue, maxValue); break;
             case TScope::TSampleType::TInt8:
-                createLineSeries(lineSeries, channel, (int8_t*)  traceData->buffers[channelIndex], sampleOffset, traceData->samples); break;
+                createLineSeries(lineSeries, channel, (int8_t*)  traceData->buffers[channelIndex], sampleOffset, traceData->samples, minValue, maxValue); break;
             case TScope::TSampleType::TUInt16:
-                createLineSeries(lineSeries, channel, (uint16_t*)traceData->buffers[channelIndex], sampleOffset, traceData->samples); break;
+                createLineSeries(lineSeries, channel, (uint16_t*)traceData->buffers[channelIndex], sampleOffset, traceData->samples, minValue, maxValue); break;
             case TScope::TSampleType::TInt16:
-                createLineSeries(lineSeries, channel, (int16_t*) traceData->buffers[channelIndex], sampleOffset, traceData->samples); break;
+                createLineSeries(lineSeries, channel, (int16_t*) traceData->buffers[channelIndex], sampleOffset, traceData->samples, minValue, maxValue); break;
             case TScope::TSampleType::TUInt32:
-                createLineSeries(lineSeries, channel, (uint32_t*)traceData->buffers[channelIndex], sampleOffset, traceData->samples); break;
+                createLineSeries(lineSeries, channel, (uint32_t*)traceData->buffers[channelIndex], sampleOffset, traceData->samples, minValue, maxValue); break;
             case TScope::TSampleType::TInt32:
-                createLineSeries(lineSeries, channel, (int32_t*) traceData->buffers[channelIndex], sampleOffset, traceData->samples); break;
+                createLineSeries(lineSeries, channel, (int32_t*) traceData->buffers[channelIndex], sampleOffset, traceData->samples, minValue, maxValue); break;
             case TScope::TSampleType::TReal32:
-                createLineSeries(lineSeries, channel, (float*)   traceData->buffers[channelIndex], sampleOffset, traceData->samples); break;
+                createLineSeries(lineSeries, channel, (float*)   traceData->buffers[channelIndex], sampleOffset, traceData->samples, minValue, maxValue); break;
             case TScope::TSampleType::TReal64:
-                createLineSeries(lineSeries, channel, (double*)  traceData->buffers[channelIndex], sampleOffset, traceData->samples); break;
+                createLineSeries(lineSeries, channel, (double*)  traceData->buffers[channelIndex], sampleOffset, traceData->samples, minValue, maxValue); break;
         }
 
         channelIndex++;
@@ -319,24 +330,10 @@ void TScopeWidget::displayTrace(size_t traceIndex) {
 
     // delete possible leftover prepared LineSeries
     qDeleteAll(preparedLineSeries);
+
+    // adjust axis range based on min/max values
+    m_axisY->setRange(minValue*1.1f, maxValue*1.1f);
 }
-
-void TScopeWidget::updateAxes() {
-    qreal maxRange = 0;
-    for(TScope::TChannelStatus channel : m_scopeModel->channelsStatus()) {
-        if(!channel.isEnabled())
-            continue;
-
-        qreal range = channel.getRange() + abs(channel.getOffset());
-        if(range > maxRange)
-            maxRange = range;
-    }
-
-    m_axisY->setRange(-maxRange*1.2f, maxRange*1.2f);
-
-    updateIconAxis();
-}
-
 
 void TScopeWidget::updateIconAxis() {
     const QStringList oldLabels = m_iconAxis->categoriesLabels();
@@ -387,7 +384,7 @@ void TScopeWidget::updateIconAxis() {
 }
 
 template <class T>
-void TScopeWidget::createLineSeries(QLineSeries * lineSeries, TScope::TChannelStatus channel, T * buffer, size_t sampleOffset, size_t sampleCount) {
+void TScopeWidget::createLineSeries(QLineSeries * lineSeries, TScope::TChannelStatus channel, T * buffer, size_t sampleOffset, size_t sampleCount, qreal & minValue, qreal & maxValue) {
     lineSeries->setUseOpenGL(true);
     lineSeries->setName(QString(tr("%1 [channel %2]")).arg(channel.getAlias()).arg(channel.getIndex()));
     lineSeries->setColor(QColor(channelColorCodes[channel.getIndex() % 8]));
@@ -397,10 +394,15 @@ void TScopeWidget::createLineSeries(QLineSeries * lineSeries, TScope::TChannelSt
 
     qint32 idealPointCount = m_chart->plotArea().width();
 
+    qreal value;
     if(sampleCount < idealPointCount) {
         // not too many samples, draw every sample as single point
         for (size_t i = sampleOffset; i < sampleOffset + sampleCount; i++) {
-            pointList.append(QPointF(i, slope * (buffer[i] - channel.getMinValue()) - channel.getRange() + channel.getOffset()));
+            value = slope * (buffer[i] - channel.getMinValue()) - channel.getRange() + channel.getOffset();
+            pointList.append(QPointF(i, value));
+
+            minValue = value < minValue ? value : minValue;
+            maxValue = value > maxValue ? value : maxValue;
         }
     }
     else {
@@ -415,7 +417,6 @@ void TScopeWidget::createLineSeries(QLineSeries * lineSeries, TScope::TChannelSt
             max = firstValue;
 
             size_t loopEndIndex = (sampleIndex + groupSampleSize) > sampleCount ? sampleCount : sampleIndex + groupSampleSize;
-            qDebug() << loopEndIndex;
             for (size_t i = sampleIndex + 1; i < loopEndIndex; i++) {
                 qreal value = slope * (buffer[i] - channel.getMinValue()) - channel.getRange() + channel.getOffset();
 
@@ -425,6 +426,9 @@ void TScopeWidget::createLineSeries(QLineSeries * lineSeries, TScope::TChannelSt
 
             pointList.append(QPointF(sampleIndex, min));
             pointList.append(QPointF(sampleIndex, max));
+
+            minValue = min < minValue ? min : minValue;
+            maxValue = max > maxValue ? max : maxValue;
 
             sampleIndex += groupSampleSize;
         }
