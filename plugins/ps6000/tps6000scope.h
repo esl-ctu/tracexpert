@@ -57,6 +57,7 @@ protected:
     uint32_t m_captures;
     uint32_t m_timebase;   
     qreal m_samplingPeriod;
+    bool m_channelEnabled;
 
 };
 

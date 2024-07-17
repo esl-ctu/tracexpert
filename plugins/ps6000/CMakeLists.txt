@@ -19,8 +19,6 @@ find_package(PicoScopeSDK REQUIRED)
 include_directories(../../common)
 include_directories("${PICOSCOPESDK_INCLUDE_DIR}")
 
-message("${PICOSCOPESDK_INCLUDE_DIR}")
-
 add_library(TPS6000 SHARED
   TPS6000_global.h
   tps6000.cpp
@@ -31,7 +29,5 @@ add_library(TPS6000 SHARED
 
 target_link_libraries(TPS6000 PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 target_link_libraries(TPS6000 PRIVATE "${PICOSCOPESDK_LIBRARY}")
-
-message("${PICOSCOPESDK_LIBRARY}")
 
 target_compile_definitions(TPS6000 PRIVATE TPS6000_LIBRARY)

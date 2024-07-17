@@ -1,6 +1,6 @@
 #include "tps6000scope.h"
 
-TPS6000Scope::TPS6000Scope(const QString & name, const QString & info): m_name(name), m_info(info), m_initialized(false), m_running(false), m_handle(0), m_preTrigSamples(0), m_postTrigSamples(0), m_captures(0), m_timebase(0), m_samplingPeriod(0) {
+TPS6000Scope::TPS6000Scope(const QString & name, const QString & info): m_name(name), m_info(info), m_initialized(false), m_running(false), m_handle(0), m_preTrigSamples(0), m_postTrigSamples(0), m_captures(0), m_timebase(0), m_samplingPeriod(0), m_channelEnabled(false) {
     m_preInitParams = TConfigParam(m_name + " pre-init configuration", "", TConfigParam::TType::TDummy, "");
     m_preInitParams.addSubParam(TConfigParam("Serial number", m_name, TConfigParam::TType::TString, "Serial number of the Picoscope 6000 (e.g., GO021/009, AQ005/139 or VDR61/356). Leave empty for the first scope found to be opened.", false));
 }
@@ -105,7 +105,7 @@ void TPS6000Scope::_createPostInitParams() {
     triggerDirection.addEnumValue("Below");
     triggerSettings.addSubParam(triggerDirection);
     // Autotrigger
-    TConfigParam triggerAuto = TConfigParam("Auto trigger (ms)", "10000", TConfigParam::TType::TInt, "The number of milliseconds the device will wait if no trigger occurs"); // TODO nula je nekonecno?
+    TConfigParam triggerAuto = TConfigParam("Auto trigger (ms)", "0", TConfigParam::TType::TInt, "The number of milliseconds the device will wait if no trigger occurs (zero = waits forever)"); // TODO nula je nekonecno?
     triggerSettings.addSubParam(triggerAuto);
     m_postInitParams.addSubParam(triggerSettings);
 
@@ -188,6 +188,8 @@ void TPS6000Scope::_setChannels() {
 
     bool iok;
 
+    m_channelEnabled = false;
+
     for (int channel = 1; channel <= 4; channel++){
 
         TConfigParam * channelSettings;
@@ -220,6 +222,9 @@ void TPS6000Scope::_setChannels() {
         // Enabled parameter
 
         int16_t psEnabled = (channelSettings->getValue() == "Enabled") ? true : false;
+        if(channelSettings->getValue() == "Enabled"){
+            m_channelEnabled = true;
+        }
 
         // Coupling parameter
 
@@ -712,8 +717,10 @@ TConfigParam TPS6000Scope::setPostInitParams(TConfigParam params) {
     m_postInitParams.resetState(true); // reset all warnings and errors
 
     _setChannels();
-    _setTrigger();
-    _setTiming();
+    if(m_channelEnabled == true){
+        _setTrigger();
+        _setTiming();
+    }
 
     return m_postInitParams;
 
@@ -803,6 +810,7 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
     }
 
     uint32_t psSamples = (m_preTrigSamples + m_postTrigSamples);
+    uint32_t capturesR = m_captures;
 
     std::unique_ptr <int16_t> over(new int16_t[m_captures]);
 
@@ -810,24 +818,26 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
 
         PICO_STATUS status;
 
-        uint32_t capturesR;
         status = ps6000GetNoOfCaptures(m_handle, &capturesR);
         if (status || capturesR != m_captures){
-            qWarning("Failed to capture specified number of traces per run");
-            return 0;
+            qWarning("Failed to capture specified number of traces per run"); // vadi to?
         }
 
-        for (uint32_t i = 0; i < m_captures; i++) {
+        for (uint32_t i = 0; i < capturesR; i++) {
             status = ps6000SetDataBufferBulk(m_handle, psChannel, reinterpret_cast<short *>(buffer) + i * psSamples, psSamples, i, PS6000_RATIO_MODE_NONE);
             if (status) {
                 qWarning("Failed to set up receiving buffer");
+                *samplesPerTraceDownloaded = 0;
+                *tracesDownloaded = 0;
                 return 0;
             }
         }
 
-        status = ps6000GetValuesBulk(m_handle, &psSamples, 0, m_captures - 1, 0, PS6000_RATIO_MODE_NONE, over.get());
+        status = ps6000GetValuesBulk(m_handle, &psSamples, 0, capturesR - 1, 0, PS6000_RATIO_MODE_NONE, over.get());
         if (status || psSamples != ((m_preTrigSamples + m_postTrigSamples))) {
             qWarning("Failed to receive the data");
+            *samplesPerTraceDownloaded = 0;
+            *tracesDownloaded = 0;
             return 0;
         }
 
@@ -836,12 +846,16 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
         PICO_STATUS status = ps6000SetDataBuffer(m_handle, psChannel, reinterpret_cast<short *>(buffer), m_preTrigSamples + m_postTrigSamples, PS6000_RATIO_MODE_NONE);
         if (status){
             qWarning("Failed to set up receiving buffer");
+            *samplesPerTraceDownloaded = 0;
+            *tracesDownloaded = 0;
             return 0;
         }
 
         status = ps6000GetValues(m_handle, 0, &psSamples, 1, PS6000_RATIO_MODE_NONE, 0, over.get());
         if (status || psSamples != (m_preTrigSamples + m_postTrigSamples)){
             qWarning("Failed to receive the data");
+            *samplesPerTraceDownloaded = 0;
+            *tracesDownloaded = 0;
             return 0;
         }
 
@@ -849,7 +863,7 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
 
     *overvoltage = false;
     int channel_bitidx = channel - 1;
-    for(uint32_t i = 0; i < m_captures; i++){
+    for(uint32_t i = 0; i < capturesR; i++){
         if( ((((over.get())[i]) >> channel_bitidx) & 0x01) > 0 ) {
             *overvoltage = true;
         }
@@ -857,8 +871,8 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
 
     *samplesType = TScope::TSampleType::TInt16;
     *samplesPerTraceDownloaded = psSamples;
-    *tracesDownloaded = m_captures;
-    return psSamples * m_captures * sizeof(int16_t);
+    *tracesDownloaded = capturesR;
+    return psSamples * capturesR * sizeof(int16_t);
 
 }
 
