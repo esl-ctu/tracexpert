@@ -175,8 +175,8 @@ void TIODeviceWidget::updateDisplayedProtocols() {
     m_sendProtocolComboBox->clear();
     m_receiveProtocolComboBox->clear();
 
-    m_sendProtocolComboBox->addItem("raw data");
-    m_receiveProtocolComboBox->addItem("raw data");
+    m_sendProtocolComboBox->addItem("No protocol");
+    m_receiveProtocolComboBox->addItem("No protocol");
 
     for(int i = 0; i < m_protocolContainer->count(); i++) {
         m_sendProtocolComboBox->addItem(m_protocolContainer->at(i).getName());
@@ -295,7 +295,7 @@ void TIODeviceWidget::dataReceived(QByteArray data)
 
     QString selectedProtocolName = m_receiveProtocolComboBox->currentText();
 
-    if(selectedProtocolName == "raw data") {
+    if(selectedProtocolName == "No protocol") {
         m_communicationLogTextEdit->appendPlainText(byteArraytoHumanReadableString(data));
         return;
     }
