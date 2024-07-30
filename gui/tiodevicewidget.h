@@ -72,6 +72,7 @@ private:
     QHBoxLayout * m_rawMessageEditLayout;
 
     QPlainTextEdit * m_communicationLogTextEdit;
+    QComboBox * m_logFormat;
 };
 
 #endif // TIODEVICEWIDGET_H

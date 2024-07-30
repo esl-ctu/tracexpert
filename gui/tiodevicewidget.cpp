@@ -23,6 +23,9 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContaine
     connect(m_deviceModel, &TIODeviceModel::dataRead, this, &TIODeviceWidget::dataReceived);
 
     m_communicationLogTextEdit = new QPlainTextEdit;
+    QFont f("unexistent");
+    f.setStyleHint(QFont::Monospace);
+    m_communicationLogTextEdit->setFont(f);
     m_communicationLogTextEdit->setReadOnly(true);
     
     m_paramWidget = new TConfigParamWidget(m_deviceModel->postInitParams());
@@ -36,7 +39,16 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContaine
 
     QHBoxLayout * textParamLayout = new QHBoxLayout;
 
-    textParamLayout->addWidget(m_communicationLogTextEdit);
+    QVBoxLayout * comLogLayout = new QVBoxLayout;
+
+    comLogLayout->addWidget(m_communicationLogTextEdit);
+
+    m_logFormat = new QComboBox;
+    m_logFormat->addItem("Show only hexadecimal values");
+    m_logFormat->addItem("Show human-readable string when possible");
+    comLogLayout->addWidget(m_logFormat);
+
+    textParamLayout->addLayout(comLogLayout);
     textParamLayout->addLayout(paramLayout);
 
     QGroupBox * textParamBox = new QGroupBox;
@@ -291,12 +303,16 @@ void TIODeviceWidget::receiveFailed()
 
 void TIODeviceWidget::dataReceived(QByteArray data)
 {
-    m_communicationLogTextEdit->appendHtml(QStringLiteral("<b>Received:</b>"));
+    QTime time = QTime::currentTime();
+    QString formattedTime = time.toString("hh:mm:ss");
+
+
 
     QString selectedProtocolName = m_receiveProtocolComboBox->currentText();
 
     if(selectedProtocolName == "No protocol") {
-        m_communicationLogTextEdit->appendPlainText(byteArraytoHumanReadableString(data));
+        m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Received " + QString::number(data.size()) + " B</b>"));
+        m_communicationLogTextEdit->appendHtml("<div style=\"color:red\">" + byteArraytoHumanReadableString(data) + "</div>");
         return;
     }
 
@@ -305,7 +321,8 @@ void TIODeviceWidget::dataReceived(QByteArray data)
 
     if(!protocolFound) {
         qWarning("Unknown protocol selected, could not interpret message.");
-        m_communicationLogTextEdit->appendPlainText(byteArraytoHumanReadableString(data));
+        m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Received " + QString::number(data.size()) + " B</b>"));
+        m_communicationLogTextEdit->appendHtml("<div style=\"color:red\">" + byteArraytoHumanReadableString(data) + "</div>");
         return;
     }
 
@@ -313,11 +330,13 @@ void TIODeviceWidget::dataReceived(QByteArray data)
 
     if(matchedMessage.getName().isEmpty()) {
         qWarning("Received data could not be interpreted as any of the protocol's defined messages.");
-        m_communicationLogTextEdit->appendPlainText(byteArraytoHumanReadableString(data));
+        m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Received " + QString::number(data.size()) + " B</b>"));
+        m_communicationLogTextEdit->appendHtml("<div style=\"color:red\">" + byteArraytoHumanReadableString(data) + "</div>");
         return;
     }
 
-    m_communicationLogTextEdit->appendPlainText(matchedMessage.getPayloadSummary());
+    m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Received:</b>"));
+    m_communicationLogTextEdit->appendHtml("<div style=\"color:red\">" + matchedMessage.getPayloadSummary() + "</div>");
 }
 
 QString TIODeviceWidget::byteArraytoHumanReadableString(const QByteArray & byteArray)
@@ -325,7 +344,12 @@ QString TIODeviceWidget::byteArraytoHumanReadableString(const QByteArray & byteA
     static QRegularExpression nonAsciiRegExp("[^ -~]");
     bool isHumanReadable = !((QString)byteArray).contains(nonAsciiRegExp);
 
-    return isHumanReadable ? byteArray : ("0x" + byteArray.toHex());
+    if(m_logFormat->currentIndex() == 0){
+        return (byteArray.toHex(' '));
+    } else {
+        return isHumanReadable ? "<i>\"" + QString(byteArray).toHtmlEscaped() + "\"</i>" : (byteArray.toHex(' '));
+    }
+
 }
 
 void TIODeviceWidget::sendBytes()
@@ -354,8 +378,11 @@ void TIODeviceWidget::sendRawBytes()
 
     m_deviceModel->writeData(dataToWrite);
 
-    m_communicationLogTextEdit->appendHtml(QStringLiteral("<b>Sent:</b>"));
-    m_communicationLogTextEdit->appendPlainText(byteArraytoHumanReadableString(dataToWrite));
+    // TODO: ONLY LOG IF WRITING WAS SUCCESSFUL!
+    QTime time = QTime::currentTime();
+    QString formattedTime = time.toString("hh:mm:ss");
+    m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Sent " + QString::number(dataToWrite.size()) + " B</b>"));
+    m_communicationLogTextEdit->appendHtml("<div style=\"color:blue\">" + byteArraytoHumanReadableString(dataToWrite) + "</div>");
 }
 
 void TIODeviceWidget::sendProtocolBytes()
@@ -373,9 +400,12 @@ void TIODeviceWidget::sendProtocolBytes()
         return;
     }
 
-    m_communicationLogTextEdit->appendHtml(QStringLiteral("<b>Sent:</b>"));
-    m_deviceModel->writeData(messageData);
-    m_communicationLogTextEdit->appendPlainText(messageToBeSent.getPayloadSummary());
+    // TODO: ONLY LOG IF WRITING WAS SUCCESSFUL!
+    QTime time = QTime::currentTime();
+    QString formattedTime = time.toString("hh:mm:ss");
+    m_communicationLogTextEdit->appendHtml(formattedTime + QStringLiteral(" <b>Sent:</b>"));
+    m_deviceModel->writeData(messageData);    
+    m_communicationLogTextEdit->appendHtml("<div style=\"color:blue\">" + messageToBeSent.getPayloadSummary() + "</div>");
 }
 
 
