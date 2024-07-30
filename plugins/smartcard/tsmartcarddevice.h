@@ -4,6 +4,7 @@
 #include <QElapsedTimer>
 #include "tiodevice.h"
 
+#include <QQueue>
 #include <winscard.h>
 
 class TSmartCardDevice : public TIODevice {
@@ -45,6 +46,7 @@ protected:
     bool m_outputParseAPDU;
     unsigned char m_APDUHeader[4];
     unsigned char m_APDUTrailer;
+    QQueue<QByteArray> m_recQueue;
     SCARDCONTEXT m_context;
     SCARDHANDLE m_card;
 

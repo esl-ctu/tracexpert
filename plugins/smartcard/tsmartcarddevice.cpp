@@ -418,46 +418,35 @@ size_t TSmartCardDevice::writeData(const uint8_t * buffer, size_t len){
 
     }
 
-    qInfo("Sucessfully sent data");
-
-    for (int i = 0; i < recvLen; i++)
-    {
-        qInfo("%02X", ((unsigned char *) recvBuf.data())[i]);
+    if(m_outputParseAPDU == true){
+        recvLen -= 2; // remove SW1-SW2 if set
     }
 
+    recvBuf.resize(recvLen);
+    m_recQueue.enqueue(recvBuf);
+
     return 0;
+
 }
 
 size_t TSmartCardDevice::readData(uint8_t * buffer, size_t len) {
 
-    /*size_t readLen;
+    size_t readLen = 0;
 
-    QElapsedTimer stopwatch;
-    stopwatch.start();
+    while(m_recQueue.empty() != true && readLen < len) {
 
-    if(m_port.bytesAvailable() > 0 || m_port.waitForReadyRead(m_readTimeout)){
-
-        readLen = m_port.read((char *) buffer, len);      
-
-        while((readLen < len) && ((m_readTimeout > 0) ? (stopwatch.elapsed() < m_readTimeout) : true) && (m_port.waitForReadyRead((m_readTimeout > 0) ? (m_readTimeout - stopwatch.elapsed()) : m_readTimeout))) {
-            readLen += m_port.read((char *) buffer + readLen, len - readLen);
-
+        if((m_recQueue.head()).size() <= (len - readLen)){ // the whole bytearray fits the buffer
+            memcpy(buffer + readLen, (m_recQueue.head()).constData(), (m_recQueue.head()).size()); // copy the whole bytearray to the buffer
+            readLen += (m_recQueue.head()).size();
+            m_recQueue.dequeue();
+        } else { // only a part of the bytearray fits the buffer
+            memcpy(buffer + readLen, (m_recQueue.head()).constData(), len - readLen); // copy a part of the bytearray to the buffer
+            (m_recQueue.head()).remove(0, len - readLen); // remove the read part from the buffer
+            readLen += len - readLen;
         }
 
-        if(len != readLen){
-            //qWarning("Failed to read as much data as requested from the serial port (timeout).");
-        }
-        if(m_port.bytesAvailable() > 0){
-            //qDebug("Unread data left in the serial port buffer after reading.");  // isnt this flooding the debug channel?
-        }
+    }
 
-        return readLen;
-
-    } else {
-        //qWarning("Failed to read any data from the serial port (timeout).");
-        return 0;
-    }*/
-
-    return 0;
+    return readLen;
 
 }
