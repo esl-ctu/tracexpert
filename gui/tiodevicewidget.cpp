@@ -43,10 +43,19 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContaine
 
     comLogLayout->addWidget(m_communicationLogTextEdit);
 
+    QHBoxLayout * comLogSettingsLayout = new QHBoxLayout;
+
     m_logFormat = new QComboBox;
     m_logFormat->addItem("Show only hexadecimal values");
     m_logFormat->addItem("Show human-readable string when possible");
-    comLogLayout->addWidget(m_logFormat);
+    comLogSettingsLayout->addWidget(m_logFormat);
+
+    QPushButton * clearButton = new QPushButton;
+    clearButton->setText("Clear");
+    connect(clearButton, &QPushButton::clicked, m_communicationLogTextEdit, &QPlainTextEdit::clear);
+    comLogSettingsLayout->addWidget(clearButton);
+
+    comLogLayout->addLayout(comLogSettingsLayout);
 
     textParamLayout->addLayout(comLogLayout);
     textParamLayout->addLayout(paramLayout);
