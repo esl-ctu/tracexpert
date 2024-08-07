@@ -11,6 +11,13 @@
 #include "tconfigparamwidget.h"
 
 struct TScopeTraceData {
+    ~TScopeTraceData() {
+        // correct way to delete using the same operator ([])
+        for(quint8 * buffer : buffers) {
+            delete [] buffer;
+        }
+    }
+
     size_t firstTraceIndex;
     size_t traces;
     size_t samples;
@@ -60,6 +67,7 @@ private:
     QValueAxis * m_axisY;
     QCategoryAxis * m_iconAxis;
 
+    void updateAxes();
     void updateIconAxis();    
 
     template <class T>
@@ -68,9 +76,7 @@ private:
         TScope::TChannelStatus channel,
         T * buffer,
         size_t sampleOffset,
-        size_t sampleCount,
-        qreal & minValue,
-        qreal & maxValue);
+        size_t sampleCount);
 
     void setGUItoReady();
     void setGUItoRunning();
