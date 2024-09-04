@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QThread>
 
-#include "tpluginunitmodel.h"
+#include "tdevicemodel.h"
 #include "tscope.h"
 
 class TScopeCollector : public QObject
@@ -28,13 +28,12 @@ private:
 
 class TScopeContainer;
 
-class TScopeModel : public TPluginUnitModel
+class TScopeModel : public TDeviceModel
 {
     Q_OBJECT
 
 public:
     explicit TScopeModel(TScope * scope, TScopeContainer * parent, bool manual = false);
-    ~TScopeModel();
 
     void show();
 
@@ -44,9 +43,6 @@ public:
     bool remove() override;
 
     virtual TConfigParam setPostInitParams(const TConfigParam & param) override;
-
-    int childrenCount() const override;
-    TProjectItem * child(int row) const override;
 
     virtual void bind(TCommon * unit) override;
     virtual void release() override;

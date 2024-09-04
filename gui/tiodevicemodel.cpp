@@ -7,18 +7,13 @@
 #include "tcomponentmodel.h"
 
 TIODeviceModel::TIODeviceModel(TIODevice * IODevice, TIODeviceContainer * parent, bool manual)
-    : TProjectItem(parent->model(), parent), TPluginUnitModel(IODevice, parent, manual), m_IODevice(IODevice)
+    : TProjectItem(parent->model(), parent), TDeviceModel(IODevice, parent, manual), m_IODevice(IODevice)
 {
     m_typeName = "iodevice";
 
     m_sending = false;
     m_receiving = false;
     m_autoReceive = false;
-}
-
-TIODeviceModel::~TIODeviceModel()
-{
-    TIODeviceModel::deInit();
 }
 
 void TIODeviceModel::show()
@@ -89,16 +84,6 @@ bool TIODeviceModel::remove()
         return false;
 
     return component->removeIODevice(this);
-}
-
-int TIODeviceModel::childrenCount() const
-{
-    return 0;
-}
-
-TProjectItem *TIODeviceModel::child(int row) const
-{
-    return nullptr;
 }
 
 void TIODeviceModel::bind(TCommon * unit)

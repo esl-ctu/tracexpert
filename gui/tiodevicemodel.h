@@ -3,7 +3,7 @@
 
 #include <QThread>
 
-#include "tpluginunitmodel.h"
+#include "tdevicemodel.h"
 #include "tiodevice.h"
 
 #define DATA_BLOCK_SIZE 64
@@ -50,13 +50,12 @@ signals:
 
 class TIODeviceContainer;
 
-class TIODeviceModel : public TPluginUnitModel
+class TIODeviceModel : public TDeviceModel
 {
     Q_OBJECT
 
 public:
     explicit TIODeviceModel(TIODevice * IODevice, TIODeviceContainer * parent, bool manual = false);
-    ~TIODeviceModel();
 
     void show();
 
@@ -64,9 +63,6 @@ public:
     bool deInit() override;
 
     bool remove() override;
-
-    int childrenCount() const override;
-    TProjectItem * child(int row) const override;
 
     virtual void bind(TCommon * unit) override;
     virtual void release() override;
