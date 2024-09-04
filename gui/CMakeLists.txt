@@ -80,6 +80,8 @@ add_library(${PROJECT_NAME} OBJECT
   tcombobox.h tcombobox.cpp
   tdevicemodel.h
   tdevicemodel.cpp
+  treceiver.h treceiver.cpp
+  tsender.h tsender.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ads/src)

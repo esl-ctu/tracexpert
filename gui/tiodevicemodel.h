@@ -5,47 +5,35 @@
 
 #include "tdevicemodel.h"
 #include "tiodevice.h"
+#include "treceiver.h"
+#include "tsender.h"
 
-#define DATA_BLOCK_SIZE 64
-#define AUTORECEIVE_DELAY_MS 20
-
-class TIODeviceReceiver : public QObject
+class TIODeviceReceiver : public TReceiver
 {
     Q_OBJECT
 
 public:
     explicit TIODeviceReceiver(TIODevice * IODevice, QObject * parent = nullptr);
 
-public slots:
-    void receiveData(int length);
-    void startReceiving();
-    void stopReceiving();
+protected:
+    size_t readData(uint8_t * buffer, size_t len) override;
 
 private:
     TIODevice * m_IODevice;
-    bool m_stopReceiving;
-
-signals:
-    void dataReceived(QByteArray data);
-    void receiveFailed();
 };
 
-class TIODeviceSender : public QObject
+class TIODeviceSender : public TSender
 {
     Q_OBJECT
 
 public:
     explicit TIODeviceSender(TIODevice * IODevice, QObject * parent = nullptr);
 
-public slots:
-    void sendData(QByteArray data);
+protected:
+    size_t writeData(const uint8_t * buffer, size_t len) override;
 
 private:
     TIODevice * m_IODevice;
-
-signals:
-    void dataSent(QByteArray data);
-    void sendFailed();
 };
 
 class TIODeviceContainer;
