@@ -78,6 +78,10 @@ add_library(${PROJECT_NAME} OBJECT
   tmessageformmanager.h
   tmessageformmanager.cpp
   tcombobox.h tcombobox.cpp
+  tdevicemodel.h
+  tdevicemodel.cpp
+  treceiver.h treceiver.cpp
+  tsender.h tsender.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ads/src)

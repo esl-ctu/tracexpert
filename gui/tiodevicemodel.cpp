@@ -7,18 +7,13 @@
 #include "tcomponentmodel.h"
 
 TIODeviceModel::TIODeviceModel(TIODevice * IODevice, TIODeviceContainer * parent, bool manual)
-    : TProjectItem(parent->model(), parent), TPluginUnitModel(IODevice, parent, manual), m_IODevice(IODevice)
+    : TProjectItem(parent->model(), parent), TDeviceModel(IODevice, parent, manual), m_IODevice(IODevice)
 {
     m_typeName = "iodevice";
 
     m_sending = false;
     m_receiving = false;
     m_autoReceive = false;
-}
-
-TIODeviceModel::~TIODeviceModel()
-{
-    TIODeviceModel::deInit();
 }
 
 void TIODeviceModel::show()
@@ -89,16 +84,6 @@ bool TIODeviceModel::remove()
         return false;
 
     return component->removeIODevice(this);
-}
-
-int TIODeviceModel::childrenCount() const
-{
-    return 0;
-}
-
-TProjectItem *TIODeviceModel::child(int row) const
-{
-    return nullptr;
 }
 
 void TIODeviceModel::bind(TCommon * unit)
@@ -177,79 +162,23 @@ void TIODeviceModel::receiveFailed()
 }
 
 TIODeviceReceiver::TIODeviceReceiver(TIODevice * IODevice, QObject * parent)
-    : QObject(parent), m_IODevice(IODevice)
+    : TReceiver(parent), m_IODevice(IODevice)
 {
 
 }
 
-void TIODeviceReceiver::receiveData(int length)
+size_t TIODeviceReceiver::readData(uint8_t * buffer, size_t len)
 {
-    size_t remainingBytes = (size_t)length;
-    quint8 buffer[DATA_BLOCK_SIZE];
-    QByteArray data;
-
-    while (remainingBytes > 0) {
-        size_t bytesToReceive = (remainingBytes > DATA_BLOCK_SIZE ? DATA_BLOCK_SIZE : remainingBytes);
-
-        size_t bytesReceived = m_IODevice->readData(buffer, bytesToReceive);
-
-        data.append((char*)buffer, bytesReceived);
-
-        if (bytesReceived < bytesToReceive) {
-            emit receiveFailed();
-            break;
-        }
-
-        remainingBytes -= bytesReceived;
-    }
-
-    if (!data.isEmpty()) {
-        emit dataReceived(data);
-    }
-}
-
-void TIODeviceReceiver::startReceiving()
-{
-    m_stopReceiving = false;
-
-    quint8 buffer[DATA_BLOCK_SIZE];
-
-    while (!m_stopReceiving) {
-        size_t newBytes = m_IODevice->readData(buffer, DATA_BLOCK_SIZE);
-
-        QByteArray data((char*)buffer, newBytes);
-
-        if (!data.isEmpty()) {
-            emit dataReceived(data);
-        }
-
-        QCoreApplication::processEvents(QEventLoop::ProcessEventsFlag::AllEvents);
-        thread()->msleep(AUTORECEIVE_DELAY_MS);
-    }
-}
-
-void TIODeviceReceiver::stopReceiving()
-{
-    m_stopReceiving = true;
+    return m_IODevice->readData(buffer, len);
 }
 
 TIODeviceSender::TIODeviceSender(TIODevice * IODevice, QObject * parent)
-    : QObject(parent), m_IODevice(IODevice)
+    : TSender(parent), m_IODevice(IODevice)
 {
 
 }
 
-void TIODeviceSender::sendData(QByteArray data)
+size_t TIODeviceSender::writeData(const uint8_t * buffer, size_t len)
 {
-    quint8 * buffer = (quint8*)data.data();
-
-    size_t bytesSent = m_IODevice->writeData(buffer, data.length());
-
-    if (bytesSent < (size_t)data.length()) {
-        emit sendFailed();
-    }
-
-    if (bytesSent > 0) {
-        emit dataSent(data.first(bytesSent));
-    }
+    return m_IODevice->writeData(buffer, len);
 }
