@@ -1,20 +1,20 @@
-#ifndef TEMPTYPLUGIN_H
-#define TEMPTYPLUGIN_H
+#ifndef TANALTESTINGPLUGIN_H
+#define TANALTESTINGPLUGIN_H
 
-#include "TEmptyPlugin_global.h"
+#include "TAnalTestingPlugin_global.h"
 #include "tplugin.h"
 
 
-class TEMPTYPLUGIN_EXPORT TEmptyPlugin : public QObject, TPlugin
+class TANALTESTINGPLUGIN_EXPORT TAnalTestingPlugin : public QObject, TPlugin
 {
 
     Q_OBJECT
-    Q_PLUGIN_METADATA(IID "org.cvut.fit.TraceXpert.PluginInterface/1.0" FILE "temptyplugin.json")
+    Q_PLUGIN_METADATA(IID "org.cvut.fit.TraceXpert.PluginInterface/1.0" FILE "tanaltestingplugin.json")
     Q_INTERFACES(TPlugin)
 
 public:
-    TEmptyPlugin();
-    virtual ~TEmptyPlugin() override;
+    TAnalTestingPlugin();
+    virtual ~TAnalTestingPlugin() override;
 
     /// Plugin name
     virtual QString getName() const override;
@@ -63,4 +63,4 @@ protected:
 
 };
 
-#endif // TEMPTYPLUGIN_H
+#endif // TANALTESTINGPLUGIN_H

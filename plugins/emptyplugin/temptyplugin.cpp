@@ -51,11 +51,20 @@ TScope * TEmptyPlugin::addScope(QString name, QString info, bool *ok) {
     return nullptr;
 }
 
+TAnalDevice * TEmptyPlugin::addAnalDevice(QString name, QString info, bool *ok) {
+    if(ok != nullptr) *ok = false;
+    return nullptr;
+}
+
 bool TEmptyPlugin::canAddIODevice() {
     return true;
 }
 
 bool TEmptyPlugin::canAddScope() {
+    return false;
+}
+
+bool TEmptyPlugin::canAddAnalDevice() {
     return false;
 }
 
@@ -65,4 +74,8 @@ QList<TIODevice *> TEmptyPlugin::getIODevices() {
 
 QList<TScope *> TEmptyPlugin::getScopes() {
     return QList<TScope *>();
+}
+
+QList<TAnalDevice *> TEmptyPlugin::getAnalDevices() {
+    return QList<TAnalDevice *>();
 }
