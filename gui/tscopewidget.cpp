@@ -360,14 +360,7 @@ void TScopeWidget::updateIconAxis() {
 
     TScope::TTriggerStatus trigger = m_scopeModel->triggerStatus();
     if(trigger.getTriggerType() != TScope::TTriggerStatus::TTriggerType::TNone) {
-        qreal offset = 0;
-        QList<TScope::TChannelStatus> channelStatusList = m_scopeModel->channelsStatus();
-        for(TScope::TChannelStatus channelStatus : channelStatusList) {
-            if(channelStatus.getIndex() == trigger.getTriggerSourceIndex()) {
-                offset = channelStatus.getOffset();
-            }
-        }
-        newLabels[trigger.getTriggerVoltage() + offset] = "<span style=\"color: red; font-size: 12px;\">&#129032;</span>";
+        newLabels[trigger.getTriggerVoltage()] = "<span style=\"color: red; font-size: 12px;\">&#129032;</span>";
     }
 
     for(TScope::TChannelStatus channel : m_scopeModel->channelsStatus()) {
@@ -377,7 +370,7 @@ void TScopeWidget::updateIconAxis() {
         if(channel.getOffset() != 0) {
             if(newLabels.contains(channel.getOffset())) {
                 newLabels[channel.getOffset()] +=
-                    QString("<span style=\"color: %1; font-size: 12px;\">&#9178; %2</span>")
+                    QString("<span style=\"color: %1; font-size: 12px;\">%2</span>")
                         .arg(
                             channelColorCodes[channel.getIndex() % 8],
                             channel.getAlias()
@@ -385,7 +378,7 @@ void TScopeWidget::updateIconAxis() {
             }
             else {
                 newLabels[channel.getOffset()] =
-                    QString("<span style=\"color: %1; font-size: 12px;\">&#9178; %2</span>")
+                    QString("<span style=\"color: %1; font-size: 12px;\">%2</span>")
                         .arg(
                             channelColorCodes[channel.getIndex() % 8],
                             channel.getAlias()
@@ -420,7 +413,7 @@ void TScopeWidget::createLineSeries(QLineSeries * lineSeries, TScope::TChannelSt
     if(sampleCount < idealPointCount) {
         // not too many samples, draw every sample as single point
         for (size_t i = 0; i < sampleCount; i++) {
-            value = slope * (buffer[i + traceBufferIndex * sampleCount] - channel.getMinValue()) - channel.getRange() + channel.getOffset();
+            value = slope * (buffer[i + traceBufferIndex * sampleCount] - channel.getMinValue()) - channel.getRange();
             pointList.append(QPointF(i, value));
         }
     }
@@ -431,14 +424,13 @@ void TScopeWidget::createLineSeries(QLineSeries * lineSeries, TScope::TChannelSt
         qreal min, max;
         size_t sampleIndex = 0;
         while(sampleIndex < sampleCount) {
-            qreal firstValue = slope * (buffer[sampleIndex + traceBufferIndex * sampleCount] - channel.getMinValue()) - channel.getRange() + channel.getOffset();
+            qreal firstValue = slope * (buffer[sampleIndex + traceBufferIndex * sampleCount] - channel.getMinValue()) - channel.getRange();
             min = firstValue;
             max = firstValue;
 
             size_t loopEndIndex = (sampleIndex + groupSampleSize) > sampleCount ? sampleCount : sampleIndex + groupSampleSize;
             for (size_t i = sampleIndex + 1; i < loopEndIndex; i++) {
-                qreal value = slope * (buffer[i + traceBufferIndex * sampleCount] - channel.getMinValue()) - channel.getRange() + channel.getOffset();
-
+                qreal value = slope * (buffer[i + traceBufferIndex * sampleCount] - channel.getMinValue()) - channel.getRange();
                 min = value < min ? value : min;
                 max = value > max ? value : max;
             }
