@@ -336,6 +336,8 @@ TSelectDeviceWizardPage::TSelectDeviceWizardPage(TDeviceWizard * parent)
 
     m_scopeListWidget = new TPluginUnitContainerView(this);
 
+    m_analDeviceListWidget = new TPluginUnitContainerView(this);
+
     m_addIOButton = new QPushButton("Add");
     connect(m_addIOButton, &QPushButton::clicked, this, &TSelectDeviceWizardPage::addIODevice);
 
@@ -356,9 +358,20 @@ TSelectDeviceWizardPage::TSelectDeviceWizardPage(TDeviceWizard * parent)
     m_scopeGroupBox = new QGroupBox("Oscilloscopes");
     m_scopeGroupBox->setLayout(scopeLayout);
 
+    m_addAnalButton = new QPushButton("Add");
+    connect(m_addAnalButton, &QPushButton::clicked, this, &TSelectDeviceWizardPage::addAnalDevice);
+
+    QLayout * analLayout = new QVBoxLayout;
+    analLayout->addWidget(m_analDeviceListWidget);
+    analLayout->addWidget(m_addAnalButton);
+
+    m_analGroupBox = new QGroupBox("Analytical devices");
+    m_analGroupBox->setLayout(analLayout);
+
     QLayout * selectDeviceLayout = new QHBoxLayout;
     selectDeviceLayout->addWidget(m_IOGroupBox);
     selectDeviceLayout->addWidget(m_scopeGroupBox);
+    selectDeviceLayout->addWidget(m_analGroupBox);
 
     setLayout(selectDeviceLayout);
 }
@@ -375,19 +388,28 @@ void TSelectDeviceWizardPage::initializePage()
         disconnect(m_scopeListWidget->selectionModel(), nullptr, this, nullptr);
     }
 
+    if (m_analDeviceListWidget->selectionModel()) {
+        disconnect(m_analDeviceListWidget->selectionModel(), nullptr, this, nullptr);
+    }
+
     disconnect(m_IODeviceListWidget, nullptr, wizard(), nullptr);
     disconnect(m_scopeListWidget, nullptr, wizard(), nullptr);
+    disconnect(m_analDeviceListWidget, nullptr, wizard(), nullptr);
     
     TIODeviceContainer * IODevices = m_selectedComponent->IODeviceContainer();
     TScopeContainer * scopes = m_selectedComponent->scopeContainer();
+    TAnalDeviceContainer * analDevices = m_selectedComponent->analDeviceContainer();
 
     m_IODeviceListWidget->setModel(IODevices);
     m_scopeListWidget->setModel(scopes);
+    m_analDeviceListWidget->setModel(analDevices);
 
     connect(m_IODeviceListWidget->selectionModel(), &QItemSelectionModel::selectionChanged, this, &TSelectDeviceWizardPage::selectIODevice);
     connect(m_scopeListWidget->selectionModel(), &QItemSelectionModel::selectionChanged, this, &TSelectDeviceWizardPage::selectScope);
+    connect(m_analDeviceListWidget->selectionModel(), &QItemSelectionModel::selectionChanged, this, &TSelectDeviceWizardPage::selectAnalDevice);
     connect(m_IODeviceListWidget, &QTableView::doubleClicked, wizard(), &QWizard::next);
     connect(m_scopeListWidget, &QTableView::doubleClicked, wizard(), &QWizard::next);
+    connect(m_analDeviceListWidget, &QTableView::doubleClicked, wizard(), &QWizard::next);
     
     if (IODevices->count() || m_selectedComponent->canAddIODevice()) {
         m_IOGroupBox->show();
@@ -405,19 +427,31 @@ void TSelectDeviceWizardPage::initializePage()
         m_scopeGroupBox->hide();
     }
 
-    if (m_IOGroupBox->isHidden() && m_scopeGroupBox->isHidden()) {
+    m_addScopeButton->setEnabled(m_selectedComponent->canAddScope());
+
+    if (analDevices->count() || m_selectedComponent->canAddAnalDevice()) {
+        m_analGroupBox->show();
+    }
+    else {
+        m_analGroupBox->hide();
+    }
+
+    m_addAnalButton->setEnabled(m_selectedComponent->canAddAnalDevice());
+
+    if (m_IOGroupBox->isHidden() && m_scopeGroupBox->isHidden() && m_analGroupBox->isHidden()) {
         setSubTitle(tr("No device can be opened using selected component!"));
     }
     else {
         setSubTitle(tr("Select the device you want to open"));
     }
-
-    m_addScopeButton->setEnabled(m_selectedComponent->canAddScope());
 }
 
 bool TSelectDeviceWizardPage::isComplete() const
 {
-    return (bool)m_IODeviceListWidget->selectionModel()->selectedRows().length() != (bool)m_scopeListWidget->selectionModel()->selectedRows().length();
+    return 1 ==
+           m_IODeviceListWidget->selectionModel()->selectedRows().length() +
+           m_scopeListWidget->selectionModel()->selectedRows().length() +
+           m_analDeviceListWidget->selectionModel()->selectedRows().length();
 }
 
 int TSelectDeviceWizardPage::nextId() const
@@ -450,6 +484,7 @@ bool TSelectDeviceWizardPage::validatePage()
 void TSelectDeviceWizardPage::selectIODevice()
 {
     m_scopeListWidget->selectionModel()->clearSelection();
+    m_analDeviceListWidget->selectionModel()->clearSelection();
 
     QModelIndexList selected = m_IODeviceListWidget->selectionModel()->selectedRows();
     if (selected.isEmpty()) {
@@ -465,6 +500,7 @@ void TSelectDeviceWizardPage::selectIODevice()
 void TSelectDeviceWizardPage::selectScope()
 {
     m_IODeviceListWidget->selectionModel()->clearSelection();
+    m_analDeviceListWidget->selectionModel()->clearSelection();
 
     QModelIndexList selected = m_scopeListWidget->selectionModel()->selectedRows();
     if (selected.isEmpty()) {
@@ -472,6 +508,22 @@ void TSelectDeviceWizardPage::selectScope()
     }
     else {
         m_selectedDevice = m_selectedComponent->scopeContainer()->at(selected.constFirst().row());
+    }
+
+    emit completeChanged();
+}
+
+void TSelectDeviceWizardPage::selectAnalDevice()
+{
+    m_IODeviceListWidget->selectionModel()->clearSelection();
+    m_scopeListWidget->selectionModel()->clearSelection();
+
+    QModelIndexList selected = m_analDeviceListWidget->selectionModel()->selectedRows();
+    if (selected.isEmpty()) {
+        m_selectedDevice = nullptr;
+    }
+    else {
+        m_selectedDevice = m_selectedComponent->analDeviceContainer()->at(selected.constFirst().row());
     }
 
     emit completeChanged();
@@ -504,6 +556,23 @@ bool TSelectDeviceWizardPage::addScope()
     }
 
     bool ok = m_selectedComponent->addScope(name, info);
+    if (!ok) {
+        TDialog::deviceAddFailedGeneralMessage(this);
+    }
+
+    return ok;
+}
+
+bool TSelectDeviceWizardPage::addAnalDevice()
+{
+    QString name;
+    QString info;
+
+    if (!TDialog::addDeviceDialog(this, name, info)) {
+        return false;
+    }
+
+    bool ok = m_selectedComponent->addAnalDevice(name, info);
     if (!ok) {
         TDialog::deviceAddFailedGeneralMessage(this);
     }

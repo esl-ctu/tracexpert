@@ -9,7 +9,7 @@ class TDeviceModel : public TPluginUnitModel
 
 public:
     explicit TDeviceModel(TCommon * unit, TPluginUnitContainer * parent, bool manual = false);
-    ~TDeviceModel();
+    virtual ~TDeviceModel();
 
     int childrenCount() const override;
     TProjectItem * child(int row) const override;

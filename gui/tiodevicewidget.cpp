@@ -16,11 +16,11 @@
 
 
 TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContainer * protocolContainer, QWidget * parent)
-    : QWidget(parent), m_deviceModel(deviceModel), m_protocolContainer(protocolContainer)
+    : QWidget(parent), m_deviceModel(deviceModel), m_senderModel(m_deviceModel->senderModel()), m_receiverModel(m_deviceModel->receiverModel()), m_protocolContainer(protocolContainer)
 {
     setWindowTitle(tr("IO Device - %1").arg(m_deviceModel->name()));
 
-    connect(m_deviceModel, &TIODeviceModel::dataRead, this, &TIODeviceWidget::dataReceived);
+    connect(m_receiverModel, &TReceiverModel::dataRead, this, &TIODeviceWidget::dataReceived);
 
     m_communicationLogTextEdit = new QPlainTextEdit;
     m_communicationLogTextEdit->setReadOnly(true);
@@ -99,7 +99,7 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContaine
 
     connect(m_receiveBytesEdit, &QLineEdit::textChanged, this, [=](){receiveButton->setEnabled(m_receiveBytesEdit->hasAcceptableInput());});
 
-    connect(m_deviceModel, &TIODeviceModel::readBusy, this, &TIODeviceWidget::receiveBusy);
+    connect(m_receiverModel, &TReceiverModel::readBusy, this, &TIODeviceWidget::receiveBusy);
 
     QCheckBox * autoReceiveCheckbox = new QCheckBox;
     autoReceiveCheckbox->setChecked(false);
@@ -139,7 +139,7 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContaine
     layout->addWidget(textParamBox);
     layout->addLayout(sendReceiveLayout);
 
-    connect(m_deviceModel, &TIODeviceModel::readFailed, this, &TIODeviceWidget::receiveFailed);
+    connect(m_receiverModel, &TReceiverModel::readFailed, this, &TIODeviceWidget::receiveFailed);
 
     updateDisplayedProtocols();
     connect(m_sendProtocolComboBox, &QComboBox::currentIndexChanged, this, &TIODeviceWidget::sendProtocolChanged);
@@ -267,16 +267,16 @@ bool TIODeviceWidget::applyPostInitParam()
 void TIODeviceWidget::setAutoreceive(bool enabled)
 {
     if (enabled) {
-        m_deviceModel->enableAutoRead();
+        m_receiverModel->enableAutoRead();
     }
     else {
-        m_deviceModel->disableAutoRead();
+        m_receiverModel->disableAutoRead();
     }
 }
 
 void TIODeviceWidget::receiveBytes()
 {
-    m_deviceModel->readData(m_receiveBytesEdit->text().toInt());
+    m_receiverModel->readData(m_receiveBytesEdit->text().toInt());
 }
 
 void TIODeviceWidget::receiveBusy()
@@ -352,7 +352,7 @@ void TIODeviceWidget::sendRawBytes()
         dataToWrite = QByteArray::fromHex(dataToWrite);
     }
 
-    m_deviceModel->writeData(dataToWrite);
+    m_senderModel->writeData(dataToWrite);
 
     m_communicationLogTextEdit->appendHtml(QStringLiteral("<b>Sent:</b>"));
     m_communicationLogTextEdit->appendPlainText(byteArraytoHumanReadableString(dataToWrite));
@@ -374,10 +374,9 @@ void TIODeviceWidget::sendProtocolBytes()
     }
 
     m_communicationLogTextEdit->appendHtml(QStringLiteral("<b>Sent:</b>"));
-    m_deviceModel->writeData(messageData);
+    m_senderModel->writeData(messageData);
     m_communicationLogTextEdit->appendPlainText(messageToBeSent.getPayloadSummary());
 }
-
 
 void TIODeviceWidget::sendBusy()
 {

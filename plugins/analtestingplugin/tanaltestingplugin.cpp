@@ -1,5 +1,7 @@
 #include "tanaltestingplugin.h"
 
+#include "tanaltestingdevice.h"
+
 TAnalTestingPlugin::TAnalTestingPlugin() {
     
 }
@@ -27,10 +29,17 @@ TConfigParam TAnalTestingPlugin::setPreInitParams(TConfigParam params) {
 
 void TAnalTestingPlugin::init(bool *ok) {
     if(ok != nullptr) *ok = true;
+
+    m_analDevices.append(new TAnalTestingDevice());
 }
 
 void TAnalTestingPlugin::deInit(bool *ok) {
     if(ok != nullptr) *ok = true;
+
+    for (int i = 0; i < m_analDevices.length(); i++) {
+        delete m_analDevices[i];
+    }
+    m_analDevices.clear();
 }
 
 TConfigParam TAnalTestingPlugin::getPostInitParams() const {
@@ -57,7 +66,7 @@ TAnalDevice * TAnalTestingPlugin::addAnalDevice(QString name, QString info, bool
 }
 
 bool TAnalTestingPlugin::canAddIODevice() {
-    return true;
+    return false;
 }
 
 bool TAnalTestingPlugin::canAddScope() {
@@ -77,5 +86,5 @@ QList<TScope *> TAnalTestingPlugin::getScopes() {
 }
 
 QList<TAnalDevice *> TAnalTestingPlugin::getAnalDevices() {
-    return QList<TAnalDevice *>();
+    return m_analDevices;
 }

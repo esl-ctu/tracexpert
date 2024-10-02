@@ -40,15 +40,18 @@ public slots:
 
     bool validateRawInputValues();
 
-private:
+private slots:
     void sendProtocolChanged(int index);
     void sendMessageChanged(int index);
 
     void updateDisplayedProtocols();
 
+private:
     QString byteArraytoHumanReadableString(const QByteArray & byteArray);
 
     TIODeviceModel * m_deviceModel;
+    TSenderModel * m_senderModel;
+    TReceiverModel * m_receiverModel;
     TProtocolContainer * m_protocolContainer;
 
     TConfigParamWidget * m_paramWidget;

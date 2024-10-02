@@ -44,7 +44,26 @@ public:
 
     virtual bool isBusy() const override;
 
+    size_t fillData(const uint8_t * buffer, size_t length, QList<QList<uint8_t> *> & set);
+    void processData(bool subtract);
+    size_t getData(uint8_t * buffer, size_t length);
 
+private:
+
+    TConfigParam m_preInitParams;
+    size_t m_traceLength;
+
+    QList<TAnalAction *> m_analActions;
+
+    QList<TAnalInputStream *> m_analInputStreams;
+    QList<TAnalOutputStream *> m_analOutputStreams;
+
+    QList<QList<uint8_t> *> m_firstSet;
+    QList<QList<uint8_t> *> m_secondSet;
+
+    size_t m_length;
+    int m_position;
+    int * m_data = nullptr;
 };
 
 #endif // TANALTESTINGDEVICE_H

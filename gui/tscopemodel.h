@@ -34,6 +34,7 @@ class TScopeModel : public TDeviceModel
 
 public:
     explicit TScopeModel(TScope * scope, TScopeContainer * parent, bool manual = false);
+    ~TScopeModel();
 
     void show();
 

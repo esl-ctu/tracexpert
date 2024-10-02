@@ -8,6 +8,7 @@
 #include "qfiledialog.h"
 #include "tdevicewizard.h"
 #include "tiodevicewidget.h"
+#include "tanaldevicewidget.h"
 //#include "scenario/tscenarioeditorwidget.h"
 #include "tscopewidget.h"
 #include "tprojectview.h"
@@ -143,6 +144,19 @@ void TMainWindow::createScopeDockWidget(TScopeModel * scope)
     m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
 }
 
+void TMainWindow::createAnalDeviceDockWidget(TAnalDeviceModel * analDevice)
+{
+    TAnalDeviceWidget * widget = new TAnalDeviceWidget(analDevice, m_projectModel->protocolContainer());
+    QString title = widget->windowTitle();
+    TDockWidget * dockWidget = new TDockWidget(title);
+    dockWidget->setWidget(widget);
+    m_viewMenu->addAction(dockWidget->toggleViewAction());
+    connect(analDevice, &TAnalDeviceModel::deinitialized, dockWidget, [=](){ m_viewMenu->removeAction(dockWidget->toggleViewAction()); });
+    connect(analDevice, &TAnalDeviceModel::deinitialized, dockWidget, &TDockWidget::close);
+    connect(analDevice, &TAnalDeviceModel::showRequested, dockWidget, &TDockWidget::show);
+    m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
+}
+
 
 void TMainWindow::openProtocolEditor(const QString & protocolName)
 {
@@ -211,6 +225,7 @@ void TMainWindow::newProject()
 
     connect(m_projectModel, &TProjectModel::IODeviceInitialized, this, &TMainWindow::createIODeviceDockWidget);
     connect(m_projectModel, &TProjectModel::scopeInitialized, this, &TMainWindow::createScopeDockWidget);
+    connect(m_projectModel, &TProjectModel::analDeviceInitialized, this, &TMainWindow::createAnalDeviceDockWidget);
 
     createProjectDockWidget(m_projectModel);
     createProtocolManagerWidget();
@@ -249,6 +264,7 @@ void TMainWindow::openProject()
 
     connect(m_projectModel, &TProjectModel::IODeviceInitialized, this, &TMainWindow::createIODeviceDockWidget);
     connect(m_projectModel, &TProjectModel::scopeInitialized, this, &TMainWindow::createScopeDockWidget);
+    connect(m_projectModel, &TProjectModel::analDeviceInitialized, this, &TMainWindow::createAnalDeviceDockWidget);
 
     try {
         m_projectModel->load(&projectElement);

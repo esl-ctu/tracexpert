@@ -27,7 +27,7 @@ class TAnalOutputStream : public TAnalStream {
 public:
 
     /// Receives the specified amount of data into the buffer
-    virtual size_t readData(uint8_t * buffer, size_t len) = 0;
+    virtual size_t writeData(const uint8_t * buffer, size_t len) = 0;
 };
 
 class TAnalAction {

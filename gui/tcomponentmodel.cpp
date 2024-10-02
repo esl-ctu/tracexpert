@@ -9,10 +9,14 @@ TComponentModel::TComponentModel(TPlugin * plugin, TComponentContainer * parent)
 
     m_IOdevices = new TIODeviceContainer(this);
     m_scopes = new TScopeContainer(this);
+    m_analDevices = new TAnalDeviceContainer(this);
 }
 
 TComponentModel::~TComponentModel()
 {
+    if (isInit())
+        TComponentModel::deInit();
+
     delete m_unit;
 }
 
@@ -74,6 +78,31 @@ bool TComponentModel::init()
         appendScope(scopes[i]);
     }
 
+    QList<TAnalDevice *> analDevices = m_plugin->getAnalDevices();
+    for (int i = 0; i < m_analDevices->count(); i++) {
+        bool found = false;
+        TAnalDeviceModel * existingDevice = m_analDevices->at(i);
+
+        for (int j = 0; j < analDevices.count(); j++) {
+            if (analDevices.at(j)->getName() == existingDevice->name()) {
+                existingDevice->bind(analDevices.at(j));
+                analDevices.removeAt(j);
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+            existingDevice->bind(m_plugin->addAnalDevice(existingDevice->name(), existingDevice->info()));
+
+        if (existingDevice->initWhenAvailable())
+            existingDevice->init();
+    }
+
+    for (int i = 0; i < analDevices.length(); i++) {
+        appendAnalDevice(analDevices[i]);
+    }
+
     return true;
 }
 
@@ -123,6 +152,26 @@ bool TComponentModel::deInit()
         delete scope;
     }
 
+    QList<TAnalDeviceModel *> removedAnalDevices;
+
+    for (int i = 0; i < m_scopes->count(); i++) {
+        TAnalDeviceModel * analDevice = m_analDevices->at(i);
+
+        if (analDevice->isInit() && !analDevice->deInit())
+            return false;
+
+        if (analDevice->toBeSaved())
+            analDevice->release();
+        else
+            removedAnalDevices.append(analDevice);
+    }
+
+    for (int i = 0; i < removedAnalDevices.count(); i++) {
+        TAnalDeviceModel * analDevice = removedAnalDevices.at(i);
+        m_analDevices->remove(analDevice);
+        delete analDevice;
+    }
+
     if (!TPluginUnitModel::deInit()) {
         return false;
     }
@@ -142,6 +191,11 @@ int TComponentModel::scopeCount() const
     return m_scopes->count();
 }
 
+int TComponentModel::analDeviceCount() const
+{
+    return m_analDevices->count();
+}
+
 TIODeviceModel * TComponentModel::IODevice(int index) const
 {
     return m_IOdevices->at(index);
@@ -152,6 +206,11 @@ TScopeModel * TComponentModel::scope(int index) const
     return m_scopes->at(index);
 }
 
+TAnalDeviceModel * TComponentModel::analDevice(int index) const
+{
+    return m_analDevices->at(index);
+}
+
 bool TComponentModel::canAddIODevice() const
 {
     return m_plugin->canAddIODevice();
@@ -160,6 +219,11 @@ bool TComponentModel::canAddIODevice() const
 bool TComponentModel::canAddScope() const
 {
     return m_plugin->canAddScope();
+}
+
+bool TComponentModel::canAddAnalDevice() const
+{
+    return m_plugin->canAddAnalDevice();
 }
 
 bool TComponentModel::addIODevice(QString name, QString info)
@@ -185,6 +249,21 @@ bool TComponentModel::addScope(QString name, QString info)
 
         if (ok) {
             appendScope(scope, true);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool TComponentModel::addAnalDevice(QString name, QString info)
+{
+    if (m_plugin->canAddAnalDevice()) {
+        bool ok;
+        TAnalDevice * analDevice = m_plugin->addAnalDevice(name, info, &ok);
+
+        if (ok) {
+            appendAnalDevice(analDevice, true);
             return true;
         }
     }
@@ -222,6 +301,21 @@ bool TComponentModel::removeScope(TScopeModel * scope)
     return true;
 }
 
+bool TComponentModel::removeAnalDevice(TAnalDeviceModel * analDevice)
+{
+    if (analDevice->isInit() && !analDevice->deInit())
+        return false;
+
+    if (!analDevice->isManual() && analDevice->isAvailable())
+        return false;
+
+    if (!m_analDevices->remove(analDevice))
+        return false;
+
+    delete analDevice;
+    return true;
+}
+
 TIODeviceContainer * TComponentModel::IODeviceContainer() const
 {
     return m_IOdevices;
@@ -232,6 +326,11 @@ TScopeContainer * TComponentModel::scopeContainer() const
     return m_scopes;
 }
 
+TAnalDeviceContainer * TComponentModel::analDeviceContainer() const
+{
+    return m_analDevices;
+}
+
 int TComponentModel::childrenCount() const
 {
     int count = 0;
@@ -240,6 +339,9 @@ int TComponentModel::childrenCount() const
         count++;
     }
     if (m_scopes) {
+        count++;
+    }
+    if (m_analDevices) {
         count++;
     }
 
@@ -266,6 +368,15 @@ TProjectItem * TComponentModel::child(int row) const
         }
     }
 
+    if (m_analDevices) {
+        if (row == 0) {
+            return m_analDevices;
+        }
+        else {
+            row--;
+        }
+    }
+
     return nullptr;
 }
 
@@ -285,6 +396,9 @@ void TComponentModel::load(QDomElement * element)
 
         if (child.tagName() == "scopes")
             loadScopes(&child);
+
+        if (child.tagName() == "analdevices")
+            loadAnalDevice(&child);
     }
 }
 
@@ -310,6 +424,18 @@ void TComponentModel::appendScope(TScope * scope, bool manual, QDomElement * ele
         scopeModel->load(element);
 
     m_scopes->add(scopeModel);
+}
+
+void TComponentModel::appendAnalDevice(TAnalDevice * analDevice, bool manual, QDomElement * element)
+{
+    TAnalDeviceModel * analDeviceModel = new TAnalDeviceModel(analDevice, m_analDevices, manual);
+    connect(analDeviceModel, &TAnalDeviceModel::initialized, this, &TComponentModel::analDeviceInitialized);
+    connect(analDeviceModel, &TAnalDeviceModel::deinitialized, this, &TComponentModel::analDeviceDeinitialized);
+
+    if (element)
+        analDeviceModel->load(element);
+
+    m_analDevices->add(analDeviceModel);
 }
 
 void TComponentModel::loadIODevices(QDomElement * element)
@@ -445,5 +571,73 @@ void TComponentModel::loadScope(QDomElement * element)
 
     if (!found) {
         appendScope(nullptr, false, element);
+    }
+}
+
+void TComponentModel::loadAnalDevices(QDomElement * element)
+{
+    if (!element)
+        return;
+
+    if (element->tagName() != "analdevices")
+        throw tr("Unexpected node name");
+
+    QDomNodeList children = element->childNodes();
+
+    for (int i = 0; i < children.count(); i++) {
+        QDomElement child = children.at(i).toElement();
+        if (child.isNull())
+            throw tr("Unexpected node type");
+
+        if (child.tagName() == "analdevice")
+            loadAnalDevice(&child);
+        else
+            throw tr("Unexpected node name");
+    }
+}
+
+void TComponentModel::loadAnalDevice(QDomElement * element)
+{
+    if (!element)
+        return;
+
+    if (element->tagName() != "analdevice")
+        throw tr("Unexpected node name");
+
+    QString name = element->attribute("name");
+
+    if (name.isEmpty())
+        throw tr("Missing component name");
+
+    bool found = false;
+
+    QString isManualString = element->attribute("manual");
+
+    if (isManualString.isEmpty())
+        throw tr("Missing component is manual attribute");
+
+    bool ok;
+    bool isManual = isManualString.toInt(&ok);
+
+    if (!ok)
+        throw tr("Unexpected value of analytic device is manual attribute");
+
+    for (int i = 0; i < m_analDevices->count(); i++) {
+        TAnalDeviceModel * analDevice = m_analDevices->at(i);
+
+        if (name == analDevice->name()) {
+            if (isManual)
+                element->setAttribute("name", element->attribute("name")+" rename");
+            else {
+                analDevice->load(element);
+                found = true;
+            }
+
+            break;
+        }
+    }
+
+    if (!found) {
+        appendAnalDevice(nullptr, false, element);
     }
 }

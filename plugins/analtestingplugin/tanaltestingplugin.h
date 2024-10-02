@@ -58,9 +58,7 @@ public:
     virtual QList<TAnalDevice *> getAnalDevices() override;
 
 protected:
-
-
-
+    QList<TAnalDevice *> m_analDevices;
 };
 
 #endif // TANALTESTINGPLUGIN_H
