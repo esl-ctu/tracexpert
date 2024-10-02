@@ -9,6 +9,13 @@ TScopeModel::TScopeModel(TScope * scope, TScopeContainer * parent, bool manual)
     m_typeName = "scope";
 }
 
+TScopeModel::~TScopeModel() {
+    if (!isInit())
+        return;
+
+    TScopeModel::deInit();
+}
+
 void TScopeModel::show()
 {
     emit showRequested(this);

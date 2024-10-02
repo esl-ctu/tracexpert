@@ -30,6 +30,8 @@ void TProjectView::createActions()
     connect(m_addIODeviceAction, &QAction::triggered, this, &TProjectView::addIODevice);
     m_addScopeAction = new QAction(tr("Add oscilloscope"), this);
     connect(m_addScopeAction, &QAction::triggered, this, &TProjectView::addScope);
+    m_addAnalDeviceAction = new QAction(tr("Add analytical device"), this);
+    connect(m_addAnalDeviceAction, &QAction::triggered, this, &TProjectView::addAnalDevice);
 
     m_initIODeviceAction = new QAction(tr("Initialize"), this);
     connect(m_initIODeviceAction, &QAction::triggered, this, &TProjectView::initIODevice);
@@ -48,6 +50,15 @@ void TProjectView::createActions()
     connect(m_showScopeAction, &QAction::triggered, this, &TProjectView::showScope);
     m_removeScopeAction = new QAction(tr("Remove"), this);
     connect(m_removeScopeAction, &QAction::triggered, this, &TProjectView::removeScope);
+
+    m_initAnalDeviceAction = new QAction(tr("Initialize"), this);
+    connect(m_initAnalDeviceAction, &QAction::triggered, this, &TProjectView::initAnalDevice);
+    m_deinitAnalDeviceAction = new QAction(tr("Deinitialize"), this);
+    connect(m_deinitAnalDeviceAction, &QAction::triggered, this, &TProjectView::deinitAnalDevice);
+    m_showAnalDeviceAction = new QAction(tr("Show"), this);
+    connect(m_showAnalDeviceAction, &QAction::triggered, this, &TProjectView::showAnalDevice);
+    m_removeAnalDeviceAction = new QAction(tr("Remove"), this);
+    connect(m_removeAnalDeviceAction, &QAction::triggered, this, &TProjectView::removeAnalDevice);
 
     m_showInfoAction = new QAction(tr("Info"), this);
     connect(m_showInfoAction, &QAction::triggered, this, &TProjectView::showInfo);
@@ -75,6 +86,7 @@ void TProjectView::showContextMenu(const QPoint &point)
     m_component = nullptr;
     m_IODevice = nullptr;
     m_scope = nullptr;
+    m_analDevice = nullptr;
     m_unit = nullptr;
 
     if ((m_component = dynamic_cast<TComponentModel *>(item))) {
@@ -92,6 +104,8 @@ void TProjectView::showContextMenu(const QPoint &point)
         contextMenu->addAction(m_addIODeviceAction);
         m_addScopeAction->setDisabled(m_component->status() != TProjectItem::Initialized || !m_component->canAddScope());
         contextMenu->addAction(m_addScopeAction);
+        m_addAnalDeviceAction->setDisabled(m_component->status() != TProjectItem::Initialized || !m_component->canAddAnalDevice());
+        contextMenu->addAction(m_addAnalDeviceAction);
 
         defaultAction = chooseDefaultAction(m_component);
     }
@@ -122,6 +136,20 @@ void TProjectView::showContextMenu(const QPoint &point)
         contextMenu->addAction(m_removeScopeAction);
 
         defaultAction = chooseDefaultAction(m_scope);
+    }
+    else if ((m_analDevice = dynamic_cast<TAnalDeviceModel *>(item))) {
+        m_unit = m_analDevice;
+
+        m_initAnalDeviceAction->setDisabled(m_analDevice->status() != TProjectItem::Uninitialized);
+        contextMenu->addAction(m_initAnalDeviceAction);
+        m_deinitAnalDeviceAction->setDisabled(m_analDevice->status() != TProjectItem::Initialized);
+        contextMenu->addAction(m_deinitAnalDeviceAction);
+        m_showAnalDeviceAction->setDisabled(m_analDevice->status() != TProjectItem::Initialized);
+        contextMenu->addAction(m_showAnalDeviceAction);
+        m_removeAnalDeviceAction->setDisabled(!m_analDevice->isManual() && m_analDevice->isAvailable());
+        contextMenu->addAction(m_removeAnalDeviceAction);
+
+        defaultAction = chooseDefaultAction(m_analDevice);
     }
     else if ((dynamic_cast<TProtocolContainer *>(item))) {
         m_openProtocolManagerAction->setEnabled(true);
@@ -159,6 +187,7 @@ void TProjectView::runDefaultAction(const QModelIndex & index) {
     m_component = nullptr;
     m_IODevice = nullptr;
     m_scope = nullptr;
+    m_analDevice = nullptr;
     m_protocol = nullptr;
 
     if ((m_component = dynamic_cast<TComponentModel *>(item))) {
@@ -169,6 +198,9 @@ void TProjectView::runDefaultAction(const QModelIndex & index) {
     }
     else if ((m_scope = dynamic_cast<TScopeModel *>(item))) {
         defaultAction = chooseDefaultAction(m_scope);
+    }
+    else if ((m_analDevice = dynamic_cast<TAnalDeviceModel *>(item))) {
+        defaultAction = chooseDefaultAction(m_analDevice);
     }
     else if ((m_protocol = dynamic_cast<TProtocolModel *>(item))) {
         defaultAction = m_editProtocolAction;
@@ -206,6 +238,16 @@ QAction * TProjectView::chooseDefaultAction(TScopeModel * scope)
     }
     else {
         return m_showScopeAction;
+    }
+}
+
+QAction * TProjectView::chooseDefaultAction(TAnalDeviceModel * analDevice)
+{
+    if (!analDevice->isInit()) {
+        return m_initAnalDeviceAction;
+    }
+    else {
+        return m_showAnalDeviceAction;
     }
 }
 
@@ -305,6 +347,25 @@ void TProjectView::addScope()
     }
 }
 
+void TProjectView::addAnalDevice()
+{
+    if (!m_component || !m_component->isInit()) {
+        return;
+    }
+
+    QString name;
+    QString info;
+
+    if (!TDialog::addDeviceDialog(this, name, info)) {
+        return;
+    }
+
+    bool ok = m_component->addAnalDevice(name, info);
+    if (!ok) {
+        TDialog::deviceAddFailedGeneralMessage(this);
+    }
+}
+
 void TProjectView::initIODevice()
 {
     if (!m_IODevice || m_IODevice->isInit()) {
@@ -387,6 +448,48 @@ void TProjectView::showScope()
 void TProjectView::removeScope()
 {
     m_scope->remove();
+}
+
+void TProjectView::initAnalDevice()
+{
+    if (!m_analDevice || m_analDevice->isInit()) {
+        return;
+    }
+
+    TConfigParam param = m_analDevice->preInitParams();
+
+    if (!param.isEmpty()) {
+        TInitAnalDeviceDialog dialog(m_analDevice, this);
+
+        if (dialog.exec() != QDialog::DialogCode::Accepted) {
+            return;
+        }
+    }
+
+    if (!m_analDevice->init()) {
+        TDialog::deviceInitFailedGeneralMessage(this);
+    }
+}
+
+void TProjectView::deinitAnalDevice()
+{
+    if (!m_analDevice|| !m_analDevice->isInit()) {
+        return;
+    }
+
+    if (!m_analDevice->deInit()) {
+        TDialog::deviceDeinitFailedGeneralMessage(this);
+    }
+}
+
+void TProjectView::showAnalDevice()
+{
+    m_analDevice->show();
+}
+
+void TProjectView::removeAnalDevice()
+{
+    m_analDevice->remove();
 }
 
 void TProjectView::showInfo()

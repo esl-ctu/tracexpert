@@ -208,6 +208,11 @@ TInitScopeDialog::TInitScopeDialog(TScopeModel * scope, QWidget * parent)
 {
 }
 
+TInitAnalDeviceDialog::TInitAnalDeviceDialog(TAnalDeviceModel * device, QWidget * parent)
+    : TConfigParamDialog(tr("Initialize"), tr("Initialize Analytical Device"), device, true, parent)
+{
+}
+
 TPluginUnitInfoDialog::TPluginUnitInfoDialog(TPluginUnitModel * unit, QWidget * parent)
 {
     setWindowTitle(unit->name());

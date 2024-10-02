@@ -7,6 +7,7 @@
 #include "tcomponentmodel.h"
 #include "tiodevicemodel.h"
 #include "tscopemodel.h"
+#include "tanaldevicemodel.h"
 
 class TDialog
 {
@@ -80,6 +81,12 @@ class TInitScopeDialog : public TConfigParamDialog
 {
 public:
     explicit TInitScopeDialog(TScopeModel * scope, QWidget * parent = nullptr);
+};
+
+class TInitAnalDeviceDialog : public TConfigParamDialog
+{
+public:
+    explicit TInitAnalDeviceDialog(TAnalDeviceModel * device, QWidget * parent = nullptr);
 };
 
 class TPluginUnitInfoDialog : public QDialog

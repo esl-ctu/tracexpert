@@ -15,9 +15,10 @@ class TPluginUnitModel : public QObject, public virtual TProjectItem
 
 public:
     explicit TPluginUnitModel(TCommon * unit, QObject * parent = nullptr, bool manual = false);
+    virtual ~TPluginUnitModel();
 
-    virtual QString name() const override;
-    virtual QString info() const;
+    QString name() const override;
+    QString info() const;
 
     virtual bool init();
     virtual bool deInit();
@@ -29,8 +30,8 @@ public:
     bool isAvailable() const;
     bool isManual() const;
 
-    virtual TConfigParam preInitParams() const;
-    virtual TConfigParam postInitParams() const;
+    TConfigParam preInitParams() const;
+    TConfigParam postInitParams() const;
     virtual TConfigParam setPreInitParams(const TConfigParam & param);
     virtual TConfigParam setPostInitParams(const TConfigParam & param);
 

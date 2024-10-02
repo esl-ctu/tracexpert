@@ -56,6 +56,9 @@ signals:
 
     void scopeInitialized(TScopeModel * scope);
     void scopeDeinitialized(TScopeModel * scope);
+
+    void analDeviceInitialized(TAnalDeviceModel * analDevice);
+    void analDeviceDeinitialized(TAnalDeviceModel * analDevice);
 };
 
 #endif // TPROJECTMODEL_H

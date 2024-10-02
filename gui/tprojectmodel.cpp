@@ -169,6 +169,7 @@ void TProjectModel::appendComponent(TPlugin * plugin, QDomElement * element)
     TComponentModel * component = new TComponentModel(plugin, m_componentContainer);
     connect(component, &TComponentModel::IODeviceInitialized, this, &TProjectModel::IODeviceInitialized);
     connect(component, &TComponentModel::scopeInitialized, this, &TProjectModel::scopeInitialized);
+    connect(component, &TComponentModel::analDeviceInitialized, this, &TProjectModel::analDeviceInitialized);
 
     if (element)
         component->load(element);

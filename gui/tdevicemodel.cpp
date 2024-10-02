@@ -3,11 +3,16 @@
 
 TDeviceModel::TDeviceModel(TCommon * unit, TPluginUnitContainer * parent, bool manual)
     : TProjectItem(parent->model(), parent), TPluginUnitModel(unit, parent, manual)
-{}
+{
+
+}
 
 TDeviceModel::~TDeviceModel()
 {
-    deInit();
+    if (!isInit())
+        return;
+
+    TDeviceModel::deInit();
 }
 
 int TDeviceModel::childrenCount() const
