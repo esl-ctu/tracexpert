@@ -75,16 +75,24 @@ public:
     TIODevice * addIODeviceAutomatically(QString name, QString info, bool *ok = nullptr);//Never call this manually!
     virtual TScope * addScope(QString name, QString info, bool *ok = nullptr) override;
     TScope * addScopeAutomatically(QString name, QString info, bool *ok = nullptr);//Never call this manually!
+    /// Add a Analytical device manually
+    virtual TAnalDevice * addAnalDevice(QString name, QString info, bool *ok = nullptr) override;
+
 
     /// Get available IO devices, available only after init()
     virtual QList<TIODevice *> getIODevices() override;
     /// Get available Scopes, available only after init()
     virtual QList<TScope *> getScopes() override;
+    /// Get available Analytical devices, available only after init()
+    virtual QList<TAnalDevice *> getAnalDevices() override;
+
 
     /// Returns true, when it is possible to add an IO Device manually
     virtual bool canAddIODevice() override;
     /// Returns true, when it is possible to add a Scope manually
     virtual bool canAddScope() override;
+    /// Returns true, when it is possible to add an Analytical device manually
+    virtual bool canAddAnalDevice() override;
 
     TnewaeScope * getCWScopeObjectById(uint8_t id);
 

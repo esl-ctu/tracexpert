@@ -108,6 +108,20 @@ bool TNewae::canAddScope(){
     return true;
 }
 
+bool TNewae::canAddAnalDevice(){
+    return false;
+}
+
+QList<TAnalDevice *> TNewae::getAnalDevices() {
+    return QList<TAnalDevice *>();
+}
+
+TAnalDevice * TNewae::addAnalDevice(QString name, QString info, bool *ok) {
+    if(ok != nullptr) *ok = false;
+    return nullptr;
+}
+
+
 TConfigParam TNewae::getPreInitParams() const {
     return m_preInitParams;
 }
