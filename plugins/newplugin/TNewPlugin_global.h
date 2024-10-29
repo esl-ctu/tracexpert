@@ -1,0 +1,12 @@
+#ifndef TNEWPLUGIN_GLOBAL_H
+#define TNEWPLUGIN_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(TNEWPLUGIN_LIBRARY)
+#  define TNEWPLUGIN_EXPORT Q_DECL_EXPORT
+#else
+#  define TNEWPLUGIN_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // TNEWPLUGIN_GLOBAL_H

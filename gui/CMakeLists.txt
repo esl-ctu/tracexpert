@@ -78,6 +78,24 @@ add_library(${PROJECT_NAME} OBJECT
   tmessageformmanager.h
   tmessageformmanager.cpp
   tcombobox.h tcombobox.cpp
+  tdevicemodel.h
+  tdevicemodel.cpp
+  treceiver.h treceiver.cpp
+  tsender.h tsender.cpp
+  tanaldevicemodel.h tanaldevicemodel.cpp
+  tanaldevicecontainer.h tanaldevicecontainer.cpp
+  tanalstreamreceiver.h tanalstreamreceiver.cpp
+  tiodevicereceiver.h tiodevicereceiver.cpp
+  tiodevicesender.h tiodevicesender.cpp
+  tanalstreamsender.h tanalstreamsender.cpp
+  tsendermodel.h tsendermodel.cpp
+  treceivermodel.h treceivermodel.cpp
+  tanalactionrunner.h tanalactionrunner.cpp
+  tanalactionaborter.h tanalactionaborter.cpp
+  tanalactionmodel.h tanalactionmodel.cpp
+  tanaldevicewidget.h tanaldevicewidget.cpp
+  tanalstreamreceivermodel.h tanalstreamreceivermodel.cpp
+  tanalstreamsendermodel.h tanalstreamsendermodel.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ads/src)

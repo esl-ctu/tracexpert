@@ -20,6 +20,7 @@ public:
 signals:
     void showIODeviceRequested(TIODeviceModel * IODevice);
     void showScopeRequested(TScopeModel * scope);
+    void showAnalDeviceRequested(TAnalDeviceModel * analDevice);
 
 private slots:
     void createActions();
@@ -33,6 +34,7 @@ private slots:
     void openDevice();
     void addIODevice();
     void addScope();
+    void addAnalDevice();
 
     void initIODevice();
     void deinitIODevice();
@@ -44,6 +46,11 @@ private slots:
     void showScope();
     void removeScope();
 
+    void initAnalDevice();
+    void deinitAnalDevice();
+    void showAnalDevice();
+    void removeAnalDevice();
+
     void showInfo();
 
     void editProtocol();
@@ -54,6 +61,7 @@ private:
     TComponentModel * m_component;
     TIODeviceModel * m_IODevice;
     TScopeModel * m_scope;
+    TAnalDeviceModel * m_analDevice;
     TPluginUnitModel * m_unit;
     TProtocolModel * m_protocol;
 
@@ -63,6 +71,7 @@ private:
     QAction * m_openDeviceAction;
     QAction * m_addIODeviceAction;
     QAction * m_addScopeAction;
+    QAction * m_addAnalDeviceAction;
 
     QAction * m_initIODeviceAction;
     QAction * m_deinitIODeviceAction;
@@ -74,6 +83,11 @@ private:
     QAction * m_showScopeAction;
     QAction * m_removeScopeAction;
 
+    QAction * m_initAnalDeviceAction;
+    QAction * m_deinitAnalDeviceAction;
+    QAction * m_showAnalDeviceAction;
+    QAction * m_removeAnalDeviceAction;
+
     QAction * m_openProtocolManagerAction;
     QAction * m_editProtocolAction;
 
@@ -82,6 +96,7 @@ private:
     QAction * chooseDefaultAction(TComponentModel * component);
     QAction * chooseDefaultAction(TIODeviceModel * component);
     QAction * chooseDefaultAction(TScopeModel * component);
+    QAction * chooseDefaultAction(TAnalDeviceModel * component);
 };
 
 #endif // TPROJECTVIEW_H

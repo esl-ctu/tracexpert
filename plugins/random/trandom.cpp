@@ -55,11 +55,20 @@ TScope * TRandom::addScope(QString name, QString info, bool *ok) {
     return nullptr;
 }
 
+TAnalDevice * TRandom::addAnalDevice(QString name, QString info, bool *ok) {
+    if(ok != nullptr) *ok = false;
+    return nullptr;
+}
+
 bool TRandom::canAddIODevice() {
     return true;
 }
 
 bool TRandom::canAddScope() {
+    return false;
+}
+
+bool TRandom::canAddAnalDevice() {
     return false;
 }
 
@@ -69,4 +78,8 @@ QList<TIODevice *> TRandom::getIODevices() {
 
 QList<TScope *> TRandom::getScopes() {
     return QList<TScope *>();
+}
+
+QList<TAnalDevice *> TRandom::getAnalDevices() {
+    return QList<TAnalDevice *>();
 }

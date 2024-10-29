@@ -158,7 +158,7 @@ bool TMessageFormManager::assignInputValues() {
             if(m_inputs.contains(lengthMessagePartIndex)) {
                 QLineEdit * lineEdit = (QLineEdit *)m_inputs[lengthMessagePartIndex];
                 lineEdit->setText(QString::number(messageParts[i].getDataLength()));
-                messageParts[lengthMessagePartIndex].setValue(lineEdit->text(), &iok);
+                messageParts[lengthMessagePartIndex].setValue(lineEdit->text(), &iok, false, false, true);
             }
             // value of length-determining field is static
             else if(!messageParts[lengthMessagePartIndex].isPayload()) {

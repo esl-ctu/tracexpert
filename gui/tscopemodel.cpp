@@ -4,13 +4,15 @@
 #include "tcomponentmodel.h"
 
 TScopeModel::TScopeModel(TScope * scope, TScopeContainer * parent, bool manual)
-    : TProjectItem(parent->model(), parent), TPluginUnitModel(scope, parent, manual), m_scope(scope)
+    : TProjectItem(parent->model(), parent), TDeviceModel(scope, parent, manual), m_scope(scope)
 {
     m_typeName = "scope";
 }
 
-TScopeModel::~TScopeModel()
-{
+TScopeModel::~TScopeModel() {
+    if (!isInit())
+        return;
+
     TScopeModel::deInit();
 }
 
@@ -81,16 +83,6 @@ TConfigParam TScopeModel::setPostInitParams(const TConfigParam & param)
     TConfigParam newParam = TPluginUnitModel::setPostInitParams(param);
     emit channelsStatusChanged();
     return newParam;
-}
-
-int TScopeModel::childrenCount() const
-{
-    return 0;
-}
-
-TProjectItem * TScopeModel::child(int row) const
-{
-    return nullptr;
 }
 
 void TScopeModel::bind(TCommon * unit)

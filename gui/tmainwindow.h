@@ -21,6 +21,7 @@ public slots:
 
     void createIODeviceDockWidget(TIODeviceModel * IODevice);
     void createScopeDockWidget(TScopeModel * scope);
+    void createAnalDeviceDockWidget(TAnalDeviceModel * IODevice);
 
     void createProtocolManagerWidget();
     void openProtocolEditor(const QString & protocolName);

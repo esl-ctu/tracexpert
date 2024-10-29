@@ -13,6 +13,14 @@ TPluginUnitModel::TPluginUnitModel(TCommon * unit, QObject * parent, bool manual
     }
 }
 
+TPluginUnitModel::~TPluginUnitModel()
+{
+    if (!isInit())
+        return;
+
+    TPluginUnitModel::deInit();
+}
+
 QString TPluginUnitModel::name() const
 {
     return m_name;
@@ -54,7 +62,7 @@ bool TPluginUnitModel::init()
 
 bool TPluginUnitModel::deInit()
 {
-    if (!m_unit)
+    if (!m_unit || !isInit())
         return false;
 
     bool ok;

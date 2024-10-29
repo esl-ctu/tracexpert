@@ -12,7 +12,10 @@
 
 struct TScopeTraceData {
     ~TScopeTraceData() {
-        qDeleteAll(buffers);
+        // correct way to delete using the same operator ([])
+        for(quint8 * buffer : buffers) {
+            delete [] buffer;
+        }
     }
 
     size_t firstTraceIndex;
@@ -30,6 +33,7 @@ class TScopeWidget : public QWidget
 
 public:
     explicit TScopeWidget(TScopeModel * scope, QWidget * parent = nullptr);
+    ~TScopeWidget();
 
 public slots:
     void updateChannelStatus();
@@ -67,7 +71,12 @@ private:
     void updateIconAxis();    
 
     template <class T>
-    void createLineSeries(QLineSeries * lineSeries, TScope::TChannelStatus channel, T * buffer, size_t sampleOffset, size_t sampleCount);
+    void createLineSeries(
+        QLineSeries * lineSeries,
+        TScope::TChannelStatus channel,
+        T * buffer,
+        size_t sampleOffset,
+        size_t sampleCount);
 
     void setGUItoReady();
     void setGUItoRunning();

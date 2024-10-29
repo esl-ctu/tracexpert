@@ -431,7 +431,7 @@ public:
         if(ok != nullptr) *ok = iok;
     }
 
-    void setValue(const QString & value, bool *ok = nullptr, bool asHex = false, bool asAscii = false){
+    void setValue(const QString & value, bool *ok = nullptr, bool asHex = false, bool asAscii = false, bool asLength = false){
         static QRegularExpression asciiRegExp("^([\\x00-\\x7F])+$");
         static QRegularExpression hexRegExp("^([A-Fa-f0-9]|([A-Fa-f0-9]{2})+)$");
 
@@ -451,6 +451,9 @@ public:
                         this->setValue(valueAsByteArray, &iok);
                     }
                 }
+                else if(asLength) {
+                    this->setValue((uint8_t)valueAsByteArray.toUShort(), &iok);
+                }
                 else {
                     if(hexRegExp.match(valueAsByteArray).hasMatch()) {
                         this->setValue(QByteArray::fromHex(valueAsByteArray), &iok);
@@ -466,6 +469,9 @@ public:
                     if(hexRegExp.match(valueAsByteArray).hasMatch()) {
                         this->setValue(QByteArray::fromHex(valueAsByteArray), &iok);
                     }
+                }
+                else if(asLength) {
+                    this->setValue((uint8_t)valueAsByteArray.toUShort(), &iok);
                 }
                 else {
                     if(asciiRegExp.match(valueAsByteArray).hasMatch()) {
