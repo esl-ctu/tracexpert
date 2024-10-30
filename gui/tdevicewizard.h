@@ -119,17 +119,22 @@ public:
 protected slots:
     void selectIODevice();
     void selectScope();
+    void selectAnalDevice();
 
     bool addIODevice();
     bool addScope();
+    bool addAnalDevice();
 
 private:
     TPluginUnitContainerView * m_IODeviceListWidget;
     TPluginUnitContainerView * m_scopeListWidget;
+    TPluginUnitContainerView * m_analDeviceListWidget;
     QPushButton * m_addIOButton;
     QGroupBox * m_IOGroupBox;
     QPushButton * m_addScopeButton;
     QGroupBox * m_scopeGroupBox;
+    QPushButton * m_addAnalButton;
+    QGroupBox * m_analGroupBox;
 };
 
 class TInitDeviceWizardPage : public TDeviceWizardPage

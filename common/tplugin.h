@@ -7,6 +7,7 @@
 #include "tconfigparam.h"
 #include "tiodevice.h"
 #include "tscope.h"
+#include "tanaldevice.h"
 #include "tcommon.h"
 
 class TPlugin : public TCommon {
@@ -39,16 +40,22 @@ public:
     virtual TIODevice * addIODevice(QString name, QString info, bool *ok = nullptr) = 0;
     /// Add a Scope manually
     virtual TScope * addScope(QString name, QString info, bool *ok = nullptr) = 0;
+    /// Add an Analytical device manually
+    virtual TAnalDevice * addAnalDevice(QString name, QString info, bool *ok = nullptr) = 0;
 
     /// Returns true, when it is possible to add an IO Device manually
     virtual bool canAddIODevice() = 0;
     /// Returns true, when it is possible to add a Scope manually
     virtual bool canAddScope() = 0;
+    /// Returns true, when it is possible to add an Analytical device manually
+    virtual bool canAddAnalDevice() = 0;
 
     /// Get available IO devices, available only after init()
     virtual QList<TIODevice *> getIODevices() = 0;
     /// Get available Scopes, available only after init()
     virtual QList<TScope *> getScopes() = 0;
+    /// Get available Analytical devices, available only after init()
+    virtual QList<TAnalDevice *> getAnalDevices() = 0;
 
 };
 
