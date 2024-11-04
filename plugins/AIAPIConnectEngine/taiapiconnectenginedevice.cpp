@@ -219,21 +219,27 @@ bool TAIAPIConnectEngineDevice::analyzeData() {
 //todo ošetřit running i u streamů
 
 size_t TAIAPIConnectEngineDevice::getData(uint8_t * buffer, size_t length) {
+    QString type = m_preInitParams.getSubParamByName("Data type")->getValue();
+    uint8_t typeSize = getTypeSize(type);
+
+    if (typeSize == 0) {
+        qDebug("Invalid type of input");
+        return false;
+    }
+
     if (!m_data)
         return 0;
 
-    int i;
+    size_t max = length;
+    if (length > typeSize*m_length) max = typeSize*m_length;
 
-    for (i = 0; m_position < m_length && i < length; i++, m_position++) {
-        buffer[i] = m_data[m_position];
-    }
+    memcpy(buffer, m_data, max);
 
-    return i;
+    return max;
 }
 
 size_t TAIAPIConnectEngineDevice::fillData(const uint8_t * buffer, size_t length) {
     QString type = m_preInitParams.getSubParamByName("Data type")->getValue();
-    int inputItemSize = m_preInitParams.getSubParamByName("Input size")->getValue().toInt();
     uint8_t typeSize = getTypeSize(type);
 
     if (typeSize == 0) {
@@ -243,25 +249,28 @@ size_t TAIAPIConnectEngineDevice::fillData(const uint8_t * buffer, size_t length
 
     if (m_data) {
         if (type == "int16_t") delete (int16_t *) m_data;
-        if (type == "int32_t") delete (int32_t *) m_data;
-        if (type == "int64_t") delete (int64_t *) m_data;
-        if (type == "uint16_t") delete (uint16_t *) m_data;
-        if (type == "uint32_t") delete (uint32_t *) m_data;
-        if (type == "uint64_t") delete (uint64_t *) m_data;
-        if (type == "Double") delete (double *) m_data;
+        else if (type == "int32_t") delete (int32_t *) m_data;
+        else if (type == "int64_t") delete (int64_t *) m_data;
+        else if (type == "uint16_t") delete (uint16_t *) m_data;
+        else if (type == "uint32_t") delete (uint32_t *) m_data;
+        else if (type == "uint64_t") delete (uint64_t *) m_data;
+        else if (type == "Double") delete (double *) m_data;
         m_data = nullptr;
     }
 
     m_length = length / typeSize;
-    m_data = new int[m_length];
 
     if (type == "int16_t") m_data = (void *) new int16_t[m_length];
-    if (type == "int32_t") m_data = (void *) new int32_t[m_length];
-    if (type == "int64_t") m_data = (void *) new int64_t[m_length];
-    if (type == "uint16_t") m_data = (void *) new uint16_t[m_length];
-    if (type == "uint32_t") m_data = (void *) new uint32_t[m_length];
-    if (type == "uint64_t") m_data = (void *) new uint64_t[m_length];
-    if (type == "Double") m_data = (void *) new double[m_length];
+    else if (type == "int32_t") m_data = (void *) new int32_t[m_length];
+    else if (type == "int64_t") m_data = (void *) new int64_t[m_length];
+    else if (type == "uint16_t") m_data = (void *) new uint16_t[m_length];
+    else if (type == "uint32_t") m_data = (void *) new uint32_t[m_length];
+    else if (type == "uint64_t") m_data = (void *) new uint64_t[m_length];
+    else if (type == "Double") m_data = (void *) new double[m_length];
+    else {
+        qDebug("Invalid type of input (2)");
+        return 0;
+    }
 
     memcpy(m_data, buffer, length);
 
