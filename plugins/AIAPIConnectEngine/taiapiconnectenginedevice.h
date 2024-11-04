@@ -4,10 +4,16 @@
 #include <QJsonObject>
 #include <QNetworkAccessManager>
 #include <QUrl>
+#include <QEventLoop>
+#include <QTimer>
+#include <QJsonDocument>
+#include <QNetworkReply>
 
 #include "tconfigparam.h"
 #include "tanaldevice.h"
-
+#include "taiapiconnectenginedeviceaction.h"
+#include "taiapiconnectenginedeviceinputstream.h"
+#include "taiapiconnectenginedeviceoutputstream.h"
 
 class TAIAPIConnectEngineDevice : public TAnalDevice {
 public:
@@ -44,24 +50,30 @@ public:
 
     virtual bool isBusy() const override;
 
+    bool analyzeData();
+    size_t getData(uint8_t * buffer, size_t length);
+    size_t fillData(const uint8_t * buffer, size_t length);
+
     //size_t fillData(const uint8_t * buffer, size_t length, QList<QList<uint8_t> *> & set);
     //void processData(bool subtract);
-    //size_t getData(uint8_t * buffer, size_t length);
+    //
 
 private:
-
+    //size_t m_traceLength;
+    bool m_initialized;
     TConfigParam m_preInitParams;
-    size_t m_traceLength;
+    TConfigParam m_postInitParams;
+    QString m_name;
+    QString m_info;
 
     QList<TAnalAction *> m_analActions;
 
     QList<TAnalInputStream *> m_analInputStreams;
     QList<TAnalOutputStream *> m_analOutputStreams;
 
-
-    size_t m_length;
+    size_t m_length; //in sizeof(type)
     int m_position;
-    int * m_data = nullptr;
+    void * m_data = nullptr;
 
 };
 

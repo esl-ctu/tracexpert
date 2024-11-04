@@ -20,6 +20,9 @@ add_library(AIAPIConnectEngine SHARED
   taiapiconnectengine.cpp
   taiapiconnectengine.h
   taiapiconnectenginedevice.h taiapiconnectenginedevice.cpp
+  taiapiconnectenginedeviceinputstream.h taiapiconnectenginedeviceinputstream.cpp
+  taiapiconnectenginedeviceoutputstream.h taiapiconnectenginedeviceoutputstream.cpp
+  taiapiconnectenginedeviceaction.h taiapiconnectenginedeviceaction.cpp
 )
 
 target_link_libraries(AIAPIConnectEngine PRIVATE Qt${QT_VERSION_MAJOR}::Core)

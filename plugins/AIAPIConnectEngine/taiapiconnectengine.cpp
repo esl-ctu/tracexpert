@@ -20,7 +20,12 @@ TConfigParam TAIAPIConnectEngine::getPreInitParams() const {
 }
 
 TConfigParam TAIAPIConnectEngine::setPreInitParams(TConfigParam params) {
-    m_preInitParams = params;
+    if(m_initialized){
+        m_preInitParams.setState(TConfigParam::TState::TError, "Cannot change pre-init parameters on an initialized device.");
+    } else {
+        m_preInitParams = params;
+        m_preInitParams.resetState();
+    }
     return m_preInitParams;
 }
 
