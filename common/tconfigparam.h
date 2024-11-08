@@ -59,6 +59,7 @@ public:
     TConfigParam(const QString &name, const QString &defaultValue, enum TType type, const QString &hint, bool readonly = false): m_name(name), m_defaultValue(defaultValue), m_value(defaultValue), m_type(type), m_hint(hint), m_state(TState::TOk), m_stateMessage(), m_readonly(readonly), m_enums(), m_subParams() {
 
     }
+
     TConfigParam(const TConfigParam &x): m_name(x.m_name), m_defaultValue(x.m_defaultValue), m_value(x.m_value), m_type(x.m_type), m_hint(x.m_hint), m_state(x.m_state), m_stateMessage(x.m_stateMessage), m_readonly(x.m_readonly), m_enums(x.m_enums), m_subParams(x.m_subParams) {
 
     }
@@ -336,6 +337,16 @@ public:
         return m_stateMessage;
     }
 
+    void setReadonly(bool value, bool includeSubParams = false) {
+        m_readonly = value;
+
+        if(includeSubParams){
+            for(int i = 0; i < m_subParams.count(); i++){
+                m_subParams[i].setReadonly(value, true);
+            }
+        }
+    }
+
     bool isReadonly() const {
         return m_readonly;
     }
@@ -360,6 +371,10 @@ public:
         } else if(ok != nullptr){
             *ok = false;
         }
+    }
+
+    void clearEnumValues(){
+        m_enums.clear();
     }
 
     QList<TConfigParam> & getSubParams(){
@@ -393,6 +408,10 @@ public:
             if(ok != nullptr) *ok = true;
             return &(this->getSubParams()[index]);
         }
+    }
+
+    void clearSubParams(){
+        m_subParams.clear();
     }
 
 protected:
