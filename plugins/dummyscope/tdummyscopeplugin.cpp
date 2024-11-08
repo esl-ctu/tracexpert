@@ -52,12 +52,21 @@ TScope * TDummyScopePlugin::addScope(QString name, QString info, bool *ok) {
     return nullptr;
 }
 
+TAnalDevice * TDummyScopePlugin::addAnalDevice(QString name, QString info, bool *ok) {
+    if(ok != nullptr) *ok = false;
+    return nullptr;
+}
+
 bool TDummyScopePlugin::canAddIODevice() {
     return false;
 }
 
 bool TDummyScopePlugin::canAddScope() {
     return true;
+}
+
+bool TDummyScopePlugin::canAddAnalDevice()  {
+    return false;
 }
 
 QList<TIODevice *> TDummyScopePlugin::getIODevices() {
@@ -68,4 +77,8 @@ QList<TScope *> TDummyScopePlugin::getScopes() {
     auto scopeList = QList<TScope *>();
     scopeList.append(new TDummyScope());
     return scopeList;
+}
+
+QList<TAnalDevice *> TDummyScopePlugin::getAnalDevices() {
+    return QList<TAnalDevice *>();
 }
