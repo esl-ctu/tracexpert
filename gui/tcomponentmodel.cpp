@@ -398,7 +398,7 @@ void TComponentModel::load(QDomElement * element)
             loadScopes(&child);
 
         if (child.tagName() == "analdevices")
-            loadAnalDevice(&child);
+            loadAnalDevices(&child);
     }
 }
 
