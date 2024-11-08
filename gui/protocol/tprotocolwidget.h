@@ -13,7 +13,7 @@ class TProtocolWidget : public QWidget {
 public:
     explicit TProtocolWidget(TProtocolContainer * protocolContainer, QWidget * parent = nullptr);
 
-    void openEditor(const QString & protocolName);
+    void openEditor(const QString & protocolName, bool *ok);
 
 signals:
 
