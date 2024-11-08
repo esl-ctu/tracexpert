@@ -3,6 +3,7 @@
 
 #include <QAbstractItemModel>
 
+#include "scenario/tscenariocontainer.h"
 #include "tcomponentcontainer.h"
 #include "protocol/tprotocolcontainer.h"
 
@@ -16,6 +17,7 @@ public:
 
     TComponentContainer * componentContainer();
     TProtocolContainer * protocolContainer();
+    TScenarioContainer * scenarioContainer();
 
     QVariant data(const QModelIndex & index, int role) const override;
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
@@ -45,8 +47,12 @@ private:
     void loadProtocols(QDomElement * element);
     void loadProtocol(QDomElement * element);
 
+    void loadScenarios(QDomElement * element);
+    void loadScenario(QDomElement * element);
+
     TComponentContainer * m_componentContainer;
     TProtocolContainer * m_protocolContainer;
+    TScenarioContainer * m_scenarioContainer;
 
     friend class TProjectItem;
 

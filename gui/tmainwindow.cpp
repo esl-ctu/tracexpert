@@ -9,7 +9,8 @@
 #include "tdevicewizard.h"
 #include "tiodevicewidget.h"
 #include "tanaldevicewidget.h"
-//#include "scenario/tscenarioeditorwidget.h"
+#include "scenario/tscenariowidget.h"
+#include "scenario/tscenarioeditorwidget.h"
 #include "tscopewidget.h"
 #include "tprojectview.h"
 #include "tprojectmodel.h"
@@ -24,8 +25,9 @@ TMainWindow::TMainWindow(QWidget * parent)
     m_projectModel = nullptr;
     m_projectView = nullptr;
 
-    m_protocolWidget = nullptr;
+    m_protocolManagerDockWidget = nullptr;
     m_projectDockWidget = nullptr;
+    m_scenarioManagerDockWidget = nullptr;
 
     createActions();
     createMenus();
@@ -161,40 +163,86 @@ void TMainWindow::createAnalDeviceDockWidget(TAnalDeviceModel * analDevice)
 void TMainWindow::openProtocolEditor(const QString & protocolName)
 {
     createProtocolManagerWidget();
-    ((TProtocolWidget *)m_protocolWidget->widget())->openEditor(protocolName);
+
+    bool ok;
+    TProtocolWidget * protocolWidget = (TProtocolWidget *)m_protocolManagerDockWidget->widget();
+    protocolWidget->openEditor(protocolName, &ok);
+
+    if(!ok) {
+        // TODO TDialog:: protocol not found
+        return;
+    }
 }
 
 void TMainWindow::createProtocolManagerWidget()
 {
-    if(m_protocolWidget) {
-        if(!m_protocolWidget->isClosed()) {
-            m_protocolWidget->focusWidget();
+    if(m_protocolManagerDockWidget) {
+        if(!m_protocolManagerDockWidget->isClosed()) {
+            m_protocolManagerDockWidget->focusWidget();
             return;
         }
         else {
-            m_viewMenu->removeAction(m_protocolWidget->toggleViewAction());
-            delete m_protocolWidget;
+            m_viewMenu->removeAction(m_protocolManagerDockWidget->toggleViewAction());
+            delete m_protocolManagerDockWidget;
         }
     }
 
     //create dock widget with Protocol Widget
     TProtocolWidget * widget = new TProtocolWidget(m_projectModel->protocolContainer(), this);
-    m_protocolWidget = new TDockWidget(tr("Protocol manager"), this);
-    m_protocolWidget->setWidget(widget);
-    m_viewMenu->addAction(m_protocolWidget->toggleViewAction());
-    m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, m_protocolWidget);
+    m_protocolManagerDockWidget = new TDockWidget(tr("Protocol manager"), this);
+    m_protocolManagerDockWidget->setWidget(widget);
+
+    m_viewMenu->addAction(m_protocolManagerDockWidget->toggleViewAction());
+    m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, m_protocolManagerDockWidget);
 }
 
-/*
-void TMainWindow::createScenarioEditorWidget()
+void TMainWindow::openScenarioEditor(TScenarioModel * scenario)
 {
     //create dock widget with Scenario Editor Widget
-    TScenarioEditorWidget * widget = new TScenarioEditorWidget(this);
-    TDockWidget * dockWidget = new TDockWidget(tr("Scenario editor"), this);
-    dockWidget->setWidget(widget);
-    m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
+    TScenarioEditorWidget * scenarioEditorWidget = new TScenarioEditorWidget(scenario, m_projectModel, this);
+    TDockWidget * scenarioEditorDockWidget = new TDockWidget(QString("%1 - %2").arg(tr("Scenario"), scenario->name()), this);
+    scenarioEditorDockWidget->setWidget(scenarioEditorWidget);
+
+    connect(scenarioEditorDockWidget, &TDockWidget::closed, scenarioEditorDockWidget, [=](){
+        m_viewMenu->removeAction(scenarioEditorDockWidget->toggleViewAction());
+        m_scenarioEditorDockWidgets.removeAll(scenarioEditorDockWidget);
+        m_dockManager->removeDockWidget(scenarioEditorDockWidget);
+    });
+    connect(scenarioEditorDockWidget, &TDockWidget::closed, scenarioEditorDockWidget, &QObject::deleteLater);
+
+    // TODO solve closing confirmation
+    // https://docs.ros.org/en/noetic/api/plotjuggler/html/classads_1_1CDockWidget.html#a99fde29fcad39c7f9328ab95bb55f4b2
+    //connect(scenarioEditorWidget, &TDockWidget::c, scenarioEditorWidget, &TDockWidget::closeEvent);
+
+    m_viewMenu->addAction(scenarioEditorDockWidget->toggleViewAction());
+    m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, scenarioEditorDockWidget);
+
+    m_scenarioEditorDockWidgets.append(scenarioEditorDockWidget);
 }
-*/
+
+
+void TMainWindow::createScenarioManagerWidget()
+{
+    if(m_scenarioManagerDockWidget) {
+        if(!m_scenarioManagerDockWidget->isClosed()) {
+            m_scenarioManagerDockWidget->focusWidget();
+            return;
+        }
+        else {
+            m_viewMenu->removeAction(m_scenarioManagerDockWidget->toggleViewAction());
+            delete m_scenarioManagerDockWidget;
+        }
+    }
+
+    //create dock widget with Scenario Widget
+    TScenarioWidget * widget = new TScenarioWidget(m_projectModel->scenarioContainer(), this);
+    m_scenarioManagerDockWidget = new TDockWidget(tr("Scenario manager"), this);
+    m_scenarioManagerDockWidget->setWidget(widget);
+
+    m_viewMenu->addAction(m_scenarioManagerDockWidget->toggleViewAction());
+    m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, m_scenarioManagerDockWidget);
+}
+
 
 //void TMainWindow::closeDockWidget(TDockWidget * widget)
 //{
@@ -330,9 +378,19 @@ void TMainWindow::closeProject()
         m_projectDockWidget->close();
     }
 
-    if (m_protocolWidget) {
-        m_viewMenu->removeAction(m_protocolWidget->toggleViewAction());
-        m_protocolWidget->close();
+    if (m_protocolManagerDockWidget) {
+        m_viewMenu->removeAction(m_protocolManagerDockWidget->toggleViewAction());
+        m_protocolManagerDockWidget->close();
+    }
+
+    if(m_scenarioManagerDockWidget) {
+        m_viewMenu->removeAction(m_scenarioManagerDockWidget->toggleViewAction());
+        m_scenarioManagerDockWidget->close();
+    }
+
+    for(TDockWidget * scenarioEditorDockWidget : m_scenarioEditorDockWidgets) {
+        m_viewMenu->removeAction(scenarioEditorDockWidget->toggleViewAction());
+        scenarioEditorDockWidget->close();
     }
 
     m_saveProjectAction->setEnabled(false);

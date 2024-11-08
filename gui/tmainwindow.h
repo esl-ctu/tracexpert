@@ -2,8 +2,8 @@
 #define TMAINWINDOW_H
 
 #include <QMainWindow>
+#include <QDir>
 
-#include "qdir.h"
 #include "tdockmanager.h"
 #include "tprojectmodel.h"
 #include "tprojectview.h"
@@ -26,7 +26,8 @@ public slots:
     void createProtocolManagerWidget();
     void openProtocolEditor(const QString & protocolName);
 
-    //void createScenarioEditorWidget();
+    void createScenarioManagerWidget();
+    void openScenarioEditor(TScenarioModel * scenario);
 
 private slots:
     void showDeviceWizard();
@@ -63,7 +64,9 @@ private:
     TDockManager * m_dockManager;
 
     TDockWidget * m_projectDockWidget;
-    TDockWidget * m_protocolWidget;
+    TDockWidget * m_protocolManagerDockWidget;
+    TDockWidget * m_scenarioManagerDockWidget;
+    QList<TDockWidget *> m_scenarioEditorDockWidgets;
 
     QString m_projectFileName;
     QDir m_projectDirectory;

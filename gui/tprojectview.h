@@ -4,6 +4,7 @@
 #include <QTreeView>
 
 #include "protocol/tprotocolmodel.h"
+#include "scenario/tscenariomodel.h"
 #include "tcomponentmodel.h"
 #include "tiodevicemodel.h"
 #include "tscopemodel.h"
@@ -54,6 +55,7 @@ private slots:
     void showInfo();
 
     void editProtocol();
+    void editScenario();
 
 private:
     TMainWindow * m_mainWindow;
@@ -64,6 +66,7 @@ private:
     TAnalDeviceModel * m_analDevice;
     TPluginUnitModel * m_unit;
     TProtocolModel * m_protocol;
+    TScenarioModel * m_scenario;
 
     QAction * m_initComponentAction;
     QAction * m_deinitComponentAction;
@@ -90,7 +93,10 @@ private:
 
     QAction * m_openProtocolManagerAction;
     QAction * m_editProtocolAction;
-
+    
+    QAction * m_openScenarioManagerAction;
+    QAction * m_editScenarioAction;
+    
     QAction * m_showInfoAction;
 
     QAction * chooseDefaultAction(TComponentModel * component);

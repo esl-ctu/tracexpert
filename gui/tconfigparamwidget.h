@@ -26,17 +26,22 @@ public:
     explicit TConfigParamWidget(const TConfigParam & param, QWidget * parent = nullptr, bool readOnly = false);
     ~TConfigParamWidget();
 
+signals:
+    void inputValueChanged();
+
 public slots:
     TConfigParam param(bool * ok = nullptr);
     void setParam(const TConfigParam & param);
 
 protected:
     bool readParam(TConfigParam & param, QTreeWidgetItem * parent);
-    void addParam(TConfigParam & param, QTreeWidgetItem * parent);
+    void addParam(TConfigParam & param, QTreeWidgetItem * parent, int depth);
     void refreshParam();
 
 private:
-    void drawLabel(const TConfigParam & param, QTreeWidgetItem * parent);
+    const int FIRST_COLUMN_OFFSET = 30;
+
+    void drawLabel(const TConfigParam & param, QTreeWidgetItem * parent, int depth);
     void drawState(const TConfigParam & param, QTreeWidgetItem * parent);
     void drawInput(const TConfigParam & param, QTreeWidgetItem * parent);
 

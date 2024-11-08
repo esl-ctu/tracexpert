@@ -5,5 +5,13 @@
         <file>icons/stop.png</file>
         <file>icons/next.png</file>
         <file>icons/prev.png</file>
+        <file>icons/bringtofront.png</file>
+        <file>icons/pointer.png</file>
+        <file>icons/linepointer.png</file>
+        <file>icons/delete.png</file>
+        <file>icons/sendtoback.png</file>
+        <file>icons/save.png</file>
+        <file>icons/dragpointer.png</file>
+        <file>icons/editable.png</file>
     </qresource>
 </RCC>

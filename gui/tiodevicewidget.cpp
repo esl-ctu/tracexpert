@@ -19,7 +19,7 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContaine
     : QWidget(parent), m_deviceModel(deviceModel), m_senderModel(m_deviceModel->senderModel()), m_receiverModel(m_deviceModel->receiverModel()), m_protocolContainer(protocolContainer)
 {
     setWindowTitle(tr("IO Device - %1").arg(m_deviceModel->name()));
-
+    setFocusPolicy(Qt::ClickFocus);
     connect(m_receiverModel, &TReceiverModel::dataRead, this, &TIODeviceWidget::dataReceived);
 
     m_communicationLogTextEdit = new QPlainTextEdit;
@@ -117,10 +117,15 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContaine
     QPushButton * receiveButton = new QPushButton("Receive");
     receiveButton->setEnabled(false);
     connect(receiveButton, &QPushButton::clicked, this, &TIODeviceWidget::receiveBytes);
-
     connect(m_receiveBytesEdit, &QLineEdit::textChanged, this, [=](){receiveButton->setEnabled(m_receiveBytesEdit->hasAcceptableInput());});
 
     connect(m_receiverModel, &TReceiverModel::readBusy, this, &TIODeviceWidget::receiveBusy);
+    connect(m_receiverModel, &TReceiverModel::readFailed, this, &TIODeviceWidget::receiveFailed);
+    connect(m_receiverModel, &TReceiverModel::dataRead, this, &TIODeviceWidget::dataReceived);
+
+    connect(m_senderModel, &TSenderModel::writeBusy, this, &TIODeviceWidget::sendBusy);
+    connect(m_senderModel, &TSenderModel::writeFailed, this, &TIODeviceWidget::sendFailed);
+    connect(m_senderModel, &TSenderModel::dataWritten, this, &TIODeviceWidget::dataSent);
 
     QCheckBox * autoReceiveCheckbox = new QCheckBox;
     autoReceiveCheckbox->setChecked(false);
@@ -161,7 +166,6 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContaine
     layout->addLayout(sendReceiveLayout);
 
     connect(m_receiverModel, &TReceiverModel::readFailed, this, &TIODeviceWidget::receiveFailed);
-
     updateDisplayedProtocols();
     connect(m_sendProtocolComboBox, &QComboBox::currentIndexChanged, this, &TIODeviceWidget::sendProtocolChanged);
     connect(m_protocolContainer, &TProtocolContainer::protocolsUpdated, this, &TIODeviceWidget::updateDisplayedProtocols);
@@ -386,12 +390,6 @@ void TIODeviceWidget::sendRawBytes()
     }
 
     m_senderModel->writeData(dataToWrite);
-
-    // TODO: ONLY LOG IF WRITING WAS SUCCESSFUL!
-    QTime time = QTime::currentTime();
-    QString formattedTime = time.toString("hh:mm:ss");
-    m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Sent " + QString::number(dataToWrite.size()) + " B</b>"));
-    m_communicationLogTextEdit->appendHtml("<div style=\"color:blue\">" + byteArraytoHumanReadableString(dataToWrite) + "</div>");
 }
 
 void TIODeviceWidget::sendProtocolBytes()
@@ -401,28 +399,49 @@ void TIODeviceWidget::sendProtocolBytes()
         return;
     }
 
-    TMessage messageToBeSent = m_messageFormManager->getMessage();
-    const QByteArray & messageData = messageToBeSent.getData();
+    m_messageToBeSent = m_messageFormManager->getMessage();
+    const QByteArray & messageData = m_messageToBeSent.getData();
     if(messageData.length() == 0) {
         qWarning("Message could not be sent because data could not be formed.");
         TDialog::protocolMessageCouldNotBeFormed(this);
         return;
     }
 
-    // TODO: ONLY LOG IF WRITING WAS SUCCESSFUL!
-    QTime time = QTime::currentTime();
-    QString formattedTime = time.toString("hh:mm:ss");
-    m_communicationLogTextEdit->appendHtml(formattedTime + QStringLiteral(" <b>Sent:</b>"));
     m_senderModel->writeData(messageData);    
-    m_communicationLogTextEdit->appendHtml("<div style=\"color:blue\">" + messageToBeSent.getPayloadSummary() + "</div>");
 }
-
 void TIODeviceWidget::sendBusy()
 {
+    QTime time = QTime::currentTime();
+    QString formattedTime = time.toString("hh:mm:ss");
+    m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Failed to send data: device busy</b>"));
+
     TDialog::deviceFailedBusyMessage(this);
 }
 
 void TIODeviceWidget::sendFailed()
 {
+    QTime time = QTime::currentTime();
+    QString formattedTime = time.toString("hh:mm:ss");
+    m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Failed to send data</b>"));
+
     TDialog::deviceSendFailedMessage(this);
+}
+
+void TIODeviceWidget::dataSent(QByteArray data)
+{
+    QTime time = QTime::currentTime();
+    QString formattedTime = time.toString("hh:mm:ss");
+    m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Sent " + QString::number(data.size()) + " B</b>"));
+
+    if(data.size() > 512) {
+        m_communicationLogTextEdit->appendHtml("<div style=\"color:blue\">Payload is too big to be shown...</div>");
+    }
+    else {
+        if(data == m_messageToBeSent.getData()) {
+            m_communicationLogTextEdit->appendHtml("<div style=\"color:blue\">" + m_messageToBeSent.getPayloadSummary() + "</div>");
+        }
+        else {
+            m_communicationLogTextEdit->appendHtml("<div style=\"color:blue\">" + byteArraytoHumanReadableString(data) + "</div>");
+        }
+    }
 }

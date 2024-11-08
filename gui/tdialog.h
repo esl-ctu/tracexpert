@@ -6,6 +6,7 @@
 #include "tconfigparamwidget.h"
 #include "tcomponentmodel.h"
 #include "tiodevicemodel.h"
+#include "scenario/tscenarioitem.h"
 #include "tscopemodel.h"
 #include "tanaldevicemodel.h"
 
@@ -13,7 +14,9 @@ class TDialog
 {
 public:
     static bool addDeviceDialog(QWidget * parent, QString & name, QString & info);
+    static bool renameDeviceDialog(QWidget * parent, QString & name, QString & info);
 
+    static bool paramErrorQuestion(QWidget * parent);
     static bool paramWarningQuestion(QWidget * parent);
     static bool componentReinitQuestion(QWidget * parent);
     static bool componentDeinitQuestion(QWidget * parent);
@@ -37,12 +40,32 @@ public:
     static void parameterValueEmpty(QWidget * parent, const QString & parameterName);
     static void parameterValueInvalid(QWidget * parent, const QString & parameterName);
     static void parameterValueNotUniqueMessage(QWidget * parent, const QString & parameterName);
+    static void paramValueErrorMessage(QWidget * parent);
 
     static void protocolMessageCouldNotBeFormed(QWidget * parent);
+
+    static bool closeConfirmation(QWidget * parent);
 
 protected:
     static bool question(QWidget * parent, const QString & title, const QString & text);
     static void criticalMessage(QWidget * parent, const QString & title, const QString & text);
+};
+
+class TScenarioConfigParamDialog : public QDialog
+{
+public:
+    explicit TScenarioConfigParamDialog(QString acceptText, QString title, TScenarioItem * item, QWidget * parent = nullptr);
+    void tryUpdateParams();
+    void updateParams();
+
+protected:
+    void accept() override;
+    void reject() override;
+
+private:
+    TScenarioItem * m_item;
+    TConfigParamWidget * m_paramWidget;
+    TConfigParam m_originalParams;
 };
 
 class TConfigParamDialog : public QDialog

@@ -67,6 +67,11 @@ void TProjectView::createActions()
     connect(m_openProtocolManagerAction, &QAction::triggered, m_mainWindow, &TMainWindow::createProtocolManagerWidget);
     m_editProtocolAction = new QAction(tr("Edit"), this);
     connect(m_editProtocolAction, &QAction::triggered, this, &TProjectView::editProtocol);
+
+    m_openScenarioManagerAction = new QAction(tr("Open Scenario Manager"), this);
+    connect(m_openScenarioManagerAction, &QAction::triggered, m_mainWindow, &TMainWindow::createScenarioManagerWidget);
+    m_editScenarioAction = new QAction(tr("Edit"), this);
+    connect(m_editScenarioAction, &QAction::triggered, this, &TProjectView::editScenario);
 }
 
 void TProjectView::showContextMenu(const QPoint &point)
@@ -157,6 +162,12 @@ void TProjectView::showContextMenu(const QPoint &point)
 
         defaultAction = nullptr;
     }
+    else if ((dynamic_cast<TScenarioContainer *>(item))) {
+        m_openScenarioManagerAction->setEnabled(true);
+        contextMenu->addAction(m_openScenarioManagerAction);
+
+        defaultAction = nullptr;
+    }
 
     if (m_unit) {
         m_showInfoAction->setDisabled(m_unit->status() != TProjectItem::Initialized);
@@ -189,6 +200,7 @@ void TProjectView::runDefaultAction(const QModelIndex & index) {
     m_scope = nullptr;
     m_analDevice = nullptr;
     m_protocol = nullptr;
+    m_scenario = nullptr;
 
     if ((m_component = dynamic_cast<TComponentModel *>(item))) {
         defaultAction = chooseDefaultAction(m_component);
@@ -204,6 +216,9 @@ void TProjectView::runDefaultAction(const QModelIndex & index) {
     }
     else if ((m_protocol = dynamic_cast<TProtocolModel *>(item))) {
         defaultAction = m_editProtocolAction;
+    }
+    else if ((m_scenario = dynamic_cast<TScenarioModel *>(item))) {
+        defaultAction = m_editScenarioAction;
     }
 
     if (defaultAction) {
@@ -510,3 +525,13 @@ void TProjectView::editProtocol()
 
     m_mainWindow->openProtocolEditor(m_protocol->name());
 }
+
+void TProjectView::editScenario()
+{
+    if (!m_scenario) {
+        return;
+    }
+
+    m_mainWindow->openScenarioEditor(m_scenario);
+}
+
