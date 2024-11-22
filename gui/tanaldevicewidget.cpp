@@ -4,6 +4,7 @@
 #include <QCheckBox>
 
 #include "tdialog.h"
+#include "tfilenameedit.h"
 
 TAnalDeviceWidget::TAnalDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolContainer * protocolContainer, QWidget * parent)
     : QWidget(parent), m_deviceModel(deviceModel), m_senderModels(deviceModel->senderModels()), m_receiverModels(deviceModel->receiverModels()), m_actionModels(deviceModel->actionModels()), m_protocolContainer(protocolContainer)
@@ -70,6 +71,19 @@ TAnalDeviceWidget::TAnalDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolCo
     m_sendButton = new QPushButton("Send");
     connect(m_sendButton, &QPushButton::clicked, this, &TAnalDeviceWidget::sendBytes);
 
+    QGroupBox * sendFileGroupBox = new QGroupBox("Send file");
+
+    QLayout * sendFileLayout = new QVBoxLayout();
+
+    TFileNameEdit * sendFileEdit = new TFileNameEdit(QFileDialog::ExistingFile);
+    QPushButton * sendFileButton = new QPushButton("Send");
+    connect(sendFileButton, &QPushButton::clicked, this, [=](){ sendFile(sendFileEdit->text()); });
+
+    sendFileLayout->addWidget(sendFileEdit);
+    sendFileLayout->addWidget(sendFileButton);
+
+    sendFileGroupBox->setLayout(sendFileLayout);
+
     m_sendFormLayout = new QFormLayout;
     m_sendFormLayout->addRow(tr("Stream"), senderComboBox);
     m_sendFormLayout->addRow(tr("Protocol"), m_sendProtocolComboBox);
@@ -84,6 +98,7 @@ TAnalDeviceWidget::TAnalDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolCo
 
     QVBoxLayout * sendLayout = new QVBoxLayout;
     sendLayout->addLayout(m_sendFormLayout);
+    sendLayout->addWidget(sendFileGroupBox);
     sendLayout->addStretch();
 
     QGroupBox * sendMessageBox = new QGroupBox("Send data");
@@ -387,6 +402,25 @@ void TAnalDeviceWidget::dataReceived(QByteArray data, TAnalStreamReceiverModel *
     }
 
     m_communicationLogTextEdit->appendPlainText(matchedMessage.getPayloadSummary());
+}
+
+void TAnalDeviceWidget::sendFile(QString fileName)
+{
+    QFile file(fileName);
+
+    if (!file.exists()) {
+        qWarning("File cannot be sent because it does not exist.");
+        return;
+    }
+
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning("File cannot be sent because it failed to open.");
+        return;
+    }
+
+    m_currentSenderModel->writeData(file.readAll());
+
+    file.close();
 }
 
 QString TAnalDeviceWidget::byteArraytoHumanReadableString(const QByteArray & byteArray)

@@ -443,6 +443,7 @@ void TIODeviceWidget::sendFile(QString fileName)
 
     file.close();
 }
+
 void TIODeviceWidget::sendBusy()
 {
     QTime time = QTime::currentTime();
