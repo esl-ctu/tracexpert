@@ -13,6 +13,7 @@
 
 #include "tconfigparamwidget.h"
 #include "tdialog.h"
+#include "tfilenameedit.h"
 
 
 TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContainer * protocolContainer, QWidget * parent)
@@ -90,6 +91,19 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContaine
     m_sendButton = new QPushButton("Send");
     connect(m_sendButton, &QPushButton::clicked, this, &TIODeviceWidget::sendBytes);
 
+    QGroupBox * sendFileGroupBox = new QGroupBox("Send file");
+
+    QLayout * sendFileLayout = new QVBoxLayout();
+
+    TFileNameEdit * sendFileEdit = new TFileNameEdit(QFileDialog::ExistingFile);
+    QPushButton * sendFileButton = new QPushButton("Send");
+    connect(sendFileButton, &QPushButton::clicked, this, [=](){ sendFile(sendFileEdit->text()); });
+
+    sendFileLayout->addWidget(sendFileEdit);
+    sendFileLayout->addWidget(sendFileButton);
+
+    sendFileGroupBox->setLayout(sendFileLayout);
+
     m_sendFormLayout = new QFormLayout;
     m_sendFormLayout->addRow(tr("Protocol"), m_sendProtocolComboBox);
     m_sendFormLayout->addRow(tr("Message"), m_sendMessageComboBox);
@@ -103,6 +117,7 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContaine
 
     QVBoxLayout * sendLayout = new QVBoxLayout;
     sendLayout->addLayout(m_sendFormLayout);
+    sendLayout->addWidget(sendFileGroupBox);
     sendLayout->addStretch();
 
     QGroupBox * sendMessageBox = new QGroupBox("Send data");
@@ -408,6 +423,25 @@ void TIODeviceWidget::sendProtocolBytes()
     }
 
     m_senderModel->writeData(messageData);    
+}
+
+void TIODeviceWidget::sendFile(QString fileName)
+{
+    QFile file(fileName);
+
+    if (!file.exists()) {
+        qWarning("File cannot be sent because it does not exist.");
+        return;
+    }
+
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning("File cannot be sent because it failed to open.");
+        return;
+    }
+
+    m_senderModel->writeData(file.readAll());
+
+    file.close();
 }
 void TIODeviceWidget::sendBusy()
 {

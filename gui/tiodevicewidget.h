@@ -35,6 +35,8 @@ public slots:
     void sendRawBytes();
     void sendProtocolBytes();
 
+    void sendFile(QString fileName);
+
     void sendBusy();
     void sendFailed();
     void dataSent(QByteArray data);
