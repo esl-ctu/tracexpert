@@ -8,6 +8,9 @@
 #include <QTimer>
 #include <QJsonDocument>
 #include <QNetworkReply>
+#include <QJsonArray>
+#include <QMutex>
+#include <QVariant>
 
 #include "tconfigparam.h"
 #include "tanaldevice.h"
@@ -74,6 +77,8 @@ private:
     size_t m_length; //in sizeof(type)
     int m_position;
     void * m_data = nullptr;
+    bool running;
+    QMutex mutex;
 
 };
 

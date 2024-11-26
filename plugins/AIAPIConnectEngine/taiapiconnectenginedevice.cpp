@@ -3,6 +3,7 @@
 TAIAPIConnectEngineDevice::TAIAPIConnectEngineDevice(QString name, QString info) {
     m_name = name;
     m_info = info;
+    m_initialized = false;
 
     m_preInitParams = TConfigParam("AIAPIConnectEngineDevice pre-init config", "", TConfigParam::TType::TDummy, "");
     m_postInitParams = TConfigParam("AIAPIConnectEngineDevice post-init config", "", TConfigParam::TType::TDummy, "");
@@ -85,35 +86,112 @@ TConfigParam TAIAPIConnectEngineDevice::setPreInitParams(TConfigParam params) {
 void TAIAPIConnectEngineDevice::init(bool *ok /*= nullptr*/) {
     m_analActions.append(new TAIAPIConnectEngineDeviceAction("Analyze", "Runs the specified model on provided input data.", [=](){ analyzeData(); }));
     m_analInputStreams.append(new TAIAPIConnectEngineDeviceInputStream("Result", "Stream of results of last used action", [=](uint8_t * buffer, size_t length){ return getData(buffer, length); }));
-    m_analOutputStreams.append(new TAIAPIConnectEngineDeviceOutputStream("First set", "Stream of traces in first set", [=](const uint8_t * buffer, size_t length){ return fillData(buffer, length); }));
+    m_analOutputStreams.append(new TAIAPIConnectEngineDeviceOutputStream("Input", "Stream of traces in first set", [=](const uint8_t * buffer, size_t length){ return fillData(buffer, length); }));
 
     //todo test connect
-
+    if (ok != nullptr) *ok = true;
     int port = m_preInitParams.getSubParamByName("Port")->getValue().toInt();
     QString addr = m_preInitParams.getSubParamByName("Address")->getValue();
+    QNetworkAccessManager *mgr = new QNetworkAccessManager();
+    QUrl url;
+    url.setHost(addr);
+    url.setPort(port);
+    url.setScheme("http");
+    QNetworkRequest request(url);
+
+    QNetworkReply* reply = mgr->get(request);
+
+    QTimer timer;
+    timer.setSingleShot(true);
+
+    QEventLoop loop;
+    QAbstractSocket::connect(&timer, SIGNAL(timeout()), &loop, SLOT(quit()));
+    QAbstractSocket::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
+    timer.start(10000);   // 10 secs. timeout
+    loop.exec();
+
+    int res = -1;
+    if(timer.isActive()) {
+        timer.stop();
+        QVariant statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
+        res = statusCode.toInt();
+    }
+    else {
+        QAbstractSocket::disconnect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
+        reply->abort();
+        if (ok != nullptr) *ok = false;
+        qDebug("Is the python server running?");
+    }
+
+    reply->deleteLater();
+    delete mgr;
+
+    if (res != 200){
+        qDebug("Is the python server running? Invalid http response received.");
+        qDebug("%s", QString::number(res).toLocal8Bit().constData());
+        if (ok != nullptr) *ok = false;
+    }
+
 
     m_initialized = true;
 }
 
 void TAIAPIConnectEngineDevice::deInit(bool *ok /*= nullptr*/) {
-    //todo remove streams and actions
-    //m_initialized = false;
+    if (ok != nullptr) *ok = true;
+
+    for (int i = 0; i < m_analActions.length(); i++) {
+        delete m_analActions[i];
+    }
+    m_analActions.clear();
+
+    for (int i = 0; i < m_analInputStreams.length(); i++) {
+        delete m_analInputStreams[i];
+    }
+    m_analInputStreams.clear();
+
+    for (int i = 0; i < m_analOutputStreams.length(); i++) {
+        delete m_analOutputStreams[i];
+    }
+    m_analOutputStreams.clear();
+
+    QString type = m_preInitParams.getSubParamByName("Data type")->getValue();
+    if (m_data) {
+        if (type == "int16_t") delete (int16_t *) m_data;
+        else if (type == "int32_t") delete (int32_t *) m_data;
+        else if (type == "int64_t") delete (int64_t *) m_data;
+        else if (type == "uint16_t") delete (uint16_t *) m_data;
+        else if (type == "uint32_t") delete (uint32_t *) m_data;
+        else if (type == "uint64_t") delete (uint64_t *) m_data;
+        else if (type == "Double") delete (double *) m_data;
+        m_data = nullptr;
+    }
+
+    m_initialized = false;
 }
 
 TConfigParam TAIAPIConnectEngineDevice::getPostInitParams() const {
     return m_postInitParams;
 }
 
-TConfigParam TAIAPIConnectEngineDevice::setPostInitParams(TConfigParam params) {}
+TConfigParam TAIAPIConnectEngineDevice::setPostInitParams(TConfigParam params) {
+    m_postInitParams = params;
+    return m_postInitParams; //Careful! This assumes no postinitparams!
+}
 
-QList<TAnalAction *> TAIAPIConnectEngineDevice::getActions() const {}
+QList<TAnalAction *> TAIAPIConnectEngineDevice::getActions() const {
+    return m_analActions;
+}
 
-QList<TAnalInputStream *> TAIAPIConnectEngineDevice::getInputDataStreams() const {}
+QList<TAnalInputStream *> TAIAPIConnectEngineDevice::getInputDataStreams() const {
+    return m_analInputStreams;
+}
 
-QList<TAnalOutputStream *> TAIAPIConnectEngineDevice::getOutputDataStreams() const {}
+QList<TAnalOutputStream *> TAIAPIConnectEngineDevice::getOutputDataStreams() const {
+    return m_analOutputStreams;
+}
 
 bool TAIAPIConnectEngineDevice::isBusy() const {
-    return !running;
+    return running;
 }
 
 int getTypeSize(QString type) {
@@ -128,13 +206,20 @@ int getTypeSize(QString type) {
 }
 
 bool TAIAPIConnectEngineDevice::analyzeData() {
+    mutex.lock();
+    if (running) {
+        mutex.unlock();
+        return false;
+    }
     running = true;
+    mutex.unlock();
+
 
     bool ok = true;
     int port = m_preInitParams.getSubParamByName("Port")->getValue().toInt();
     QString addr = m_preInitParams.getSubParamByName("Address")->getValue();
     addr += ":";
-    addr += "addr";
+    addr += QString::number(port);
     QString type = m_preInitParams.getSubParamByName("Data type")->getValue();
     int inputItemSize = m_preInitParams.getSubParamByName("Input size")->getValue().toInt();
     uint8_t typeSize = getTypeSize(type);
@@ -151,7 +236,10 @@ bool TAIAPIConnectEngineDevice::analyzeData() {
 
 
     QNetworkAccessManager *mgr = new QNetworkAccessManager();
-    const QUrl url(addr);
+    QUrl url;
+    url.setHost(addr);
+    url.setPort(port);
+    url.setScheme("http");
     QNetworkRequest request(url);
 
     QJsonObject param;
@@ -202,23 +290,52 @@ bool TAIAPIConnectEngineDevice::analyzeData() {
     }
 
     reply->deleteLater();
+    delete mgr;
 
     if (!ok){
         qDebug("Model reported invalid data");
     }
 
-    QJsonDocument document = QJsonDocument::fromJson(replyBuffer);
-    QJsonObject rootObj = document.object();
+    QJsonDocument jsonResponse = QJsonDocument::fromJson(replyBuffer);
+
+    QString jsonString = jsonResponse.toJson(QJsonDocument::Indented);
+    qDebug("%s", jsonString.toLocal8Bit().constData());
+
+
+    /*QJsonObject jsonObject = jsonResponse.object();
+    QJsonArray jsonArray = jsonObject["prediction"].toArray();
+
+    if (jsonArray.isEmpty() || jsonArray.size() != m_length/inputItemSize) {
+        //err
+    }
+
+    QStringList predictionResults;
+    foreach (const QJsonValue & value, jsonArray) {
+        QJsonObject obj = value.toObject();
+        predictionResults.append(obj["PropertyName"].toString());
+    }*/
+
+
+
+
     //TODO
 
 
 
+    mutex.lock();
     running = false;
+    mutex.unlock();
 }
 
-//todo ošetřit running i u streamů
-
 size_t TAIAPIConnectEngineDevice::getData(uint8_t * buffer, size_t length) {
+    mutex.lock();
+    if (running) {
+        mutex.unlock();
+        return false;
+    }
+    running = true;
+    mutex.unlock();
+
     QString type = m_preInitParams.getSubParamByName("Data type")->getValue();
     uint8_t typeSize = getTypeSize(type);
 
@@ -235,10 +352,22 @@ size_t TAIAPIConnectEngineDevice::getData(uint8_t * buffer, size_t length) {
 
     memcpy(buffer, m_data, max);
 
+    mutex.lock();
+    running = false;
+    mutex.unlock();
+
     return max;
 }
 
 size_t TAIAPIConnectEngineDevice::fillData(const uint8_t * buffer, size_t length) {
+    mutex.lock();
+    if (running) {
+        mutex.unlock();
+        return false;
+    }
+    running = true;
+    mutex.unlock();
+
     QString type = m_preInitParams.getSubParamByName("Data type")->getValue();
     uint8_t typeSize = getTypeSize(type);
 
@@ -273,6 +402,10 @@ size_t TAIAPIConnectEngineDevice::fillData(const uint8_t * buffer, size_t length
     }
 
     memcpy(m_data, buffer, length);
+
+    mutex.lock();
+    running = false;
+    mutex.unlock();
 
     return length;
 }
