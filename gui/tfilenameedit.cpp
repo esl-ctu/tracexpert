@@ -2,13 +2,18 @@
 
 #include <QApplication>
 #include <QStyle>
-#include <QFileDialog>
 
 TFileNameEdit::TFileNameEdit(QWidget * parent)
-    : QLineEdit{parent}
+    : QLineEdit(parent)
 {
     QAction * chooseFileNameAction = addAction(QApplication::style()->standardIcon(QStyle::SP_DialogOpenButton), QLineEdit::ActionPosition::TrailingPosition);
     connect(chooseFileNameAction, SIGNAL(triggered()), this, SLOT(chooseFileName()));
+}
+
+TFileNameEdit::TFileNameEdit(QFileDialog::FileMode mode, QWidget * parent)
+    : TFileNameEdit(parent)
+{
+    m_mode = mode;
 }
 
 void TFileNameEdit::chooseFileName()
@@ -25,7 +30,7 @@ void TFileNameEdit::chooseFileName()
                 fileDialog.setFileMode(QFileDialog::Directory);
         });
 #else
-    fileDialog.setFileMode(QFileDialog::AnyFile);
+    fileDialog.setFileMode(m_mode);
 #endif
     if (fileDialog.exec()) {
         setText(fileDialog.selectedFiles().constFirst());

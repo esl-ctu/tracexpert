@@ -1,7 +1,7 @@
 #ifndef TPROTOCOLCONTAINER_H
 #define TPROTOCOLCONTAINER_H
 
-#include "qabstractitemmodel.h"
+#include <QAbstractTableModel>
 #include "tprotocolmodel.h"
 
 class TProtocolContainer : public QAbstractTableModel, public TProjectItem {

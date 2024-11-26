@@ -12,7 +12,7 @@ TProtocolContainer::~TProtocolContainer() {
 
 TProtocol TProtocolContainer::getByName(const QString &name, bool *ok) const {
     for(TProtocolModel * protocolModel : m_protocolModels) {
-        if(protocolModel->protocol().getName() == name) {
+        if(protocolModel->name() == name) {
             if(ok != nullptr) *ok = true;
             return protocolModel->protocol();
         }

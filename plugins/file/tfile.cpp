@@ -56,6 +56,10 @@ TScope * TFile::addScope(QString name, QString info, bool *ok) {
     return nullptr;
 }
 
+TAnalDevice * TFile::addAnalDevice(QString name, QString info, bool *ok) {
+    if(ok != nullptr) *ok = false;
+    return nullptr;
+}
 
 bool TFile::canAddIODevice() {
     return true;
@@ -65,12 +69,20 @@ bool TFile::canAddScope() {
     return false;
 }
 
+bool TFile::canAddAnalDevice()  {
+    return false;
+}
+
 QList<TIODevice *> TFile::getIODevices() {
     return m_files;
 }
 
 QList<TScope *> TFile::getScopes() {
     return QList<TScope *>();
+}
+
+QList<TAnalDevice *> TFile::getAnalDevices() {
+    return QList<TAnalDevice *>();
 }
 
 bool TFile::registerOpenFile(std::filesystem::path path) {

@@ -30,9 +30,14 @@ class TDockWidget : public TDockWidgetBase
 public:
     explicit TDockWidget(const QString & title, QWidget * parent = nullptr);
 
+    #ifdef USE_ADS
+    void setWidget(QWidget* widget, eInsertMode InsertMode = AutoScrollArea);
+    #endif
+
 public slots:
     void show();
     void close();
+
 };
 
 #endif // TDOCKMANAGER_H

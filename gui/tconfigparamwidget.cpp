@@ -47,7 +47,7 @@ void TConfigParamWidget::refreshParam()
 
     QTreeWidgetItem * topItem = new QTreeWidgetItem(this);
 
-    addParam(m_param, topItem);
+    addParam(m_param, topItem, 0);
 
     addTopLevelItem(topItem);
 
@@ -59,6 +59,8 @@ void TConfigParamWidget::refreshParam()
     headerItem()->setText(1, tr("Value"));
     headerItem()->setText(2, "");
 
+    resizeColumnToContents(0);
+    resizeColumnToContents(1);
     resizeColumnToContents(2);
 
     header()->setSectionResizeMode(0, QHeaderView::Interactive);
@@ -66,6 +68,8 @@ void TConfigParamWidget::refreshParam()
     header()->setSectionResizeMode(2, QHeaderView::Fixed);
     header()->setStretchLastSection(false);
 
+    // TODO: make sure this is acceptable across TraceXpert
+    setFixedWidth(columnWidth(0) + columnWidth(1) + columnWidth(2) + 10);
 }
 
 bool TConfigParamWidget::readParam(TConfigParam & param, QTreeWidgetItem * parent)
@@ -85,9 +89,9 @@ bool TConfigParamWidget::readParam(TConfigParam & param, QTreeWidgetItem * paren
     return ok;
 }
 
-void TConfigParamWidget::addParam(TConfigParam & param, QTreeWidgetItem * parent)
+void TConfigParamWidget::addParam(TConfigParam & param, QTreeWidgetItem * parent, int depth)
 {
-    drawLabel(param, parent);
+    drawLabel(param, parent, depth);
 
     drawState(param, parent);
 
@@ -98,14 +102,15 @@ void TConfigParamWidget::addParam(TConfigParam & param, QTreeWidgetItem * parent
     for (int i = 0; i < subParams.size(); i++) {
         QTreeWidgetItem * item = new QTreeWidgetItem(parent);
         TConfigParam & subParam = subParams[i];
-        addParam(subParam, item);
+        addParam(subParam, item, depth+1);
         parent->addChild(item);
     }
 }
 
-void TConfigParamWidget::drawLabel(const TConfigParam & param, QTreeWidgetItem *parent)
+void TConfigParamWidget::drawLabel(const TConfigParam & param, QTreeWidgetItem *parent, int depth)
 {
     QLabel * label = new QLabel(param.getName(), this);
+    label->setMinimumWidth(label->minimumSizeHint().width() + (depth + indentation()) + FIRST_COLUMN_OFFSET);
     label->setToolTip(param.getHint());
     setItemWidget(parent, 0, label);
 }
@@ -129,6 +134,7 @@ void TConfigParamWidget::drawInput(const TConfigParam & param, QTreeWidgetItem *
         if (!parent->icon(2).isNull()) {
             parent->setIcon(2, stateIcon(param.getState(), true));
         }
+        emit inputValueChanged();
     };
 
     TConfigParam::TType type = param.getType();
@@ -229,7 +235,14 @@ bool TConfigParamWidget::checkInput(TConfigParam & param, QTreeWidgetItem * pare
                 param.setBool(!comboBox->currentIndex());
             }
             else if (type == TConfigParam::TType::TEnum) {
-                param.setValue(param.getEnumValues()[comboBox->currentIndex()]);
+                int index = comboBox->currentIndex();
+                if(index > -1 && index < param.getEnumValues().count()) {
+                    param.setValue(param.getEnumValues()[comboBox->currentIndex()]);
+                }
+                else {
+                    message = tr("Selected value is invalid!");
+                    ok = false;
+                }
             }
         }
         else if (type == TConfigParam::TType::TTime) {

@@ -28,6 +28,8 @@ public slots:
     void receiveFailed();
     void dataReceived(QByteArray data, TAnalStreamReceiverModel * receiverModel);
 
+    void sendFile(QString fileName);
+
     void sendBytes();
     void sendRawBytes();
     void sendProtocolBytes();

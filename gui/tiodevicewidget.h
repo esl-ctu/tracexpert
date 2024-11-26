@@ -34,8 +34,12 @@ public slots:
     void sendBytes();
     void sendRawBytes();
     void sendProtocolBytes();
+
+    void sendFile(QString fileName);
+
     void sendBusy();
     void sendFailed();
+    void dataSent(QByteArray data);
     //void selectSendMessageValidator();
 
     bool validateRawInputValues();
@@ -60,6 +64,7 @@ private:
     TMessage m_selectedMessage;
 
     TMessageFormManager * m_messageFormManager;
+    TMessage m_messageToBeSent;
 
     QLineEdit * m_receiveBytesEdit;
     QComboBox * m_receiveProtocolComboBox;

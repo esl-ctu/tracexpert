@@ -11,8 +11,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Charts Xml)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts Xml)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Charts Xml Concurrent)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts Xml Concurrent)
 
 add_subdirectory(ads)
 
@@ -96,6 +96,30 @@ add_library(${PROJECT_NAME} OBJECT
   tanaldevicewidget.h tanaldevicewidget.cpp
   tanalstreamreceivermodel.h tanalstreamreceivermodel.cpp
   tanalstreamsendermodel.h tanalstreamsendermodel.cpp
+  scenario/tscenariographicalconnection.h
+  scenario/tscenariographicalconnection.cpp
+  scenario/tscenariographicalitem.h
+  scenario/tscenariographicalitem.cpp
+  scenario/tscenariographicalitemport.h
+  scenario/tscenariographicalitemport.cpp
+  scenario/tscenariocontainer.h
+  scenario/tscenariocontainer.cpp
+  scenario/tscenarioeditorwidget.h
+  scenario/tscenarioeditorwidget.cpp    
+  scenario/tscenariomodel.h
+  scenario/tscenariomodel.cpp
+  scenario/tscenarioscene.h
+  scenario/tscenarioscene.cpp
+  scenario/tscenariowidget.h
+  scenario/tscenariowidget.cpp
+  scenario/tscenarioexecutor.h
+  scenario/tscenarioexecutor.cpp
+  scenario/tscenarioitem.h
+  scenario/tscenarioitem.cpp
+  scenario/tscenarioitemport.h
+  scenario/tscenarioconnection.h
+  scenario/tscenariographicsview.h
+  scenario/tscenariographicsview.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ads/src)
@@ -105,5 +129,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Charts)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Xml)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Concurrent)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE qt${QT_VERSION_MAJOR}advanceddocking)

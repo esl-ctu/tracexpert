@@ -12,6 +12,7 @@ TProjectModel::TProjectModel(QObject * parent)
     loadPlugins();
 
     m_protocolContainer = new TProtocolContainer(this);
+    m_scenarioContainer = new TScenarioContainer(this);
 }
 
 TProjectModel::~TProjectModel()
@@ -27,6 +28,11 @@ TComponentContainer * TProjectModel::componentContainer()
 TProtocolContainer *TProjectModel::protocolContainer()
 {
     return m_protocolContainer;
+}
+
+TScenarioContainer *TProjectModel::scenarioContainer()
+{
+    return m_scenarioContainer;
 }
 
 QVariant TProjectModel::data(const QModelIndex & index, int role) const
@@ -128,6 +134,10 @@ int TProjectModel::childrenCount() const
         count++;
     }
 
+    if (m_scenarioContainer) {
+        count++;
+    }
+
     return count;
 }
 
@@ -145,6 +155,15 @@ TProjectItem * TProjectModel::child(int row) const
     if (m_protocolContainer) {
         if (row == 0) {
             return m_protocolContainer;
+        }
+        else {
+            row--;
+        }
+    }
+
+    if (m_scenarioContainer) {
+        if (row == 0) {
+            return m_scenarioContainer;
         }
         else {
             row--;
@@ -228,6 +247,9 @@ void TProjectModel::load(QDomElement * element)
 
         if (child.tagName() == "protocols")
             loadProtocols(&child);
+
+        if (child.tagName() == "scenarios")
+            loadScenarios(&child);
     }
 }
 
@@ -342,32 +364,43 @@ void TProjectModel::loadProtocol(QDomElement * element)
     }
 }
 
-/*
-void TProjectModel::loadProtocols()
+void TProjectModel::loadScenarios(QDomElement * element)
 {
-    m_protocolContainer = new TProtocolContainer(this);
+    if (!element)
+        return;
 
-    QList<TMessage> messages1;
-    TMessage messageC("Dummy protocol message (command)", "Description of dummy protocol message.", false);
-    TMessage messageR("Dummy protocol message (response)", "Description of dummy protocol message.", true);
-    TMessagePart messagePart0("Foo", "Lorem ipsum.", TMessagePart::TType::TBool);
-    messageC.addMessagePart(messagePart0);
-    messageR.addMessagePart(messagePart0);
-    TMessagePart messagePart1("Bar", "Lorem ipsum.", TMessagePart::TType::TString);
-    messagePart1.setLength(4);
-    messageC.addMessagePart(messagePart1);
-    messageR.addMessagePart(messagePart1);
-    TMessagePart messagePart2("Goop", "Lorem ipsum.", TMessagePart::TType::TInt);
-    messageC.addMessagePart(messagePart2);
-    messageR.addMessagePart(messagePart2);
-    messages1.append(messageC);
-    messages1.append(messageR);
+    if (element->tagName() != "scenarios")
+        throw tr("Unexpected node name");
 
-    QList<TMessage> messages2;
-    QList<TMessage> messages3;
+    QDomNodeList children = element->childNodes();
 
-    m_protocolContainer->add(TProtocol("Dummy protocol 1", "Description of dummy protocol.", messages1));
-    m_protocolContainer->add(TProtocol("Dummy protocol 2", "Description of dummy protocol.", messages2));
-    m_protocolContainer->add(TProtocol("Dummy protocol 3", "Description of dummy protocol.", messages3));
+    for (int i = 0; i < children.count(); i++) {
+        QDomElement child = children.at(i).toElement();
+        if (child.isNull())
+            throw tr("Unexpected node type");
+
+        if (child.tagName() == "scenario")
+            loadScenario(&child);
+        else
+            throw tr("Unexpected node name");
+    }
 }
-*/
+
+void TProjectModel::loadScenario(QDomElement * element)
+{
+    if (!element)
+        return;
+
+    if (element->tagName() != "scenario")
+        throw tr("Unexpected node name");
+
+    TScenarioModel * scenarioModel = new TScenarioModel(m_scenarioContainer);
+    scenarioModel->load(element);
+
+    bool wasAdded = m_scenarioContainer->add(scenarioModel);
+
+    if(!wasAdded) {
+        qWarning("Failed to load scenario because of duplicit name \"%s\".", qPrintable(scenarioModel->name()));
+        delete scenarioModel;
+    }
+}

@@ -47,6 +47,47 @@ bool TDialog::addDeviceDialog(QWidget * parent, QString &name, QString &info)
     return (addDeviceDialog->result() == QDialog::Accepted && nameEdit->text() != QString(""));
 }
 
+bool TDialog::renameDeviceDialog(QWidget * parent, QString &name, QString &info)
+{
+    QDialog * addDeviceDialog = new QDialog(parent);
+    QLabel * nameLabel = new QLabel(parent->tr("Name"));
+    QLabel * infoLabel = new QLabel(parent->tr("Info"));
+
+    QLineEdit * nameEdit = new QLineEdit(name);
+    QLineEdit * infoEdit = new QLineEdit(info);
+
+    QGridLayout * dialogGridLayout = new QGridLayout;
+    dialogGridLayout->addWidget(nameLabel, 0, 0);
+    dialogGridLayout->addWidget(nameEdit, 0, 1);
+    dialogGridLayout->addWidget(infoLabel, 1, 0);
+    dialogGridLayout->addWidget(infoEdit, 1, 1);
+
+    QDialogButtonBox * buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    buttonBox->button(QDialogButtonBox::Ok)->setText("Rename");
+    buttonBox->button(QDialogButtonBox::Ok)->setEnabled(false);
+
+    parent->connect(nameEdit, &QLineEdit::textChanged, parent, [=]() {buttonBox->button(QDialogButtonBox::Ok)->setEnabled(nameEdit->hasAcceptableInput());});
+    parent->connect(infoEdit, &QLineEdit::textChanged, parent, [=]() {buttonBox->button(QDialogButtonBox::Ok)->setEnabled(infoEdit->hasAcceptableInput());});
+
+    parent->connect(buttonBox, &QDialogButtonBox::accepted, addDeviceDialog, &QDialog::accept);
+    parent->connect(buttonBox, &QDialogButtonBox::rejected, addDeviceDialog, &QDialog::reject);
+
+    QVBoxLayout * dialogLayout = new QVBoxLayout;
+    dialogLayout->addLayout(dialogGridLayout);
+    dialogLayout->addWidget(buttonBox);
+
+    addDeviceDialog->setLayout(dialogLayout);
+
+    addDeviceDialog->adjustSize();
+    addDeviceDialog->exec();
+
+    name = nameEdit->text();
+    info = infoEdit->text();
+
+    return (addDeviceDialog->result() == QDialog::Accepted && nameEdit->text() != QString(""));
+}
+
+
 bool TDialog::paramWarningQuestion(QWidget * parent)
 {
     return question(parent, parent->tr("Parameter Warning"), parent->tr("There are some paramater values causing warnings. Do you want to proceed anyway?"));
@@ -132,9 +173,24 @@ void TDialog::parameterValueNotUniqueMessage(QWidget * parent, const QString & p
     criticalMessage(parent, parent->tr("Parameter value is non-unique"), parent->tr("The value of \"%1\" has to be unique!").arg(parameterName));
 }
 
+void TDialog::paramValueErrorMessage(QWidget * parent)
+{
+    criticalMessage(parent, parent->tr("Parameter Error"), parent->tr("There are some paramater values causing errors!"));
+}
+
 void TDialog::protocolMessageCouldNotBeFormed(QWidget * parent)
 {
     criticalMessage(parent, parent->tr("Send failed"), parent->tr("Protocol message could not be formed, check console for errors!"));
+}
+
+bool TDialog::closeConfirmation(QWidget * parent)
+{
+    return QMessageBox::question(
+        parent,
+        parent->tr("Close confirmation"),
+        parent->tr("Are you sure you want to close this window? All unsaved changes will be lost."),
+        QMessageBox::Yes | QMessageBox::No,
+        QMessageBox::No) == QMessageBox::Yes;
 }
 
 bool TDialog::question(QWidget * parent, const QString &title, const QString &text)
@@ -186,6 +242,85 @@ void TConfigParamDialog::accept()
     else {
         QDialog::accept();
     }
+}
+
+TScenarioConfigParamDialog::TScenarioConfigParamDialog(QString acceptText, QString title, TScenarioItem * item, QWidget * parent)
+    : QDialog(parent), m_item(item)
+{
+    TConfigParam param = m_item->getParams();
+    m_originalParams = param;
+
+    m_paramWidget = new TConfigParamWidget(param);
+
+    //evaluate validity immediately on widget open
+    m_paramWidget->setParam(m_paramWidget->param());
+
+    setWindowTitle(title);
+    setMinimumHeight(400);
+
+    parent->connect(m_paramWidget, &TConfigParamWidget::inputValueChanged, this, &TScenarioConfigParamDialog::tryUpdateParams);
+
+    QPushButton * leftButton = new QPushButton(tr("Update available options"));
+    parent->connect(leftButton, &QPushButton::clicked, this, &TScenarioConfigParamDialog::updateParams);
+
+    QDialogButtonBox * rightButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    rightButtonBox->button(QDialogButtonBox::Ok)->setText(acceptText);
+
+    parent->connect(rightButtonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
+    parent->connect(rightButtonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+    QHBoxLayout * buttonLayout = new QHBoxLayout;
+    buttonLayout->addWidget(leftButton);
+    buttonLayout->addWidget(rightButtonBox);
+
+    QVBoxLayout * dialogLayout = new QVBoxLayout;
+    dialogLayout->addWidget(m_paramWidget);
+    dialogLayout->addLayout(buttonLayout);
+
+    setLayout(dialogLayout);
+}
+
+
+void TScenarioConfigParamDialog::updateParams()
+{
+    m_item->updateParams(false);
+    m_paramWidget->setParam(m_item->getParams());
+}
+
+void TScenarioConfigParamDialog::tryUpdateParams()
+{
+    TConfigParam newParams = m_paramWidget->param();
+    if(!m_item->shouldUpdateParams(newParams)) {
+        return;
+    }
+
+    m_paramWidget->setParam(m_item->setParams(newParams));
+}
+
+void TScenarioConfigParamDialog::accept()
+{
+    TConfigParam param = m_item->setParams(m_paramWidget->param());
+
+    TConfigParam::TState state = param.getState(true);
+    if (state == TConfigParam::TState::TError) {
+        m_paramWidget->setParam(param);
+        TDialog::paramValueErrorMessage(this);
+        return;
+    }
+    else if (state == TConfigParam::TState::TWarning) {
+        if (!TDialog::paramWarningQuestion(this)) {
+            m_paramWidget->setParam(param);
+            return;
+        }
+    }
+
+    QDialog::accept();
+}
+
+void TScenarioConfigParamDialog::reject()
+{
+    m_item->setParams(m_originalParams);
+    QDialog::reject();
 }
 
 TInitComponentDialog::TInitComponentDialog(TComponentModel * component, QWidget * parent)

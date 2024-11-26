@@ -41,14 +41,18 @@ public:
 
     virtual TIODevice * addIODevice(QString name, QString info, bool *ok = nullptr) override;
     virtual TScope * addScope(QString name, QString info, bool *ok = nullptr) override;
+    virtual TAnalDevice * addAnalDevice(QString name, QString info, bool *ok = nullptr) override;
 
     virtual bool canAddIODevice() override;
     virtual bool canAddScope() override;
+    virtual bool canAddAnalDevice() override;
 
     /// Get available IO devices, available only after init()
     virtual QList<TIODevice *> getIODevices() override;
     /// Get available Scopes, available only after init()
     virtual QList<TScope *> getScopes() override;
+    /// Get available Analytical devices, available only after init()
+    virtual QList<TAnalDevice *> getAnalDevices() override;
 
     bool registerOpenFile(std::filesystem::path path);
     void unregisterOpenFile(std::filesystem::path path);
