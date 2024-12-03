@@ -11,6 +11,8 @@
 #include <QJsonArray>
 #include <QMutex>
 #include <QVariant>
+#include <QRegularExpression>
+#include <limits>
 
 #include "tconfigparam.h"
 #include "tanaldevice.h"
@@ -77,8 +79,8 @@ private:
     size_t m_length; //in sizeof(type)
     int m_position;
     void * m_data = nullptr;
-    bool running;
-    QMutex mutex;
+    std::atomic<bool> running;
+    std::atomic<bool> dataReady;
 
 };
 

@@ -11,7 +11,7 @@ TAIAPIConnectEngineDevice::TAIAPIConnectEngineDevice(QString name, QString info)
     TConfigParam port = TConfigParam("Port", "8000", TConfigParam::TType::TInt, "Port to connect to");
     TConfigParam inputSize = TConfigParam("Input size", "30000", TConfigParam::TType::TInt, "How big should ech individual input to the model be. Reserved for future use, not checked.", true);
     //TConfigParam separator = TConfigParam("Separator", "\n", TConfigParam::TType::TString, "Separator for individual values in the input. Defaults to newline.");
-    auto type = TConfigParam("Data type", QString("int32_t"), TConfigParam::TType::TEnum, "");
+    auto type = TConfigParam("Data type", QString("int32_t"), TConfigParam::TType::TEnum, "If type is Text, datapoints must be separated by a newline");
     type.addEnumValue("int16_t");
     type.addEnumValue("int32_t");
     type.addEnumValue("int64_t");
@@ -19,6 +19,7 @@ TAIAPIConnectEngineDevice::TAIAPIConnectEngineDevice(QString name, QString info)
     type.addEnumValue("unt32_t");
     type.addEnumValue("unt64_t");
     type.addEnumValue("Double");
+    type.addEnumValue("Text");
 
     m_preInitParams.addSubParam(address);
     m_preInitParams.addSubParam(port);
@@ -27,6 +28,7 @@ TAIAPIConnectEngineDevice::TAIAPIConnectEngineDevice(QString name, QString info)
     m_preInitParams.addSubParam(type);
 
     running = false;
+    dataReady = false;
 }
 
 TAIAPIConnectEngineDevice::~TAIAPIConnectEngineDevice() {}
@@ -86,9 +88,8 @@ TConfigParam TAIAPIConnectEngineDevice::setPreInitParams(TConfigParam params) {
 void TAIAPIConnectEngineDevice::init(bool *ok /*= nullptr*/) {
     m_analActions.append(new TAIAPIConnectEngineDeviceAction("Analyze", "Runs the specified model on provided input data.", [=](){ analyzeData(); }));
     m_analInputStreams.append(new TAIAPIConnectEngineDeviceInputStream("Result", "Stream of results of last used action", [=](uint8_t * buffer, size_t length){ return getData(buffer, length); }));
-    m_analOutputStreams.append(new TAIAPIConnectEngineDeviceOutputStream("Input", "Stream of traces in first set", [=](const uint8_t * buffer, size_t length){ return fillData(buffer, length); }));
+    m_analOutputStreams.append(new TAIAPIConnectEngineDeviceOutputStream("Input", "Stream of traces", [=](const uint8_t * buffer, size_t length){ return fillData(buffer, length); }));
 
-    //todo test connect
     if (ok != nullptr) *ok = true;
     int port = m_preInitParams.getSubParamByName("Port")->getValue().toInt();
     QString addr = m_preInitParams.getSubParamByName("Address")->getValue();
@@ -163,6 +164,7 @@ void TAIAPIConnectEngineDevice::deInit(bool *ok /*= nullptr*/) {
         else if (type == "uint32_t") delete (uint32_t *) m_data;
         else if (type == "uint64_t") delete (uint64_t *) m_data;
         else if (type == "Double") delete (double *) m_data;
+        else if (type == "Text") delete (char *) m_data;
         m_data = nullptr;
     }
 
@@ -202,65 +204,121 @@ int getTypeSize(QString type) {
     if (type == "uint32_t") return  sizeof(uint32_t);
     if (type == "uint64_t") return  sizeof(uint64_t);
     if (type == "Double") return  sizeof(double);
+    if (type == "Text") return  1;
     return 0;
 }
 
 bool TAIAPIConnectEngineDevice::analyzeData() {
-    mutex.lock();
     if (running) {
-        mutex.unlock();
         return false;
     }
     running = true;
-    mutex.unlock();
+    dataReady = false;
 
 
     bool ok = true;
     int port = m_preInitParams.getSubParamByName("Port")->getValue().toInt();
     QString addr = m_preInitParams.getSubParamByName("Address")->getValue();
-    addr += ":";
-    addr += QString::number(port);
     QString type = m_preInitParams.getSubParamByName("Data type")->getValue();
     int inputItemSize = m_preInitParams.getSubParamByName("Input size")->getValue().toInt();
     uint8_t typeSize = getTypeSize(type);
 
-    if (m_length % inputItemSize == 0) {
-        qDebug("Uneven number of samples received");
+    if (m_length % inputItemSize == 0 && type != "Text") {
+        qDebug("Uneven number of samples received (1)");
+        running = false;
         return false;
     }
 
     if (typeSize == 0) {
         qDebug("Invalid type of input");
+        running = false;
         return false;
     }
 
+    QJsonObject param;
+    QJsonArray jsonArray;
+
+    if (type == "Text") {
+        char * data = (char *) m_data;
+        QString dataS(data);
+        QStringList lines_in = dataS.split('\n', Qt::SkipEmptyParts);
+        QStringList lines;
+
+        QRegularExpression regex("([+-]?[0-9]*[\\.][0-9]+|[+-]?[0-9]+)");
+        QRegularExpressionMatch match;
+        for (QString &line : lines_in) {
+            line = line.trimmed();  // Remove leading and trailing whitespace
+            match = regex.match(line); //preserve numbers only
+            if (match.hasMatch()) {
+                lines << match.captured(0);
+            }
+        }
+
+        if (lines.length() % inputItemSize != 0) {
+            qDebug() << lines.length();
+            qDebug("Uneven number of samples received (2)");
+            running = false;
+            return false;
+        }
+
+        bool ook = true;
+        for (const QString &str : lines) {
+            bool oook;
+            double number = str.toDouble(&oook);
+            if (oook) jsonArray.append(number);
+            else ook = false;
+        }
+
+        if (!ook) {
+            qDebug("Input data invalid");
+            running = false;
+            return false;
+        }
+    } else {
+        for (int i = 0; i < m_length; ++i)  {
+            if (type == "int16_t") jsonArray.append(((int16_t *) m_data)[i]);
+            if (type == "int32_t") jsonArray.append(((int32_t *) m_data)[i]);
+            if (type == "int64_t") jsonArray.append(((int64_t *) m_data)[i]);
+            if (type == "uint16_t") jsonArray.append(((uint16_t *) m_data)[i]);
+            if (type == "uint32_t") {
+                int64_t tmp = ((uint32_t *) m_data)[i];
+                jsonArray.append(tmp);
+            }
+            if (type == "uint64_t") {
+                if (((uint64_t *) m_data)[i] > INT64_MAX) {
+                    double tmp = ((uint64_t *) m_data)[i];
+                    jsonArray.append(tmp);
+                } else {
+                    int64_t tmp = ((uint64_t *) m_data)[i];
+                    jsonArray.append(tmp);
+                }
+
+            }
+            if (type == "Double") jsonArray.append(((double *) m_data)[i]);
+        }
+
+        if (jsonArray.size() % inputItemSize != 0) {
+            qDebug("Uneven number of samples received (3)");
+            running = false;
+            return false;
+        }
+    }
 
     QNetworkAccessManager *mgr = new QNetworkAccessManager();
     QUrl url;
     url.setHost(addr);
     url.setPort(port);
     url.setScheme("http");
+    url.setPath("/predict");
     QNetworkRequest request(url);
 
-    QJsonObject param;
-    for (int i = 0; i < m_length/inputItemSize; ++i)  {
-        QString val;
-        for (int j = 0; j < inputItemSize; ++j) {
-            if (j) val += ",";
-            if (type == "int16_t") val += QString::number(((int16_t *) m_data)[j]);
-            if (type == "int32_t") val += QString::number(((int32_t *) m_data)[j]);
-            if (type == "int64_t") val += QString::number(((int64_t *) m_data)[j]);
-            if (type == "uint16_t") val += QString::number(((uint16_t *) m_data)[j]);
-            if (type == "uint32_t") val += QString::number(((uint32_t *) m_data)[j]);
-            if (type == "uint64_t") val += QString::number(((uint64_t *) m_data)[j]);
-            if (type == "Double") val += QString::number(((double *) m_data)[j]);
-        }
-        param.insert("data", QJsonValue::fromVariant(val)); //todo asi by to mělo být array
-    }
+    param["data"] = jsonArray;
+    QJsonDocument doc(param);
+    QByteArray data = doc.toJson(QJsonDocument::Compact);
 
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
-    QNetworkReply* reply = mgr->post(request, QJsonDocument(param).toJson(QJsonDocument::Compact));
+    QNetworkReply* reply = mgr->post(request, data);
 
     QTimer timer;
     timer.setSingleShot(true);
@@ -294,86 +352,114 @@ bool TAIAPIConnectEngineDevice::analyzeData() {
 
     if (!ok){
         qDebug("Model reported invalid data");
+        running = false;
+        return false;
     }
 
     QJsonDocument jsonResponse = QJsonDocument::fromJson(replyBuffer);
 
-    QString jsonString = jsonResponse.toJson(QJsonDocument::Indented);
-    qDebug("%s", jsonString.toLocal8Bit().constData());
-
-
-    /*QJsonObject jsonObject = jsonResponse.object();
-    QJsonArray jsonArray = jsonObject["prediction"].toArray();
-
-    if (jsonArray.isEmpty() || jsonArray.size() != m_length/inputItemSize) {
-        //err
+    if (!jsonResponse.isObject()) {
+        qDebug() << "Invalid JSON response";
+        running = false;
+        return false;
     }
 
-    QStringList predictionResults;
-    foreach (const QJsonValue & value, jsonArray) {
-        QJsonObject obj = value.toObject();
-        predictionResults.append(obj["PropertyName"].toString());
-    }*/
+    QJsonObject jsonObject = jsonResponse.object();
+    if (!jsonObject.contains("prediction")) {
+        qDebug() << "Prediction field not found in JSON response";
+        running = false;
+        return false;
+    }
 
+    QJsonArray predictionArray = jsonObject["prediction"].toArray();
 
+    if (type == "Text") {
+        QString outS;
+        bool start = true;
+        for (const QJsonValue &value : predictionArray) {
+            if (!start) outS += '\n';
+            outS += (QString::number(value.toInt()));
+            start = false;
+        }
 
+        QByteArray byteArray = outS.toUtf8();
+        const char* cStr = byteArray.constData();
+        size_t max = byteArray.size();
+        if (m_length < max) max = m_length;
+        std::memcpy(m_data, cStr, max);
+        m_length = max;
+    } else {
+        size_t i = 0;
+        for (const QJsonValue &value : predictionArray) {
+            if (i == m_length) break;
+            if (type == "int16_t") ((int16_t *) m_data)[i] = value.toInt();
+            if (type == "int32_t") ((int32_t *) m_data)[i] = value.toInt();
+            if (type == "int64_t") ((int64_t *) m_data)[i] = value.toInt();
+            if (type == "uint16_t") ((uint16_t *) m_data)[i] = value.toInt();
+            if (type == "uint32_t") ((uint32_t *) m_data)[i] = value.toInt();
+            if (type == "uint64_t") ((uint64_t *) m_data)[i] = value.toInt();
+            if (type == "Double") ((double *) m_data)[i] = value.toDouble();
+            i++;
+        }
+        m_length = i;
 
-    //TODO
+    }
 
-
-
-    mutex.lock();
+    dataReady = true;
     running = false;
-    mutex.unlock();
+
+    return true;
 }
 
 size_t TAIAPIConnectEngineDevice::getData(uint8_t * buffer, size_t length) {
-    mutex.lock();
     if (running) {
-        mutex.unlock();
-        return false;
+        return 0;
     }
     running = true;
-    mutex.unlock();
+
+    if (!dataReady) {
+        running = false;
+        return 0;
+    }
 
     QString type = m_preInitParams.getSubParamByName("Data type")->getValue();
     uint8_t typeSize = getTypeSize(type);
 
     if (typeSize == 0) {
         qDebug("Invalid type of input");
-        return false;
+        running = false;
+        return 0;
     }
 
-    if (!m_data)
+    if (!m_data) {
+        running = false;
         return 0;
+    }
 
     size_t max = length;
     if (length > typeSize*m_length) max = typeSize*m_length;
 
     memcpy(buffer, m_data, max);
 
-    mutex.lock();
     running = false;
-    mutex.unlock();
 
     return max;
 }
 
 size_t TAIAPIConnectEngineDevice::fillData(const uint8_t * buffer, size_t length) {
-    mutex.lock();
     if (running) {
-        mutex.unlock();
-        return false;
+        return 0;
     }
     running = true;
-    mutex.unlock();
+    dataReady = false;
 
     QString type = m_preInitParams.getSubParamByName("Data type")->getValue();
     uint8_t typeSize = getTypeSize(type);
 
     if (typeSize == 0) {
         qDebug("Invalid type of input");
-        return false;
+        running = false;
+        return 0;
     }
 
     if (m_data) {
@@ -384,6 +470,7 @@ size_t TAIAPIConnectEngineDevice::fillData(const uint8_t * buffer, size_t length
         else if (type == "uint32_t") delete (uint32_t *) m_data;
         else if (type == "uint64_t") delete (uint64_t *) m_data;
         else if (type == "Double") delete (double *) m_data;
+        else if (type == "Text") delete (char *) m_data;
         m_data = nullptr;
     }
 
@@ -396,18 +483,17 @@ size_t TAIAPIConnectEngineDevice::fillData(const uint8_t * buffer, size_t length
     else if (type == "uint32_t") m_data = (void *) new uint32_t[m_length];
     else if (type == "uint64_t") m_data = (void *) new uint64_t[m_length];
     else if (type == "Double") m_data = (void *) new double[m_length];
+    else if (type == "Text") m_data = (void *) new char[m_length + 1];
     else {
         qDebug("Invalid type of input (2)");
+        running = false;
         return 0;
     }
 
     memcpy(m_data, buffer, length);
+    if (type == "Text") ((char *) m_data)[length] = 0; //Null terminator :-)
 
-    mutex.lock();
     running = false;
-    mutex.unlock();
 
     return length;
 }
-
-
