@@ -65,11 +65,20 @@ TScope * TSerialPort::addScope(QString name, QString info, bool *ok) {
     return nullptr;
 }
 
+TAnalDevice * TSerialPort::addAnalDevice(QString name, QString info, bool *ok) {
+    if(ok != nullptr) *ok = false;
+    return nullptr;
+}
+
+
 bool TSerialPort::canAddIODevice() {
     return true;
 }
 
 bool TSerialPort::canAddScope() {
+    return false;
+}
+bool TSerialPort::canAddAnalDevice() {
     return false;
 }
 
@@ -79,4 +88,8 @@ QList<TIODevice *> TSerialPort::getIODevices() {
 
 QList<TScope *> TSerialPort::getScopes() {
     return QList<TScope *>();
+}
+
+QList<TAnalDevice *> TSerialPort::getAnalDevices(){
+    return QList<TAnalDevice *>();
 }
