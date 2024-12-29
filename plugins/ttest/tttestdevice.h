@@ -4,11 +4,10 @@
 #include <QThread>
 #include <QString>
 #include <QRandomGenerator>
+#include <QQueue>
 #include "tconfigparam.h"
 #include "tanaldevice.h"
 #include "typesmoment.hpp"
-#include "ttest.hpp"
-
 
 class TTTestDevice : public TAnalDevice {
 
@@ -50,6 +49,12 @@ public:
     size_t getTValues(uint8_t * buffer, size_t length, size_t class1, size_t class2, size_t order);
     void resetContexts();
 
+    size_t addLabeledTraces(const uint8_t * buffer, size_t length);
+    size_t addLabels(const uint8_t * buffer, size_t length);
+    void processLabeledTraces();
+
+    size_t getTypeSize(const QString & dataType);
+
 private:
 
     TConfigParam m_preInitParams;
@@ -58,19 +63,18 @@ private:
     QString m_traceType;
     size_t m_order;
 
+    int m_inputFormat; // 0 - stream per class, 1 - labels
+    QString m_labelType;
+
     QList<SICAK::Moments2DContext<qreal> *> m_contexts;
 
     QList<TAnalAction *> m_analActions;
-
     QList<TAnalInputStream *> m_analInputStreams;
     QList<TAnalOutputStream *> m_analOutputStreams;
 
-    QList<QList<uint8_t> *> m_firstSet;
-    QList<QList<uint8_t> *> m_secondSet;
+    QQueue<SICAK::Vector<uint8_t> *> m_labeledTraces;
+    QQueue<size_t> m_labels;
 
-    size_t m_length;
-    int m_position;
-    int * m_data = nullptr;
 };
 
 #endif // TTTESTDEVICE_H
