@@ -436,6 +436,13 @@ void TTTestDevice::computeTVals(){
 
     int k = 0;
 
+    if(m_labeledTraces.size() != 0){
+        qWarning("There are unprocessed traces left! Not enough labels.");
+    }
+    if(m_labels.size() != 0){
+        qWarning("There are unprocessed labels left! Not enough traces.");
+    }
+
     for(int order = 1; order <= m_order; order++){
         for (int i = 0; i < m_numberOfClasses; i++) {
             for (int j = i + 1; j < m_numberOfClasses; j++) {
