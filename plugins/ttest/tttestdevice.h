@@ -1,9 +1,8 @@
 #ifndef TTTESTDEVICE_H
 #define TTTESTDEVICE_H
 
-#include <QThread>
 #include <QString>
-#include <QRandomGenerator>
+#include <QList>
 #include <QQueue>
 #include "tconfigparam.h"
 #include "tanaldevice.h"
@@ -48,6 +47,7 @@ public:
     size_t addTraces(const uint8_t * buffer, size_t length, size_t classNo);
     size_t getTValues(uint8_t * buffer, size_t length, size_t class1, size_t class2, size_t order);
     void resetContexts();
+    void computeTVals();
 
     size_t addLabeledTraces(const uint8_t * buffer, size_t length);
     size_t addLabels(const uint8_t * buffer, size_t length);
@@ -74,6 +74,9 @@ private:
 
     QQueue<SICAK::Vector<uint8_t> *> m_labeledTraces;
     QQueue<size_t> m_labels;
+
+    QList<SICAK::Matrix<qreal> *> m_tvals;
+    QList<size_t> m_position;
 
 };
 

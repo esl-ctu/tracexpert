@@ -39,8 +39,6 @@ TTTestDevice::TTTestDevice() {
     inputFormat.addSubParam(labelType);
     m_preInitParams.addSubParam(inputFormat);
 
-
-
 }
 
 TTTestDevice::~TTTestDevice() {
@@ -139,9 +137,10 @@ TConfigParam TTTestDevice::setPreInitParams(TConfigParam params) {
     return m_preInitParams;
 }
 
-void TTTestDevice::init(bool *ok) {    
+void TTTestDevice::init(bool *ok) {
 
-    m_analActions.append(new TTTestAction("Reset (delete all data)", "", [=](){ resetContexts(); }));
+    m_analActions.append(new TTTestAction("Compute t-values", "Computes t-values", [=](){ computeTVals(); }));
+    m_analActions.append(new TTTestAction("Reset (delete all data)", "Deletes all the received data", [=](){ resetContexts(); }));
 
     if(m_inputFormat == 1){ // 1 - labels
 
@@ -163,6 +162,9 @@ void TTTestDevice::init(bool *ok) {
 
                 QString streamName = QString("%1-order t-vals %2 vs %3").arg(order).arg(i).arg(j);
                 m_analInputStreams.append(new TTTestInputStream(streamName, "Stream of t-values", [=, class1 = i, class2 = j, order0 = order](uint8_t * buffer, size_t length){ return getTValues(buffer, length, class1, class2, order0); }));
+
+                m_tvals.append(new SICAK::Matrix<qreal>());
+                m_position.append(0);
 
             }
         }
@@ -198,6 +200,13 @@ void TTTestDevice::deInit(bool *ok) {
         delete m_contexts[i];
     }
     m_contexts.clear();
+
+    for (int i = 0; i < m_tvals.length(); i++) {
+        delete m_tvals[i];
+    }
+    m_tvals.clear();
+
+    m_position.clear();
 
     while(!m_labeledTraces.empty()){
         SICAK::Vector<uint8_t> * trace = m_labeledTraces.dequeue();
@@ -273,22 +282,6 @@ size_t TTTestDevice::addTraces(const uint8_t * buffer, size_t length, size_t cla
 
 }
 
-size_t TTTestDevice::getTValues(uint8_t * buffer, size_t length, size_t class1, size_t class2, size_t order){
-
-    SICAK::Matrix<qreal> results;
-    SICAK::UniHoTTestComputeTValsDegs<qreal>(*(m_contexts[class1]), *(m_contexts[class2]), results, order);
-
-    size_t maxLengthReal = length / sizeof(qreal);
-    size_t lengthReal = results.cols();
-
-    size_t lengthToCopy = qMin(maxLengthReal, lengthReal);
-
-    std::memcpy(reinterpret_cast<void *>(buffer), results.data(), lengthToCopy * sizeof(qreal));
-
-    return lengthToCopy * sizeof(qreal);
-
-}
-
 void TTTestDevice::resetContexts() {
 
     for(int i = 0; i < m_numberOfClasses; i++){
@@ -301,6 +294,14 @@ void TTTestDevice::resetContexts() {
     }
 
     m_labels.clear();
+
+    for (int i = 0; i < m_tvals.length(); i++) {
+        m_tvals[i]->fill(0);
+    }
+
+    for (int i = 0; i < m_position.length(); i++) {
+        m_position[i] = m_tvals[i]->cols()*sizeof(qreal);
+    }
 
 }
 
@@ -428,5 +429,53 @@ void TTTestDevice::processLabeledTraces(){
         delete trace;
 
     }
+
+}
+
+void TTTestDevice::computeTVals(){
+
+    int k = 0;
+
+    for(int order = 1; order <= m_order; order++){
+        for (int i = 0; i < m_numberOfClasses; i++) {
+            for (int j = i + 1; j < m_numberOfClasses; j++) {
+
+                SICAK::UniHoTTestComputeTValsDegs<qreal>(*(m_contexts[i]), *(m_contexts[j]), *(m_tvals[k]), order);
+                m_position[k] = 0;
+                k++;
+
+            }
+        }
+    }
+
+}
+
+size_t TTTestDevice::getTValues(uint8_t * buffer, size_t length, size_t class1, size_t class2, size_t order){
+
+    int k = 0;
+
+    for(int orderIdx = 1; orderIdx <= m_order; order++){
+        for (int i = 0; i < m_numberOfClasses; i++) {
+            for (int j = i + 1; j < m_numberOfClasses; j++) {
+
+                if(orderIdx == order && i == class1 && j == class2) {
+
+                    int sent = 0;
+
+                    for (sent = 0; m_position[k] < (m_tvals[k]->cols() * sizeof(qreal)) && sent < length; sent++, m_position[k]++) {
+                        buffer[sent] = *(reinterpret_cast<uint8_t *>(m_tvals[k]->data()) + m_position[k]);
+                    }
+
+                    return sent;
+
+                }
+
+                k++;
+
+            }
+        }
+    }
+
+    return 0;
 
 }
