@@ -139,7 +139,7 @@ TConfigParam TTTestDevice::setPreInitParams(TConfigParam params) {
 
 void TTTestDevice::init(bool *ok) {
 
-    m_analActions.append(new TTTestAction("Compute t-values", "Computes t-values", [=](){ computeTVals(); }));
+    m_analActions.append(new TTTestAction("Compute t-values (+ flush streams)", "Computes t-values", [=](){ computeTVals(); }));
     m_analActions.append(new TTTestAction("Reset (delete all data)", "Deletes all the received data", [=](){ resetContexts(); }));
 
     if(m_inputFormat == 1){ // 1 - labels
@@ -175,6 +175,8 @@ void TTTestDevice::init(bool *ok) {
         m_contexts[i]->reset();
     }
 
+    m_nonLabeledTraces = new QList<uint8_t>[m_numberOfClasses];
+
     if (ok != nullptr) *ok = true;
 
 }
@@ -208,12 +210,9 @@ void TTTestDevice::deInit(bool *ok) {
 
     m_position.clear();
 
-    while(!m_labeledTraces.empty()){
-        SICAK::Vector<uint8_t> * trace = m_labeledTraces.dequeue();
-        delete trace;
-    }
-
+    m_traces.clear();
     m_labels.clear();
+    delete [] m_nonLabeledTraces;
 
     if (ok != nullptr) *ok = true;
 }
@@ -248,34 +247,10 @@ bool TTTestDevice::isBusy() const
 
 size_t TTTestDevice::addTraces(const uint8_t * buffer, size_t length, size_t classNo){
 
-    size_t sampleSize = getTypeSize(m_traceType);
+    m_nonLabeledTraces[classNo].reserve(m_nonLabeledTraces[classNo].size() + length); // preallocate space
 
-    if(length % (sampleSize * m_traceLength) != 0){
-        qCritical("Buffer does not contain a valid amount of traces/samples");
-        return 0;
-    }
-
-    size_t noOfTraces = length / (sampleSize * m_traceLength);
-
-    if(m_traceType == "Unsigned 8 bit") {
-        SICAK::UniHoTTestAddTraces<qreal, uint8_t>(*(m_contexts[classNo]), reinterpret_cast<const uint8_t *>(buffer), m_traceLength, noOfTraces, m_order);
-    } else if(m_traceType == "Signed 8 bit"){
-        SICAK::UniHoTTestAddTraces<qreal, int8_t>(*(m_contexts[classNo]), reinterpret_cast<const int8_t *>(buffer), m_traceLength, noOfTraces, m_order);
-    } else if(m_traceType == "Unsigned 16 bit"){
-        SICAK::UniHoTTestAddTraces<qreal, uint16_t>(*(m_contexts[classNo]), reinterpret_cast<const uint16_t *>(buffer), m_traceLength, noOfTraces, m_order);
-    } else if(m_traceType == "Signed 16 bit"){
-        SICAK::UniHoTTestAddTraces<qreal, int16_t>(*(m_contexts[classNo]), reinterpret_cast<const int16_t *>(buffer), m_traceLength, noOfTraces, m_order);
-    } else if(m_traceType == "Unsigned 32 bit"){
-        SICAK::UniHoTTestAddTraces<qreal, uint32_t>(*(m_contexts[classNo]), reinterpret_cast<const uint32_t *>(buffer), m_traceLength, noOfTraces, m_order);
-    } else if(m_traceType == "Signed 32 bit"){
-        SICAK::UniHoTTestAddTraces<qreal, int32_t>(*(m_contexts[classNo]), reinterpret_cast<const int32_t *>(buffer), m_traceLength, noOfTraces, m_order);
-    } else if(m_traceType == "Real 32 bit (float)"){
-        SICAK::UniHoTTestAddTraces<qreal, float>(*(m_contexts[classNo]), reinterpret_cast<const float *>(buffer), m_traceLength, noOfTraces, m_order);
-    } else if(m_traceType == "Real 64 bit (double)"){
-        SICAK::UniHoTTestAddTraces<qreal, double>(*(m_contexts[classNo]), reinterpret_cast<const double *>(buffer), m_traceLength, noOfTraces, m_order);
-    } else {
-        qFatal("Unexpected trace type while adding traces.");
-        return 0;
+    for(int i = 0; i < length; i++){
+        m_nonLabeledTraces[classNo].append(buffer[i]);
     }
 
     return length;
@@ -288,12 +263,12 @@ void TTTestDevice::resetContexts() {
         m_contexts[i]->reset();
     }
 
-    while(!m_labeledTraces.empty()){
-        SICAK::Vector<uint8_t> * trace = m_labeledTraces.dequeue();
-        delete trace;
-    }
-
+    m_traces.clear();
     m_labels.clear();
+
+    for(int i = 0; i < m_numberOfClasses; i++){
+        m_nonLabeledTraces[i].clear();
+    }
 
     for (int i = 0; i < m_tvals.length(); i++) {
         m_tvals[i]->fill(0);
@@ -307,66 +282,26 @@ void TTTestDevice::resetContexts() {
 
 size_t TTTestDevice::addLabeledTraces(const uint8_t * buffer, size_t length){
 
-    size_t sampleSize = getTypeSize(m_traceType);
+    m_traces.reserve(m_traces.size() + length); // preallocate space
 
-    if(length % (sampleSize * m_traceLength) != 0){
-        qCritical("Buffer does not contain a valid amount of traces/samples");
-        return 0;
+    for(int i = 0; i < length; i++){
+        m_traces.append(buffer[i]);
     }
-
-    size_t noOfTraces = length / (sampleSize * m_traceLength);
-
-    for(int i = 0; i < noOfTraces; i++){
-        SICAK::Vector<uint8_t> * trace = new SICAK::Vector<uint8_t>(sampleSize * m_traceLength);
-        std::memcpy(trace->data(), &(buffer[i * sampleSize * m_traceLength]), sampleSize * m_traceLength);
-
-        m_labeledTraces.enqueue(trace);
-    }
-
-    this->processLabeledTraces();
 
     return length;
+
 }
 
 size_t TTTestDevice::addLabels(const uint8_t * buffer, size_t length){
 
-    size_t labelSize = getTypeSize(m_labelType);
+    m_labels.reserve(m_labels.size() + length); // preallocate space
 
-    if(length % labelSize != 0){
-        qCritical("Buffer does not contain a valid amount of labels with respect to the data type size");
-        return 0;
+    for(int i = 0; i < length; i++){
+        m_labels.append(buffer[i]);
     }
-
-    size_t noOfLabels = length / labelSize;
-
-    for(int i = 0; i < noOfLabels; i++){
-
-        if(m_labelType == "Unsigned 8 bit") {
-            m_labels.enqueue((reinterpret_cast<const uint8_t *>(buffer))[i]);
-        } else if(m_labelType == "Signed 8 bit"){
-            m_labels.enqueue((reinterpret_cast<const int8_t *>(buffer))[i]);
-        } else if(m_labelType == "Unsigned 16 bit"){
-            m_labels.enqueue((reinterpret_cast<const uint16_t *>(buffer))[i]);
-        } else if(m_labelType == "Signed 16 bit"){
-            m_labels.enqueue((reinterpret_cast<const int16_t *>(buffer))[i]);
-        } else if(m_labelType == "Unsigned 32 bit"){
-            m_labels.enqueue((reinterpret_cast<const uint32_t *>(buffer))[i]);
-        } else if(m_labelType == "Signed 32 bit"){
-            m_labels.enqueue((reinterpret_cast<const int32_t *>(buffer))[i]);
-        } else if(m_labelType == "Real 32 bit (float)"){
-            m_labels.enqueue((reinterpret_cast<const float *>(buffer))[i]);
-        } else if(m_labelType == "Real 64 bit (double)"){
-            m_labels.enqueue((reinterpret_cast<const double *>(buffer))[i]);
-        } else {
-            qFatal("Unexpected trace type while adding traces.");
-            return 0;
-        }
-
-    }
-
-    this->processLabeledTraces();
 
     return length;
+
 }
 
 size_t TTTestDevice::getTypeSize(const QString & dataType){
@@ -394,55 +329,134 @@ size_t TTTestDevice::getTypeSize(const QString & dataType){
 
 }
 
-void TTTestDevice::processLabeledTraces(){
-
-    while((!m_labeledTraces.empty()) && (!m_labels.empty())){
-
-        size_t label = m_labels.dequeue();
-        SICAK::Vector<uint8_t> * trace = m_labeledTraces.dequeue();
-
-        if(label >= m_numberOfClasses){
-            qCritical("Label of the trace is out of range");
-            continue;
-        }
-
-        if(m_traceType == "Unsigned 8 bit") {
-            SICAK::UniHoTTestAddTraces<qreal, uint8_t>(*(m_contexts[label]), reinterpret_cast<const uint8_t *>(trace->data()), m_traceLength, 1, m_order);
-        } else if(m_traceType == "Signed 8 bit"){
-            SICAK::UniHoTTestAddTraces<qreal, int8_t>(*(m_contexts[label]), reinterpret_cast<const int8_t *>(trace->data()), m_traceLength, 1, m_order);
-        } else if(m_traceType == "Unsigned 16 bit"){
-            SICAK::UniHoTTestAddTraces<qreal, uint16_t>(*(m_contexts[label]), reinterpret_cast<const uint16_t *>(trace->data()), m_traceLength, 1, m_order);
-        } else if(m_traceType == "Signed 16 bit"){
-            SICAK::UniHoTTestAddTraces<qreal, int16_t>(*(m_contexts[label]), reinterpret_cast<const int16_t *>(trace->data()), m_traceLength, 1, m_order);
-        } else if(m_traceType == "Unsigned 32 bit"){
-            SICAK::UniHoTTestAddTraces<qreal, uint32_t>(*(m_contexts[label]), reinterpret_cast<const uint32_t *>(trace->data()), m_traceLength, 1, m_order);
-        } else if(m_traceType == "Signed 32 bit"){
-            SICAK::UniHoTTestAddTraces<qreal, int32_t>(*(m_contexts[label]), reinterpret_cast<const int32_t *>(trace->data()), m_traceLength, 1, m_order);
-        } else if(m_traceType == "Real 32 bit (float)"){
-            SICAK::UniHoTTestAddTraces<qreal, float>(*(m_contexts[label]), reinterpret_cast<const float *>(trace->data()), m_traceLength, 1, m_order);
-        } else if(m_traceType == "Real 64 bit (double)"){
-            SICAK::UniHoTTestAddTraces<qreal, double>(*(m_contexts[label]), reinterpret_cast<const double *>(trace->data()), m_traceLength, 1, m_order);
-        } else {
-            qFatal("Unexpected trace type while adding traces.");
-        }
-
-        delete trace;
-
-    }
-
-}
-
 void TTTestDevice::computeTVals(){
 
+    size_t sampleSize = getTypeSize(m_traceType);
+
+    // Process nonLabeledTraces
+    for(int i=0; i < m_numberOfClasses; i++){
+
+        if(m_nonLabeledTraces[i].size() % (sampleSize * m_traceLength) != 0){
+            qCritical("Non-labeled traces buffer does not contain a valid amount of data: incomplete traces");
+            return;
+        }
+
+        size_t noOfTraces = m_nonLabeledTraces[i].size() / (sampleSize * m_traceLength);
+
+        if(noOfTraces > 0){
+
+            if(m_traceType == "Unsigned 8 bit") {
+                SICAK::UniHoTTestAddTraces<qreal, uint8_t>(*(m_contexts[i]), reinterpret_cast<const uint8_t *>(m_nonLabeledTraces[i].data()), m_traceLength, noOfTraces, m_order);
+            } else if(m_traceType == "Signed 8 bit"){
+                SICAK::UniHoTTestAddTraces<qreal, int8_t>(*(m_contexts[i]), reinterpret_cast<const int8_t *>(m_nonLabeledTraces[i].data()), m_traceLength, noOfTraces, m_order);
+            } else if(m_traceType == "Unsigned 16 bit"){
+                SICAK::UniHoTTestAddTraces<qreal, uint16_t>(*(m_contexts[i]), reinterpret_cast<const uint16_t *>(m_nonLabeledTraces[i].data()), m_traceLength, noOfTraces, m_order);
+            } else if(m_traceType == "Signed 16 bit"){
+                SICAK::UniHoTTestAddTraces<qreal, int16_t>(*(m_contexts[i]), reinterpret_cast<const int16_t *>(m_nonLabeledTraces[i].data()), m_traceLength, noOfTraces, m_order);
+            } else if(m_traceType == "Unsigned 32 bit"){
+                SICAK::UniHoTTestAddTraces<qreal, uint32_t>(*(m_contexts[i]), reinterpret_cast<const uint32_t *>(m_nonLabeledTraces[i].data()), m_traceLength, noOfTraces, m_order);
+            } else if(m_traceType == "Signed 32 bit"){
+                SICAK::UniHoTTestAddTraces<qreal, int32_t>(*(m_contexts[i]), reinterpret_cast<const int32_t *>(m_nonLabeledTraces[i].data()), m_traceLength, noOfTraces, m_order);
+            } else if(m_traceType == "Real 32 bit (float)"){
+                SICAK::UniHoTTestAddTraces<qreal, float>(*(m_contexts[i]), reinterpret_cast<const float *>(m_nonLabeledTraces[i].data()), m_traceLength, noOfTraces, m_order);
+            } else if(m_traceType == "Real 64 bit (double)"){
+                SICAK::UniHoTTestAddTraces<qreal, double>(*(m_contexts[i]), reinterpret_cast<const double *>(m_nonLabeledTraces[i].data()), m_traceLength, noOfTraces, m_order);
+            } else {
+                qFatal("Unexpected trace type while adding traces.");
+                return;
+            }
+
+        }
+
+        // Clear processed data from the buffers
+        m_nonLabeledTraces[i].clear();
+
+    }
+
+    // Process labeled traces
+    if(m_traces.size() % (sampleSize * m_traceLength) != 0){
+        qCritical("Labeled traces buffer does not contain a valid amount of data: incomplete traces");
+        return;
+    }
+
+    size_t noOfTraces = m_traces.size() / (sampleSize * m_traceLength);
+
+    size_t labelSize = getTypeSize(m_labelType);
+
+    if(m_labels.size() % labelSize != 0){
+        qCritical("Labels buffer does not contain a valid amount of data: incomplete labels");
+        return;
+    }
+
+    size_t noOfLabels = m_labels.size() / labelSize;
+
+    if(noOfTraces != noOfLabels){
+        qCritical("Mismatching number of traces and labels");
+        return;
+    }
+
+    if(noOfTraces > 0) {
+
+        for(int i = 0; i < noOfTraces; i++){
+
+            size_t label;
+
+            if(m_labelType == "Unsigned 8 bit") {
+                label = reinterpret_cast<uint8_t *>(m_labels.data())[i];
+            } else if(m_labelType == "Signed 8 bit"){
+                label = reinterpret_cast<int8_t *>(m_labels.data())[i];
+            } else if(m_labelType == "Unsigned 16 bit"){
+                label = reinterpret_cast<uint16_t *>(m_labels.data())[i];
+            } else if(m_labelType == "Signed 16 bit"){
+                label = reinterpret_cast<int16_t *>(m_labels.data())[i];
+            } else if(m_labelType == "Unsigned 32 bit"){
+                label = reinterpret_cast<uint32_t *>(m_labels.data())[i];
+            } else if(m_labelType == "Signed 32 bit"){
+                label = reinterpret_cast<int32_t *>(m_labels.data())[i];
+            } else if(m_labelType == "Real 32 bit (float)"){
+                label = reinterpret_cast<float *>(m_labels.data())[i];
+            } else if(m_labelType == "Real 64 bit (double)"){
+                label = reinterpret_cast<double *>(m_labels.data())[i];
+            } else {
+                qFatal("Unexpected label type while adding traces.");
+                return;
+            }
+
+            if(label < 0 || label > m_numberOfClasses){
+                qCritical("Invalid trace label");
+                return;
+            }
+
+            if(m_traceType == "Unsigned 8 bit") {
+                SICAK::UniHoTTestAddTraces<qreal, uint8_t>(*(m_contexts[label]), reinterpret_cast<const uint8_t *>(m_traces.data()) + i * m_traceLength, m_traceLength, 1, m_order);
+            } else if(m_traceType == "Signed 8 bit"){
+                SICAK::UniHoTTestAddTraces<qreal, int8_t>(*(m_contexts[label]), reinterpret_cast<const int8_t *>(m_traces.data()) + i * m_traceLength, m_traceLength, 1, m_order);
+            } else if(m_traceType == "Unsigned 16 bit"){
+                SICAK::UniHoTTestAddTraces<qreal, uint16_t>(*(m_contexts[label]), reinterpret_cast<const uint16_t *>(m_traces.data()) + i * m_traceLength, m_traceLength, 1, m_order);
+            } else if(m_traceType == "Signed 16 bit"){
+                SICAK::UniHoTTestAddTraces<qreal, int16_t>(*(m_contexts[label]), reinterpret_cast<const int16_t *>(m_traces.data()) + i * m_traceLength, m_traceLength, 1, m_order);
+            } else if(m_traceType == "Unsigned 32 bit"){
+                SICAK::UniHoTTestAddTraces<qreal, uint32_t>(*(m_contexts[label]), reinterpret_cast<const uint32_t *>(m_traces.data()) + i * m_traceLength, m_traceLength, 1, m_order);
+            } else if(m_traceType == "Signed 32 bit"){
+                SICAK::UniHoTTestAddTraces<qreal, int32_t>(*(m_contexts[label]), reinterpret_cast<const int32_t *>(m_traces.data()) + i * m_traceLength, m_traceLength, 1, m_order);
+            } else if(m_traceType == "Real 32 bit (float)"){
+                SICAK::UniHoTTestAddTraces<qreal, float>(*(m_contexts[label]), reinterpret_cast<const float *>(m_traces.data()) + i * m_traceLength, m_traceLength, 1, m_order);
+            } else if(m_traceType == "Real 64 bit (double)"){
+                SICAK::UniHoTTestAddTraces<qreal, double>(*(m_contexts[label]), reinterpret_cast<const double *>(m_traces.data()) + i * m_traceLength, m_traceLength, 1, m_order);
+            } else {
+                qFatal("Unexpected trace type while adding traces.");
+            }
+
+        }
+
+    }
+
+    // Clear processed data from the buffers
+    m_traces.clear();
+    m_labels.clear();
+
+    // Compute t-vals
     int k = 0;
-
-    if(m_labeledTraces.size() != 0){
-        qWarning("There are unprocessed traces left! Not enough labels.");
-    }
-    if(m_labels.size() != 0){
-        qWarning("There are unprocessed labels left! Not enough traces.");
-    }
-
     for(int order = 1; order <= m_order; order++){
         for (int i = 0; i < m_numberOfClasses; i++) {
             for (int j = i + 1; j < m_numberOfClasses; j++) {
@@ -461,7 +475,7 @@ size_t TTTestDevice::getTValues(uint8_t * buffer, size_t length, size_t class1, 
 
     int k = 0;
 
-    for(int orderIdx = 1; orderIdx <= m_order; order++){
+    for(int orderIdx = 1; orderIdx <= m_order; orderIdx++){
         for (int i = 0; i < m_numberOfClasses; i++) {
             for (int j = i + 1; j < m_numberOfClasses; j++) {
 

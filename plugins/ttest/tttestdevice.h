@@ -51,7 +51,6 @@ public:
 
     size_t addLabeledTraces(const uint8_t * buffer, size_t length);
     size_t addLabels(const uint8_t * buffer, size_t length);
-    void processLabeledTraces();
 
     size_t getTypeSize(const QString & dataType);
 
@@ -72,8 +71,9 @@ private:
     QList<TAnalInputStream *> m_analInputStreams;
     QList<TAnalOutputStream *> m_analOutputStreams;
 
-    QQueue<SICAK::Vector<uint8_t> *> m_labeledTraces;
-    QQueue<size_t> m_labels;
+    QList<uint8_t> * m_nonLabeledTraces;
+    QList<uint8_t> m_traces;
+    QList<uint8_t> m_labels;
 
     QList<SICAK::Matrix<qreal> *> m_tvals;
     QList<size_t> m_position;

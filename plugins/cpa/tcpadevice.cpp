@@ -126,7 +126,7 @@ TConfigParam TCPADevice::setPreInitParams(TConfigParam params) {
 
 void TCPADevice::init(bool *ok) {
 
-    m_analActions.append(new TCPAAction("Compute correlation matrix", "", [=](){ computeCorrelations(); }));
+    m_analActions.append(new TCPAAction("Compute correlation matrix (+ flush streams)", "", [=](){ computeCorrelations(); }));
     m_analActions.append(new TCPAAction("Reset (delete all data)", "", [=](){ resetContexts(); }));
 
     m_analOutputStreams.append(new TCPAOutputStream("Traces", "Stream of traces", [=](const uint8_t * buffer, size_t length){ return addTraces(buffer, length); }));
@@ -1124,6 +1124,10 @@ void TCPADevice::computeCorrelations(){
         qFatal("Unexpected trace type while adding traces.");
         return;
     }
+
+    // Clear processed data from the buffers
+    m_traces.clear();
+    m_predicts.clear();
 
     // compute correlation matrices
     if(m_order == 1){
