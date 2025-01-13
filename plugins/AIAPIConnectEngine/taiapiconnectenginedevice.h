@@ -82,6 +82,16 @@ private:
     std::atomic<bool> running;
     std::atomic<bool> dataReady;
 
+    const uint8_t ENDPOINT_ERROR = 0;
+    const uint8_t ENDPOINT_PREDICT = 1;
+    const uint8_t ENDPOINT_TRAIN = 2;
+
+    int sendGetRequest(QJsonDocument & data, QString endpoint); //returns http response code
+    bool getJsonArrayFromJsonDocumentField(QJsonArray & result, QJsonDocument & response, QString field);
+    bool getStringFromJsonDocumentField(QString & result, QJsonDocument & response, QString field);
+    uint8_t getServerMode();
+    bool setServerMode(uint8_t mode);
+
 };
 
 #endif // TAIAPICONNECTENGINEDEVICE_H

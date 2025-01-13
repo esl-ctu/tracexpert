@@ -1,5 +1,9 @@
 #include "taiapiconnectenginedevice.h"
 
+//todo
+//timeout
+//send get/post request
+
 TAIAPIConnectEngineDevice::TAIAPIConnectEngineDevice(QString name, QString info) {
     m_name = name;
     m_info = info;
@@ -135,6 +139,8 @@ void TAIAPIConnectEngineDevice::init(bool *ok /*= nullptr*/) {
 
 
     m_initialized = true;
+
+    getServerMode();
 }
 
 void TAIAPIConnectEngineDevice::deInit(bool *ok /*= nullptr*/) {
@@ -496,4 +502,130 @@ size_t TAIAPIConnectEngineDevice::fillData(const uint8_t * buffer, size_t length
     running = false;
 
     return length;
+}
+
+int TAIAPIConnectEngineDevice::sendGetRequest(QJsonDocument & data, QString endpoint){
+    uint8_t retval = 0;
+    int port = m_preInitParams.getSubParamByName("Port")->getValue().toInt();
+    QString addr = m_preInitParams.getSubParamByName("Address")->getValue();
+
+    QNetworkAccessManager *mgr = new QNetworkAccessManager();
+    QUrl url;
+    url.setHost(addr);
+    url.setPort(port);
+    url.setScheme("http");
+    url.setPath("/" + endpoint);
+    QNetworkRequest request(url);
+
+    QNetworkReply* reply = mgr->get(request);
+
+    QTimer timer;
+    timer.setSingleShot(true);
+
+    QEventLoop loop;
+    QAbstractSocket::connect(&timer, SIGNAL(timeout()), &loop, SLOT(quit()));
+    QAbstractSocket::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
+    timer.start(10000);   // 10 secs. timeout
+    loop.exec();
+
+    int httpStatusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    if (reply->error() != QNetworkReply::NoError) {
+        qWarning() << "GET request to " << endpoint << "failed: " << reply->errorString();
+        reply->deleteLater();
+        return httpStatusCode;
+    } else {
+        // Print the response data
+        QByteArray replyBuffer;
+        replyBuffer = reply->readAll();
+        data = QJsonDocument::fromJson(replyBuffer);
+        reply->deleteLater();
+        return httpStatusCode;
+    }
+}
+
+bool TAIAPIConnectEngineDevice::getJsonArrayFromJsonDocumentField(QJsonArray & result, QJsonDocument & response, QString field) {
+    if (!response.isObject()) {
+        qDebug() << "Invalid JSON response";
+        return false;
+    }
+
+    QJsonObject jsonObject = response.object();
+    if (!jsonObject.contains(field)) {
+        qDebug() << field << " field not found in JSON response";
+        return false;
+    }
+
+    if (jsonObject[field].isArray()) result = jsonObject[field].toArray();
+    else return false;
+
+    return true;
+}
+
+bool TAIAPIConnectEngineDevice::getStringFromJsonDocumentField(QString & result, QJsonDocument & response, QString field) {
+    if (!response.isObject()) {
+        qDebug() << "Invalid JSON response";
+        return false;
+    }
+
+    QJsonObject jsonObject = response.object();
+    if (!jsonObject.contains(field)) {
+        qDebug() << field << " field not found in JSON response";
+        return false;
+    }
+
+    if (jsonObject[field].isString()) result = jsonObject[field].toString();
+    else return false;
+
+    if (result.startsWith("\"")) {
+        result.remove(0, 1);
+    }
+
+    if (result.endsWith("\"")) {
+        result.remove(result.length() - 1, 1);
+    }
+
+    return true;
+}
+
+uint8_t TAIAPIConnectEngineDevice::getServerMode() {
+    //todo running
+    QJsonDocument response;
+    int statusCode = sendGetRequest(response, QString("get_mode"));
+    if (statusCode != 200) return ENDPOINT_ERROR;
+
+    QString responseString;
+    bool ok = getStringFromJsonDocumentField(responseString, response, QString("mode"));
+    if (!ok) {
+        return ENDPOINT_ERROR;
+    }
+
+    if (responseString == "train") {
+        return ENDPOINT_TRAIN;
+    }
+
+    if (responseString == "predict") {
+        return ENDPOINT_PREDICT;
+    }
+
+    //todo return
+
+    return ENDPOINT_ERROR;
+}
+
+bool TAIAPIConnectEngineDevice::setServerMode(uint8_t mode) {
+    //todo running
+    int statusCode = -1;
+    if (mode == ENDPOINT_PREDICT) {
+        QJsonDocument response;
+        statusCode = sendGetRequest(response, QString("set_predict_mode"));
+    } else if (mode == ENDPOINT_TRAIN) {
+        QJsonDocument response;
+        statusCode = sendGetRequest(response, QString("set_train_mode"));
+    }
+
+    if (statusCode != 200) {
+        return false;
+    } else {
+        return true;
+    }
 }
