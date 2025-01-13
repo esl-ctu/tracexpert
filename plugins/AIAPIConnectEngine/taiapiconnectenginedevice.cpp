@@ -1,8 +1,9 @@
 #include "taiapiconnectenginedevice.h"
 
-//todo
-//timeout
-//send get/post request
+//todo:
+////timeout
+////post request wrapper
+////running
 
 TAIAPIConnectEngineDevice::TAIAPIConnectEngineDevice(QString name, QString info) {
     m_name = name;
@@ -587,6 +588,60 @@ bool TAIAPIConnectEngineDevice::getStringFromJsonDocumentField(QString & result,
     return true;
 }
 
+bool TAIAPIConnectEngineDevice::getBoolFromJsonDocumentField(bool & result, QJsonDocument & response, QString field) {
+    if (!response.isObject()) {
+        qDebug() << "Invalid JSON response";
+        return false;
+    }
+
+    QJsonObject jsonObject = response.object();
+    if (!jsonObject.contains(field)) {
+        qDebug() << field << " field not found in JSON response";
+        return false;
+    }
+
+    if (jsonObject[field].isBool()) result = jsonObject[field].toBool();
+    else return false;
+
+    return true;
+}
+
+bool TAIAPIConnectEngineDevice::getIntFromJsonDocumentField(int & result, QJsonDocument & response, QString field) {
+    if (!response.isObject()) {
+        qDebug() << "Invalid JSON response";
+        return false;
+    }
+
+    QJsonObject jsonObject = response.object();
+    if (!jsonObject.contains(field)) {
+        qDebug() << field << " field not found in JSON response";
+        return false;
+    }
+
+    if (!jsonObject[field].isNull()) result = jsonObject[field].toInt();
+    else return false;
+
+    return true;
+}
+
+bool TAIAPIConnectEngineDevice::getDoubleFromJsonDocumentField(double & result, QJsonDocument & response, QString field) {
+    if (!response.isObject()) {
+        qDebug() << "Invalid JSON response";
+        return false;
+    }
+
+    QJsonObject jsonObject = response.object();
+    if (!jsonObject.contains(field)) {
+        qDebug() << field << " field not found in JSON response";
+        return false;
+    }
+
+    if (jsonObject[field].isDouble()) result = jsonObject[field].toDouble();
+    else return false;
+
+    return true;
+}
+
 uint8_t TAIAPIConnectEngineDevice::getServerMode() {
     //todo running
     QJsonDocument response;
@@ -607,8 +662,6 @@ uint8_t TAIAPIConnectEngineDevice::getServerMode() {
         return ENDPOINT_PREDICT;
     }
 
-    //todo return
-
     return ENDPOINT_ERROR;
 }
 
@@ -628,4 +681,55 @@ bool TAIAPIConnectEngineDevice::setServerMode(uint8_t mode) {
     } else {
         return true;
     }
+}
+
+bool TAIAPIConnectEngineDevice::getTrainingStatus(bool & running, int & epoch, double & accuracy, double & loss, double & valAccuracy, double & valLoss) {
+    QJsonDocument response;
+    int statusCode = sendGetRequest(response, QString("get_training_progress"));
+    if (statusCode != 200) return false;
+
+    bool responseBool;
+    bool ok = getBoolFromJsonDocumentField(responseBool, response, QString("train_in_progress"));
+    if (!ok) {
+        return false;
+    }
+
+    int responseInt;
+    ok = getIntFromJsonDocumentField(responseInt, response, QString("epoch"));
+    if (ok) {
+        epoch = responseInt;
+    } else {
+        epoch = -1;
+    }
+
+    double responseDouble;
+    ok = getDoubleFromJsonDocumentField(responseDouble, response, QString("accuracy"));
+    if (ok) {
+        accuracy = responseDouble;
+    } else {
+        accuracy = -1;
+    }
+
+    ok = getDoubleFromJsonDocumentField(responseDouble, response, QString("loss"));
+    if (ok) {
+        loss = responseDouble;
+    } else {
+        loss = -1;
+    }
+
+    ok = getDoubleFromJsonDocumentField(responseDouble, response, QString("val_accuracy"));
+    if (ok) {
+        valAccuracy = responseDouble;
+    } else {
+        valAccuracy = -1;
+    }
+
+    ok = getDoubleFromJsonDocumentField(responseDouble, response, QString("val_loss"));
+    if (ok) {
+        valLoss = responseDouble;
+    } else {
+        valLoss = -1;
+    }
+
+    return true;
 }
