@@ -87,14 +87,20 @@ private:
     const uint8_t ENDPOINT_TRAIN = 2;
 
     int sendGetRequest(QJsonDocument & data, QString endpoint); //returns http response code
+
+
     bool getJsonArrayFromJsonDocumentField(QJsonArray & result, QJsonDocument & response, QString field);
+    bool getJsonArrayFromJsonObject(QJsonArray & result, QJsonObject & obj, QString field);
     bool getStringFromJsonDocumentField(QString & result, QJsonDocument & response, QString field);
     bool getBoolFromJsonDocumentField(bool & result, QJsonDocument & response, QString field);
     bool getIntFromJsonDocumentField(int & result, QJsonDocument & response, QString field);
     bool getDoubleFromJsonDocumentField(double & result, QJsonDocument & response, QString field);
+
     uint8_t getServerMode();
     bool setServerMode(uint8_t mode);
     bool getTrainingStatus(bool & running, int & epoch, double & accuracy, double & loss, double & valAccuracy, double & valLoss);
+    bool getTrainingParams(int & epochs, int & batchSize, int & trials);
+    bool getListOfDatasets(QMap<QString, QPair<QString, QPair<int, int>>> & datasetMap);
 
 };
 

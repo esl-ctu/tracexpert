@@ -562,6 +562,15 @@ bool TAIAPIConnectEngineDevice::getJsonArrayFromJsonDocumentField(QJsonArray & r
     return true;
 }
 
+bool TAIAPIConnectEngineDevice::getJsonArrayFromJsonObject(QJsonArray & result, QJsonObject & obj, QString field) {
+    if (obj.contains(field) && result[field].isArray()) {
+        result = obj["datasets"].toArray();
+        return true;
+    }
+
+    return false;
+}
+
 bool TAIAPIConnectEngineDevice::getStringFromJsonDocumentField(QString & result, QJsonDocument & response, QString field) {
     if (!response.isObject()) {
         qDebug() << "Invalid JSON response";
@@ -729,6 +738,85 @@ bool TAIAPIConnectEngineDevice::getTrainingStatus(bool & running, int & epoch, d
         valLoss = responseDouble;
     } else {
         valLoss = -1;
+    }
+
+    return true;
+}
+
+bool TAIAPIConnectEngineDevice::getTrainingParams(int & epochs, int & batchSize, int & trials) {
+    QJsonDocument response;
+    int statusCode = sendGetRequest(response, QString("get_training_params"));
+    if (statusCode != 200) return false;
+
+    int responseInt;
+    bool ok = getIntFromJsonDocumentField(responseInt, response, QString("epochs"));
+    if (ok) {
+        epochs = responseInt;
+    } else {
+        return false;
+    }
+
+    ok = getIntFromJsonDocumentField(responseInt, response, QString("batch_size"));
+    if (ok) {
+        batchSize = responseInt;
+    } else {
+        return false;
+    }
+
+    ok = getIntFromJsonDocumentField(responseInt, response, QString("optimization_num_of_trials"));
+    if (ok) {
+        trials = responseInt;
+    } else {
+        return false;
+    }
+
+    return true;
+
+}
+
+bool TAIAPIConnectEngineDevice::getListOfDatasets(QMap<QString, QPair<QString, QPair<int, int>>> & datasetMap) {
+    QJsonDocument response;
+    int statusCode = sendGetRequest(response, QString("list_datasets"));
+    if (statusCode != 200) return false;
+
+    QJsonArray datasets;
+    bool ok = getJsonArrayFromJsonDocumentField(datasets, response, QString("files"));
+    if (!ok) return false;
+
+    // Loop through each file
+    for (int i = 0; i < datasets.size(); ++i) {
+        QJsonObject fileObject = datasets[i].toObject();
+        QString responseString;
+
+        // Get the dataset_name
+        ok = getStringFromJsonDocumentField(responseString, response, QString("dataset_name"));
+        if (!ok) {
+            return false;
+        }
+
+        // Get the datasets array
+        QJsonArray datasetsArray;
+        if (getJsonArrayFromJsonObject(datasetsArray, fileObject, QString("datasets"))) {
+
+            // Loop through each dataset
+            for (int j = 0; j < datasetsArray.size(); ++j) {
+                QJsonObject datasetObject = datasetsArray[j].toObject();
+
+                // Extract key, number of traces, and trace shape
+                if (datasetObject.contains("key") && datasetObject.contains("number of traces") && datasetObject.contains("trace shape")) {
+                    QString key = datasetObject["key"].toString();
+                    int numberOfTraces = datasetObject["number of traces"].toInt();
+                    int traceShapeSize = datasetObject["trace shape"].toArray().at(0).toInt();  //WARNING, just the first index!
+
+                    // Store the data in the QMap, using dataset name, number of traces, and trace shape size
+                    datasetMap.insert(key, qMakePair(responseString, qMakePair(numberOfTraces, traceShapeSize)));
+                } else {
+                    return false;
+                }
+            }
+        } else {
+            return false;
+        }
     }
 
     return true;
