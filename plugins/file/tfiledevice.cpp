@@ -7,7 +7,7 @@ TFileDevice::TFileDevice(QString & name, QString & info, TFile & tFile):
 
     // Pre-init parameter File path is editable and pre-filled with passed "name" variable
     m_preInitParams = TConfigParam(m_name + " pre-init configuration", "", TConfigParam::TType::TDummy, "");
-    m_preInitParams.addSubParam(TConfigParam("File path", m_name, TConfigParam::TType::TString, "File path (e.g. C:/Users/novak/Documents/data.csv)", false));
+    m_preInitParams.addSubParam(TConfigParam("File path", m_name, TConfigParam::TType::TFileName, "File path (e.g. C:/Users/novak/Documents/data.csv)", false));
 
     _createPreInitParams();
 }
