@@ -100,13 +100,15 @@ private:
 
     TScenarioExecutor * m_scenarioExecutor;
 
+    QAction * m_runAction;
+    QAction * m_stopAction;
+
     QAction * m_addAction;
     QAction * m_deleteAction;
     QAction * m_saveAction;
     QAction * m_toFrontAction;
     QAction * m_sendBackAction;
-    QAction * m_runAction;
-    QAction * m_stopAction;
+
 
     QToolBar * m_editToolBar;
     QToolBar * m_pointerToolbar;

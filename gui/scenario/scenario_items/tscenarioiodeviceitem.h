@@ -26,8 +26,6 @@ public:
         addFlowOutputPort("flowOut", "done", tr("Flow continues through this port on success."));
         addFlowOutputPort("flowOutError", "error", tr("Flow continues through this port on error."));
 
-        m_subtitle = "no IO device selected";
-
         m_params = TConfigParam("Block configuration", "", TConfigParam::TType::TDummy, "");
         m_params.addSubParam(TConfigParam("Component", "", TConfigParam::TType::TEnum, tr("Component that the IO Device belongs to."), false));
         m_params.addSubParam(TConfigParam("IO Device", "", TConfigParam::TType::TEnum, tr("The IO Device this block represents."), false));
@@ -49,6 +47,7 @@ public:
         m_params.addSubParam(TConfigParam("IO Device configuration", "", TConfigParam::TType::TDummy, tr("The IO Device pre-init and post-init configuration."), false));
 
         // item has to be initialized, otherwise it cannot be used
+        m_subtitle = "no IO device selected";
         setState(TState::TError, tr("Block configuration contains errors!"));
     }
 
@@ -105,6 +104,10 @@ public:
                 if(IODeviceName == IODeviceParam->getValue()) {
                     selectedIODeviceIndex = i;
                 }
+            }
+
+            if(selectedIODeviceIndex > -1) {
+                IODeviceParam->setValue(componentModel->IODeviceContainer()->at(selectedIODeviceIndex)->name());
             }
         }
 
@@ -230,7 +233,7 @@ public:
             return;
         }
 
-        if(!m_IODeviceModel->deInit()) {
+        if(m_IODeviceModel->isInit() && !m_IODeviceModel->deInit()) {
             qWarning("Could not deinitialize IO device to set pre-init params.");
             setState(TState::TError, tr("Could not deinitialize IO device to set pre-init params."));
             return;

@@ -16,7 +16,6 @@ TScenarioGraphicalConnection::TScenarioGraphicalConnection(TScenarioGraphicalIte
     QGraphicsLineItem(parent),
     m_startItemPort(startItemPort),
     m_endItemPort(endItemPort),
-    m_hasPreferredLineBreakCoord(false),
     m_startClearance(CLEARANCE),
     m_endClearance(CLEARANCE)
 {
@@ -25,6 +24,8 @@ TScenarioGraphicalConnection::TScenarioGraphicalConnection(TScenarioGraphicalIte
     if(!m_scenarioConnection) {
         m_scenarioConnection = new TScenarioConnection(startItemPort->getScenarioItemPort(), endItemPort->getScenarioItemPort());
     }
+
+    m_preferredLineBreakCoord = m_scenarioConnection->getPreferredLineBreakCoord();
 
     setFlag(QGraphicsItem::ItemIsSelectable, true);
     findPortOrdersAndClearances();
@@ -51,43 +52,68 @@ QPainterPath TScenarioGraphicalConnection::shape() const {
 }
 
 void TScenarioGraphicalConnection::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
-    qreal preferredLineBreakCoord;
-    if(line().p1().x() + m_startClearance + m_endClearance > line().p2().x()) {
-        preferredLineBreakCoord = event->scenePos().y();
+    if(line().p1().x() > line().p2().x()) {
+        setPreferredLineBreakYCoord(event->scenePos().y());
     }
     else {
-        preferredLineBreakCoord = event->scenePos().x();
+        setPreferredLineBreakXCoord(event->scenePos().x());
     }
-
-    setPreferredLineBreakCoord(preferredLineBreakCoord);
 
     updatePosition();
 }
 
-void TScenarioGraphicalConnection::setPreferredLineBreakCoord(qreal value) {
-    m_preferredLineBreakCoord = value;
+void TScenarioGraphicalConnection::setPreferredLineBreakXCoord(qreal value) {
+    m_preferredLineBreakCoord = QPointF(value, 0);
     m_scenarioConnection->setPreferredLineBreakCoord(m_preferredLineBreakCoord);
-    m_hasPreferredLineBreakCoord = true;
 }
 
-void TScenarioGraphicalConnection::updatePosition() {
+void TScenarioGraphicalConnection::setPreferredLineBreakYCoord(qreal value) {
+    m_preferredLineBreakCoord = QPointF(0, value);
+    m_scenarioConnection->setPreferredLineBreakCoord(m_preferredLineBreakCoord);
+}
+
+void TScenarioGraphicalConnection::updatePosition(QPointF delta) {
     QLineF directLine(m_startItemPort->scenePos(), m_endItemPort->scenePos());
     setLine(directLine);
+
+    if(m_preferredLineBreakCoord.y() > 0) {
+        setPreferredLineBreakYCoord(m_preferredLineBreakCoord.y() + delta.y());
+    }
+
+    if(m_preferredLineBreakCoord.x() > 0) {
+        setPreferredLineBreakXCoord(m_preferredLineBreakCoord.x() + delta.x());
+    }
+
 
     m_polyline.clear();
     qreal lineBreakCoord;
 
-    if(line().p1().x() + m_startClearance + m_endClearance > line().p2().x()) {
-        lineBreakCoord = (line().p1().y() + line().p2().y())/2 + m_startOrder * (CLEARANCE + CLEARANCE_STEP);
-        if(m_hasPreferredLineBreakCoord) {
-            lineBreakCoord = m_preferredLineBreakCoord;
-        }
-        else {
-            setPreferredLineBreakCoord(lineBreakCoord);
+    if(line().p1().y() > line().p2().y()) {
+        m_startClearance = CLEARANCE + m_startOrder * CLEARANCE_STEP;
+        m_endClearance = CLEARANCE + m_endOrder * CLEARANCE_STEP;
+    }
+    else {
+        m_startClearance = CLEARANCE + (m_startBlockConnectorCount - m_startOrder) * CLEARANCE_STEP;
+        m_endClearance = CLEARANCE + (m_endBlockConnectorCount - m_endOrder) * CLEARANCE_STEP;
+    }
+
+    if(line().p1().x() > line().p2().x()) {
+        QPointF p1(line().p1().x(), line().p1().y());
+        QPointF p2(line().p2().x(), line().p2().y());
+
+        lineBreakCoord = (line().p1().y() + line().p2().y())/2;
+        if(line().p1().x() + m_startClearance + m_endClearance > line().p2().x()) {
+            p1.setX(line().p1().x() + m_startClearance);
+            p2.setX(line().p2().x() - m_endClearance);
         }
 
-        QPointF p1(line().p1().x() + m_startClearance, line().p1().y());
-        QPointF p2(line().p2().x() - m_endClearance, line().p2().y());
+        if(m_preferredLineBreakCoord.y() > 0) {
+            lineBreakCoord = m_preferredLineBreakCoord.y();
+        }
+        else {
+            setPreferredLineBreakYCoord(lineBreakCoord);
+        }
+
         m_polyline.append(line().p1());
         m_polyline.append(p1);
         m_polyline.append(QPointF(p1.x(), lineBreakCoord));
@@ -96,24 +122,28 @@ void TScenarioGraphicalConnection::updatePosition() {
         m_polyline.append(line().p2());
     }
     else {
-        lineBreakCoord = (line().p1().x() + line().p2().x())/2 + m_startOrder * CLEARANCE_STEP;
-        if(m_hasPreferredLineBreakCoord) {
-            if(m_preferredLineBreakCoord >= line().p1().x() + m_startClearance
-                && m_preferredLineBreakCoord <= line().p2().x() - m_endClearance)
+        lineBreakCoord = (line().p1().x() + line().p2().x())/2;
+
+        if(lineBreakCoord + m_startClearance + CLEARANCE < line().p2().x()) {
+            lineBreakCoord += m_startClearance;
+        }
+
+        if(m_preferredLineBreakCoord.x() > 0) {
+            if(m_preferredLineBreakCoord.x() >= line().p1().x() + m_startClearance
+                && m_preferredLineBreakCoord.x() <= line().p2().x() - m_endClearance)
             {
-                lineBreakCoord = m_preferredLineBreakCoord;
+                lineBreakCoord = m_preferredLineBreakCoord.x();
             }
             else {
-
-                if(m_preferredLineBreakCoord < line().p1().x() + m_startClearance) {
+                if(m_preferredLineBreakCoord.x() < line().p1().x() + m_startClearance) {
                     lineBreakCoord = line().p1().x() + m_startClearance;
-                } else if(m_preferredLineBreakCoord > line().p2().x() - m_endClearance) {
+                } else if(m_preferredLineBreakCoord.x() > line().p2().x() - m_endClearance) {
                     lineBreakCoord = line().p2().x() - m_endClearance;
                 }
             }
         }
         else {
-            setPreferredLineBreakCoord(lineBreakCoord);
+            setPreferredLineBreakXCoord(lineBreakCoord);
         }
 
         m_polyline.append(line().p1());
@@ -150,10 +180,12 @@ void TScenarioGraphicalConnection::updateOutline() {
 void TScenarioGraphicalConnection::findPortOrdersAndClearances() {
     TScenarioItem * startParent = m_startItemPort->getScenarioItemPort()->getParentItem();
     m_startOrder = startParent->getItemPortSideOrderByName(m_startItemPort->getScenarioItemPort()->getName());
+    m_startBlockConnectorCount = startParent->getItemPortCountByDirection(TScenarioItemPort::TItemPortDirection::TOutputPort);
     m_startClearance = CLEARANCE + m_startOrder * CLEARANCE_STEP;
 
     TScenarioItem * endParent = m_endItemPort->getScenarioItemPort()->getParentItem();
     m_endOrder = endParent->getItemPortSideOrderByName(m_endItemPort->getScenarioItemPort()->getName());
+    m_endBlockConnectorCount = startParent->getItemPortCountByDirection(TScenarioItemPort::TItemPortDirection::TInputPort);
     m_endClearance = CLEARANCE + m_endOrder * CLEARANCE_STEP;
 }
 

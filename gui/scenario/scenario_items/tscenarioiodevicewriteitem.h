@@ -17,7 +17,7 @@ public:
     int itemClass() const override { return TItemClass; }
 
     TScenarioIODeviceWriteItem() : TScenarioIODeviceItem(tr("IO Device: write"), tr("This block writes to selected IO Device.")) {
-        addDataInputPort("dataIn", "data", "Byte array with data to write.");
+        addDataInputPort("dataIn", "data", tr("Byte array with data to write."));
     }
 
     TScenarioItem * copy() const override {
@@ -59,7 +59,7 @@ public:
             return;
         }
 
-        log(QString("[%1] Writing %2 bytes").arg(m_IODeviceModel->name()).arg(dataLen));
+        log(QString("[%1] Writing %2 bytes...").arg(m_IODeviceModel->name()).arg(dataLen));
 
         if(!m_IODeviceModel || !m_IODeviceModel->receiverModel()) {
             setState(TState::TError, tr("The target device is not initialized or was not found."));

@@ -201,6 +201,7 @@ void TMainWindow::openScenarioEditor(TScenarioModel * scenario)
     //create dock widget with Scenario Editor Widget
     TScenarioEditorWidget * scenarioEditorWidget = new TScenarioEditorWidget(scenario, m_projectModel, this);
     TDockWidget * scenarioEditorDockWidget = new TDockWidget(QString("%1 - %2").arg(tr("Scenario"), scenario->name()), this);
+    scenarioEditorDockWidget->setDeleteOnClose(true);
     scenarioEditorDockWidget->setWidget(scenarioEditorWidget);
 
     connect(scenarioEditorDockWidget, &TDockWidget::closed, scenarioEditorDockWidget, [=](){
@@ -209,10 +210,6 @@ void TMainWindow::openScenarioEditor(TScenarioModel * scenario)
         m_dockManager->removeDockWidget(scenarioEditorDockWidget);
     });
     connect(scenarioEditorDockWidget, &TDockWidget::closed, scenarioEditorDockWidget, &QObject::deleteLater);
-
-    // TODO solve closing confirmation
-    // https://docs.ros.org/en/noetic/api/plotjuggler/html/classads_1_1CDockWidget.html#a99fde29fcad39c7f9328ab95bb55f4b2
-    //connect(scenarioEditorWidget, &TDockWidget::c, scenarioEditorWidget, &TDockWidget::closeEvent);
 
     m_viewMenu->addAction(scenarioEditorDockWidget->toggleViewAction());
     m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, scenarioEditorDockWidget);
@@ -276,7 +273,6 @@ void TMainWindow::newProject()
     connect(m_projectModel, &TProjectModel::analDeviceInitialized, this, &TMainWindow::createAnalDeviceDockWidget);
 
     createProjectDockWidget(m_projectModel);
-    createProtocolManagerWidget();
 }
 
 void TMainWindow::openProject()
@@ -329,7 +325,6 @@ void TMainWindow::openProject()
     }
 
     createProjectDockWidget(m_projectModel);
-    createProtocolManagerWidget();
 }
 
 void TMainWindow::saveProject(bool saveAs)

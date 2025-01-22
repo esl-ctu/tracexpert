@@ -120,6 +120,9 @@ add_library(${PROJECT_NAME} OBJECT
   scenario/tscenarioconnection.h
   scenario/tscenariographicsview.h
   scenario/tscenariographicsview.cpp
+  scenario/graphical_items/tscenariographicalembeddedsubtitleitem.h
+  scenario/scenario_items/tscenariodelayitem.h
+  scenario/scenario_items/tscenarioprotocolencodeitem.h
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ads/src)

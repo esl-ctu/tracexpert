@@ -64,7 +64,7 @@ protected:
     QGraphicsSimpleTextItem * m_titleText = nullptr;
     QGraphicsSimpleTextItem * m_subtitleText = nullptr;
 
-private:
+protected:
     const int WIDTH = 50;
     const int MIN_HEIGHT = 60;
 

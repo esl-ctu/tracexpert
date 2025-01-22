@@ -3,14 +3,12 @@
 TDockWidget::TDockWidget(const QString & title, QWidget * parent)
     : TDockWidgetBase(title, parent)
 {
-    #ifdef USE_ADS
-    setFeature(TDockWidget::DockWidgetFeature::CustomCloseHandling, true);
-    setFeature(TDockWidget::DockWidgetFeature::DeleteContentOnClose, true);
-    #endif
+
 }
 
-#ifdef USE_ADS
+
 void TDockWidget::setWidget(QWidget* widget, eInsertMode InsertMode) {
+    #ifdef USE_ADS
     if(this->widget()) {
         disconnect(this, &TDockWidget::closeRequested, this->widget(), nullptr);
     }
@@ -22,8 +20,20 @@ void TDockWidget::setWidget(QWidget* widget, eInsertMode InsertMode) {
             this->closeDockWidgetInternal(true);
         }
     });
+    #else
+    qWarning("setWidget was called, but related features are not implemented");
+    #endif
 }
-#endif
+
+
+void TDockWidget::setDeleteOnClose(bool value) {
+    #ifdef USE_ADS
+    setFeature(TDockWidget::DockWidgetFeature::CustomCloseHandling, value);
+    setFeature(TDockWidget::DockWidgetFeature::DeleteContentOnClose, value);
+    #else
+    qWarning("setDeleteOnClose was called, but feature is not implemented; memory leaks will occur");
+    #endif
+}
 
 void TDockWidget::show()
 {

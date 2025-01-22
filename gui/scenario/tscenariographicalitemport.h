@@ -50,6 +50,8 @@ private:
     const QColor FLOW_PORT_COLOR = QColor::fromString("#89bac9");
     const QColor DATA_PORT_COLOR = QColor::fromString("#da9a85");
 
+    QPointF m_lastScenePos;
+
     QGraphicsPolygonItem * m_colorStrip;
     TScenarioItemPort * m_scenarioItemPort;
 

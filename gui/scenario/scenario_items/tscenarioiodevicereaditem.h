@@ -69,7 +69,7 @@ public:
             return;
         }
 
-        log(QString(tr("[%1] Reading %2 bytes")).arg(m_IODeviceModel->name()).arg(dataLen));
+        log(QString(tr("[%1] Reading %2 bytes...")).arg(m_IODeviceModel->name()).arg(dataLen));
 
         if(!m_IODeviceModel || !m_IODeviceModel->receiverModel()) {
             setState(TState::TError, tr("The target device is not initialized or was not found."));

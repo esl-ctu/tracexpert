@@ -21,22 +21,22 @@ public:
     enum { TItemClass = 60 };
     int itemClass() const override { return TItemClass; }
 
-    TScenarioScopeItem() : TScenarioItem(tr("Scope"), tr("This block interfaces a selected Scope.")) {
+    TScenarioScopeItem() : TScenarioItem(tr("Oscilloscope"), tr("This block interfaces a selected Oscilloscope.")) {
         addFlowInputPort("flowIn");
         addFlowOutputPort("flowOut", "done", tr("Flow continues through this port on success."));
         addFlowOutputPort("flowOutError", "error", tr("Flow continues through this port on error."));
 
-        addDataOutputPort("traceCount", "traces",tr("Number of traces."));
-        addDataOutputPort("sampleCount", "samples", tr("Number of samples per trace."));
-        addDataOutputPort("type", "type", tr("Data type of samples."));
         addDataOutputPort("buffers", "data", tr("Byte array with read data."));
+        addDataOutputPort("traceCount", "#traces",tr("Number of traces."));
+        addDataOutputPort("sampleCount", "#samples", tr("Number of samples per trace."));
+        addDataOutputPort("type", "data type", tr("Data type of samples."));
         addDataOutputPort("overvoltage", "overvoltage", tr("Overvoltage indication."));
 
-        m_subtitle = tr("no Scope selected");
+        m_subtitle = tr("no Oscilloscope selected");
 
         m_params = TConfigParam("Block configuration", "", TConfigParam::TType::TDummy, "");
-        m_params.addSubParam(TConfigParam("Component", "", TConfigParam::TType::TEnum, tr("Component that the Scope belongs to."), false));
-        m_params.addSubParam(TConfigParam("Scope", "", TConfigParam::TType::TEnum, tr("The Scope this block represents."), false));
+        m_params.addSubParam(TConfigParam("Component", "", TConfigParam::TType::TEnum, tr("Component that the Oscilloscope belongs to."), false));
+        m_params.addSubParam(TConfigParam("Oscilloscope", "", TConfigParam::TType::TEnum, tr("The Oscilloscope this block represents."), false));
 
         TConfigParam preInitParamConf("Set pre-init params", "", TConfigParam::TType::TEnum, tr("Select if and when the configured pre-init parameters should be set."), false);
         preInitParamConf.addEnumValue("Never");
@@ -52,7 +52,7 @@ public:
         postInitParamConf.addEnumValue("Each time this block is executed");
         m_params.addSubParam(postInitParamConf);
 
-        m_params.addSubParam(TConfigParam("Scope configuration", "", TConfigParam::TType::TDummy, tr("The Scope pre-init and post-init configuration."), false));
+        m_params.addSubParam(TConfigParam("Oscilloscope configuration", "", TConfigParam::TType::TDummy, tr("The Oscilloscope pre-init and post-init configuration."), false));
 
         // item has to be initialized, , otherwise it cannot be used
         setState(TState::TError, tr("Block configuration contains errors!"));
@@ -68,7 +68,7 @@ public:
 
     bool shouldUpdateParams(TConfigParam newParams) override {
         return isParamValueDifferent(newParams, m_params, "Component") ||
-               isParamValueDifferent(newParams, m_params, "Scope");
+               isParamValueDifferent(newParams, m_params, "Oscilloscope");
     }
 
     void updateParams(bool paramValuesChanged) override {
@@ -76,10 +76,15 @@ public:
         componentParam->clearEnumValues();
 
         int componentCount = m_projectModel->componentContainer()->count();
-        int selectedComponentIndex = componentCount > 0 ? 0 : -1;
+        int selectedComponentIndex = -1;
         for(int i = 0; i < componentCount; i++) {
             if(!m_projectModel->componentContainer()->at(i)->canAddScope())
                 continue;
+
+            // TODO: put condition into IODevice as well
+            if(selectedComponentIndex == -1) {
+                selectedComponentIndex = i;
+            }
 
             QString componentName = m_projectModel->componentContainer()->at(i)->name();
             componentParam->addEnumValue(componentName);
@@ -94,7 +99,7 @@ public:
             componentParam->setState(TConfigParam::TState::TError, tr("Selected value is invalid!"));
         }
 
-        TConfigParam * scopeParam = m_params.getSubParamByName("Scope");
+        TConfigParam * scopeParam = m_params.getSubParamByName("Oscilloscope");
         scopeParam->clearEnumValues();
 
         int selectedScopeIndex = -1;
@@ -119,7 +124,7 @@ public:
             scopeParam->setState(TConfigParam::TState::TError, tr("Selected value is invalid!"));
         }
 
-        TConfigParam * configParam = m_params.getSubParamByName("Scope configuration");
+        TConfigParam * configParam = m_params.getSubParamByName("Oscilloscope configuration");
 
         if(selectedScopeIndex > -1 && paramValuesChanged) {
             configParam->clearSubParams();
@@ -145,7 +150,7 @@ public:
         params.getSubParamByName("Component", &iok);
         if(!iok) return false;
 
-        params.getSubParamByName("Scope", &iok);
+        params.getSubParamByName("Oscilloscope", &iok);
         if(!iok) return false;
 
         params.getSubParamByName("Set pre-init params", &iok);
@@ -154,7 +159,7 @@ public:
         params.getSubParamByName("Set post-init params", &iok);
         if(!iok) return false;
 
-        params.getSubParamByName("Scope configuration", &iok);
+        params.getSubParamByName("Oscilloscope configuration", &iok);
         if(!iok) return false;
 
         return true;
@@ -171,7 +176,7 @@ public:
         updateParams(shouldUpdate);
 
         m_title = "";
-        m_subtitle = "no Scope selected";
+        m_subtitle = "no Oscilloscope selected";
 
         if(m_params.getState(true) == TConfigParam::TState::TError) {
             setState(TState::TError, tr("Block configuration contains errors!"));
@@ -179,7 +184,7 @@ public:
         else {
             setState(TState::TOk);
             m_title = m_params.getSubParamByName("Component")->getValue();
-            m_subtitle = m_params.getSubParamByName("Scope")->getValue();
+            m_subtitle = m_params.getSubParamByName("Oscilloscope")->getValue();
         }
 
         emit appearanceChanged();
@@ -191,7 +196,7 @@ public:
         m_isFirstBlockExecution = true;
 
         if(!m_scopeModel) {
-            setState(TState::TError, tr("Failed to obtain selected Scope, is it available?"));
+            setState(TState::TError, tr("Failed to obtain selected Oscilloscope, is it available?"));
             return false;
         }
 
@@ -217,7 +222,7 @@ public:
     }
 
     void setPreInitParams() {
-        TConfigParam * preInitParams = m_params.getSubParamByName("Scope configuration")->getSubParamByName("pre-init params");
+        TConfigParam * preInitParams = m_params.getSubParamByName("Oscilloscope configuration")->getSubParamByName("pre-init params");
 
         if(!preInitParams) {
             qWarning("No pre-init params were found, could not be set.");
@@ -226,16 +231,16 @@ public:
         }
 
         if(!m_scopeModel->deInit()) {
-            qWarning("Could not deinitialize Scope to set pre-init params.");
-            setState(TState::TError, tr("Could not deinitialize Scope to set pre-init params."));
+            qWarning("Could not deinitialize Oscilloscope to set pre-init params.");
+            setState(TState::TError, tr("Could not deinitialize Oscilloscope to set pre-init params."));
             return;
         }
 
         TConfigParam params = m_scopeModel->setPreInitParams(*preInitParams);
 
         if(!m_scopeModel->init()) {
-            qWarning("Could not initialize Scope after setting pre-init params.");
-            setState(TState::TError, tr("Could not initialize Scope after setting pre-init params."));
+            qWarning("Could not initialize Oscilloscope after setting pre-init params.");
+            setState(TState::TError, tr("Could not initialize Oscilloscope after setting pre-init params."));
             return;
         }
 
@@ -250,7 +255,7 @@ public:
     }
 
     void setPostInitParams() {
-        TConfigParam * postInitParams = m_params.getSubParamByName("Scope configuration")->getSubParamByName("post-init params");
+        TConfigParam * postInitParams = m_params.getSubParamByName("Oscilloscope configuration")->getSubParamByName("post-init params");
 
         if(!postInitParams) {
             qWarning("No post-init params were found, could not be set.");
@@ -282,7 +287,7 @@ public:
             }
         }
 
-        TConfigParam * scopeParam = m_params.getSubParamByName("Scope");
+        TConfigParam * scopeParam = m_params.getSubParamByName("Oscilloscope");
 
         int selectedScopeIndex = -1;
         if(selectedComponentIndex > -1) {

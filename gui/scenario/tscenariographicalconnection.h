@@ -37,8 +37,9 @@ public:
     TScenarioGraphicalItemPort * startItem() const { return m_startItemPort; }
     TScenarioGraphicalItemPort * endItem() const { return m_endItemPort; }
 
-    void setPreferredLineBreakCoord(qreal value);
-    void updatePosition();
+    void setPreferredLineBreakXCoord(qreal value);
+    void setPreferredLineBreakYCoord(qreal value);
+    void updatePosition(QPointF delta = QPointF(0, 0));
 
 protected:
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
@@ -57,12 +58,13 @@ private:
     TScenarioGraphicalItemPort * m_startItemPort;
     TScenarioGraphicalItemPort * m_endItemPort;
 
-    bool m_hasPreferredLineBreakCoord;
-    qreal m_preferredLineBreakCoord;
+    QPointF m_preferredLineBreakCoord;
 
     void findPortOrdersAndClearances();
     int m_startOrder;
     int m_endOrder;
+    int m_startBlockConnectorCount;
+    int m_endBlockConnectorCount;
     int m_startClearance;
     int m_endClearance;
 

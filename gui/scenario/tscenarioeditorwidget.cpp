@@ -6,9 +6,10 @@
 #include "scenario_items/tscenarioiodevicereaditem.h"
 #include "scenario_items/tscenarioiodevicewriteitem.h"
 #include "scenario_items/tscenarioscopeitem.h"
+#include "scenario_items/tscenarioprotocolencodeitem.h"
 #include "scenario_items/tscenarioloopitem.h"
 #include "scenario_items/tscenariologitem.h"
-#include "scenario_items/tscenariorandomstringitem.h"
+#include "scenario_items/tscenariodelayitem.h"
 #include "scenario_items/tscenarioconstantvalueitem.h"
 #include "tscenarioscene.h"
 #include "tdialog.h"
@@ -33,13 +34,13 @@ TScenarioEditorWidget::TScenarioEditorWidget(TScenarioModel * scenarioModel, TPr
 
     createToolBoxDrawer(tr("Flow blocks"),
         { TScenarioFlowStartItem::TItemClass, TScenarioFlowEndItem::TItemClass, TScenarioFlowMergeItem::TItemClass,
-                            TScenarioConditionItem::TItemClass, TScenarioLoopItem::TItemClass, });
+                            TScenarioConditionItem::TItemClass, TScenarioLoopItem::TItemClass, TScenarioDelayItem::TItemClass });
 
     createToolBoxDrawer(tr("Miscellaneous blocks"),
-        { TScenarioLogItem::TItemClass, TScenarioRandomStringItem::TItemClass, TScenarioConstantValueItem::TItemClass });
+        { TScenarioLogItem::TItemClass, TScenarioConstantValueItem::TItemClass });
 
     createToolBoxDrawer(tr("Component blocks"),
-        { TScenarioIODeviceReadItem::TItemClass, TScenarioIODeviceWriteItem::TItemClass, TScenarioScopeItem::TItemClass });
+        { TScenarioIODeviceReadItem::TItemClass, TScenarioIODeviceWriteItem::TItemClass, TScenarioScopeItem::TItemClass, TScenarioProtocolEncodeItem::TItemClass });
 
     QVBoxLayout * layout = new QVBoxLayout;
 
@@ -162,7 +163,7 @@ void TScenarioEditorWidget::pointerGroupClicked()
 }
 
 void TScenarioEditorWidget::keyPressEvent(QKeyEvent *event) {
-    if(event->key() == Qt::Key_Control) {
+    if(event->key() == Qt::Key_Shift) {
         qDebug() << "ctrl pressed";
         m_pointerTypeGroup->button(TScenarioScene::MouseDrag)->click();
     }
@@ -171,7 +172,7 @@ void TScenarioEditorWidget::keyPressEvent(QKeyEvent *event) {
 }
 
 void TScenarioEditorWidget::keyReleaseEvent(QKeyEvent *event) {
-    if(event->key() == Qt::Key_Control) {
+    if(event->key() == Qt::Key_Shift) {
         qDebug() << "ctrl released";
         m_pointerTypeGroup->button(TScenarioScene::MousePointer)->click();
     }
@@ -256,17 +257,15 @@ void TScenarioEditorWidget::createActions() {
     connect(m_deleteAction, &QAction::triggered, this->m_scene, &TScenarioScene::removeSelectedItems);
 
     m_saveAction = new QAction(QIcon(":/icons/save.png"), tr("&Save"), this);
-    m_saveAction->setShortcut(tr("Save"));
+    m_saveAction->setShortcut(tr("Ctrl+S"));
     m_saveAction->setStatusTip(tr("Save scenario diagram"));
     connect(m_saveAction, &QAction::triggered, this, &TScenarioEditorWidget::saveScenario);
 
     m_runAction = new QAction(QIcon(":/icons/play.png"), tr("&Run"), this);
-    m_runAction->setShortcut(tr("Run"));
     m_runAction->setStatusTip(tr("Run scenario"));
     connect(m_runAction, &QAction::triggered, this, &TScenarioEditorWidget::runScenario);
 
     m_stopAction = new QAction(QIcon(":/icons/stop.png"), tr("&Stop"), this);
-    m_stopAction->setShortcut(tr("Stop"));
     m_stopAction->setStatusTip(tr("Stop running scenario"));
     connect(m_stopAction, &QAction::triggered, this, &TScenarioEditorWidget::stopScenario);
     m_stopAction->setEnabled(false);
@@ -282,7 +281,7 @@ void TScenarioEditorWidget::createToolbars() {
     m_editToolBar->addAction(m_deleteAction);
 
     QToolButton *dragPointerButton = new QToolButton;
-    dragPointerButton->setToolTip(tr("Drag scene (toggle using Ctrl)"));
+    dragPointerButton->setToolTip(tr("Drag scene (toggle using Shift)"));
     dragPointerButton->setCheckable(true);
     dragPointerButton->setChecked(true);
     dragPointerButton->setIcon(QIcon(":/icons/dragpointer.png"));

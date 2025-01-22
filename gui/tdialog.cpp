@@ -283,7 +283,7 @@ TScenarioConfigParamDialog::TScenarioConfigParamDialog(QString acceptText, QStri
 
 void TScenarioConfigParamDialog::updateParams()
 {
-    m_item->updateParams(false);
+    m_item->updateParams(true);
     m_paramWidget->setParam(m_item->getParams());
 }
 

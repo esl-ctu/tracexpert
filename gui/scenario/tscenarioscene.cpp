@@ -64,7 +64,6 @@ void TScenarioScene::loadScenario(const TScenario * scenario) {
         TScenarioGraphicalItemPort * sourcePort = itemPortMap.value(connection->getSourcePort());
         TScenarioGraphicalItemPort * targetPort = itemPortMap.value(connection->getTargetPort());
         TScenarioGraphicalConnection * graphicalConnection = new TScenarioGraphicalConnection(sourcePort, targetPort, connection);
-        graphicalConnection->setPreferredLineBreakCoord(connection->getPreferredLineBreakCoord());
         sourcePort->addGraphicalConnection(graphicalConnection);
         targetPort->addGraphicalConnection(graphicalConnection);
         graphicalConnection->setZValue(0);

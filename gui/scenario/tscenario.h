@@ -203,6 +203,10 @@ public:
         if(ok != nullptr) *ok = removed > 0;
     }
 
+    /**
+     * @brief Validates that the scenario has exactly one flow start and at least one flow end block.
+     * @return Result of validation; bool.
+     */
     bool validate() {
         int flowStartItems = 0;
         int flowEndItems = 0;

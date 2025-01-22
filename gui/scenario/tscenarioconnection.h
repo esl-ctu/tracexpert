@@ -4,6 +4,7 @@
 #include <QString>
 #include <QList>
 #include <QDataStream>
+#include <qpoint.h>
 
 #include "tscenarioitemport.h"
 
@@ -83,18 +84,18 @@ public:
         return m_targetPort;
     }
 
-    qreal getPreferredLineBreakCoord() const
+    QPointF getPreferredLineBreakCoord() const
     {
         return m_preferredLineBreakCoord;
     }
 
-    void setPreferredLineBreakCoord(qreal value)
+    void setPreferredLineBreakCoord(QPointF value)
     {
         m_preferredLineBreakCoord = value;
     }
 
 private:
-    qreal m_preferredLineBreakCoord;
+    QPointF m_preferredLineBreakCoord;
 
     TScenarioItemPort * m_sourcePort;
     TScenarioItemPort * m_targetPort;

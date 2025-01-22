@@ -40,7 +40,6 @@ TScenarioGraphicalItemPort::TScenarioGraphicalItemPort(TScenarioItemPort * scena
         m_colorStrip->setBrush(QBrush(DATA_PORT_COLOR, Qt::SolidPattern));
     }
 
-
     toolTipText.append("<i>");
     toolTipText.append(scenarioItemPort->getDirection() == TScenarioItemPort::TItemPortDirection::TInputPort ? "input " : "output ");
     toolTipText.append(scenarioItemPort->getType() == TScenarioItemPort::TItemPortType::TFlowPort ? "flow " : "data ");
@@ -51,6 +50,8 @@ TScenarioGraphicalItemPort::TScenarioGraphicalItemPort(TScenarioItemPort * scena
     }
 
     setToolTip(toolTipText);
+
+    m_lastScenePos = scenePos();
 }
 
 TScenarioGraphicalItemPort::~TScenarioGraphicalItemPort() {
@@ -90,10 +91,19 @@ QList<TScenarioGraphicalConnection *> TScenarioGraphicalItemPort::getGraphicalCo
 }
 
 QVariant TScenarioGraphicalItemPort::itemChange(GraphicsItemChange change, const QVariant &value) {
-    if (change == QGraphicsItem::ItemScenePositionHasChanged) {
-        for(TScenarioGraphicalConnection * scenarioGraphicalConnection : m_scenarioGraphicalConnections) {
-            scenarioGraphicalConnection->updatePosition();
+    if (change == QGraphicsItem::ItemScenePositionHasChanged){
+        QPointF newScenePos = scenePos();
+
+        QPointF deltaScenePos = QPointF(0, 0);
+        if(m_scenarioItemPort->getDirection() == TScenarioItemPort::TItemPortDirection::TInputPort) {
+            deltaScenePos = newScenePos - m_lastScenePos;
         }
+
+        for(TScenarioGraphicalConnection * scenarioGraphicalConnection : m_scenarioGraphicalConnections) {
+            scenarioGraphicalConnection->updatePosition(deltaScenePos);
+        }
+
+        m_lastScenePos = newScenePos;
     }
 
     return value;

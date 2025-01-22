@@ -27,6 +27,8 @@ public:
         m_params = TConfigParam(m_name + " configuration", "", TConfigParam::TType::TDummy, "");
         m_params.addSubParam(TConfigParam("Block name", "Loop", TConfigParam::TType::TString, tr("Display name of the block."), false));
         m_params.addSubParam(TConfigParam("Number of iterations", "3", TConfigParam::TType::TULongLong, tr("Number of times the repeat flow output will be activated."), false));
+
+        m_subtitle = QString(tr("%1 iterations")).arg(3);
     }
 
     TScenarioItem * copy() const override {
@@ -56,8 +58,10 @@ public:
 
         if(m_title != params.getSubParamByName("Block name")->getValue()) {
             m_title = params.getSubParamByName("Block name")->getValue();
-            emit appearanceChanged();
         }
+
+        m_subtitle = QString(tr("%1 iterations")).arg(m_params.getSubParamByName("Number of iterations")->getValue());
+        emit appearanceChanged();
 
         return m_params;
     }
@@ -79,9 +83,13 @@ public:
 
         if(m_numIterationsLeft > 0) {
             log(QString(tr("Starting iteration #%1")).arg(m_totalIterations - m_numIterationsLeft + 1));
+            m_subtitle = QString(tr("Iteration %1 of %2")).arg(m_totalIterations-m_numIterationsLeft).arg(m_totalIterations);
+            emit appearanceChanged();
         }
         else {
             log(tr("Loop done"));
+            m_subtitle = tr("Loop done");
+            emit appearanceChanged();
         }
 
         return QHash<TScenarioItemPort *, QByteArray>();

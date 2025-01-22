@@ -8,10 +8,12 @@
 
 #include "scenario/scenario_items/tscenariobasicitems.h"
 #include "scenario/scenario_items/tscenarioconstantvalueitem.h"
+#include "scenario/scenario_items/tscenariodelayitem.h"
 #include "scenario/scenario_items/tscenarioiodevicereaditem.h"
 #include "scenario/scenario_items/tscenarioiodevicewriteitem.h"
 #include "scenario/scenario_items/tscenariologitem.h"
 #include "scenario/scenario_items/tscenarioloopitem.h"
+#include "scenario/scenario_items/tscenarioprotocolencodeitem.h"
 #include "scenario/scenario_items/tscenariorandomstringitem.h"
 #include "scenario/scenario_items/tscenarioscopeitem.h"
 #include "tprojectmodel.h"
@@ -41,7 +43,9 @@ TScenarioItem::TScenarioItem(const TScenarioItem &x): // TScenarioItemExecutionI
     m_params(x.m_params),
     m_title(x.m_title),
     m_subtitle(x.m_subtitle),
-    m_position(x.m_position)
+    m_position(x.m_position),
+    m_state(x.m_state),
+    m_stateMessage(x.m_stateMessage)
 {
 
     // deep copy ports
@@ -60,6 +64,8 @@ TScenarioItem & TScenarioItem::operator=(const TScenarioItem &x) {
         m_params = x.m_params;
         m_title = x.m_title;
         m_subtitle = x.m_subtitle;
+        m_state = x.m_state;
+        m_stateMessage = x.m_stateMessage;
         m_position = x.m_position;
 
         // delete previous ports of this object...
@@ -90,6 +96,10 @@ TScenarioItem * TScenarioItem::copy() const {
 
 TScenarioItem * TScenarioItem::createScenarioItemByClass(int itemClass) {
     switch(itemClass) {
+        case TScenarioProtocolEncodeItem::TItemClass:
+            return new TScenarioProtocolEncodeItem();
+        case TScenarioDelayItem::TItemClass:
+            return new TScenarioDelayItem();
         case TScenarioConstantValueItem::TItemClass:
             return new TScenarioConstantValueItem();
         case TScenarioIODeviceReadItem::TItemClass:

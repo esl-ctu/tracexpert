@@ -38,7 +38,8 @@ public:
         TFlowStart,
         TFlowEnd,
         TFlowMerge,
-        TCondition
+        TCondition,
+        TEmbeddedSubtitle
     };
 
     enum class TState {
@@ -66,6 +67,8 @@ public:
         out << x.m_title;
         out << x.m_subtitle;
         out << x.m_position;
+        out << x.m_state;
+        out << x.m_stateMessage;
 
         out << x.m_itemPorts.size();
         for(TScenarioItemPort * itemPort : x.m_itemPorts) {
@@ -88,6 +91,8 @@ public:
             in >> x->m_title;
             in >> x->m_subtitle;
             in >> x->m_position;
+            in >> x->m_state;
+            in >> x->m_stateMessage;
 
             qsizetype itemPortCount;
             in >> itemPortCount;

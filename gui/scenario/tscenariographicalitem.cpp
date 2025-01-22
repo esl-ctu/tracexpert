@@ -5,6 +5,7 @@
 #include <QMenu>
 #include <QPainter>
 
+#include "scenario/graphical_items/tscenariographicalembeddedsubtitleitem.h"
 #include "tdialog.h"
 #include "tscenariographicalitemport.h"
 #include "tscenariographicalconnection.h"
@@ -24,6 +25,8 @@ TScenarioGraphicalItem * TScenarioGraphicalItem::createScenarioGraphicalItem(TSc
             return new TScenarioGraphicalFlowMergeItem(scenarioItem, parent);
         case TScenarioItem::TItemAppearance::TCondition:
             return new TScenarioGraphicalConditionItem(scenarioItem, parent);
+        case TScenarioItem::TItemAppearance::TEmbeddedSubtitle:
+            return new TScenarioGraphicalEmbeddedSubtitleItem(scenarioItem, parent);
         default:
             return new TScenarioGraphicalItem(scenarioItem, parent);
     }
@@ -39,15 +42,17 @@ TScenarioGraphicalItem::TScenarioGraphicalItem(TScenarioItem * scenarioItem, QGr
     setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
     setBrush(m_defaultBrush);
 
-    if(scenarioItem->getType() == TScenarioItem::TItemAppearance::TDefault) {
-        m_titleText = new QGraphicsSimpleTextItem(scenarioItem->getTitle(), this);
+    if(scenarioItem->getType() == TScenarioItem::TItemAppearance::TDefault ||
+        scenarioItem->getType() == TScenarioItem::TItemAppearance::TEmbeddedSubtitle)
+    {
+        m_titleText = new QGraphicsSimpleTextItem(this);
         m_titleText->setParentItem(this);
 
         QFont font = m_titleText->font();
         font.setBold(true);
         m_titleText->setFont(font);
 
-        m_subtitleText = new QGraphicsSimpleTextItem(m_scenarioItem->getSubtitle(), this);
+        m_subtitleText = new QGraphicsSimpleTextItem(this);
         m_subtitleText->setParentItem(this);
     }
 
@@ -59,7 +64,7 @@ TScenarioGraphicalItem::TScenarioGraphicalItem(TScenarioItem * scenarioItem, QGr
 
     connect(m_scenarioItem, &TScenarioItem::appearanceChanged, this, &TScenarioGraphicalItem::updateBlockAppearance);
     connect(m_scenarioItem, &TScenarioItem::stateChanged, this, &TScenarioGraphicalItem::updateTooltip);
-    connect(m_scenarioItem, &TScenarioItem::portsChanged, this, &TScenarioGraphicalItem::updatePorts);
+    connect(m_scenarioItem, &TScenarioItem::portsChanged, this, [this]() { updatePorts(); updateBlockAppearance(); });
 
     updateTooltip();
     updatePorts();
@@ -119,14 +124,20 @@ QPixmap TScenarioGraphicalItem::image() const
 
 void TScenarioGraphicalItem::updateBlockAppearance() {
 
-    int maxTextWidth = 0;
-    if(m_titleText && m_subtitleText) {
-        m_titleText->setText(m_scenarioItem->getTitle());
-        m_subtitleText->setText(m_scenarioItem->getSubtitle());
-        maxTextWidth = fmax(m_titleText->boundingRect().width(), m_subtitleText->boundingRect().width());
+    int textWidth = 0;
+    if(m_titleText) {
+        QString elidedTitleText = QFontMetrics(m_titleText->font()).elidedText(m_scenarioItem->getTitle(), Qt::ElideRight, 220);
+        m_titleText->setText(elidedTitleText);
+        textWidth = m_titleText->boundingRect().width();
     }
 
-    int width = fmax(150, maxTextWidth + 20);
+    if(m_subtitleText) {
+        int subtitleWidth = fmax(150 - 20, textWidth);
+        QString elidedSubtitleText = QFontMetrics(m_subtitleText->font()).elidedText(m_scenarioItem->getSubtitle(), Qt::ElideRight, subtitleWidth);
+        m_subtitleText->setText(elidedSubtitleText);
+    }
+
+    int width = fmax(150, textWidth + 20);
     int topOffset = 0;
 
     QPainterPath path;
@@ -201,6 +212,10 @@ QVariant TScenarioGraphicalItem::itemChange(GraphicsItemChange change, const QVa
         qreal minDist = SNAP_DISTANCE_THRESHOLD;
         for(TScenarioGraphicalItemPort * port : m_graphicalItemPorts) {
             for(TScenarioGraphicalConnection * connection : port->getGraphicalConnections()) {
+                if(connection->isSelected()) {
+                    continue;
+                }
+
                 qreal dist;
                 if(port->portDirection() == TScenarioItemPort::TItemPortDirection::TInputPort) {
                     dist = port->scenePos().y() - connection->startItem()->scenePos().y();
@@ -271,9 +286,7 @@ void TScenarioGraphicalItem::updatePorts() {
             int ip2Rank = (int)ip2->getScenarioItemPort()->getDirection() * 2 + (int)ip2->getScenarioItemPort()->getType();
             return ip1Rank < ip2Rank;
         }
-    );
-
-    updateBlockAppearance();
+    );    
 }
 
 void TScenarioGraphicalItem::setDefaultBrush(QBrush brush) {

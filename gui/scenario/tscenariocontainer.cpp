@@ -45,10 +45,12 @@ int TScenarioContainer::count() const{
 }
 
 bool TScenarioContainer::add(TScenarioModel * scenarioModel) {
-    bool nameFound;
-    getByName(scenarioModel->name(), &nameFound);
+    if(scenarioModel == nullptr) {
+        return false;
+    }
 
-    if(nameFound) {
+    TScenarioModel * moduleWithDesiredName = getByName(scenarioModel->name());
+    if(moduleWithDesiredName != nullptr) {
         return false;
     }
 
@@ -65,6 +67,9 @@ bool TScenarioContainer::add(TScenarioModel * scenarioModel) {
 }
 
 bool TScenarioContainer::add(TScenario * scenario) {
+    if(scenario == nullptr) {
+        return false;
+    }
 
     TScenarioModel * scenarioModel = new TScenarioModel(scenario, this);
 
@@ -77,6 +82,10 @@ bool TScenarioContainer::add(TScenario * scenario) {
 }
 
 bool TScenarioContainer::update(int index, TScenario * scenario) {
+    if(scenario == nullptr) {
+        return false;
+    }
+
     if(index >= 0 && index <= m_scenarioModels.size()) {
         m_scenarioModels[index]->setScenario(scenario);
         emit dataChanged(QAbstractTableModel::index(index, 0), QAbstractTableModel::index(index, this->columnCount()));
