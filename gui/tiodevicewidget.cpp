@@ -21,7 +21,6 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContaine
 {
     setWindowTitle(tr("IO Device - %1").arg(m_deviceModel->name()));
     setFocusPolicy(Qt::ClickFocus);
-    connect(m_receiverModel, &TReceiverModel::dataRead, this, &TIODeviceWidget::dataReceived);
 
     m_communicationLogTextEdit = new QPlainTextEdit;
     QFont f("unexistent");
@@ -334,8 +333,6 @@ void TIODeviceWidget::dataReceived(QByteArray data)
     QTime time = QTime::currentTime();
     QString formattedTime = time.toString("hh:mm:ss");
 
-
-
     QString selectedProtocolName = m_receiveProtocolComboBox->currentText();
 
     if(selectedProtocolName == "No protocol") {
@@ -398,6 +395,8 @@ void TIODeviceWidget::sendRawBytes()
     }
 
     QByteArray dataToWrite = m_rawMessageEdit->text().toUtf8();
+    dataToWrite.replace("\\n", "\n");
+    dataToWrite.replace("\\r", "\r");
 
     bool isAscii = m_rawFormatComboBox->currentIndex();
     if(!isAscii) {
