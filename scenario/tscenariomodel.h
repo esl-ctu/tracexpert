@@ -3,7 +3,7 @@
 
 #include <QObject>
 
-#include "tprojectitem.h"
+#include "../tprojectitem.h"
 
 class TScenario;
 class TScenarioContainer;

@@ -2,8 +2,8 @@
 #define TSCENARIOCONTAINER_H
 
 #include <QAbstractTableModel>
-#include "scenario/tscenariomodel.h"
-#include "tprojectitem.h"
+#include "tscenariomodel.h"
+#include "../tprojectitem.h"
 
 /*!
  * \brief The TScenarioContainer class represents a container for Scenarios.

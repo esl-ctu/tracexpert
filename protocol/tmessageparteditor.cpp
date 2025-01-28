@@ -14,7 +14,7 @@
 
 #include "qtimer.h"
 #include "tmessageparteditor.h"
-#include "tdialog.h"
+#include "../tdialog.h"
 
 TMessagePartEditorDetailsPage::TMessagePartEditorDetailsPage(const TMessagePart & messagePart, const QList<TMessagePart> & messagePartList, QWidget * parent)
     : QWizardPage(parent), m_originalName(messagePart.getName()), m_messagePartList(messagePartList) {

@@ -1,5 +1,5 @@
 #include "tscenariowidget.h"
-#include "protocol/tprotocoltableview.h"
+#include "../protocol/tprotocoltableview.h"
 
 #include <QListWidget>
 #include <QLayout>
@@ -13,7 +13,7 @@
 #include <QDialog>
 #include <QHeaderView>
 
-#include "tdialog.h"
+#include "../tdialog.h"
 #include "tscenario.h"
 
 TScenarioWidget::TScenarioWidget(TScenarioContainer * scenarioContainer, QWidget * parent) :

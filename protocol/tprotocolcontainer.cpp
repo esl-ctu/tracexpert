@@ -1,6 +1,6 @@
 #include "tprotocolcontainer.h"
 #include "tprotocolmodel.h"
-#include "tprojectmodel.h"
+#include "../tprojectmodel.h"
 
 TProtocolContainer::TProtocolContainer(TProjectModel * parent) : QAbstractTableModel(parent), TProjectItem(parent->model(), parent) {
     m_typeName = "protocols";

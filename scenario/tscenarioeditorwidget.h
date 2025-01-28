@@ -5,12 +5,11 @@
 #include <QWidget>
 #include <QToolBar>
 
-#include "qbuffer.h"
 #include "qtextbrowser.h"
-#include "scenario/tscenarioexecutor.h"
-#include "scenario/tscenariographicsview.h"
+#include "tscenarioexecutor.h"
+#include "tscenariographicsview.h"
 #include "tscenario.h"
-#include "scenario/tscenariocontainer.h"
+#include "tscenariocontainer.h"
 
 QT_BEGIN_NAMESPACE
 class QAction;

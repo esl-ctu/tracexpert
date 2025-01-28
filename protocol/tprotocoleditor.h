@@ -6,7 +6,7 @@
 #include <QFormLayout>
 #include <QTableView>
 
-#include "protocol/tprotocolcontainer.h"
+#include "../protocol/tprotocolcontainer.h"
 #include "tmessagesimplecontainer.h"
 #include "tprotocol.h"
 #include "tmessageeditor.h"

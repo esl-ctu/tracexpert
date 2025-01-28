@@ -13,7 +13,7 @@
 #include "tmessageeditor.h"
 #include "tmessageparteditor.h"
 #include "tprotocoltableview.h"
-#include "tdialog.h"
+#include "../tdialog.h"
 
 TMessageEditorDetailsPage::TMessageEditorDetailsPage(const TMessage & message, const QList<TMessage> & messageList, QWidget * parent)
     : QWizardPage(parent), m_originalName(message.getName()), m_messageList(messageList) {

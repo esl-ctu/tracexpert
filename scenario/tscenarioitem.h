@@ -10,7 +10,7 @@
 #include <QDebug>
 
 #include "tconfigparam.h"
-#include "tprojectmodel.h"
+#include "../tprojectmodel.h"
 #include "tscenarioitemport.h"
 
 #define TSCENARIOITEMVER "cz.cvut.fit.TraceXpert.TScenarioItem/0.1"

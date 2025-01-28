@@ -11,9 +11,9 @@
 #include <QHeaderView>
 
 #include "tprotocoleditor.h"
-#include "protocol/tprotocoltableview.h"
+#include "tprotocoltableview.h"
 #include "tmessageeditor.h"
-#include "tdialog.h"
+#include "../tdialog.h"
 
 TProtocolEditorDetailsPage::TProtocolEditorDetailsPage(const TProtocol & protocol, const TProtocolContainer * protocolContainer, QWidget * parent)
     : QWizardPage(parent), m_originalName(protocol.getName()), m_protocolContainer(protocolContainer)  {

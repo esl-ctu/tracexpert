@@ -2,7 +2,7 @@
 #define TSCENARIOGRAPHICALEMBEDDEDSUBTITLEITEM_H
 
 #include <qpainter.h>
-#include <scenario/tscenariographicalitem.h>
+#include "../tscenariographicalitem.h"
 
 /*!
  *

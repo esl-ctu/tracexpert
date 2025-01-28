@@ -16,18 +16,19 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../cmake")
 
 find_package(PicoScopeSDK REQUIRED)
 
-include_directories(../../common)
-include_directories("${PICOSCOPESDK_INCLUDE_DIR}")
-
-add_library(TPS6000 SHARED
-  TPS6000_global.h
-  tps6000.cpp
-  tps6000.h
-  tps6000scope.h
-  tps6000scope.cpp
+add_library(${PROJECT_NAME} SHARED
+    ${PROJECT_NAME}_global.h
+    tps6000.cpp
+    tps6000.h
+    tps6000scope.h
+    tps6000scope.cpp
 )
 
-target_link_libraries(TPS6000 PRIVATE Qt${QT_VERSION_MAJOR}::Core)
-target_link_libraries(TPS6000 PRIVATE "${PICOSCOPESDK_LIBRARY}")
+target_include_directories(${PROJECT_NAME} PRIVATE ../../common)
+target_include_directories(${PROJECT_NAME} PRIVATE "${PICOSCOPESDK_INCLUDE_DIR}")
 
-target_compile_definitions(TPS6000 PRIVATE TPS6000_LIBRARY)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
+target_link_libraries(${PROJECT_NAME} PRIVATE "${PICOSCOPESDK_LIBRARY}")
+
+string(TOUPPER ${PROJECT_NAME}_LIBRARY project_library)
+target_compile_definitions(${PROJECT_NAME} PRIVATE ${project_library})

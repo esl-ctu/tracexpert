@@ -5,8 +5,8 @@
 #include <QWidget>
 #include <QTableView>
 
-#include "scenario/tscenariocontainer.h"
-#include "tmainwindow.h"
+#include "tscenariocontainer.h"
+#include "../tmainwindow.h"
 
 /*!
  * \brief The TScenarioWidget class represents a widget for managing Scenarios, the "Scenario Manager".

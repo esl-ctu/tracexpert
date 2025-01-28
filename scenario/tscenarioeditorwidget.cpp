@@ -1,7 +1,7 @@
 #include "tscenarioeditorwidget.h"
-#include "scenario/tscenarioexecutor.h"
-#include "scenario/tscenariographicalitem.h"
-#include "scenario/tscenariographicsview.h"
+#include "tscenarioexecutor.h"
+#include "tscenariographicalitem.h"
+#include "tscenariographicsview.h"
 #include "scenario_items/tscenariobasicitems.h"
 #include "scenario_items/tscenarioiodevicereaditem.h"
 #include "scenario_items/tscenarioiodevicewriteitem.h"
@@ -12,7 +12,7 @@
 #include "scenario_items/tscenariodelayitem.h"
 #include "scenario_items/tscenarioconstantvalueitem.h"
 #include "tscenarioscene.h"
-#include "tdialog.h"
+#include "../tdialog.h"
 
 #include <QBoxLayout>
 #include <QtWidgets>

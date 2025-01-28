@@ -5,15 +5,15 @@
 #include <QMenu>
 #include <QPainter>
 
-#include "scenario/graphical_items/tscenariographicalembeddedsubtitleitem.h"
-#include "tdialog.h"
+#include "graphical_items/tscenariographicalembeddedsubtitleitem.h"
+#include "../tdialog.h"
 #include "tscenariographicalitemport.h"
 #include "tscenariographicalconnection.h"
 #include "tscenarioitem.h"
-#include "scenario/graphical_items/tscenariographicalflowstartitem.h"
-#include "scenario/graphical_items/tscenariographicalflowenditem.h"
-#include "scenario/graphical_items/tscenariographicalflowmergeitem.h"
-#include "scenario/graphical_items/tscenariographicalconditionitem.h"
+#include "graphical_items/tscenariographicalflowstartitem.h"
+#include "graphical_items/tscenariographicalflowenditem.h"
+#include "graphical_items/tscenariographicalflowmergeitem.h"
+#include "graphical_items/tscenariographicalconditionitem.h"
 
 TScenarioGraphicalItem * TScenarioGraphicalItem::createScenarioGraphicalItem(TScenarioItem * scenarioItem, QGraphicsItem * parent) {
     switch(scenarioItem->getType()) {

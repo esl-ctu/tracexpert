@@ -1,7 +1,7 @@
 #ifndef TDEVICEMODEL_H
 #define TDEVICEMODEL_H
 
-#include <tpluginunitmodel.h>
+#include "tpluginunitmodel.h"
 
 class TDeviceModel : public TPluginUnitModel
 {

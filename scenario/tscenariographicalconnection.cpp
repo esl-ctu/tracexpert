@@ -1,7 +1,7 @@
 #include "tscenariographicalconnection.h"
 #include "qgraphicsscene.h"
 #include "qgraphicssceneevent.h"
-#include "scenario/tscenarioitem.h"
+#include "tscenarioitem.h"
 #include "tscenariographicalitemport.h"
 
 #include <QPainter>

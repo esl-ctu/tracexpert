@@ -4,8 +4,8 @@
 #include <QGraphicsPixmapItem>
 #include <QList>
 
-#include "scenario/tscenariographicalitemport.h"
-#include "scenario/tscenarioscene.h"
+#include "tscenariographicalitemport.h"
+#include "tscenarioscene.h"
 
 QT_BEGIN_NAMESPACE
 class QPixmap;

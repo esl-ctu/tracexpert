@@ -5,7 +5,7 @@
 #include <QList>
 #include <QPainter>
 
-#include "scenario/tscenariographicalitem.h"
+#include "../tscenariographicalitem.h"
 
 QT_BEGIN_NAMESPACE
 class QPixmap;

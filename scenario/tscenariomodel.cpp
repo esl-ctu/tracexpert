@@ -1,6 +1,6 @@
 #include "tscenario.h"
 #include "tscenariomodel.h"
-#include "scenario/tscenariocontainer.h"
+#include "tscenariocontainer.h"
 
 TScenarioModel::TScenarioModel(TScenarioContainer * parent) :
     QObject(parent),

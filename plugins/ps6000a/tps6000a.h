@@ -8,7 +8,7 @@
 #include <ps6000aApi.h>
 
 
-class TPS6000a_EXPORT TPS6000a : public QObject, TPlugin
+class TPS6000A_EXPORT TPS6000a : public QObject, TPlugin
 {
 
     Q_OBJECT

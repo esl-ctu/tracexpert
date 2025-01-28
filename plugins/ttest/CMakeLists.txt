@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(TTestPlugin LANGUAGES CXX)
+project(TTTestPlugin LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC ON)
@@ -12,23 +12,24 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
 
-include_directories(../../common)
-include_directories(../common)
-
-add_library(TTTestPlugin SHARED
-  TTTestPlugin_global.h
-  tttestplugin.cpp
-  tttestplugin.h
-  tttestdevice.cpp
-  tttestdevice.h
-  tttestaction.cpp
-  tttestaction.h
-  tttestinputstream.cpp
-  tttestinputstream.h
-  tttestoutputstream.cpp
-  tttestoutputstream.h
+add_library(${PROJECT_NAME} SHARED
+    ${PROJECT_NAME}_global.h
+    tttestplugin.cpp
+    tttestplugin.h
+    tttestdevice.cpp
+    tttestdevice.h
+    tttestaction.cpp
+    tttestaction.h
+    tttestinputstream.cpp
+    tttestinputstream.h
+    tttestoutputstream.cpp
+    tttestoutputstream.h
 )
 
-target_link_libraries(TTTestPlugin PRIVATE Qt${QT_VERSION_MAJOR}::Core)
+target_include_directories(${PROJECT_NAME} PRIVATE ../../common)
+target_include_directories(${PROJECT_NAME} PRIVATE ../common)
 
-target_compile_definitions(TTTestPlugin PRIVATE TTTESTPLUGIN_LIBRARY)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
+
+string(TOUPPER ${PROJECT_NAME}_LIBRARY project_library)
+target_compile_definitions(${PROJECT_NAME} PRIVATE ${project_library})

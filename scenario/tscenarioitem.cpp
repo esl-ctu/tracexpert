@@ -6,17 +6,17 @@
 #include <QPoint>
 #include <QDebug>
 
-#include "scenario/scenario_items/tscenariobasicitems.h"
-#include "scenario/scenario_items/tscenarioconstantvalueitem.h"
-#include "scenario/scenario_items/tscenariodelayitem.h"
-#include "scenario/scenario_items/tscenarioiodevicereaditem.h"
-#include "scenario/scenario_items/tscenarioiodevicewriteitem.h"
-#include "scenario/scenario_items/tscenariologitem.h"
-#include "scenario/scenario_items/tscenarioloopitem.h"
-#include "scenario/scenario_items/tscenarioprotocolencodeitem.h"
-#include "scenario/scenario_items/tscenariorandomstringitem.h"
-#include "scenario/scenario_items/tscenarioscopeitem.h"
-#include "tprojectmodel.h"
+#include "scenario_items/tscenariobasicitems.h"
+#include "scenario_items/tscenarioconstantvalueitem.h"
+#include "scenario_items/tscenariodelayitem.h"
+#include "scenario_items/tscenarioiodevicereaditem.h"
+#include "scenario_items/tscenarioiodevicewriteitem.h"
+#include "scenario_items/tscenariologitem.h"
+#include "scenario_items/tscenarioloopitem.h"
+#include "scenario_items/tscenarioprotocolencodeitem.h"
+#include "scenario_items/tscenariorandomstringitem.h"
+#include "scenario_items/tscenarioscopeitem.h"
+#include "../tprojectmodel.h"
 #include "tscenarioitem.h"
 
 #include "tconfigparam.h"

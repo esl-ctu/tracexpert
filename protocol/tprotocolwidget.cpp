@@ -1,5 +1,5 @@
 #include "tprotocolwidget.h"
-#include "protocol/tprotocoltableview.h"
+#include "tprotocoltableview.h"
 
 #include <QListWidget>
 #include <QLayout>
