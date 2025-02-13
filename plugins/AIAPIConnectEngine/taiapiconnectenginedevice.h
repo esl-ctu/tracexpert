@@ -87,6 +87,7 @@ private:
     const uint8_t ENDPOINT_TRAIN = 2;
 
     int sendGetRequest(QJsonDocument & data, QString endpoint); //returns http response code
+    int sendPostRequest(QJsonArray & in, QJsonDocument & out, QString endpoint); //returns http response code
 
 
     bool getJsonArrayFromJsonDocumentField(QJsonArray & result, QJsonDocument & response, QString field);
@@ -101,6 +102,7 @@ private:
     bool getTrainingStatus(bool & running, int & epoch, double & accuracy, double & loss, double & valAccuracy, double & valLoss);
     bool getTrainingParams(int & epochs, int & batchSize, int & trials);
     bool getListOfDatasets(QMap<QString, QPair<QString, QPair<int, int>>> & datasetMap);
+    bool stopTraining();
 
 };
 

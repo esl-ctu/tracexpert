@@ -242,7 +242,6 @@ bool TAIAPIConnectEngineDevice::analyzeData() {
         return false;
     }
 
-    QJsonObject param;
     QJsonArray jsonArray;
 
     if (type == "Text") {
@@ -311,62 +310,10 @@ bool TAIAPIConnectEngineDevice::analyzeData() {
         }
     }
 
-    QNetworkAccessManager *mgr = new QNetworkAccessManager();
-    QUrl url;
-    url.setHost(addr);
-    url.setPort(port);
-    url.setScheme("http");
-    url.setPath("/predict");
-    QNetworkRequest request(url);
-
-    param["data"] = jsonArray;
-    QJsonDocument doc(param);
-    QByteArray data = doc.toJson(QJsonDocument::Compact);
-
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-
-    QNetworkReply* reply = mgr->post(request, data);
-
-    QTimer timer;
-    timer.setSingleShot(true);
-
-    QEventLoop loop;
-    QAbstractSocket::connect(&timer, SIGNAL(timeout()), &loop, SLOT(quit()));
-    QAbstractSocket::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
-    timer.start(10000);   // 10 secs. timeout
-    loop.exec();
-
-    QByteArray replyBuffer;
-    if(timer.isActive()) {
-        timer.stop();
-        if(reply->error() == QNetworkReply::NoError){
-            replyBuffer = reply->readAll();
-        }
-        else {
-            QString error = reply->errorString();
-            qDebug()<< "reply->errorString() " << error;
-            ok = false;
-        }
-    }
-    else {
-        QAbstractSocket::disconnect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
-        reply->abort();
-        ok = false;
-    }
-
-    reply->deleteLater();
-    delete mgr;
-
-    if (!ok){
-        qDebug("Model reported invalid data");
-        running = false;
-        return false;
-    }
-
-    QJsonDocument jsonResponse = QJsonDocument::fromJson(replyBuffer);
-
-    if (!jsonResponse.isObject()) {
-        qDebug() << "Invalid JSON response";
+    QJsonDocument jsonResponse;
+    ok = sendPostRequest(jsonArray, jsonResponse, QString("predict"));
+    if (!ok) {
+        qDebug() << "POST request failed";
         running = false;
         return false;
     }
@@ -503,6 +450,77 @@ size_t TAIAPIConnectEngineDevice::fillData(const uint8_t * buffer, size_t length
     running = false;
 
     return length;
+}
+
+int TAIAPIConnectEngineDevice::sendPostRequest(QJsonArray & in, QJsonDocument & out, QString endpoint) {
+    uint8_t retval = 0;
+    int port = m_preInitParams.getSubParamByName("Port")->getValue().toInt();
+    QString addr = m_preInitParams.getSubParamByName("Address")->getValue();
+    QJsonObject param;
+    bool ok;
+
+    QNetworkAccessManager *mgr = new QNetworkAccessManager();
+    QUrl url;
+    url.setHost(addr);
+    url.setPort(port);
+    url.setScheme("http");
+    url.setPath(QString("/") + endpoint);
+    QNetworkRequest request(url);
+
+    param["data"] = in;
+    QJsonDocument doc(param);
+    QByteArray data = doc.toJson(QJsonDocument::Compact);
+
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+    QNetworkReply* reply = mgr->post(request, data);
+
+    QTimer timer;
+    timer.setSingleShot(true);
+
+    QEventLoop loop;
+    QAbstractSocket::connect(&timer, SIGNAL(timeout()), &loop, SLOT(quit()));
+    QAbstractSocket::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
+    timer.start(10000);   // 10 secs. timeout
+    loop.exec();
+    int httpStatusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+
+    QByteArray replyBuffer;
+    if(timer.isActive()) {
+        timer.stop();
+        if(reply->error() == QNetworkReply::NoError){
+            replyBuffer = reply->readAll();
+        }
+        else {
+            QString error = reply->errorString();
+            qDebug()<< "reply->errorString() " << error;
+            ok = false;
+        }
+    }
+    else {
+        QAbstractSocket::disconnect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
+        reply->abort();
+        ok = false;
+    }
+
+    reply->deleteLater();
+    delete mgr;
+
+    if (!ok){
+        qDebug("POST request reported invalid data");
+        running = false;
+        return httpStatusCode;
+    }
+
+    out = QJsonDocument::fromJson(replyBuffer);
+
+    if (!out.isObject()) {
+        qDebug() << "Invalid JSON response";
+        running = false;
+        return httpStatusCode;
+    }
+
+    return httpStatusCode;
 }
 
 int TAIAPIConnectEngineDevice::sendGetRequest(QJsonDocument & data, QString endpoint){
