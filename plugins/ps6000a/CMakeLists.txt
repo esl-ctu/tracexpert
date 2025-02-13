@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(TPS6000A LANGUAGES CXX)
+project(TPS6000a LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC ON)
@@ -16,18 +16,19 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../cmake")
 
 find_package(PicoScopeSDK REQUIRED)
 
-include_directories(../../common)
-include_directories("${PICOSCOPESDK_INCLUDE_DIR}")
-
-add_library(TPS6000a SHARED
-  TPS6000a_global.h
-  tps6000a.cpp
-  tps6000a.h
-  tps6000ascope.h
-  tps6000ascope.cpp
+add_library(${PROJECT_NAME} SHARED
+    ${PROJECT_NAME}_global.h
+    tps6000a.cpp
+    tps6000a.h
+    tps6000ascope.h
+    tps6000ascope.cpp
 )
 
-target_link_libraries(TPS6000a PRIVATE Qt${QT_VERSION_MAJOR}::Core)
-target_link_libraries(TPS6000a PRIVATE "${PICOSCOPE6000A_LIBRARY}")
+target_include_directories(${PROJECT_NAME} PRIVATE ../../common)
+target_include_directories(${PROJECT_NAME} PRIVATE "${PICOSCOPESDK_INCLUDE_DIR}")
 
-target_compile_definitions(TPS6000a PRIVATE TPS6000a_LIBRARY)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
+target_link_libraries(${PROJECT_NAME} PRIVATE "${PICOSCOPE6000A_LIBRARY}")
+
+string(TOUPPER ${PROJECT_NAME}_LIBRARY project_library)
+target_compile_definitions(${PROJECT_NAME} PRIVATE ${project_library})

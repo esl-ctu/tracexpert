@@ -1,5 +1,5 @@
-#ifndef TPS6000aSCOPE_H
-#define TPS6000aSCOPE_H
+#ifndef TPS6000ASCOPE_H
+#define TPS6000ASCOPE_H
 
 #include "tscope.h"
 #include <ps6000aApi.h>
@@ -79,4 +79,4 @@ protected:
 
 };
 
-#endif // TPS6000aSCOPE_H
+#endif // TPS6000ASCOPE_H

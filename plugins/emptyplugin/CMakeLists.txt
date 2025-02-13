@@ -12,15 +12,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
 
-
-include_directories(../../common)
-
-add_library(TEmptyPlugin SHARED
-  TEmptyPlugin_global.h
-  temptyplugin.cpp
-  temptyplugin.h
+add_library(${PROJECT_NAME} SHARED
+    ${PROJECT_NAME}_global.h
+    temptyplugin.cpp
+    temptyplugin.h
 )
 
-target_link_libraries(TEmptyPlugin PRIVATE Qt${QT_VERSION_MAJOR}::Core)
+target_include_directories(${PROJECT_NAME} PRIVATE ../../common)
 
-target_compile_definitions(TEmptyPlugin PRIVATE TEMPTYPLUGIN_LIBRARY)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
+
+string(TOUPPER ${PROJECT_NAME}_LIBRARY project_library)
+target_compile_definitions(${PROJECT_NAME} PRIVATE ${project_library})
