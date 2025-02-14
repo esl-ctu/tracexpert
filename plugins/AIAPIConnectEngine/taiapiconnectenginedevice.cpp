@@ -2,8 +2,25 @@
 
 //todo:
 ////timeout
-////post request wrapper
-////running
+
+bool validateParamD(QString in, double min, double max){
+    bool ok;
+    double val = in.toDouble(&ok);
+    if (!ok) return false;
+
+    if (val >= min && val <= max) return true;
+        return false;
+}
+
+bool validateParamLL(QString in, long long min, long long max){
+    bool ok;
+    int val = in.toInt(&ok);
+    if (!ok) return false;
+
+    if (val >= min && val <= max) return true;
+    return false;
+}
+
 
 TAIAPIConnectEngineDevice::TAIAPIConnectEngineDevice(QString name, QString info) {
     m_name = name;
@@ -12,6 +29,7 @@ TAIAPIConnectEngineDevice::TAIAPIConnectEngineDevice(QString name, QString info)
 
     m_preInitParams = TConfigParam("AIAPIConnectEngineDevice pre-init config", "", TConfigParam::TType::TDummy, "");
     m_postInitParams = TConfigParam("AIAPIConnectEngineDevice post-init config", "", TConfigParam::TType::TDummy, "");
+
     TConfigParam address = TConfigParam("Address", "127.0.0.1", TConfigParam::TType::TString, "Address to connect to (not a hostname)");
     TConfigParam port = TConfigParam("Port", "8000", TConfigParam::TType::TInt, "Port to connect to");
     TConfigParam inputSize = TConfigParam("Input size", "30000", TConfigParam::TType::TInt, "How big should ech individual input to the model be. Reserved for future use, not checked.", true);
@@ -32,8 +50,37 @@ TAIAPIConnectEngineDevice::TAIAPIConnectEngineDevice(QString name, QString info)
     //m_preInitParams.addSubParam(separator);
     m_preInitParams.addSubParam(type);
 
-    running = false;
+    TConfigParam trainParams = TConfigParam("Training params", "", TConfigParam::TType::TDummy, "");
+    trainParams.addSubParam(TConfigParam("Epochs", "", TConfigParam::TType::TInt, ""));
+    trainParams.addSubParam(TConfigParam("Batch size", "", TConfigParam::TType::TInt, ""));
+    trainParams.addSubParam(TConfigParam("Trials", "", TConfigParam::TType::TInt, ""));
+    trainParams.addSubParam(TConfigParam("Optimalization", "false", TConfigParam::TType::TBool, ""));
+
+    TConfigParam trainStatus = TConfigParam("Training status", "", TConfigParam::TType::TDummy, "");
+    trainStatus.addSubParam(TConfigParam("Running?", "", TConfigParam::TType::TBool, "", true));
+    trainStatus.addSubParam(TConfigParam("Epoch", "", TConfigParam::TType::TInt, "", true));
+    trainStatus.addSubParam(TConfigParam("Accuracy", "", TConfigParam::TType::TReal, "", true));
+    trainStatus.addSubParam(TConfigParam("Loss", "", TConfigParam::TType::TReal, "", true));
+    trainStatus.addSubParam(TConfigParam("Val. accuracy", "", TConfigParam::TType::TReal, "", true));
+    trainStatus.addSubParam(TConfigParam("Val. loss", "", TConfigParam::TType::TReal, "", true));
+
+    TConfigParam serverMode = TConfigParam("Server mode", "", TConfigParam::TType::TEnum, "");
+    serverMode.addEnumValue("Train");
+    serverMode.addEnumValue("Predict");
+
+    TConfigParam datasets = TConfigParam("List of datasets", "", TConfigParam::TType::TDummy, "", true); //todo
+    TConfigParam loadedDataset = TConfigParam("Used datset", "", TConfigParam::TType::TString, "Leave empty for no model");
+    TConfigParam loadedModel = TConfigParam("Used model", "", TConfigParam::TType::TString, "Leave empty for no model");
+
+    m_postInitParams.addSubParam(trainParams);
+    m_postInitParams.addSubParam(trainStatus);
+    m_postInitParams.addSubParam(serverMode);
+    m_postInitParams.addSubParam(datasets);
+    m_postInitParams.addSubParam(loadedDataset);
+    m_postInitParams.addSubParam(loadedModel);
+
     dataReady = false;
+
 }
 
 TAIAPIConnectEngineDevice::~TAIAPIConnectEngineDevice() {}
@@ -92,6 +139,8 @@ TConfigParam TAIAPIConnectEngineDevice::setPreInitParams(TConfigParam params) {
 
 void TAIAPIConnectEngineDevice::init(bool *ok /*= nullptr*/) {
     m_analActions.append(new TAIAPIConnectEngineDeviceAction("Analyze", "Runs the specified model on provided input data.", [=](){ analyzeData(); }));
+    //upload
+    //test model?
     m_analInputStreams.append(new TAIAPIConnectEngineDeviceInputStream("Result", "Stream of results of last used action", [=](uint8_t * buffer, size_t length){ return getData(buffer, length); }));
     m_analOutputStreams.append(new TAIAPIConnectEngineDeviceOutputStream("Input", "Stream of traces", [=](const uint8_t * buffer, size_t length){ return fillData(buffer, length); }));
 
@@ -179,12 +228,125 @@ void TAIAPIConnectEngineDevice::deInit(bool *ok /*= nullptr*/) {
 }
 
 TConfigParam TAIAPIConnectEngineDevice::getPostInitParams() const {
-    return m_postInitParams;
+    bool ok = true;
+    bool running;
+    int epoch, epochs, batchSize, trials;
+    double accuracy, loss, valAccuracy, valLoss;
+    QMap<QString, QPair<QString, QPair<int, int>>> datasetMap;
+
+    uint8_t mode = getServerMode();
+    if (mode == ENDPOINT_ERROR)
+        ok = false;
+    ok &= getTrainingStatus(running, epoch, accuracy, loss, valAccuracy, valLoss);
+    ok &= getTrainingParams(epochs, batchSize, trials);
+    ok &= getListOfDatasets(datasetMap);
+
+    auto ret = m_postInitParams;
+
+    if (!ok) {
+        ret.setState(TConfigParam::TState::TError, "Unable to get post init params!");
+        return ret;
+    }
+
+    ret.getSubParamByName("Training params")->getSubParamByName("Epochs")->setValue(epochs);
+    ret.getSubParamByName("Training params")->getSubParamByName("Batch size")->setValue(batchSize);
+    ret.getSubParamByName("Training params")->getSubParamByName("Trials")->setValue(trials);
+
+    ret.getSubParamByName("Training status")->getSubParamByName("Running?")->setValue(running);
+    ret.getSubParamByName("Training status")->getSubParamByName("Epoch")->setValue(epoch);
+    ret.getSubParamByName("Training status")->getSubParamByName("Accuracy")->setValue(accuracy);
+    ret.getSubParamByName("Training status")->getSubParamByName("Loss")->setValue(loss);
+    ret.getSubParamByName("Training status")->getSubParamByName("Val. accuracy")->setValue(valAccuracy);
+    ret.getSubParamByName("Training status")->getSubParamByName("Val. loss")->setValue(valLoss);
+
+    if (mode == ENDPOINT_PREDICT)
+        ret.getSubParamByName("Server mode")->setValue("Predict");
+    if (mode == ENDPOINT_TRAIN)
+        ret.getSubParamByName("Server mode")->setValue("Train");
+
+    for (auto it = datasetMap.constBegin(); it != datasetMap.constEnd(); ++it) {
+        ret.getSubParamByName("List of datasets")->addEnumValue(it.key());
+    }
+
+    //Used dataset and model remain
+
+    return ret;
 }
 
 TConfigParam TAIAPIConnectEngineDevice::setPostInitParams(TConfigParam params) {
-    m_postInitParams = params;
-    return m_postInitParams; //Careful! This assumes no postinitparams!
+    bool ok = true;
+
+    if(!validateParamLL(params.getSubParamByName("Training params")->getSubParamByName("Epochs")->getValue(), 0, 255)){
+        params.getSubParamByName("Training params")->getSubParamByName("Epochs")->setState(TConfigParam::TState::TWarning);
+        ok = false;
+    }
+
+    if(!validateParamLL(params.getSubParamByName("Training params")->getSubParamByName("Batch size")->getValue(), 0, 255)){
+        params.getSubParamByName("Training params")->getSubParamByName("Batch size")->setState(TConfigParam::TState::TWarning);
+        ok = false;
+    }
+
+    if(!validateParamLL(params.getSubParamByName("Training params")->getSubParamByName("Trials")->getValue(), 0, 255)){
+        params.getSubParamByName("Training params")->getSubParamByName("Trials")->setState(TConfigParam::TState::TWarning);
+        ok = false;
+    }
+
+    QMap<QString, QPair<QString, QPair<int, int>>> datasetMap;
+    ok &= getListOfDatasets(datasetMap);
+    bool exists = false;
+    QString datasetName = params.getSubParamByName("Used datset")->getValue();
+    QString modelName = params.getSubParamByName("Used model")->getValue();
+
+    for (auto it = datasetMap.constBegin(); it != datasetMap.constEnd(); ++it) {
+        if(it.key() == datasetName) {
+            exists = true;
+            break;
+        }
+    }
+
+    if (!exists && datasetName != "") {
+        params.getSubParamByName("Used datset")->setState(TConfigParam::TState::TWarning, "Dataset does NOT exist!");
+    }
+
+    if (!ok) {
+        m_postInitParams = params;
+        m_postInitParams.setState(TConfigParam::TState::TError, "Invalid values in params, nothing was set!");
+        return m_postInitParams;
+
+    }
+
+    //todo - check if model exists?
+
+    ok = loadDataset(datasetName);
+    if (!ok)
+        params.getSubParamByName("Used datset")->setState(TConfigParam::TState::TWarning, "Error loading dataset (but the name is correct).");
+
+    bool opti = params.getSubParamByName("Training params")->getSubParamByName("Optimalization")->getValue() == "true";
+    ok = loadModel(modelName, opti);
+    if (!ok)
+        params.getSubParamByName("Used datset")->setState(TConfigParam::TState::TWarning, "Error loading model (but the name is correct).");
+
+
+    int epochs = params.getSubParamByName("Training params")->getSubParamByName("Epochs")->getValue().toInt();
+    int batchSize = params.getSubParamByName("Training params")->getSubParamByName("Batch size")->getValue().toInt();
+    int trials = params.getSubParamByName("Training params")->getSubParamByName("Trials")->getValue().toInt();
+    ok = setTrainParams(epochs, batchSize, trials);
+
+    QString mode = params.getSubParamByName("Server mode")->getValue();
+
+    if (mode == "Predict")
+        ok &= setServerMode(ENDPOINT_PREDICT);
+    else if (mode == "Train")
+        ok &= setServerMode(ENDPOINT_TRAIN);
+    else
+        ok = false;
+
+    if (ok)
+        m_postInitParams = params;
+    else
+        m_postInitParams.setState(TConfigParam::TState::TError, "Unable to set postinit params!");
+
+    return m_postInitParams;
 }
 
 QList<TAnalAction *> TAIAPIConnectEngineDevice::getActions() const {
@@ -200,7 +362,7 @@ QList<TAnalOutputStream *> TAIAPIConnectEngineDevice::getOutputDataStreams() con
 }
 
 bool TAIAPIConnectEngineDevice::isBusy() const {
-    return running;
+    //todo - get training status?
 }
 
 int getTypeSize(QString type) {
@@ -215,17 +377,17 @@ int getTypeSize(QString type) {
     return 0;
 }
 
-bool TAIAPIConnectEngineDevice::analyzeData() {
+bool TAIAPIConnectEngineDevice::analyzeData() { //predict endpoint
     if (running) {
         return false;
     }
+
+    setServerMode(ENDPOINT_PREDICT);
+
     running = true;
     dataReady = false;
 
-
     bool ok = true;
-    int port = m_preInitParams.getSubParamByName("Port")->getValue().toInt();
-    QString addr = m_preInitParams.getSubParamByName("Address")->getValue();
     QString type = m_preInitParams.getSubParamByName("Data type")->getValue();
     int inputItemSize = m_preInitParams.getSubParamByName("Input size")->getValue().toInt();
     uint8_t typeSize = getTypeSize(type);
@@ -310,9 +472,12 @@ bool TAIAPIConnectEngineDevice::analyzeData() {
         }
     }
 
+    QJsonObject param;
+    param["data"] = jsonArray;
+
     QJsonDocument jsonResponse;
-    ok = sendPostRequest(jsonArray, jsonResponse, QString("predict"));
-    if (!ok) {
+    int statusCode = sendPostRequest(param, jsonResponse, QString("predict"));
+    if (statusCode != 200) {
         qDebug() << "POST request failed";
         running = false;
         return false;
@@ -361,6 +526,105 @@ bool TAIAPIConnectEngineDevice::analyzeData() {
 
     dataReady = true;
     running = false;
+
+    return true;
+}
+
+bool TAIAPIConnectEngineDevice::stopTraining() {
+    QJsonObject json;
+    QJsonDocument jsonResponse;
+    int statusCode = sendPostRequest(json, jsonResponse, QString("stop_training"));
+    if (statusCode != 200) {
+        qDebug() << "POST request failed";
+        running = false;
+        return false;
+    }
+
+    return true;
+
+}
+
+bool TAIAPIConnectEngineDevice::loadModel(QString name, bool opti/* = false*/) {
+    QJsonObject json;
+    json["model_name"] = name;
+    json["model_optimization"] = opti;
+
+    QJsonDocument jsonResponse;
+    int statusCode = sendPostRequest(json, jsonResponse, QString("load_model"));
+    if (statusCode != 200) {
+        qDebug() << "POST request failed";
+        running = false;
+        return false;
+    }
+
+    return true;
+
+}
+
+bool TAIAPIConnectEngineDevice::deleteDataset(QString name, int fromTime/* = 0*/, int toTime/* = 0*/) {
+    QJsonObject json;
+    json["dataset_name"] = name;
+    json["from_time"] = fromTime;
+    json["to_time"] = toTime;
+
+    QJsonDocument jsonResponse;
+    int statusCode = sendPostRequest(json, jsonResponse, QString("delete_dataset"));
+    if (statusCode != 200) {
+        qDebug() << "POST request failed";
+        running = false;
+        return false;
+    }
+
+    return true;
+}
+
+bool TAIAPIConnectEngineDevice::train(QString name, bool opti/* = false*/) {
+    QJsonObject json;
+    json["model_name"] = name;
+    json["model_optimization"] = opti;
+
+    QJsonDocument jsonResponse;
+    int statusCode = sendPostRequest(json, jsonResponse, QString("train"));
+    if (statusCode != 200) {
+        qDebug() << "POST request failed";
+        running = false;
+        return false;
+    }
+
+    return true;
+
+}
+
+bool TAIAPIConnectEngineDevice::setTrainParams(int epochs/* = 0*/, int batchSize/* = 0*/, int optimizationNumOfTrials/* = 0*/) {
+    QJsonObject json;
+    json["epochs"] = epochs;
+    json["batch_size"] = batchSize;
+    json["optimization_num_of_trials"] = optimizationNumOfTrials;
+
+    QJsonDocument jsonResponse;
+    int statusCode = sendPostRequest(json, jsonResponse, QString("set_train_params"));
+    if (statusCode != 200) {
+        qDebug() << "POST request failed";
+        running = false;
+        return false;
+    }
+
+    return true;
+}
+
+bool TAIAPIConnectEngineDevice::loadDataset(QString name, int fromTime/* = 0*/, int toTime/* = 0*/) {
+    QJsonObject json;
+    json["dataset_name"] = name;
+    json["from_time"] = fromTime;
+    json["to_time"] = toTime;
+
+    QJsonDocument jsonResponse;
+    int statusCode = sendPostRequest(json, jsonResponse, QString("load_dataset"));
+    if (statusCode != 200) {
+        qDebug() << "POST request failed";
+        running = false;
+        return false;
+    }
 
     return true;
 }
@@ -452,12 +716,12 @@ size_t TAIAPIConnectEngineDevice::fillData(const uint8_t * buffer, size_t length
     return length;
 }
 
-int TAIAPIConnectEngineDevice::sendPostRequest(QJsonArray & in, QJsonDocument & out, QString endpoint) {
+int TAIAPIConnectEngineDevice::sendPostRequest(QJsonObject & in, QJsonDocument & out, QString endpoint) const {
     uint8_t retval = 0;
-    int port = m_preInitParams.getSubParamByName("Port")->getValue().toInt();
-    QString addr = m_preInitParams.getSubParamByName("Address")->getValue();
-    QJsonObject param;
-    bool ok;
+    auto prms = m_preInitParams;
+    int port = prms.getSubParamByName("Port")->getValue().toInt();
+    QString addr = prms.getSubParamByName("Address")->getValue();
+    bool ok = true;
 
     QNetworkAccessManager *mgr = new QNetworkAccessManager();
     QUrl url;
@@ -467,8 +731,7 @@ int TAIAPIConnectEngineDevice::sendPostRequest(QJsonArray & in, QJsonDocument & 
     url.setPath(QString("/") + endpoint);
     QNetworkRequest request(url);
 
-    param["data"] = in;
-    QJsonDocument doc(param);
+    QJsonDocument doc(in);
     QByteArray data = doc.toJson(QJsonDocument::Compact);
 
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
@@ -508,7 +771,6 @@ int TAIAPIConnectEngineDevice::sendPostRequest(QJsonArray & in, QJsonDocument & 
 
     if (!ok){
         qDebug("POST request reported invalid data");
-        running = false;
         return httpStatusCode;
     }
 
@@ -516,17 +778,17 @@ int TAIAPIConnectEngineDevice::sendPostRequest(QJsonArray & in, QJsonDocument & 
 
     if (!out.isObject()) {
         qDebug() << "Invalid JSON response";
-        running = false;
         return httpStatusCode;
     }
 
     return httpStatusCode;
 }
 
-int TAIAPIConnectEngineDevice::sendGetRequest(QJsonDocument & data, QString endpoint){
+int TAIAPIConnectEngineDevice::sendGetRequest(QJsonDocument & data, QString endpoint) const {
     uint8_t retval = 0;
-    int port = m_preInitParams.getSubParamByName("Port")->getValue().toInt();
-    QString addr = m_preInitParams.getSubParamByName("Address")->getValue();
+    auto prms = m_preInitParams;
+    int port = prms.getSubParamByName("Port")->getValue().toInt();
+    QString addr = prms.getSubParamByName("Address")->getValue();
 
     QNetworkAccessManager *mgr = new QNetworkAccessManager();
     QUrl url;
@@ -562,7 +824,7 @@ int TAIAPIConnectEngineDevice::sendGetRequest(QJsonDocument & data, QString endp
     }
 }
 
-bool TAIAPIConnectEngineDevice::getJsonArrayFromJsonDocumentField(QJsonArray & result, QJsonDocument & response, QString field) {
+bool TAIAPIConnectEngineDevice::getJsonArrayFromJsonDocumentField(QJsonArray & result, QJsonDocument & response, QString field) const {
     if (!response.isObject()) {
         qDebug() << "Invalid JSON response";
         return false;
@@ -580,8 +842,8 @@ bool TAIAPIConnectEngineDevice::getJsonArrayFromJsonDocumentField(QJsonArray & r
     return true;
 }
 
-bool TAIAPIConnectEngineDevice::getJsonArrayFromJsonObject(QJsonArray & result, QJsonObject & obj, QString field) {
-    if (obj.contains(field) && result[field].isArray()) {
+bool TAIAPIConnectEngineDevice::getJsonArrayFromJsonObject(QJsonArray & result, QJsonObject & obj, QString field) const {
+    if (obj.contains(field) && obj[field].isArray()) {
         result = obj["datasets"].toArray();
         return true;
     }
@@ -589,7 +851,7 @@ bool TAIAPIConnectEngineDevice::getJsonArrayFromJsonObject(QJsonArray & result, 
     return false;
 }
 
-bool TAIAPIConnectEngineDevice::getStringFromJsonDocumentField(QString & result, QJsonDocument & response, QString field) {
+bool TAIAPIConnectEngineDevice::getStringFromJsonDocumentField(QString & result, QJsonDocument & response, QString field) const {
     if (!response.isObject()) {
         qDebug() << "Invalid JSON response";
         return false;
@@ -615,7 +877,7 @@ bool TAIAPIConnectEngineDevice::getStringFromJsonDocumentField(QString & result,
     return true;
 }
 
-bool TAIAPIConnectEngineDevice::getBoolFromJsonDocumentField(bool & result, QJsonDocument & response, QString field) {
+bool TAIAPIConnectEngineDevice::getBoolFromJsonDocumentField(bool & result, QJsonDocument & response, QString field) const {
     if (!response.isObject()) {
         qDebug() << "Invalid JSON response";
         return false;
@@ -633,7 +895,7 @@ bool TAIAPIConnectEngineDevice::getBoolFromJsonDocumentField(bool & result, QJso
     return true;
 }
 
-bool TAIAPIConnectEngineDevice::getIntFromJsonDocumentField(int & result, QJsonDocument & response, QString field) {
+bool TAIAPIConnectEngineDevice::getIntFromJsonDocumentField(int & result, QJsonDocument & response, QString field) const {
     if (!response.isObject()) {
         qDebug() << "Invalid JSON response";
         return false;
@@ -651,7 +913,7 @@ bool TAIAPIConnectEngineDevice::getIntFromJsonDocumentField(int & result, QJsonD
     return true;
 }
 
-bool TAIAPIConnectEngineDevice::getDoubleFromJsonDocumentField(double & result, QJsonDocument & response, QString field) {
+bool TAIAPIConnectEngineDevice::getDoubleFromJsonDocumentField(double & result, QJsonDocument & response, QString field) const {
     if (!response.isObject()) {
         qDebug() << "Invalid JSON response";
         return false;
@@ -669,8 +931,7 @@ bool TAIAPIConnectEngineDevice::getDoubleFromJsonDocumentField(double & result, 
     return true;
 }
 
-uint8_t TAIAPIConnectEngineDevice::getServerMode() {
-    //todo running
+uint8_t TAIAPIConnectEngineDevice::getServerMode() const {
     QJsonDocument response;
     int statusCode = sendGetRequest(response, QString("get_mode"));
     if (statusCode != 200) return ENDPOINT_ERROR;
@@ -693,7 +954,6 @@ uint8_t TAIAPIConnectEngineDevice::getServerMode() {
 }
 
 bool TAIAPIConnectEngineDevice::setServerMode(uint8_t mode) {
-    //todo running
     int statusCode = -1;
     if (mode == ENDPOINT_PREDICT) {
         QJsonDocument response;
@@ -710,7 +970,7 @@ bool TAIAPIConnectEngineDevice::setServerMode(uint8_t mode) {
     }
 }
 
-bool TAIAPIConnectEngineDevice::getTrainingStatus(bool & running, int & epoch, double & accuracy, double & loss, double & valAccuracy, double & valLoss) {
+bool TAIAPIConnectEngineDevice::getTrainingStatus(bool & running, int & epoch, double & accuracy, double & loss, double & valAccuracy, double & valLoss) const {
     QJsonDocument response;
     int statusCode = sendGetRequest(response, QString("get_training_progress"));
     if (statusCode != 200) return false;
@@ -719,6 +979,8 @@ bool TAIAPIConnectEngineDevice::getTrainingStatus(bool & running, int & epoch, d
     bool ok = getBoolFromJsonDocumentField(responseBool, response, QString("train_in_progress"));
     if (!ok) {
         return false;
+    } else {
+        running = responseBool;
     }
 
     int responseInt;
@@ -761,7 +1023,7 @@ bool TAIAPIConnectEngineDevice::getTrainingStatus(bool & running, int & epoch, d
     return true;
 }
 
-bool TAIAPIConnectEngineDevice::getTrainingParams(int & epochs, int & batchSize, int & trials) {
+bool TAIAPIConnectEngineDevice::getTrainingParams(int & epochs, int & batchSize, int & trials) const {
     QJsonDocument response;
     int statusCode = sendGetRequest(response, QString("get_training_params"));
     if (statusCode != 200) return false;
@@ -792,7 +1054,7 @@ bool TAIAPIConnectEngineDevice::getTrainingParams(int & epochs, int & batchSize,
 
 }
 
-bool TAIAPIConnectEngineDevice::getListOfDatasets(QMap<QString, QPair<QString, QPair<int, int>>> & datasetMap) {
+bool TAIAPIConnectEngineDevice::getListOfDatasets(QMap<QString, QPair<QString, QPair<int, int>>> & datasetMap) const {
     QJsonDocument response;
     int statusCode = sendGetRequest(response, QString("list_datasets"));
     if (statusCode != 200) return false;

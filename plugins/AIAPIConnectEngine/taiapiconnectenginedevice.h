@@ -56,6 +56,9 @@ public:
     virtual bool isBusy() const override;
 
     bool analyzeData();
+    //uploadData();
+
+    //testModel
     size_t getData(uint8_t * buffer, size_t length);
     size_t fillData(const uint8_t * buffer, size_t length);
 
@@ -86,24 +89,29 @@ private:
     const uint8_t ENDPOINT_PREDICT = 1;
     const uint8_t ENDPOINT_TRAIN = 2;
 
-    int sendGetRequest(QJsonDocument & data, QString endpoint); //returns http response code
-    int sendPostRequest(QJsonArray & in, QJsonDocument & out, QString endpoint); //returns http response code
+    int sendGetRequest(QJsonDocument & data, QString endpoint) const; //returns http response code
+    int sendPostRequest(QJsonObject & in, QJsonDocument & out, QString endpoint) const; //returns http response code
 
 
-    bool getJsonArrayFromJsonDocumentField(QJsonArray & result, QJsonDocument & response, QString field);
-    bool getJsonArrayFromJsonObject(QJsonArray & result, QJsonObject & obj, QString field);
-    bool getStringFromJsonDocumentField(QString & result, QJsonDocument & response, QString field);
-    bool getBoolFromJsonDocumentField(bool & result, QJsonDocument & response, QString field);
-    bool getIntFromJsonDocumentField(int & result, QJsonDocument & response, QString field);
-    bool getDoubleFromJsonDocumentField(double & result, QJsonDocument & response, QString field);
+    bool getJsonArrayFromJsonDocumentField(QJsonArray & result, QJsonDocument & response, QString field) const;
+    bool getJsonArrayFromJsonObject(QJsonArray & result, QJsonObject & obj, QString field) const;
+    bool getStringFromJsonDocumentField(QString & result, QJsonDocument & response, QString field) const;
+    bool getBoolFromJsonDocumentField(bool & result, QJsonDocument & response, QString field) const;
+    bool getIntFromJsonDocumentField(int & result, QJsonDocument & response, QString field) const;
+    bool getDoubleFromJsonDocumentField(double & result, QJsonDocument & response, QString field) const;
 
-    uint8_t getServerMode();
+    uint8_t getServerMode() const;
     bool setServerMode(uint8_t mode);
-    bool getTrainingStatus(bool & running, int & epoch, double & accuracy, double & loss, double & valAccuracy, double & valLoss);
-    bool getTrainingParams(int & epochs, int & batchSize, int & trials);
-    bool getListOfDatasets(QMap<QString, QPair<QString, QPair<int, int>>> & datasetMap);
-    bool stopTraining();
+    bool getTrainingStatus(bool & running, int & epoch, double & accuracy, double & loss, double & valAccuracy, double & valLoss) const;
+    bool getTrainingParams(int & epochs, int & batchSize, int & trials) const;
+    bool getListOfDatasets(QMap<QString, QPair<QString, QPair<int, int>>> & datasetMap) const;
 
+    bool stopTraining();
+    bool train(QString name, bool opti = false);
+    bool setTrainParams(int epochs = 0, int batchSize = 0, int optimizationNumOfTrials = 0);
+    bool loadDataset(QString name, int fromTime = 0, int toTime = 0);
+    bool loadModel(QString name, bool opti = false);
+    bool deleteDataset(QString name, int fromTime = 0, int toTime = 0);
 };
 
 #endif // TAIAPICONNECTENGINEDEVICE_H
