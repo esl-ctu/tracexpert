@@ -2,7 +2,9 @@
 
 TAIAPIConnectEngine::TAIAPIConnectEngine() {
     m_preInitParams  = TConfigParam("AI API connect engine pre-init", "", TConfigParam::TType::TDummy, "");
+    m_preInitParams.addSubParam(TConfigParam("Nothing to do here, click next please", "", TConfigParam::TType::TDummy, ""));
     m_postInitParams  = TConfigParam("AI API connect engine post-init", "", TConfigParam::TType::TDummy, "");
+    m_postInitParams.addSubParam(TConfigParam("Nothing to do here, click next please", "", TConfigParam::TType::TDummy, ""));
     m_initialized = false;
 }
 
