@@ -4,6 +4,8 @@
 /// upload - nefunguje víc jak jedna trace (opraveno pro text, ale ne pro int/...)
 /// predict - nejspíš taky (taky opraveno pro text)
 ///
+/// progress bars?
+///
 /// upload hdf5
 
 bool validateParamD(QString in, double min, double max){
