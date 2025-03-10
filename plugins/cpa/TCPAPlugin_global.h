@@ -1,0 +1,13 @@
+#ifndef TCPAPLUGIN_GLOBAL_H
+#define TCPAPLUGIN_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(TCPAPLUGIN_LIBRARY)
+#  define TCPAPLUGIN_EXPORT Q_DECL_EXPORT
+#else
+#  define TCPAPLUGIN_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // TCPAPLUGIN_GLOBAL_H
+

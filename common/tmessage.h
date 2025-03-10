@@ -213,10 +213,6 @@ public:
 
     QByteArray getData() const {
 
-        if(m_isResponse) {
-            qWarning("Getting data of a message \"%s\" which is a response, not a command.", qPrintable(m_name));
-        }
-
         if(m_state == TState::TError) {
             qWarning("Cannot get data of invalid message \"%s\", fix errors first.", qPrintable(m_name));
             return QByteArray();

@@ -8,7 +8,7 @@
 #include <ps6000aApi.h>
 
 
-class TPS6000a_EXPORT TPS6000a : public QObject, TPlugin
+class TPS6000A_EXPORT TPS6000a : public QObject, TPlugin
 {
 
     Q_OBJECT
@@ -41,14 +41,18 @@ public:
 
     virtual TIODevice * addIODevice(QString name, QString info, bool *ok = nullptr) override;
     virtual TScope * addScope(QString name, QString info, bool *ok = nullptr) override;
+    virtual TAnalDevice * addAnalDevice(QString name, QString info, bool *ok = nullptr) override;
 
     virtual bool canAddIODevice() override;
     virtual bool canAddScope() override;
+    virtual bool canAddAnalDevice() override;
 
     /// Get available IO devices, available only after init()
     virtual QList<TIODevice *> getIODevices() override;
     /// Get available Scopes, available only after init()
     virtual QList<TScope *> getScopes() override;
+    /// Get available Analytical devices, available only after init()
+    virtual QList<TAnalDevice *> getAnalDevices() override;
 
 protected:
 

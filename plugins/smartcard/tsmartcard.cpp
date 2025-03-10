@@ -117,11 +117,21 @@ TScope * TSmartCard::addScope(QString name, QString info, bool *ok) {
     return nullptr;
 }
 
+TAnalDevice * TSmartCard::addAnalDevice(QString name, QString info, bool *ok) {
+    if(ok != nullptr) *ok = false;
+    return nullptr;
+}
+
+
 bool TSmartCard::canAddIODevice() {
     return true;
 }
 
 bool TSmartCard::canAddScope() {
+    return false;
+}
+
+bool TSmartCard::canAddAnalDevice() {
     return false;
 }
 
@@ -132,6 +142,10 @@ QList<TIODevice *> TSmartCard::getIODevices() {
 
 QList<TScope *> TSmartCard::getScopes() {
     return QList<TScope *>();
+}
+
+QList<TAnalDevice *> TSmartCard::getAnalDevices(){
+    return QList<TAnalDevice *>();
 }
 
 /*void TSmartCard::pingCards(){

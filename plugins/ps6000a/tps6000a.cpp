@@ -94,12 +94,21 @@ TScope * TPS6000a::addScope(QString name, QString info, bool *ok) {
     return ret;
 }
 
+TAnalDevice * TPS6000a::addAnalDevice(QString name, QString info, bool *ok) {
+    if(ok != nullptr) *ok = false;
+    return nullptr;
+}
+
+
 bool TPS6000a::canAddIODevice() {
     return false;
 }
 
 bool TPS6000a::canAddScope() {
     return true;
+}
+bool TPS6000a::canAddAnalDevice() {
+    return false;
 }
 
 QList<TIODevice *> TPS6000a::getIODevices() {
@@ -108,4 +117,8 @@ QList<TIODevice *> TPS6000a::getIODevices() {
 
 QList<TScope *> TPS6000a::getScopes() {
     return m_scopes;
+}
+
+QList<TAnalDevice *> TPS6000a::getAnalDevices(){
+    return QList<TAnalDevice *>();
 }

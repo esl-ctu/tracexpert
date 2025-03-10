@@ -1,0 +1,12 @@
+#ifndef TTTESTPLUGIN_GLOBAL_H
+#define TTTESTPLUGIN_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(TTTESTPLUGIN_LIBRARY)
+#  define TTTESTPLUGIN_EXPORT Q_DECL_EXPORT
+#else
+#  define TTTESTPLUGIN_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // TTTESTPLUGIN_GLOBAL_H
