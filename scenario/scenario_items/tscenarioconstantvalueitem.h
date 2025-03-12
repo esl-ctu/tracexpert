@@ -38,10 +38,16 @@ public:
         m_params.addSubParam(TConfigParam("Block name", "Constant", TConfigParam::TType::TString, tr("Display name of the block."), false));
         m_params.addSubParam(typeParam);
         m_params.addSubParam(TConfigParam("Value", "Hello, world!", TConfigParam::TType::TString, tr("Value of constant."), false));
+
+        m_subtitle = "Hello, world!";
     }
 
     TScenarioItem * copy() const override {
         return new TScenarioConstantValueItem(*this);
+    }
+
+    const QString getIconResourcePath() const override {
+        return ":/icons/constant.png";
     }
 
     bool shouldUpdateParams(TConfigParam newParams) override {
@@ -121,6 +127,8 @@ public:
             valueParam->setState(TConfigParam::TState::TError, tr("Invalid value."));
         }
 
+        m_subtitle = valueParam->getValue();
+
         QString type = m_params.getSubParamByName("Data type")->getValue();
         if(type == "byte array") {
             QString value = valueParam->getValue();
@@ -128,9 +136,10 @@ public:
             if(value.contains(QRegularExpression(QStringLiteral("[^A-Za-z0-9]")))) {
                 valueParam->setState(TConfigParam::TState::TError, tr("Invalid value: non-hex characters present."));
             }
+
+            m_subtitle = "0x" + m_subtitle;
         }
 
-        m_subtitle = valueParam->getValue();
         emit appearanceChanged();
 
         return m_params;
@@ -140,7 +149,7 @@ public:
         QString stringValue = m_params.getSubParamByName("Value")->getValue();
 
         QByteArray byteValue;
-        QTextStream byteStream(&byteValue, QIODevice::WriteOnly);
+        QDataStream byteStream(&byteValue, QIODevice::WriteOnly);
 
         QString type = m_params.getSubParamByName("Data type")->getValue();
         if(type == "integer") {
@@ -165,19 +174,21 @@ public:
             byteStream << stringValue.toDouble();
         }
         else if(type == "byte array") {
-            byteStream << QByteArray::fromHex(stringValue.toUtf8());
+            // Bugfix - extra bytes are prepended by QDataStream to arrays
+            // --> skip over QDataStream and save directly to byteValue
+            byteValue = QByteArray::fromHex(stringValue.toUtf8());
         }
         else if(type == "bool") {
             byteStream << (bool)(stringValue.toLower() == "true");
         }
         else {
-            byteStream << stringValue;
+            // Bugfix - extra bytes are prepended by QDataStream to arrays
+            // --> skip over QDataStream and save directly to byteValue
+            byteValue = stringValue.toUtf8();
         }
 
-        byteStream.flush();
-
         QHash<TScenarioItemPort *, QByteArray> outputData;
-        outputData.insert(getItemPortByName("dataOut"), byteValue); //.remove(0, 4) remove extra bytes added by QDataStream
+        outputData.insert(getItemPortByName("dataOut"), byteValue);
 
         return outputData;
     }

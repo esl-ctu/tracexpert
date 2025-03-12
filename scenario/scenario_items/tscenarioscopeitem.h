@@ -66,6 +66,10 @@ public:
         return new TScenarioScopeItem(*this);
     }
 
+    const QString getIconResourcePath() const override {
+        return ":/icons/oscilloscope.png";
+    }
+
     bool shouldUpdateParams(TConfigParam newParams) override {
         return isParamValueDifferent(newParams, m_params, "Component") ||
                isParamValueDifferent(newParams, m_params, "Oscilloscope");

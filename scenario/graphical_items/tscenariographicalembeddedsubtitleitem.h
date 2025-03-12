@@ -16,18 +16,6 @@ public:
         QGraphicsItem * parent = nullptr
         ) : TScenarioGraphicalItem(scenarioItem, parent) { }
 
-    QPixmap image() const override {
-        QPixmap pixmap(250, 250);
-        pixmap.fill(Qt::transparent);
-
-        QPainter painter(&pixmap);
-        painter.setPen(QPen(Qt::black, 8));
-        painter.drawRoundedRect(25, 50, 200, 150, 15, 15);
-        painter.drawLine(25, 85, 225, 85);
-
-        return pixmap;
-    }
-
 protected:
     void updateBlockAppearance() override {
 

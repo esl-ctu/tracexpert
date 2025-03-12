@@ -39,7 +39,7 @@ public:
     }
 
     void readFailed() {
-        m_errorOccurred = true;
+        setState(TState::TRuntimeError, tr("Read failed."));
         disconnect(m_IODeviceModel->receiverModel(), nullptr, this, nullptr);
 
         log(QString(tr("[%1] Read failed")).arg(m_IODeviceModel->name()));
@@ -47,7 +47,7 @@ public:
     }
 
     void readBusy() {
-        m_errorOccurred = true;
+        setState(TState::TRuntimeError, tr("Read failed - device busy."));
         disconnect(m_IODeviceModel->receiverModel(), nullptr, this, nullptr);
 
         log(QString(tr("[%1] Read failed - device busy")).arg(m_IODeviceModel->name()));
@@ -62,9 +62,7 @@ public:
         lengthStream >> dataLen;
 
         if(dataLen == 0) {
-            setState(TState::TWarning, tr("Requested to read 0 bytes."));
-
-            m_errorOccurred = true;
+            setState(TState::TRuntimeWarning, tr("Requested to read 0 bytes."));
             emit executionFinished();
             return;
         }
@@ -72,9 +70,7 @@ public:
         log(QString(tr("[%1] Reading %2 bytes...")).arg(m_IODeviceModel->name()).arg(dataLen));
 
         if(!m_IODeviceModel || !m_IODeviceModel->receiverModel()) {
-            setState(TState::TError, tr("The target device is not initialized or was not found."));
-
-            m_errorOccurred = true;
+            setState(TState::TRuntimeError, tr("The target device is not initialized or was not found."));
             emit executionFinished();
             return;
         }

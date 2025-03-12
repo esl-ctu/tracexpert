@@ -123,6 +123,11 @@ add_executable(${PROJECT_NAME} WIN32
     scenario/graphical_items/tscenariographicalembeddedsubtitleitem.h
     scenario/scenario_items/tscenariodelayitem.h
     scenario/scenario_items/tscenarioprotocolencodeitem.h
+    scenario/scenario_items/tscenariooutputfileitem.h
+    scenario/scenario_items/tscenariovariablewriteitem.h
+    scenario/scenario_items/tscenariovariablereaditem.h
+    scenario/scenario_items/tscenarioscriptitem.h
+    tcodeedit.h tcodeedit.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE common)

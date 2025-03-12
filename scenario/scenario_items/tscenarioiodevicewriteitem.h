@@ -32,7 +32,7 @@ public:
     }
 
     void writeFailed() {
-        m_errorOccurred = true;
+        setState(TState::TRuntimeError, tr("Write failed."));
         disconnect(m_IODeviceModel->senderModel(), nullptr, this, nullptr);
 
         log(QString("[%1] Write failed").arg(m_IODeviceModel->name()));
@@ -40,7 +40,7 @@ public:
     }
 
     void writeBusy() {
-        m_errorOccurred = true;
+        setState(TState::TRuntimeError, tr("Write failed - device busy."));
         disconnect(m_IODeviceModel->senderModel(), nullptr, this, nullptr);
 
         log(QString("[%1] Write failed - device busy").arg(m_IODeviceModel->name()));
@@ -52,9 +52,7 @@ public:
 
         size_t dataLen = inputData.value(getItemPortByName("dataIn")).length();
         if(dataLen == 0) {
-            setState(TState::TWarning, "Requested to write 0 bytes.");
-
-            m_errorOccurred = true;
+            setState(TState::TRuntimeWarning, "Requested to write 0 bytes.");
             emit executionFinished();
             return;
         }
@@ -62,9 +60,7 @@ public:
         log(QString("[%1] Writing %2 bytes...").arg(m_IODeviceModel->name()).arg(dataLen));
 
         if(!m_IODeviceModel || !m_IODeviceModel->receiverModel()) {
-            setState(TState::TError, tr("The target device is not initialized or was not found."));
-
-            m_errorOccurred = true;
+            setState(TState::TRuntimeError, tr("The target device is not initialized or was not found."));
             emit executionFinished();
             return;
         }

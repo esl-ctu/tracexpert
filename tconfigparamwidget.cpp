@@ -9,6 +9,7 @@
 #include <QPainter>
 #include <limits>
 
+#include "tcodeedit.h"
 #include "ttimeedit.h"
 #include "tcombobox.h"
 #include "tfilenameedit.h"
@@ -64,12 +65,11 @@ void TConfigParamWidget::refreshParam()
     resizeColumnToContents(2);
 
     header()->setSectionResizeMode(0, QHeaderView::Interactive);
-    header()->setSectionResizeMode(1, QHeaderView::Interactive);
+    header()->setSectionResizeMode(1, QHeaderView::Stretch);
     header()->setSectionResizeMode(2, QHeaderView::Fixed);
     header()->setStretchLastSection(false);
 
-    // TODO: make sure this is acceptable across TraceXpert
-    setFixedWidth(columnWidth(0) + columnWidth(1) + columnWidth(2) + 10);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 }
 
 bool TConfigParamWidget::readParam(TConfigParam & param, QTreeWidgetItem * parent)
@@ -134,11 +134,12 @@ void TConfigParamWidget::drawInput(const TConfigParam & param, QTreeWidgetItem *
         if (!parent->icon(2).isNull()) {
             parent->setIcon(2, stateIcon(param.getState(), true));
         }
+
         emit inputValueChanged();
     };
 
     TConfigParam::TType type = param.getType();
-    if (type == TConfigParam::TType::TBool || type == TConfigParam::TType::TEnum || type == TConfigParam::TType::TTime || type == TConfigParam::TType::TFileName || type == TConfigParam::TType::TString || type == TConfigParam::TType::TReal || type == TConfigParam::TType::TInt || type == TConfigParam::TType::TLongLong || type == TConfigParam::TType::TShort || type == TConfigParam::TType::TUInt || type == TConfigParam::TType::TULongLong ||type == TConfigParam::TType::TUShort) {
+    if (type == TConfigParam::TType::TBool || type == TConfigParam::TType::TEnum || type == TConfigParam::TType::TTime || type == TConfigParam::TType::TDirectoryName || type == TConfigParam::TType::TFileName || type == TConfigParam::TType::TString || type == TConfigParam::TType::TReal || type == TConfigParam::TType::TInt || type == TConfigParam::TType::TLongLong || type == TConfigParam::TType::TShort || type == TConfigParam::TType::TUInt || type == TConfigParam::TType::TULongLong || type == TConfigParam::TType::TUShort|| type == TConfigParam::TType::TCode) {
         QWidget * input;
         if (type == TConfigParam::TType::TBool || type == TConfigParam::TType::TEnum) {
             QComboBox * comboBox = new TComboBox(this);
@@ -167,6 +168,18 @@ void TConfigParamWidget::drawInput(const TConfigParam & param, QTreeWidgetItem *
             TFileNameEdit * edit = new TFileNameEdit(this);
             edit->setText(param.getValue());
             connect(edit, &QLineEdit::textEdited, this, lightenIcon);
+            input = edit;
+        }
+        else if (type == TConfigParam::TType::TDirectoryName) {
+            TFileNameEdit * edit = new TFileNameEdit(QFileDialog::FileMode::Directory, this);
+            edit->setText(param.getValue());
+            connect(edit, &QLineEdit::textEdited, this, lightenIcon);
+            input = edit;
+        }
+        else if (type == TConfigParam::TType::TCode) {
+            TCodeEdit * edit = new TCodeEdit(this);
+            edit->setPlainText(param.getValue());
+            connect(edit, &TCodeEdit::textChanged, this, lightenIcon);
             input = edit;
         }
         else {
@@ -226,7 +239,7 @@ bool TConfigParamWidget::checkInput(TConfigParam & param, QTreeWidgetItem * pare
     bool ok = true;
 
     TConfigParam::TType type = param.getType();
-    if (type == TConfigParam::TType::TBool || type == TConfigParam::TType::TEnum || type == TConfigParam::TType::TTime || type == TConfigParam::TType::TFileName || type == TConfigParam::TType::TString || type == TConfigParam::TType::TReal || type == TConfigParam::TType::TInt || type == TConfigParam::TType::TLongLong || type == TConfigParam::TType::TShort || type == TConfigParam::TType::TUInt || type == TConfigParam::TType::TULongLong ||type == TConfigParam::TType::TUShort) {
+    if (type == TConfigParam::TType::TBool || type == TConfigParam::TType::TEnum || type == TConfigParam::TType::TTime || type == TConfigParam::TType::TFileName || type == TConfigParam::TType::TDirectoryName || type == TConfigParam::TType::TString || type == TConfigParam::TType::TReal || type == TConfigParam::TType::TInt || type == TConfigParam::TType::TLongLong || type == TConfigParam::TType::TShort || type == TConfigParam::TType::TUInt || type == TConfigParam::TType::TULongLong ||type == TConfigParam::TType::TUShort || type == TConfigParam::TType::TCode) {
         QWidget * input = itemWidget(parent, 1);
         QString message;
         if (type == TConfigParam::TType::TBool || type == TConfigParam::TType::TEnum) {
@@ -250,10 +263,15 @@ bool TConfigParamWidget::checkInput(TConfigParam & param, QTreeWidgetItem * pare
             param.setValue(timeEdit->text(), &ok);
             message = tr("Time value expected!");
         }
-        else if (type == TConfigParam::TType::TFileName) {
+        else if (type == TConfigParam::TType::TFileName || type == TConfigParam::TType::TDirectoryName) {
             TFileNameEdit * fileEdit = static_cast<TFileNameEdit *>(input);
             param.setValue(fileEdit->text(), &ok);
             message = tr("Name of file expected!");
+        }
+        else if (type == TConfigParam::TType::TCode) {
+            TCodeEdit * codeEdit = static_cast<TCodeEdit *>(input);
+            param.setValue(codeEdit->toPlainText(), &ok);
+            message = tr("Huh?!");
         }
         else {
             QLineEdit * edit = static_cast<QLineEdit *>(input);
