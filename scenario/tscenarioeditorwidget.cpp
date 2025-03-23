@@ -11,6 +11,11 @@
 #include "scenario_items/tscenariologitem.h"
 #include "scenario_items/tscenariodelayitem.h"
 #include "scenario_items/tscenarioconstantvalueitem.h"
+#include "scenario_items/tscenariooutputfileitem.h"
+#include "scenario_items/tscenariorandomstringitem.h"
+#include "scenario_items/tscenariovariablereaditem.h"
+#include "scenario_items/tscenariovariablewriteitem.h"
+#include "scenario_items/tscenarioscriptitem.h"
 #include "tscenarioscene.h"
 #include "../tdialog.h"
 
@@ -37,10 +42,13 @@ TScenarioEditorWidget::TScenarioEditorWidget(TScenarioModel * scenarioModel, TPr
                             TScenarioConditionItem::TItemClass, TScenarioLoopItem::TItemClass, TScenarioDelayItem::TItemClass });
 
     createToolBoxDrawer(tr("Miscellaneous blocks"),
-        { TScenarioLogItem::TItemClass, TScenarioConstantValueItem::TItemClass });
+        { TScenarioLogItem::TItemClass, TScenarioConstantValueItem::TItemClass, TScenarioOutputFileItem::TItemClass,
+            TScenarioRandomStringItem::TItemClass, TScenarioScriptItem::TItemClass });
 
     createToolBoxDrawer(tr("Component blocks"),
-        { TScenarioIODeviceReadItem::TItemClass, TScenarioIODeviceWriteItem::TItemClass, TScenarioScopeItem::TItemClass, TScenarioProtocolEncodeItem::TItemClass });
+        {   TScenarioIODeviceReadItem::TItemClass, TScenarioIODeviceWriteItem::TItemClass,
+            TScenarioScopeItem::TItemClass, TScenarioProtocolEncodeItem::TItemClass,
+            TScenarioVariableReadItem::TItemClass, TScenarioVariableWriteItem::TItemClass });
 
     QVBoxLayout * layout = new QVBoxLayout;
 

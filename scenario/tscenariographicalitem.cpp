@@ -89,14 +89,17 @@ void TScenarioGraphicalItem::updateTooltip() {
     TScenarioItem::TState state = m_scenarioItem->getState();
     switch(state) {
         case TScenarioItem::TState::TError:
+        case TScenarioItem::TState::TRuntimeError:
             setBrush(QBrush(QColor::fromRgb(255, 200, 200), Qt::SolidPattern));
             toolTipText.append("<span style=\"color:red\"><b><i>" + m_scenarioItem->getStateMessage() + "</i></b></span>");
             break;
         case TScenarioItem::TState::TWarning:
+        case TScenarioItem::TState::TRuntimeWarning:
             setBrush(QBrush(QColor::fromRgb(255, 255, 200), Qt::SolidPattern));
             toolTipText.append("<span style=\"color:orange\"><b><i>" + m_scenarioItem->getStateMessage() + "</i></b></span>");
             break;
         case TScenarioItem::TState::TInfo:
+        case TScenarioItem::TState::TRuntimeInfo:
             setBrush(QBrush(QColor::fromRgb(225, 235, 255), Qt::SolidPattern));
             toolTipText.append("<span style=\"color:blue\"><b><i>" + m_scenarioItem->getStateMessage() + "</i></b></span>");
             break;
@@ -116,8 +119,17 @@ QPixmap TScenarioGraphicalItem::image() const
 
     QPainter painter(&pixmap);
     painter.setPen(QPen(Qt::black, 8));
-    painter.drawRoundedRect(25, 50, 200, 150, 15, 15);
-    painter.drawLine(25, 85, 225, 85);
+
+    const QString iconPath = m_scenarioItem->getIconResourcePath();
+    if(iconPath.isEmpty()) {
+
+        painter.drawRoundedRect(25, 50, 200, 150, 15, 15);
+        painter.drawLine(25, 85, 225, 85);
+    }
+    else {
+        QPixmap iconPixmap(iconPath);
+        painter.drawPixmap(50, 50, 150, 150, iconPixmap);
+    }
 
     return pixmap;
 }
@@ -244,8 +256,14 @@ void TScenarioGraphicalItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *eve
 {
     if(!m_scenarioItem->getParams().isEmpty()) {
         TScenarioConfigParamDialog * dialog = new TScenarioConfigParamDialog("OK", "Edit block parameters", m_scenarioItem);
-        dialog->setAttribute(Qt::WA_DeleteOnClose);
+        QSize originalSize = dialog->size();
         dialog->exec();
+
+        if(dialog->size() != originalSize) {
+            m_scenarioItem->setConfigWindowSize(dialog->size());
+        }
+
+        dialog->deleteLater();
     }    
 }
 

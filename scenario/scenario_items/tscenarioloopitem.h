@@ -28,11 +28,15 @@ public:
         m_params.addSubParam(TConfigParam("Block name", "Loop", TConfigParam::TType::TString, tr("Display name of the block."), false));
         m_params.addSubParam(TConfigParam("Number of iterations", "3", TConfigParam::TType::TULongLong, tr("Number of times the repeat flow output will be activated."), false));
 
-        m_subtitle = QString(tr("%1 iterations")).arg(3);
+        m_subtitle = tr("3 iterations");
     }
 
     TScenarioItem * copy() const override {
         return new TScenarioLoopItem(*this);
+    }
+
+    const QString getIconResourcePath() const override {
+        return ":/icons/loop.png";
     }
 
     bool validateParamsStructure(TConfigParam params) {

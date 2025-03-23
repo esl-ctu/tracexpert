@@ -256,7 +256,10 @@ TScenarioConfigParamDialog::TScenarioConfigParamDialog(QString acceptText, QStri
     m_paramWidget->setParam(m_paramWidget->param());
 
     setWindowTitle(title);
-    setMinimumHeight(400);
+
+    if(item->getConfigWindowSize() != QSize(0, 0)) {
+        resize(item->getConfigWindowSize());
+    }
 
     parent->connect(m_paramWidget, &TConfigParamWidget::inputValueChanged, this, &TScenarioConfigParamDialog::tryUpdateParams);
 
@@ -279,7 +282,6 @@ TScenarioConfigParamDialog::TScenarioConfigParamDialog(QString acceptText, QStri
 
     setLayout(dialogLayout);
 }
-
 
 void TScenarioConfigParamDialog::updateParams()
 {

@@ -1,3 +1,4 @@
+
 #ifndef TSCENARIODELAYITEM_H
 #define TSCENARIODELAYITEM_H
 
@@ -16,11 +17,16 @@ public:
     TScenarioDelayItem() : TScenarioItem(tr("Delay"), tr("This block represents a delay in execution.")), m_delayTimer(nullptr) {
         addFlowInputPort("flowIn");
         addFlowOutputPort("flowOut", "done", tr("Flow continues through this port after set delay."));
-        setType(TItemAppearance::TEmbeddedSubtitle);
 
         m_params = TConfigParam(m_name + " configuration", "", TConfigParam::TType::TDummy, "");
         m_params.addSubParam(TConfigParam("Block name", "Delay", TConfigParam::TType::TString, tr("Display name of the block."), false));
         m_params.addSubParam(TConfigParam("Length", "3", TConfigParam::TType::TReal, tr("Length of delay in seconds."), false));
+
+        m_subtitle = "3s";
+    }
+
+    const QString getIconResourcePath() const override {
+        return ":/icons/delay.png";
     }
 
     TScenarioItem * copy() const override {

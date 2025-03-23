@@ -59,6 +59,10 @@ public:
         return new TScenarioIODeviceItem(*this);
     }
 
+    const QString getIconResourcePath() const override {
+        return ":/icons/file.png";
+    }
+
     bool shouldUpdateParams(TConfigParam newParams) override {
         return isParamValueDifferent(newParams, m_params, "Component") ||
                 isParamValueDifferent(newParams, m_params, "IO Device");
@@ -221,7 +225,7 @@ public:
         }
 
         m_isFirstBlockExecution = false;
-        m_errorOccurred = false;
+        resetState();
     }
 
     void setPreInitParams() {
@@ -317,13 +321,12 @@ public:
     }
 
     TScenarioItemPort * getPreferredOutputFlowPort() override {
-        return m_errorOccurred ? this->getItemPortByName("flowOutError") : this->getItemPortByName("flowOut");
+        return m_state == TState::TRuntimeError ? this->getItemPortByName("flowOutError") : this->getItemPortByName("flowOut");
     }
 
 protected:
     TIODeviceModel * m_IODeviceModel;
     bool m_isFirstBlockExecution;
-    bool m_errorOccurred;
 };
 
 #endif // TSCENARIOIODEVICEITEM_H

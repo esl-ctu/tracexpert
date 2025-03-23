@@ -40,10 +40,12 @@ TScenarioGraphicalItemPort::TScenarioGraphicalItemPort(TScenarioItemPort * scena
         m_colorStrip->setBrush(QBrush(DATA_PORT_COLOR, Qt::SolidPattern));
     }
 
-    toolTipText.append("<i>");
+    toolTipText.append("<i><b>");
+    toolTipText.append(scenarioItemPort->getName());
+    toolTipText.append("</b> (");
     toolTipText.append(scenarioItemPort->getDirection() == TScenarioItemPort::TItemPortDirection::TInputPort ? "input " : "output ");
     toolTipText.append(scenarioItemPort->getType() == TScenarioItemPort::TItemPortType::TFlowPort ? "flow " : "data ");
-    toolTipText.append("port</i>");
+    toolTipText.append("port)</i>");
 
     if(!scenarioItemPort->getDescription().isEmpty()) {
         toolTipText.append("<br>" + scenarioItemPort->getDescription());

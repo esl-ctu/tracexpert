@@ -28,6 +28,10 @@ public:
         return new TScenarioProtocolEncodeItem(*this);
     }
 
+    const QString getIconResourcePath() const override {
+        return ":/icons/message.png";
+    }
+
     bool shouldUpdateParams(TConfigParam newParams) override {
         return isParamValueDifferent(newParams, m_params, "Protocol") ||
                isParamValueDifferent(newParams, m_params, "Message");
@@ -154,14 +158,12 @@ public:
     }
 
     QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
-        m_errorOccurred = false;
 
         bool iok;
         TMessage message = getMessage(&iok);
 
         if(!iok) {
-            setState(TState::TError, tr("Failed to obtain selected protocol message, is it available?"));
-            m_errorOccurred = true;
+            setState(TState::TRuntimeError, tr("Failed to obtain selected protocol message, is it available?"));
             return QHash<TScenarioItemPort *, QByteArray>();
         }
 
@@ -173,13 +175,12 @@ public:
 
             if(!iok) {
                 log(QString("Failed to set value of \"%1\" message part.").arg(messagePart.getName()), "orange");
-                setState(TState::TWarning, tr("Failed to set one or more message part values!"));
+                setState(TState::TRuntimeWarning, tr("Failed to set one or more message part values!"));
             }
         }
 
         if(message.getState() != TMessage::TState::TOk) {
-            setState((TScenarioItem::TState)message.getState(), message.getStateMessage());
-            m_errorOccurred = true;
+            setState(TState::TRuntimeWarning, message.getStateMessage());
         }
 
         QHash<TScenarioItemPort *, QByteArray> outputData;
@@ -211,12 +212,11 @@ public:
     }
 
     TScenarioItemPort * getPreferredOutputFlowPort() override {
-        return m_errorOccurred ? this->getItemPortByName("flowOutError") : this->getItemPortByName("flowOut");
+        return m_state != TState::TOk ? this->getItemPortByName("flowOutError") : this->getItemPortByName("flowOut");
     }
 
 protected:
     QList<QString> m_generatedPortNames;
-    bool m_errorOccurred;
 };
 
 #endif // TSCENARIOPROTOCOLENCODEITEM_H

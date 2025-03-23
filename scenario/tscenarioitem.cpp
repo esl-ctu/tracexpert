@@ -13,9 +13,15 @@
 #include "scenario_items/tscenarioiodevicewriteitem.h"
 #include "scenario_items/tscenariologitem.h"
 #include "scenario_items/tscenarioloopitem.h"
+#include "scenario_items/tscenariooutputfileitem.h"
+#include "scenario_items/tscenariorandomstringitem.h"
+#include "scenario_items/tscenarioscopeitem.h"
 #include "scenario_items/tscenarioprotocolencodeitem.h"
 #include "scenario_items/tscenariorandomstringitem.h"
 #include "scenario_items/tscenarioscopeitem.h"
+#include "scenario_items/tscenariovariablereaditem.h"
+#include "scenario_items/tscenariovariablewriteitem.h"
+#include "scenario_items/tscenarioscriptitem.h"
 #include "../tprojectmodel.h"
 #include "tscenarioitem.h"
 
@@ -122,6 +128,14 @@ TScenarioItem * TScenarioItem::createScenarioItemByClass(int itemClass) {
             return new TScenarioLoopItem();
         case TScenarioScopeItem::TItemClass:
             return new TScenarioScopeItem();
+        case TScenarioOutputFileItem::TItemClass:
+            return new TScenarioOutputFileItem();
+        case TScenarioVariableReadItem::TItemClass:
+            return new TScenarioVariableReadItem();
+        case TScenarioVariableWriteItem::TItemClass:
+            return new TScenarioVariableWriteItem();
+        case TScenarioScriptItem::TItemClass:
+            return new TScenarioScriptItem();
         case TScenarioItem::TItemClass:
             return new TScenarioItem();
         default:
@@ -203,7 +217,16 @@ void TScenarioItem::setState(TState state, const QString &message){
     emit stateChanged();
 }
 
-void TScenarioItem::resetState(){
+void TScenarioItem::resetState(bool resetOnlyRuntime){
+    if(resetOnlyRuntime) {
+        if( m_state != TState::TRuntimeInfo &&
+            m_state != TState::TRuntimeWarning &&
+            m_state != TState::TRuntimeError)
+        {
+            return;
+        }
+    }
+
     m_state = TState::TOk;
     m_stateMessage = "";
     emit stateChanged();
@@ -397,6 +420,10 @@ void TScenarioItem::execute(const QHash<TScenarioItemPort *, QByteArray> & input
     emit executionFinished();
 }
 
+bool TScenarioItem::stopExecution() {
+    return false;
+}
+
 TScenarioItemPort * TScenarioItem::getPreferredOutputFlowPort() {
     return getItemPortByName(m_preferredOutputFlowPortName);
 }
@@ -411,6 +438,18 @@ void TScenarioItem::setProjectModel(TProjectModel * projectModel) {
 
 bool TScenarioItem::supportsImmediateExecution() const {
     return true;
+}
+
+const QString TScenarioItem::getIconResourcePath() const {
+    return "";
+}
+
+QSize TScenarioItem::getConfigWindowSize() {
+    return m_configWindowSize;
+}
+
+void TScenarioItem::setConfigWindowSize(QSize value) {
+    m_configWindowSize = value;
 }
 
 void TScenarioItem::log(const QString & message, const QString & color) {

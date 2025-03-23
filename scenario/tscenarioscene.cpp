@@ -411,7 +411,11 @@ bool TScenarioScene::isLineValidArrow() const {
         return false;
     }
 
-    if(m_tmpLineStartPort->hasGraphicalConnection()) {
+    if(m_tmpLineStartPort->portType() == TScenarioItemPort::TItemPortType::TFlowPort && m_tmpLineStartPort->hasGraphicalConnection()) {
+        return false;
+    }
+
+    if(m_tmpLineEndPort->portType() == TScenarioItemPort::TItemPortType::TDataPort && m_tmpLineEndPort->hasGraphicalConnection()) {
         return false;
     }
 
@@ -423,7 +427,9 @@ QPen TScenarioScene::evaluateLinePen() const {
         return QPen(Qt::red, 2);
     }
 
-    if(m_tmpLineStartPort->portDirection() == TScenarioItemPort::TItemPortDirection::TInputPort || m_tmpLineStartPort->hasGraphicalConnection()) {
+    if(m_tmpLineStartPort->portDirection() == TScenarioItemPort::TItemPortDirection::TInputPort ||
+        (m_tmpLineStartPort->portType() == TScenarioItemPort::TItemPortType::TFlowPort && m_tmpLineStartPort->hasGraphicalConnection()))
+    {
         return QPen(Qt::red, 2);
     }
 
@@ -434,6 +440,11 @@ QPen TScenarioScene::evaluateLinePen() const {
         if(m_tmpLineStartPort == m_tmpLineEndPort ||
             m_tmpLineStartPort->portType() != m_tmpLineEndPort->portType() ||
             m_tmpLineStartPort->parentItem() == m_tmpLineEndPort->parentItem()) {
+            return QPen(Qt::red, 2, style);
+        }
+
+        if(m_tmpLineEndPort->portType() == TScenarioItemPort::TItemPortType::TDataPort && m_tmpLineEndPort->hasGraphicalConnection())
+        {
             return QPen(Qt::red, 2, style);
         }
 
