@@ -123,6 +123,10 @@ void TPS6000Scope::_createPostInitParams() {
 }
 
 void TPS6000Scope::init(bool *ok){
+    _init(ok, true);
+}
+
+void TPS6000Scope::_init(bool *ok, bool createParams){
 
     bool iok = false;
     PICO_STATUS picoStatus;
@@ -149,7 +153,9 @@ void TPS6000Scope::init(bool *ok){
     if(picoStatus == PICO_OK){
 
         m_initialized = true;
-        _createPostInitParams();
+        if(createParams){
+            _createPostInitParams();
+        }
         if(ok != nullptr) *ok = true;
 
 
@@ -715,6 +721,19 @@ TConfigParam TPS6000Scope::setPostInitParams(TConfigParam params) {
 
     m_postInitParams = params; // read the parameters
     m_postInitParams.resetState(true); // reset all warnings and errors
+
+    ps6000Stop(m_handle); // stop the scope before changing params
+
+    bool iok;
+
+    deInit();
+    _init(&iok, false);
+
+    if(!iok){
+        m_postInitParams.setState(TConfigParam::TState::TError, "Failed to init the scope");
+        qWarning("Failed to initialize the scope during setPostInitParams");
+        return m_postInitParams;
+    }
 
     _setChannels();
     if(m_channelEnabled == true){
