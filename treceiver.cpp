@@ -37,6 +37,7 @@ void TReceiver::receiveData(int length)
 
 void TReceiver::startReceiving()
 {
+    m_isBusy = true;
     m_stopReceiving = false;
 
     quint8 buffer[DATA_BLOCK_SIZE];
@@ -53,9 +54,15 @@ void TReceiver::startReceiving()
         QCoreApplication::processEvents(QEventLoop::ProcessEventsFlag::AllEvents);
         thread()->msleep(AUTORECEIVE_DELAY_MS);
     }
+
+    m_isBusy = false;
 }
 
 void TReceiver::stopReceiving()
 {
     m_stopReceiving = true;
+}
+
+bool TReceiver::isBusy() {
+    return m_isBusy;
 }

@@ -12,6 +12,8 @@ public:
     explicit TSenderModel(TSender * sender, QObject * parent = nullptr);
     ~TSenderModel();
 
+    bool isBusy();
+
 public slots:
     void writeData(QByteArray data);
 
