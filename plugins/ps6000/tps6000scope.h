@@ -38,6 +38,7 @@ public:
 
 protected:
 
+    void _init(bool *ok = nullptr, bool createParams = true);
     void _createPostInitParams();
     void _setChannels();
     void _setTrigger();

@@ -8,6 +8,8 @@ TSender::TSender(QObject *parent)
 
 void TSender::sendData(QByteArray data)
 {
+    m_isBusy = true;
+
     quint8 * buffer = (quint8*)data.data();
 
     size_t bytesSent = writeData(buffer, data.length());
@@ -19,4 +21,10 @@ void TSender::sendData(QByteArray data)
     if (bytesSent > 0) {
         emit dataSent(data.first(bytesSent));
     }
+
+    m_isBusy = false;
+}
+
+bool TSender::isBusy() {
+    return m_isBusy;
 }

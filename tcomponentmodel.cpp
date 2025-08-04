@@ -154,7 +154,7 @@ bool TComponentModel::deInit()
 
     QList<TAnalDeviceModel *> removedAnalDevices;
 
-    for (int i = 0; i < m_scopes->count(); i++) {
+    for (int i = 0; i < m_analDevices->count(); i++) {
         TAnalDeviceModel * analDevice = m_analDevices->at(i);
 
         if (analDevice->isInit() && !analDevice->deInit())

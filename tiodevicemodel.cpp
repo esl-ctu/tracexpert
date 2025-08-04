@@ -47,6 +47,13 @@ bool TIODeviceModel::init()
 
 bool TIODeviceModel::deInit()
 {
+    m_receiverModel->disableAutoRead();
+    emit m_receiverModel->stopReceiving();
+
+    while (m_receiverModel->isBusy() || m_senderModel->isBusy()) {
+        QThread::msleep(10);
+    }
+
     if (!isInit() || !TPluginUnitModel::deInit()) {
         return false;
     }

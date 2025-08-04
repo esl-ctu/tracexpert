@@ -13,6 +13,8 @@ public:
     explicit TReceiverModel(TReceiver * receiver, QObject * parent = nullptr);
     ~TReceiverModel();
 
+    bool isBusy();
+
 public slots:
     void readData(int length);
 

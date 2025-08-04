@@ -44,3 +44,8 @@ void TSenderModel::sendFailed()
     emit writeFailed();
     m_sending = false;
 }
+
+bool TSenderModel::isBusy()
+{
+    return m_sender->isBusy();
+}

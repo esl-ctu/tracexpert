@@ -10,6 +10,8 @@ class TSender : public QObject
 public:
     explicit TSender(QObject * parent = nullptr);
 
+    bool isBusy();
+
 public slots:
     void sendData(QByteArray data);
 
@@ -19,6 +21,9 @@ protected:
 signals:
     void dataSent(QByteArray data);
     void sendFailed();
+
+private:
+    bool m_isBusy = false;
 };
 
 #endif // TSENDER_H

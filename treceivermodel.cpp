@@ -64,3 +64,8 @@ void TReceiverModel::receiveFailed()
     emit readFailed();
     m_receiving = m_autoReceive;
 }
+
+bool TReceiverModel::isBusy()
+{
+    return m_receiver->isBusy();
+}

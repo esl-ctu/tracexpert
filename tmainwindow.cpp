@@ -3,6 +3,7 @@
 #include <QFile>
 #include <QMessageBox>
 #include <QSettings>
+#include <QOpenGLWidget>
 
 #include "tmainwindow.h"
 #include "qfiledialog.h"
@@ -19,6 +20,10 @@
 TMainWindow::TMainWindow(QWidget * parent)
     : QMainWindow(parent)
 {
+    // Workaround to prevent window reopening when oscilloscope widget is loaded for the first time
+    QOpenGLWidget w;
+    setCentralWidget(&w);
+
     setCentralWidget(nullptr);
 
     m_dockManager = TDockManagerInstance;
