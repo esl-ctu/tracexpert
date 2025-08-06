@@ -1,7 +1,7 @@
 #ifndef TDOCKMANAGER_H
 #define TDOCKMANAGER_H
 
-// #define USE_ADS
+#define USE_ADS
 
 #ifdef USE_ADS
 
