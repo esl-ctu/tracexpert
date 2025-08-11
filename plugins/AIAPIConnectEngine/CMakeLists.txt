@@ -28,4 +28,8 @@ add_library(AIAPIConnectEngine SHARED
 target_link_libraries(AIAPIConnectEngine PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 target_link_libraries(AIAPIConnectEngine PRIVATE Qt${QT_VERSION_MAJOR}::Network)
 
+find_package(HDF5 REQUIRED COMPONENTS C CXX)
+target_include_directories(AIAPIConnectEngine PRIVATE ${HDF5_INCLUDE_DIRS})
+target_link_libraries(AIAPIConnectEngine PUBLIC HDF5::HDF5)
+
 target_compile_definitions(AIAPIConnectEngine PRIVATE AIAPICONNECTENGINE_LIBRARY)

@@ -12,7 +12,9 @@
 #include <QMutex>
 #include <QVariant>
 #include <QRegularExpression>
+#include <QFile>
 #include <limits>
+#include <hdf5.h>
 
 #include "tconfigparam.h"
 #include "tanaldevice.h"
@@ -57,6 +59,7 @@ public:
 
     bool analyzeData();
     bool uploadData();
+    bool uploadHDF5();
 
     //testModel
     size_t getData(uint8_t * buffer, size_t length, bool train);
@@ -87,6 +90,9 @@ private:
     bool running;
     std::atomic<bool> dataReadyTrain;
     std::atomic<bool> dataReadyPredict;
+    std::atomic<bool> inputDataTrainUseable;
+    std::atomic<bool> inputDataPredictUseable;
+
 
     const uint8_t ENDPOINT_ERROR = 0;
     const uint8_t ENDPOINT_PREDICT = 1;
@@ -105,7 +111,7 @@ private:
 
     uint8_t getServerMode() const;
     bool setServerMode(uint8_t mode) const;
-    bool getTrainingStatus(bool & running, int & epoch, double & accuracy, double & loss, double & valAccuracy, double & valLoss) const;
+    bool getTrainingStatus(bool & trainRunning, int & epoch, double & accuracy, double & loss, double & valAccuracy, double & valLoss) const;
     bool getTrainingParams(int & epochs, int & batchSize, int & trials) const;
     bool getListOfDatasets(QMap<QString, QMap<QString, QPair<int, int>>> & datasetMap) const;
     bool getListOfModels(QList<QString> & modelList) const;
