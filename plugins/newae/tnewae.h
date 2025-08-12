@@ -42,8 +42,7 @@ const uint8_t NO_CW_ID = 255;
 //Special functions implemented in python - HALT, SETUP, DETECT_DEVICES, SMTEST, SMSET, DEINI. FUNC-<pythonFunctionName>, FUNO-<objname,funcname>, SPAR-<>, PARA-<>
 //Special codes to be received from python - STARTED, DONE, ERROR
 
-class TNEWAE_EXPORT TNewae : public QObject, TPlugin
-{
+class TNEWAE_EXPORT TNewae : public QObject, TPlugin {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "org.cvut.fit.TraceXpert.PluginInterface/1.0" FILE "tnewae.json")
     Q_INTERFACES(TPlugin)
@@ -72,7 +71,7 @@ public:
     virtual TConfigParam setPostInitParams(TConfigParam params) override;
 
     virtual TIODevice * addIODevice(QString name, QString info, bool *ok = nullptr) override;
-    TIODevice * addIODeviceAutomatically(QString name, QString info, bool *ok = nullptr);//Never call this manually!
+    TIODevice * addIODeviceAutomatically(QString name, QString info, targetType type, bool *ok = nullptr);//Never call this manually!
     virtual TScope * addScope(QString name, QString info, bool *ok = nullptr) override;
     TScope * addScopeAutomatically(QString name, QString info, bool *ok = nullptr);//Never call this manually!
     /// Add a Analytical device manually

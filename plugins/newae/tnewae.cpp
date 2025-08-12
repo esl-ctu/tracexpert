@@ -1,9 +1,11 @@
 #include "tnewae.h"
 //Next:
-//sériovka k targetu
+//kontrola preinitparams pro target
+//opravit: sériovka k targetu
 //víc cw najednou (fronta?, víc pyth. vláken?)
 //2. co když se uživatel pokusí předidat stejné zařízení/cw dvakrát?
 //cesta k .py souboru (jako preinitparam - ano - předkodovat?)
+//python exectuable jako File
 
 
 
@@ -459,16 +461,40 @@ void TNewae::init(bool *ok) {
 
         //Append available devices to m_scopes/m_devices
         for(size_t i = 0; i < devices.size(); ++i) {
-            addScopeAutomatically(devices.at(i).first, devices.at(i).second, &succ);
-            if(!succ) {
-                if(ok != nullptr) *ok = false;
-                return;
+            //if this is not a standalone target, add the scope
+            if (!(devices.at(i).first.contains("cw305", Qt::CaseInsensitive)) &&
+                !(devices.at(i).first.contains("cw310", Qt::CaseInsensitive))){
+                addScopeAutomatically(devices.at(i).first, devices.at(i).second, &succ);
+                if(!succ) {
+                    if(ok != nullptr) *ok = false;
+                    return;
+                }
             }
-            addIODeviceAutomatically(devices.at(i).first, devices.at(i).second, &succ);
-            if(!succ) {
-                if(ok != nullptr) *ok = false;
-                return;
+
+            if (devices.at(i).first.contains("cw305", Qt::CaseInsensitive)){
+                addIODeviceAutomatically(devices.at(i).first, devices.at(i).second, TARGET_CW305, &succ);
+                if(!succ) {
+                    if(ok != nullptr) *ok = false;
+                    return;
+                }
+            } else if (devices.at(i).first.contains("cw310", Qt::CaseInsensitive)){
+                addIODeviceAutomatically(devices.at(i).first, devices.at(i).second, TARGET_CW310, &succ);
+                if(!succ) {
+                    if(ok != nullptr) *ok = false;
+                    return;
+                }
+            } else {
+                addIODeviceAutomatically(devices.at(i).first, devices.at(i).second, TARGET_NORMAL, &succ);
+                if(!succ) {
+                    if(ok != nullptr) *ok = false;
+                    return;
+                }
             }
+        }
+
+        for (auto it = m_ports.begin(); it != m_ports.end(); ++it) {
+            TnewaeDevice * t = (TnewaeDevice *)(*it);
+            t->preparePreInitParams();
         }
 
         if (!numDevices){
@@ -534,7 +560,7 @@ TIODevice * TNewae::addIODevice(QString name, QString info, bool *ok) {//TODO!!!
     return NULL;
 }
 
-TIODevice * TNewae::addIODeviceAutomatically(QString name, QString info, bool *ok) {
+TIODevice * TNewae::addIODeviceAutomatically(QString name, QString info, targetType type, bool *ok) {
     //Check if the port exists
     for (int i = 0; i < m_ports.length(); ++i){
         TnewaeDevice * port = (TnewaeDevice *) m_ports.at(i);
@@ -547,7 +573,7 @@ TIODevice * TNewae::addIODeviceAutomatically(QString name, QString info, bool *o
         }
     }
 
-    TnewaeDevice * port = new TnewaeDevice(name, info, this, false);
+    TnewaeDevice * port = new TnewaeDevice(name, info, this, type, false);
     m_ports.append(port);
     return port;
 }

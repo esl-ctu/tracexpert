@@ -260,6 +260,31 @@ def targetSetup(line, shm, targetDict, sc):
     printToStdout("DONE", True, cwID)
     return True
 
+def FPGAtargetSetup(line, shm, targetDict, sc, cw305, bitstream):
+    cwID = line[0:3]
+    if cwID == "":
+        printToStdout("ERROR", True, cwID)
+        printToStderr("No id")
+        return False
+
+    try:
+        if cw305 == True:
+            targetDict[cwID] = cw.target(sc, cw.targets.CW305, bsfile=bitstream)
+        else:
+            targetDict[cwID] = cw.target(sc, cw.targets.CW310)
+    except:
+        printToStderr("Connection to target unsuccessful. Error: " + traceback.format_exc())
+        printToStdout("ERROR", True, cwID)
+        return False
+
+    if targetDict[cwID] == None:
+        printToStdout("ERROR", True, cwID)
+        printToStderr("CW does not exist)")
+        return False
+
+    printToStdout("DONE", True, cwID)
+    return True
+
 ##Call a method on an object from the CW package
 ##Takes: cwID, "FUNO-", obejct name, function name
 ##Outputs: DONE/ERROR, data to shm
@@ -745,7 +770,7 @@ def main():
     targetConsumerDict = dict()
 
     for line in sys.stdin:
-        #print(line + " " + str(datetime.now()), flush=True, file=sys.stderr) # TODO!!! Remove!!
+        print(line + " " + str(datetime.now()), flush=True, file=sys.stderr) # TODO!!! Remove!!
         if line == "\r" or line == "\n" or line == "\r\n":
             continue
 
@@ -785,6 +810,21 @@ def main():
         elif line.startswith("T-SETUP", 4, 12):
             cwID = line[0:3]
             if targetSetup(line.lower(), targetShmDict[cwID], targetDict, cwDict[cwID]):
+                targetQueueDict[cwID] = Queue()
+                targetConsumerDict[cwID] = Thread(target=consumerTarget, args=(targetQueueDict[cwID], targetShmDict, targetDict))
+                targetConsumerDict[cwID].start()
+
+        elif line.startswith("T305-SETUP", 4, 15):
+            cwID = line[0:3]
+            bitsr = (line[15:]).rstrip('\r\n')
+            if FPGAtargetSetup(line.lower(), targetShmDict[cwID], targetDict, cwDict[cwID], True, bitsr):
+                targetQueueDict[cwID] = Queue()
+                targetConsumerDict[cwID] = Thread(target=consumerTarget, args=(targetQueueDict[cwID], targetShmDict, targetDict))
+                targetConsumerDict[cwID].start()
+
+        elif line.startswith("T310-SETUP", 4, 15):
+            cwID = line[0:3]
+            if FPGAtargetSetup(line.lower(), targetShmDict[cwID], targetDict, cwDict[cwID], False, None):
                 targetQueueDict[cwID] = Queue()
                 targetConsumerDict[cwID] = Thread(target=consumerTarget, args=(targetQueueDict[cwID], targetShmDict, targetDict))
                 targetConsumerDict[cwID].start()

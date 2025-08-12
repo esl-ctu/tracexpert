@@ -1,6 +1,6 @@
 #include "tnewaedevice.h"
 
-TnewaeDevice::TnewaeDevice(const QString & name_in, const QString & sn_in, TNewae * plugin_in, bool createdManually_in/* = true*/){
+TnewaeDevice::TnewaeDevice(const QString & name_in, const QString & sn_in, TNewae * plugin_in, targetType type_in, bool createdManually_in/* = true*/){
     m_initialized = false;
     m_name = name_in;
     sn = sn_in;
@@ -8,8 +8,36 @@ TnewaeDevice::TnewaeDevice(const QString & name_in, const QString & sn_in, TNewa
     m_createdManually = createdManually_in;
     scopeParent = NULL;
     cwId = NO_CW_ID;
+    type = type_in;
+}
 
-    m_preInitParams = TConfigParam("NewAE target " + name_in + " pre-init config", "", TConfigParam::TType::TDummy, "Nothing to set here");
+void TnewaeDevice::preparePreInitParams(){
+    if (type == TARGET_NORMAL){
+        m_preInitParams = TConfigParam("NewAE target " + m_name + " pre-init config", "", TConfigParam::TType::TDummy, "Nothing to set here");
+        return;
+    }
+
+    if (type == TARGET_CW305) {
+        m_preInitParams = TConfigParam("NewAE CW305 target " + m_name + " pre-init config", "", TConfigParam::TType::TDummy, "");
+        m_preInitParams.addSubParam(TConfigParam("Alpha version! If this causes a Cadmium II leak, I'm not responsible!", "", TConfigParam::TType::TDummy, ""));
+        m_preInitParams.addSubParam(TConfigParam("Bitstream", "", TConfigParam::TType::TFileName, ""));
+    }
+    else if (type == TARGET_CW310){
+        m_preInitParams = TConfigParam("NewAE CW310 target " + m_name + " pre-init config", "", TConfigParam::TType::TDummy, "");
+        m_preInitParams.addSubParam(TConfigParam("Pre-alpha version! Never tested! Use at your own risk, I do NOT own a CW310!", "", TConfigParam::TType::TDummy, ""));
+    }
+
+    m_preInitParams.addSubParam(TConfigParam("To bind a scope to this target, it needs to be autodetected at the same time s the target.\nManual config is not supported.", "", TConfigParam::TType::TDummy, ""));
+    auto scopeEnum1 = TConfigParam("Bind to scope", QString(""), TConfigParam::TType::TEnum, "");
+    scopeEnum1.addEnumValue("None");
+    QList<TScope *> scopes = plugin->getScopes();
+    for (int i = 0; i < scopes.length(); ++i){
+        TnewaeScope * currentScope = (TnewaeScope *) scopes.at(i);
+        QString scopeSn = currentScope->getInfo();
+        scopeEnum1.addEnumValue(scopeSn);
+    }
+    m_preInitParams.addSubParam(scopeEnum1);
+
 }
 
 
@@ -88,11 +116,25 @@ void TnewaeDevice::init(bool *ok/* = nullptr*/){
     QList<TScope *> scopes = plugin->getScopes();
     TnewaeScope * matchingScope = NULL;
 
+    if (type != TARGET_NORMAL && m_preInitParams.getSubParamByName("Bind to scope")->getValue() == "None"){
+        // setup target with no scope object, do both!
+        //pozor, v pythonu nemáš cw id!!! asi si musíš vygenerovat nový, koukni na addScopeAutomatically jak handlovat IDs
+
+        /* verify that this is ok
+        m_postInitParams = _createPostInitParams();
+        m_postInitParams = updatePostInitParams(m_postInitParams);
+
+        if(ok != nullptr) *ok = true;
+        m_initialized = true;*/
+    }
+
+    QString snToCheck = type == TARGET_NORMAL ? sn : m_preInitParams.getSubParamByName("Bind to scope")->getValue();
+
     for (int i = 0; i < scopes.length(); ++i){
         TnewaeScope * currentScope = (TnewaeScope *) scopes.at(i);
 
         QString scopeSn = currentScope->getSn();
-        if (scopeSn == sn) {
+        if (scopeSn == snToCheck) {
             matchingScope = currentScope;
             break;
         }
@@ -120,8 +162,15 @@ void TnewaeDevice::init(bool *ok/* = nullptr*/){
 
     QString toSend;
     QList<QString> params;
-    params.append(QString::number(cwId));
-    plugin->packageDataForPython(cwId, "T-SETUP", 1, params, toSend);
+    //params.append(QString::number(cwId));
+    if (type == TARGET_CW305) {
+        params.append(m_preInitParams.getSubParamByName("Bitstream")->getValue());
+        plugin->packageDataForPython(cwId, "T305-SETUP", 1, params, toSend);
+    } else if (type == TARGET_CW305) {
+        plugin->packageDataForPython(cwId, "T310-SETUP", 0, params, toSend);
+    } else {
+        plugin->packageDataForPython(cwId, "T-SETUP", 0, params, toSend);
+    }
     bool succ = plugin->writeToPython(cwId, toSend, true);
     if(!succ) {
         if(ok != nullptr) *ok = false;

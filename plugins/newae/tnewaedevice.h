@@ -14,7 +14,7 @@ class TnewaeDevice : public TIODevice {
 
 public:
 
-    TnewaeDevice(const QString & name_in, const QString & sn_in, TNewae * plugin_in, bool createdManually_in = true);
+    TnewaeDevice(const QString & name_in, const QString & sn_in, TNewae * plugin_in, targetType type_in, bool createdManually_in = true);
 
     virtual ~TnewaeDevice() override;
 
@@ -32,6 +32,8 @@ public:
 
     virtual size_t writeData(const uint8_t * buffer, size_t len) override;
     virtual size_t readData(uint8_t * buffer, size_t len) override;
+
+    void preparePreInitParams();
 
     void setId();
     uint8_t getId();
@@ -53,6 +55,7 @@ protected:
     QString m_info;
     TNewae * plugin;
     TnewaeScope * scopeParent;
+    targetType type;
 
     TConfigParam m_preInitParams;
     TConfigParam m_postInitParams;
