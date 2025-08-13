@@ -71,6 +71,7 @@ public:
     void updateParams(bool paramValuesChanged) override {
         TConfigParam * componentParam = m_params.getSubParamByName("Component");
         componentParam->clearEnumValues();
+        componentParam->resetState();
 
         int componentCount = m_projectModel->componentContainer()->count();
         int selectedComponentIndex = componentCount > 0 ? 0 : -1;

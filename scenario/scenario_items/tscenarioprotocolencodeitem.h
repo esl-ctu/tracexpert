@@ -40,6 +40,7 @@ public:
     void updateParams(bool paramValuesChanged) override {
         TConfigParam * protocolParam = m_params.getSubParamByName("Protocol");
         protocolParam->clearEnumValues();
+        protocolParam->resetState();
 
         int protocolCount = m_projectModel->protocolContainer()->count();
         int selectedProtocolIndex = protocolCount > 0 ? 0 : -1;
@@ -137,6 +138,7 @@ public:
                     m_generatedPortNames.append(messagePart.getName());
                 }
             }
+            emit appearanceChanged();
         }
         else {
             setState(TState::TError, tr("Failed to obtain selected protocol message, is it available?"));
