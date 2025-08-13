@@ -233,12 +233,56 @@ The return value has to be an array with the same number of elements as is set i
 
 ### IO Device reading/writing
 
-**! TODO !**
+In order to read from and write to IO Devices (which can be files, serial ports, smart card readers etc.) the **IO Device: Read** and **IO Device: Write** blocks can be used.
 
-### Oscilloscope interfacing
+These blocks cannot be used before being configured first, so when you first place them onto the scenario editor canvas, they are in an error state.
 
-**! TODO !**
+![IO Device blocks - error](images/scenarios_io_device_blocks.png)
+
+To configure the blocks, double click them. The **Edit block parameters** window appears.
+
+![IO Device block settings](images/scenarios_io_device_settings.png)
+
+In this window, it is necessary to select the Component, which the IO Device you want to use is from, and the IO Device itself.
+
+> 💡 *If there are any errors in your configuration, they will show up on the right side along with an explanation.*
+> 
+> ![IO Device block settings error](images/scenarios_io_device_settings_error.png)
+
+When you select an IO Device, its pre- and post-init parameters will be shown.
+
+![IO Device block settings](images/scenarios_io_device_settings1.png)
+
+However, these parameters will not be applied unless one of the following options is selected:
+
+![IO Device block settings](images/scenarios_io_device_settings2.png)
+
+> 💡 *The **Update available options** button is used to refresh block configuration options that might have changed in the project while the scenario editor was opened, such as adding or removing devices, protocols, etc. It also prevents accidental overwriting of the IO Device configuration.*
+
+When the block is set up successfully, the blocks in the scenario show the selected IO Device.
+
+![IO Device blocks](images/scenarios_io_device_blocks2.png)
 
 ### Formating Protocol messages
+
+In order to use your defined protocols along with their messages, you can use the **Protocol: format message** block.
+
+This block cannot be used before being configured first, so when you first place it onto the scenario editor canvas, it is in an error state.
+
+![Protocol block](images/scenarios_protocol.png)
+
+To configure the blocks, double click it. The **Edit block parameters** window appears.
+
+![Protocol block settings](images/scenarios_protocol_settings.png)
+
+In this window, it is necessary to select the Protocol and the Protocol Message the block is supposed to format.
+
+If a message with payload inputs is selected, they will appear as inputs into the block.
+
+![Protocol block](images/scenarios_protocol2.png)
+
+> 💡 *If you update the protocol message definitions, remember to use the **Update available options** for the changes to take effect.*
+
+### Oscilloscope interfacing
 
 **! TODO !**
