@@ -5,7 +5,9 @@
 #include "scenario_items/tscenariobasicitems.h"
 #include "scenario_items/tscenarioiodevicereaditem.h"
 #include "scenario_items/tscenarioiodevicewriteitem.h"
-#include "scenario_items/tscenarioscopeitem.h"
+#include "scenario_items/tscenarioscopesingleitem.h"
+#include "scenario_items/tscenarioscopestartitem.h"
+#include "scenario_items/tscenarioscopestopitem.h"
 #include "scenario_items/tscenarioprotocolencodeitem.h"
 #include "scenario_items/tscenarioloopitem.h"
 #include "scenario_items/tscenariologitem.h"
@@ -48,7 +50,8 @@ TScenarioEditorWidget::TScenarioEditorWidget(TScenarioModel * scenarioModel, TPr
 
     createToolBoxDrawer(tr("Component blocks"),
         {   TScenarioIODeviceReadItem::TItemClass, TScenarioIODeviceWriteItem::TItemClass,
-            TScenarioScopeItem::TItemClass, TScenarioProtocolEncodeItem::TItemClass });
+            TScenarioScopeStartItem::TItemClass, TScenarioScopeStopItem::TItemClass,
+            TScenarioScopeSingleItem::TItemClass, TScenarioProtocolEncodeItem::TItemClass });
 
     QVBoxLayout * layout = new QVBoxLayout;
 

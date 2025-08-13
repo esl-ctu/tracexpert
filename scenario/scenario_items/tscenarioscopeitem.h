@@ -21,7 +21,7 @@ public:
     enum { TItemClass = 60 };
     int itemClass() const override { return TItemClass; }
 
-    TScenarioScopeItem() : TScenarioItem(tr("Oscilloscope"), tr("This block interfaces a selected Oscilloscope.")) {
+    TScenarioScopeItem(QString name, QString description) : TScenarioItem(name, description) {
         addFlowInputPort("flowIn");
         addFlowOutputPort("flowOut", "done", tr("Flow continues through this port on success."));
         addFlowOutputPort("flowOutError", "error", tr("Flow continues through this port on error."));
@@ -78,6 +78,7 @@ public:
     void updateParams(bool paramValuesChanged) override {
         TConfigParam * componentParam = m_params.getSubParamByName("Component");
         componentParam->clearEnumValues();
+        componentParam->resetState();
 
         int componentCount = m_projectModel->componentContainer()->count();
         int selectedComponentIndex = -1;
@@ -339,8 +340,6 @@ public:
         connect(m_scopeModel, &TScopeModel::tracesDownloaded, this, &TScenarioScopeItem::tracesDownloaded);
         connect(m_scopeModel, &TScopeModel::tracesEmpty, this, &TScenarioScopeItem::tracesEmpty);
         connect(m_scopeModel, &TScopeModel::stopped, this, &TScenarioScopeItem::stopped);
-
-        m_scopeModel->runSingle();
     }
 
     void tracesDownloaded(size_t traces, size_t samples, TScope::TSampleType type, QList<quint8 *> buffers, bool overvoltage) {
@@ -408,7 +407,6 @@ public:
         disconnect(m_scopeModel, nullptr, this, nullptr);
 
         log(QString(tr("[%1] Trace data downloaded")).arg(m_scopeModel->name()));
-
         m_preferredOutputFlowPortName = "flowOut";
         emit executionFinishedWithOutput(m_outputData);
     }
