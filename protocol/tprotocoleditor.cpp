@@ -84,6 +84,7 @@ TProtocolEditor::TProtocolEditor(const TProtocol & protocol, const TProtocolCont
     QTableView * messageView = new TProtocolTableView();
     m_messageContainer = new TMessageSimpleContainer(protocol.getMessages());
     messageView->setModel(m_messageContainer);
+    messageView->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeMode::ResizeToContents);
     connect(messageView, &QTableView::doubleClicked, this, &TProtocolEditor::onEditButtonClicked);
 
     m_messageView = messageView;

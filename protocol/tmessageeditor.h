@@ -50,7 +50,8 @@ private:
     void openEditor();
 
     TMessagePartEditor * m_editor;
-    qsizetype  m_editedItemIndex;    
+    qsizetype  m_editedItemIndex;
+    qsizetype  m_addedItemIndex;
 
     QTableView * m_messagePartView;
     TMessagePartSimpleContainer * m_messagePartContainer;

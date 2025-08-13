@@ -15,13 +15,10 @@ public:
         setFocusPolicy(Qt::FocusPolicy::NoFocus);
 
         verticalHeader()->hide();
-        verticalHeader()->setHighlightSections(false);
-        verticalHeader()->setSectionResizeMode(QHeaderView::ResizeMode::ResizeToContents);
 
         horizontalHeader()->setHighlightSections(false);
-        horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeMode::ResizeToContents);
+        horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeMode::Stretch);
     }
-
 };
 
 #endif // TPROTOCOLTABLEVIEW_H

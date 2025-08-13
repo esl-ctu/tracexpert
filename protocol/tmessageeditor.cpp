@@ -103,6 +103,7 @@ TMessageEditor::TMessageEditor(const TMessage & message, const QList<TMessage> &
     QTableView * messagePartView = new TProtocolTableView();
     m_messagePartContainer = new TMessagePartSimpleContainer(message.getMessageParts());
     messagePartView->setModel(m_messagePartContainer);
+    messagePartView->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeMode::ResizeToContents);
     connect(messagePartView, &QTableView::doubleClicked, this, &TMessageEditor::onEditButtonClicked);
 
     m_messagePartView = messagePartView;
@@ -137,6 +138,11 @@ TMessage TMessageEditor::message() {
 
 void TMessageEditor::onAddButtonClicked() {
     m_editedItemIndex = -1;
+
+    m_addedItemIndex = -1;
+    if(!m_messagePartView->selectionModel()->selectedIndexes().isEmpty()) {
+        m_addedItemIndex = m_messagePartView->selectionModel()->selectedIndexes().first().row();
+    }
 
     m_editor = new TMessagePartEditor(TMessagePart(), m_messagePartContainer->getItems(), this);
     connect(m_editor, &QWizard::finished, this, &TMessageEditor::onEditorFinished);
@@ -201,7 +207,7 @@ void TMessageEditor::onEditorFinished(int finished) {
         m_messagePartContainer->updateItem(m_editedItemIndex, m_editor->messagePart());
     }
     else {
-        m_messagePartContainer->addItem(m_editor->messagePart());
+        m_messagePartContainer->addItem(m_addedItemIndex, m_editor->messagePart());
     }
 
     validateMessage();

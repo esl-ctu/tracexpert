@@ -38,6 +38,16 @@ public:
         endInsertRows();
     }
 
+    void addItem(int index, const T & item) {
+        if(index < 0 || index > m_items.size()) {
+            index = m_items.size();
+        }
+
+        beginInsertRows(QModelIndex(), index, index);
+        m_items.insert(index, item);
+        endInsertRows();
+    }
+
     bool updateItem(int index, const T & item) {
         if(index >= 0 && index <= m_items.size()) {
             m_items[index] = item;
