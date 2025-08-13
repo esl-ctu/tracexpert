@@ -77,6 +77,41 @@ TConfigParam TnewaeDevice::setPreInitParams(TConfigParam params){
 }
 
 TConfigParam TnewaeDevice::updatePostInitParams(TConfigParam paramsIn, bool write /*= false*/) const {
+    //reading
+    auto topPrm = m_postInitParams;
+    auto prms = topPrm.getSubParams();
+    for (auto it = prms.begin(); it != prms.end(); ++it) {
+        if ((*it).getType() == TConfigParam::TType::TDummy) { //process subparam
+            //todo
+        } else if ((*it).getHint() == READ_ONLY_STRING) { //get a param that needs a function call with no args
+            //todo
+            bool ok, ok2;
+            QString out;
+            size_t len;
+            QString prmName = (*it).getName();
+            QList<QString> arg;
+            plugin->runPythonFunctionAndGetStringOutput(cwId, prmName, 0, arg, len, out, true);
+            topPrm.getSubParamByName(prmName, &ok)->setValue(out.toLower(), &ok2);
+            if (!ok || !ok2) {
+                topPrm.setState(TConfigParam::TState::TWarning, "Cannot read some params.");
+                qDebug("%s", ("Error reading param " + prmName).toLocal8Bit().constData());
+            }
+        } else { //normal param (python object property)
+            bool ok, ok2;
+            QString out;
+            QString prmName = (*it).getName();
+            plugin->getPythonParameter(cwId, prmName, out, true);
+            topPrm.getSubParamByName(prmName, &ok)->setValue(out.toLower(), &ok2);
+            if (!ok || !ok2) {
+                topPrm.setState(TConfigParam::TState::TWarning, "Cannot read some params.");
+                qDebug("%s", ("Error reading param " + prmName).toLocal8Bit().constData());
+            }
+        }
+    }
+
+    return topPrm;
+
+/*
     if (write){
         QString out;
         bool ok1;
@@ -92,8 +127,6 @@ TConfigParam TnewaeDevice::updatePostInitParams(TConfigParam paramsIn, bool writ
     QString out1, out2, out3;
 
     ook1 = plugin->getPythonParameter(cwId, "baud", out1, true);
-    //ook2 = plugin->getPythonParameter(cwId, "simpleserial_last_sent", out2, true);
-    //ook3 = plugin->getPythonParameter(cwId, "simpleserial_last_read", out3, true);
 
     if (!ook1) {
         paramsIn.setState(TConfigParam::TState::TError, "Read error: Unable to obtain data from the NewAE device.");
@@ -101,14 +134,11 @@ TConfigParam TnewaeDevice::updatePostInitParams(TConfigParam paramsIn, bool writ
     }
 
     paramsIn.getSubParamByName("Baudrate", &ok1)->setValue(out1, &ok11);
-    //paramsIn.getSubParamByName("simpleserial_last_sent", &ok2)->setValue(out2, &ok22);
-    //paramsIn.getSubParamByName("simpleserial_last_read", &ok3)->setValue(out3, &ok33);
-
 
     if (!ok1 || !ok11){
         paramsIn.setState(TConfigParam::TState::TError, "Read error: Unable to write data to the postinitparams structure.");
     }
-
+*/
     return paramsIn;
 }
 
@@ -193,9 +223,30 @@ void TnewaeDevice::init(bool *ok/* = nullptr*/){
 
 }
 
+//IMPORTANT: Do not edit the hints that say "alwaysRunFunc" (READ_ONLY_STRING)!!!
 TConfigParam TnewaeDevice::_createPostInitParams(){
     TConfigParam postInitParams = TConfigParam("NewAE target " + m_name + " post-init config", "", TConfigParam::TType::TDummy, "");
-    postInitParams.addSubParam(TConfigParam("Baudrate", "38400", TConfigParam::TType::TInt, "Baudrate for the target"));
+    if (type == TARGET_NORMAL) {
+        postInitParams.addSubParam(TConfigParam("Baudrate", "38400", TConfigParam::TType::TInt, "Baudrate for the target"));
+    } else if (type == TARGET_CW305) {
+        postInitParams.addSubParam(TConfigParam("INITB_state", "", TConfigParam::TType::TBool, READ_ONLY_STRING, true));
+        postInitParams.addSubParam(TConfigParam("get_fpga_buildtime", "", TConfigParam::TType::TString, READ_ONLY_STRING, true));
+        postInitParams.addSubParam(TConfigParam("is_done", "", TConfigParam::TType::TBool, READ_ONLY_STRING, true));
+        postInitParams.addSubParam(TConfigParam("is_programmed", "", TConfigParam::TType::TBool, READ_ONLY_STRING, true));
+        postInitParams.addSubParam(TConfigParam("core_type", "", TConfigParam::TType::TString, "", true));
+        postInitParams.addSubParam(TConfigParam("crypt_rev", "", TConfigParam::TType::TString, "", true));
+        postInitParams.addSubParam(TConfigParam("crypt_type", "", TConfigParam::TType::TString, "", true));
+        //todo functions
+
+        auto pll = TConfigParam("pll", "", TConfigParam::TType::TDummy, "");
+        pll.addSubParam(TConfigParam("pll_enable_get", "", TConfigParam::TType::TString, READ_ONLY_STRING, true));
+        //todo more
+        //pll.addSubParam(TConfigParam("", "", TConfigParam::TType::TString, ""));
+        postInitParams.addSubParam(pll);
+
+    } else if (type == TARGET_CW310) {
+
+    }
     //postInitParams.addSubParam(TConfigParam("simpleserial_last_sent", "", TConfigParam::TType::TString, "The last raw string read by a simpleserial_read* command"));
     //postInitParams.addSubParam(TConfigParam("simpleserial_last_read", "", TConfigParam::TType::TString, "The last raw string written via simpleserial_write"));
 
@@ -250,13 +301,14 @@ TConfigParam TnewaeDevice::setPostInitParams(TConfigParam params){
         return m_postInitParams;
     }
 
-    bool ok = _validatePostInitParamsStructure(params);
-    if (ok) {
+    //TODO!!
+    //bool ok = _validatePostInitParamsStructure(params);
+    //if (ok) {
         m_postInitParams = updatePostInitParams(params, true);
-    } else {
-        m_postInitParams = params;
-        qWarning("Post init params vadiation for target not successful, nothing was stored");
-    }
+    //} else {
+    //    m_postInitParams = params;
+    //    qWarning("Post init params vadiation for target not successful, nothing was stored");
+    //}
     return m_postInitParams;
 }
 

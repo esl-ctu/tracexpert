@@ -376,6 +376,8 @@ def callCwFunc(line, shm, dct):
         splitLine = functionName.split(FIELD_SEPARATOR, 1)
         functionName = splitLine[0]
         functionName = functionName.rstrip('\r\n')
+        print(functionName + " " + str(datetime.now()), flush=True, file=sys.stderr)
+
     except:
         if asTarget == True:
             printToStdout("ERROR", True, cwID)
@@ -738,7 +740,7 @@ def consumerTarget(queue, targetShmDict, targetDict):
             cwID = line[0:3]
             tmpline = line
             try:
-                callCwFunc(line.lower(), targetShmDict[cwID], targetDict)
+                callCwFunc(line[:11].lower() + line[11:], targetShmDict[cwID], targetDict)
             except(USBError):
                 sendCWNotConnected(tmpline)
 
@@ -747,7 +749,7 @@ def consumerTarget(queue, targetShmDict, targetDict):
             cwID = line[0:3]
             tmpline = line
             try:
-                cwParam(line.lower(), targetShmDict[cwID], targetDict)
+                cwParam(line[:11].lower() + line[11:], targetShmDict[cwID], targetDict)
             except(USBError):
                 sendCWNotConnected(tmpline)
         
