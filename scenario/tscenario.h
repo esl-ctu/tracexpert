@@ -175,6 +175,13 @@ public:
         return in;
     }
 
+    bool hasItem(TScenarioItem * param) {
+        if(m_items.contains(param)){
+            return true;
+        }
+        return false;
+    }
+
     void addItem(TScenarioItem * param, bool *ok = nullptr) {
         if(m_items.contains(param)){
             if(ok != nullptr) *ok = false;

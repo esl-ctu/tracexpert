@@ -38,17 +38,17 @@ TScenarioEditorWidget::TScenarioEditorWidget(TScenarioModel * scenarioModel, TPr
     createToolbars();
 
     createToolBoxDrawer(tr("Flow blocks"),
-        { TScenarioFlowStartItem::TItemClass, TScenarioFlowEndItem::TItemClass, TScenarioFlowMergeItem::TItemClass,
-                            TScenarioConditionItem::TItemClass, TScenarioLoopItem::TItemClass, TScenarioDelayItem::TItemClass });
+        {   TScenarioFlowStartItem::TItemClass, TScenarioFlowEndItem::TItemClass, TScenarioFlowMergeItem::TItemClass,
+            TScenarioConditionItem::TItemClass, TScenarioLoopItem::TItemClass, TScenarioDelayItem::TItemClass });
 
     createToolBoxDrawer(tr("Miscellaneous blocks"),
-        { TScenarioLogItem::TItemClass, TScenarioConstantValueItem::TItemClass, TScenarioOutputFileItem::TItemClass,
-            TScenarioRandomStringItem::TItemClass, TScenarioScriptItem::TItemClass });
+        {   TScenarioLogItem::TItemClass, TScenarioConstantValueItem::TItemClass,
+            TScenarioOutputFileItem::TItemClass, TScenarioScriptItem::TItemClass,
+            TScenarioVariableReadItem::TItemClass, TScenarioVariableWriteItem::TItemClass });
 
     createToolBoxDrawer(tr("Component blocks"),
         {   TScenarioIODeviceReadItem::TItemClass, TScenarioIODeviceWriteItem::TItemClass,
-            TScenarioScopeItem::TItemClass, TScenarioProtocolEncodeItem::TItemClass,
-            TScenarioVariableReadItem::TItemClass, TScenarioVariableWriteItem::TItemClass });
+            TScenarioScopeItem::TItemClass, TScenarioProtocolEncodeItem::TItemClass });
 
     QVBoxLayout * layout = new QVBoxLayout;
 
@@ -70,6 +70,9 @@ TScenarioEditorWidget::TScenarioEditorWidget(TScenarioModel * scenarioModel, TPr
 
     connect(m_view, &TScenarioGraphicsView::scaleChangedUsingMouseWheel,
             this, &TScenarioEditorWidget::scaleChangedUsingMouseWheel);
+
+    connect(m_scene, &TScenarioScene::pointerToolChanged,
+            this, &TScenarioEditorWidget::pointerToolChanged);
 
     layout->addLayout(lowerLayout);
 
@@ -153,18 +156,28 @@ void TScenarioEditorWidget::buttonGroupClicked(QAbstractButton * button)
     );
 }
 
-void TScenarioEditorWidget::pointerGroupClicked()
-{
-    m_scene->setMode(TScenarioScene::Mode(m_pointerTypeGroup->checkedId()));
+void TScenarioEditorWidget::pointerGroupButtonClicked() {
+    if(m_pointerTypeGroup->checkedId() != m_scene->pointerTool()) {
+        m_scene->setPointerTool((TScenarioScene::TScenarioPointerTool)m_pointerTypeGroup->checkedId());
+    }
+}
 
-    switch(m_scene->mode()) {
+void TScenarioEditorWidget::pointerToolChanged(TScenarioScene::TScenarioPointerTool tool) {
+    switch(m_scene->pointerTool()) {
         case TScenarioScene::MouseDrag:
+            m_pointerTypeGroup->button(TScenarioScene::MouseDrag)->setChecked(true);
             m_view->setDragMode(QGraphicsView::ScrollHandDrag);
             break;
         case TScenarioScene::MousePointer:
+            m_pointerTypeGroup->button(TScenarioScene::MousePointer)->setChecked(true);
             m_view->setDragMode(QGraphicsView::RubberBandDrag);
             break;
+        case TScenarioScene::InsertLine:
+            m_pointerTypeGroup->button(TScenarioScene::InsertLine)->setChecked(true);
+            m_view->setDragMode(QGraphicsView::NoDrag);
+            break;
         default:
+            m_pointerTypeGroup->button(TScenarioScene::MousePointer)->setChecked(true);
             m_view->setDragMode(QGraphicsView::NoDrag);
             break;
     }
@@ -190,7 +203,6 @@ void TScenarioEditorWidget::keyReleaseEvent(QKeyEvent *event) {
 
 void TScenarioEditorWidget::resetPressedButtons()
 {
-    m_scene->setMode(TScenarioScene::Mode(m_pointerTypeGroup->checkedId()));
     QAbstractButton * pressedButton = m_buttonGroup->button(m_insertedItemClass);
     if(pressedButton) {
         pressedButton->setChecked(false);
@@ -310,7 +322,7 @@ void TScenarioEditorWidget::createToolbars() {
     m_pointerTypeGroup->addButton(pointerButton, TScenarioScene::MousePointer);
     m_pointerTypeGroup->addButton(linePointerButton, TScenarioScene::InsertLine);
     connect(m_pointerTypeGroup, QOverload<QAbstractButton *>::of(&QButtonGroup::buttonClicked),
-            this, &TScenarioEditorWidget::pointerGroupClicked);
+            this, &TScenarioEditorWidget::pointerGroupButtonClicked);
 
     m_sceneScaleCombo = new QComboBox;    
     QStringList scales;
@@ -342,12 +354,22 @@ QWidget * TScenarioEditorWidget::createCellWidget(int itemClass) {
     button->setCheckable(true);
     m_buttonGroup->addButton(button, itemClass);
 
+    QString labelText = graphicalItem->getScenarioItem()->getName();
+    if(labelText.contains(':')) {
+        labelText.prepend("<b>");
+        labelText.replace(": ", "</b><br>");
+    }
+
+    QLabel * label = new QLabel(labelText);
+    label->setAlignment(Qt::AlignCenter);
+
     QGridLayout * layout = new QGridLayout;
     layout->addWidget(button, 0, 0, Qt::AlignHCenter);
-    layout->addWidget(new QLabel(graphicalItem->getScenarioItem()->getName()), 1, 0, Qt::AlignCenter);
+    layout->addWidget(label, 1, 0, Qt::AlignHCenter);
 
     QWidget * widget = new QWidget;
     widget->setLayout(layout);
+    widget->setFixedWidth(110);
 
     delete graphicalItem;
 
