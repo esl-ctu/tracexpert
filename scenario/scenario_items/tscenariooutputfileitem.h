@@ -22,7 +22,7 @@ public:
     enum { TItemClass = 90 };
     int itemClass() const override { return TItemClass; }
 
-    TScenarioOutputFileItem() : TScenarioItem(tr("Write to untracked file"), tr("This block writes data into files not tracked by TraceXpert.")) {
+    TScenarioOutputFileItem() : TScenarioItem(tr("Write to: untracked file"), tr("This block writes data into files not tracked by TraceXpert.")) {
         addFlowInputPort("flowIn");
         addDataInputPort("dataIn");
         addFlowOutputPort("flowOut", "done", tr("Flow continues through this port on success."));

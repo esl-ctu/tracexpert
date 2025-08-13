@@ -23,9 +23,9 @@ public:
         addFlowInputPort("flowIn");
         addFlowOutputPort("flowOut");
 
-        addDataInputPort("dataIn0");
-        addDataInputPort("dataIn1");
-        addDataOutputPort("dataOut0");
+        addDataInputPort("dataIn0", "", tr("Data will be passed to the script through this port."));
+        addDataInputPort("dataIn1", "", tr("Data will be passed to the script through this port."));
+        addDataOutputPort("dataOut0", "", tr("Data from the the script will be returned through this port."));
 
         m_inputPortCount = 2;
         m_outputPortCount = 1;
@@ -129,7 +129,7 @@ def process_data():
                 }
                 else {
                     // create a new port
-                    addDataInputPort(QString("dataIn%1").arg(i));
+                    addDataInputPort(QString("dataIn%1").arg(i), "", tr("Data will be passed to the script through this port."));
                 }
             }
 
@@ -151,7 +151,7 @@ def process_data():
                 }
                 else {
                     // create a new port
-                    addDataOutputPort(QString("dataOut%1").arg(i));
+                    addDataOutputPort(QString("dataOut%1").arg(i), "", tr("Data from the the script will be returned through this port."));
                 }
             }
 
@@ -178,9 +178,8 @@ def process_data():
         } */
 
         if (!m_pythonProcess) {
-           setState(TState::TRuntimeError, "ill kms");
-           log("ill kms", "red");
-
+           setState(TState::TRuntimeError, "An error has occured during script execution.");
+           log("An error has occured during script execution.", "red");
            emit executionFinished();
            return;
         }
@@ -237,7 +236,12 @@ def process_data():
         m_pythonProcess = new QProcess(this);
         connect(m_pythonProcess, &QProcess::finished, this, &TScenarioScriptItem::processFinished);
 
-        m_pythonProcess->setProgram("python");
+        if(m_params.getSubParamByName("Python path")->getValue().isEmpty()) {
+           m_pythonProcess->setProgram("python");
+        }
+        else {
+            m_pythonProcess->setProgram(m_params.getSubParamByName("Python path")->getValue());
+        }
 
         QString sandboxScript = R"(
 import sys

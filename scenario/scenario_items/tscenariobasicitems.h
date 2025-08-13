@@ -67,7 +67,7 @@ public:
         setType(TItemAppearance::TFlowMerge);
         addFlowInputPort("flowIn1");
         addFlowInputPort("flowIn2");
-        addFlowOutputPort("flowOut");
+        addFlowOutputPort("flowOut", "", tr("The flow from either of the inputs will continue through this port."));
 
         m_inputPortCount = 2;
 
@@ -137,9 +137,9 @@ public:
     TScenarioConditionItem() : TScenarioItem(tr("Condition"), tr("This block directs flow based on a set condition.")) {
         setType(TItemAppearance::TCondition);
         addFlowInputPort("flowIn");
-        addDataInputPort("predicateIn");
-        addFlowOutputPort("flowOutTrue");
-        addFlowOutputPort("flowOutFalse");
+        addDataInputPort("predicateIn", "", tr("Data passed through this port will be evaluated to be true/false."));
+        addFlowOutputPort("flowOutTrue", "", tr("If the input is evaluated to be TRUE, the flow will continue through this port."));
+        addFlowOutputPort("flowOutFalse", "", tr("If the input is evaluated to be FALSE, the flow will continue through this port."));
     }
 
     TScenarioItem * copy() const override {
