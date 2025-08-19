@@ -656,8 +656,12 @@ void TNewae::packagePythonFunction(uint8_t cwId, QString functionName, uint8_t n
     packageDataForPython(cwId, newFunctionName, numParams, params, out);
 }
 
-void TNewae::packagePythonOnAnObjectFunctionWithNoParams(uint8_t cwId, QString ObjectName, QString functionName, QString &out){
-    QString newFunctionName = "FUNO-" + ObjectName;
+void TNewae::packagePythonOnAnObjectFunctionWithNoParams(uint8_t cwId, QString ObjectName, QString functionName, QString &out, bool asTarget /*= false*/){
+    QString newFunctionName;
+    if (asTarget)
+        newFunctionName = "T-FUNO-" + ObjectName;
+    else
+        newFunctionName = "FUNO-" + ObjectName;
     QList<QString> params;
     params.append(functionName);
     packageDataForPython(cwId, newFunctionName, 1, params, out);
@@ -678,8 +682,12 @@ void TNewae::packagePythonParam(uint8_t cwId, QString paramName, QString value, 
     }
 }
 
-void TNewae::packagePythonSubparam(uint8_t cwId, QString paramName, QString subParamName, QString value, QString &out){
-    QString newParamName = "SPAR-" + paramName;
+void TNewae::packagePythonSubparam(uint8_t cwId, QString paramName, QString subParamName, QString value, QString &out, bool asTarget /*= false*/){
+    QString newParamName;
+    if (asTarget)
+        newParamName = "T-SPAR-" + paramName;
+    else
+        newParamName = "SPAR-" + paramName;
     QList<QString> params;
     params.append(subParamName);
     if (value == "") {
@@ -794,22 +802,29 @@ bool TNewae::downloadSamples(uint8_t cwId, size_t * size, void * out, bool asInt
     return true;
 }
 
-bool TNewae::runPythonFunctionOnAnObjectAndGetStringOutput(int8_t cwId, QString ObjectName, QString functionName, size_t &dataLen, QString &out){
+bool TNewae::runPythonFunctionOnAnObjectAndGetStringOutput(int8_t cwId, QString ObjectName, QString functionName, size_t &dataLen, QString &out, bool asTarget /*= false*/){
     QString toSend;
     bool succ;
 
-    packagePythonOnAnObjectFunctionWithNoParams(cwId, ObjectName, functionName, toSend);
-    succ = writeToPython(cwId, toSend);
+    packagePythonOnAnObjectFunctionWithNoParams(cwId, ObjectName, functionName, toSend, asTarget);
+    succ = writeToPython(cwId, toSend, asTarget);
     if(!succ) {
         return false;
     }
 
-    succ &= waitForPythonDone(cwId);
-    if(!succ || pythonError[cwId]) {
-        return false;
+    if (asTarget){
+        succ &= waitForPythonTargetDone(cwId);
+        if(!succ || pythonTargetError[cwId]) {
+            return false;
+        }
+    } else {
+        succ &= waitForPythonDone(cwId);
+        if(!succ || pythonError[cwId]) {
+            return false;
+        }
     }
 
-    succ = getDataFromShm(dataLen, out, cwId);
+    succ = getDataFromShm(dataLen, out, cwId, asTarget);
     if (!succ) {
         qCritical("Error reading from shared memory");
         return false;
@@ -828,9 +843,9 @@ bool TNewae::getPythonParameter(int8_t cwId, QString paramName, QString &out, bo
     return setPythonParameter(cwId, paramName, tmp, out, asTarget);
 }
 
-bool TNewae::getPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString &out){
+bool TNewae::getPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString &out, bool asTarget /*= false*/){
     QString tmp = "";
-    return setPythonSubparameter(cwId, paramName, subParamName, tmp, out);
+    return setPythonSubparameter(cwId, paramName, subParamName, tmp, out, asTarget);
 }
 
 bool TNewae::setPythonParameter(int8_t cwId, QString paramName, QString value, QString &out, bool asTarget /*= false*/){
@@ -854,10 +869,7 @@ bool TNewae::setPythonParameter(int8_t cwId, QString paramName, QString value, Q
     }
 
     size_t dataLen;
-    if (asTarget)
-        succ = getDataFromShm(dataLen, out, cwId, true);
-    else
-        succ = getDataFromShm(dataLen, out, cwId);
+    succ = getDataFromShm(dataLen, out, cwId, asTarget);
 
     if (!succ) {
         qCritical("Error reading from shared memory");
@@ -872,24 +884,29 @@ bool TNewae::setPythonParameter(int8_t cwId, QString paramName, QString value, Q
     return true;
 }
 
-bool TNewae::setPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString value, QString &out){
+bool TNewae::setPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString value, QString &out, bool asTarget /*= false*/){
     QString toSend;
     bool succ;
 
-    packagePythonSubparam(cwId, paramName, subParamName, value, toSend);
-    succ = writeToPython(cwId, toSend);
+    packagePythonSubparam(cwId, paramName, subParamName, value, toSend, asTarget);
+    succ = writeToPython(cwId, toSend, asTarget);
 
     if(!succ) {
         return false;
     }
 
-    succ &= waitForPythonDone(cwId);
+    if (asTarget)
+        succ &= waitForPythonTargetDone(cwId);
+    else
+        succ &= waitForPythonDone(cwId);
+
     if(!succ) {
         return false;
     }
 
     size_t dataLen;
-    succ = getDataFromShm(dataLen, out, cwId);
+    succ = getDataFromShm(dataLen, out, cwId, asTarget);
+
     if (!succ) {
         qCritical("Error reading from shared memory");
         return false;

@@ -63,6 +63,7 @@ protected:
     qint32 m_writeTimeout;
     bool m_initialized;
     const QString READ_ONLY_STRING = "alwaysRunFunc";
+    const QString WRITE_ONLY_STRING = "writeOnlyFunc";
 
 };
 
