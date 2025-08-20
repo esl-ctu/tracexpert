@@ -173,6 +173,7 @@ function(add_plugin dir target additional_files)
 endfunction()
 
 
+add_plugin(predict TPredictPlugin "")
 add_plugin(analtestingplugin TAnalTestingPlugin "")
 add_plugin(cpa TCPAPlugin "")
 add_plugin(dummyscope TDummyScopePlugin "")
