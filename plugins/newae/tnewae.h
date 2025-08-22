@@ -104,7 +104,7 @@ public:
     //In this block, CW is super important
     void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
     bool runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out, bool asTarget = false);
-    bool runPythonFunctionOnAnObjectAndGetStringOutput(int8_t cwId, QString ObjectName, QString functionName, size_t &dataLen, QString &out, bool asTarget = false);
+    bool runPythonFunctionOnAnObjectAndGetStringOutput(int8_t cwId, QString ObjectName, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out, bool asTarget = false);
     bool getPythonParameter(int8_t cwId, QString paramName, QString &out, bool asTarget = false);
     bool getPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString &out, bool asTarget = false);
     bool setPythonParameter(int8_t cwId, QString paramName, QString value, QString &out, bool asTarget = false); //Out is the new value of the parameter, can be discarded
@@ -137,7 +137,7 @@ protected:
 
     //In this block, CW is super important
     void packagePythonFunction(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out, bool asTarget = false);
-    void packagePythonOnAnObjectFunctionWithNoParams(uint8_t cwId, QString ObjectName, QString functionName, QString &out, bool asTarget = false);
+    void packagePythonOnAnObjectFunction(uint8_t cwId, QString ObjectName, QString functionName, uint8_t numParams, QList<QString> params, QString &out, bool asTarget = false);
     void packagePythonParam(uint8_t cwId, QString paramName, QString value, QString &out, bool asTarget = false);
     void packagePythonSubparam(uint8_t cwId, QString paramName, QString subParamName, QString value, QString &out, bool asTarget = false);
 

@@ -656,15 +656,14 @@ void TNewae::packagePythonFunction(uint8_t cwId, QString functionName, uint8_t n
     packageDataForPython(cwId, newFunctionName, numParams, params, out);
 }
 
-void TNewae::packagePythonOnAnObjectFunctionWithNoParams(uint8_t cwId, QString ObjectName, QString functionName, QString &out, bool asTarget /*= false*/){
+void TNewae::packagePythonOnAnObjectFunction(uint8_t cwId, QString ObjectName, QString functionName, uint8_t numParams, QList<QString> params, QString &out, bool asTarget /*= false*/){
     QString newFunctionName;
     if (asTarget)
         newFunctionName = "T-FUNO-" + ObjectName;
     else
         newFunctionName = "FUNO-" + ObjectName;
-    QList<QString> params;
-    params.append(functionName);
-    packageDataForPython(cwId, newFunctionName, 1, params, out);
+    params.prepend(functionName);
+    packageDataForPython(cwId, newFunctionName, numParams + 1, params, out);
 }
 
 void TNewae::packagePythonParam(uint8_t cwId, QString paramName, QString value, QString &out, bool asTarget /*= false*/){
@@ -802,11 +801,11 @@ bool TNewae::downloadSamples(uint8_t cwId, size_t * size, void * out, bool asInt
     return true;
 }
 
-bool TNewae::runPythonFunctionOnAnObjectAndGetStringOutput(int8_t cwId, QString ObjectName, QString functionName, size_t &dataLen, QString &out, bool asTarget /*= false*/){
+bool TNewae::runPythonFunctionOnAnObjectAndGetStringOutput(int8_t cwId, QString ObjectName, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out, bool asTarget /*= false*/){
     QString toSend;
     bool succ;
 
-    packagePythonOnAnObjectFunctionWithNoParams(cwId, ObjectName, functionName, toSend, asTarget);
+    packagePythonOnAnObjectFunction(cwId, ObjectName, functionName, numParams, params, toSend, asTarget);
     succ = writeToPython(cwId, toSend, asTarget);
     if(!succ) {
         return false;

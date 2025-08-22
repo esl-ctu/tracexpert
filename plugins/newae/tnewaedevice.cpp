@@ -77,7 +77,8 @@ TConfigParam TnewaeDevice::setPreInitParams(TConfigParam params){
 }
 
 TConfigParam TnewaeDevice::updatePostInitParams(TConfigParam paramsIn, bool write /*= false*/) const {
-    auto topPrm = m_postInitParams;
+    auto topPrm = paramsIn;
+    topPrm.resetState();
     auto prms = topPrm.getSubParams();
     for (auto it = prms.begin(); it != prms.end(); ++it) {
         bool ok, ok2;
@@ -98,37 +99,69 @@ TConfigParam TnewaeDevice::updatePostInitParams(TConfigParam paramsIn, bool writ
                 args.clear();
                 out = "";
                 len = 0;
-                bool ok3;
+                bool ok3, ok4;
                 QString subPrmName = (*itt).getName();
-                if ((*itt).getHint() == READ_ONLY_STRING && !write) { // a function on a subobject
-                    plugin->runPythonFunctionOnAnObjectAndGetStringOutput(cwId, prmName, subPrmName, len, out, true);
+                if ((*itt).getHint() == READ_ONLY_STRING) { // a function on a subobject
+                    if (write)
+                        continue;
+                    QList<QString> par;
+                    ok4 = plugin->runPythonFunctionOnAnObjectAndGetStringOutput(cwId, prmName, subPrmName, 0, par, len, out, true);
                 } else if ((*itt).getHint() == WRITE_ONLY_STRING) { // function that sets stuff
+                    qDebug("%s", (subPrmName).toLocal8Bit().constData());
                     if (!write)
                         continue;
-                    //todo!!
-                    //nezpomeň přepnout run na false!
-                    //zapiš result!
+
+                    qDebug("%s", ((*itt).getSubParamByName("Run?")->getValue().toLower()).toLocal8Bit().constData());
+                    bool run = (*itt).getSubParamByName("Run?")->getValue().toLower() == "true";
+                    if (!run)
+                        continue;
+
+                    qDebug("%s", ("b"));
+                    auto prmArgs = (*itt).getSubParams();
+                    for (auto arg = prmArgs.begin(); arg != prmArgs.end(); ++arg) {
+                        if ((*arg).getName() == "Run?" || (*arg).getName() == "Result" )
+                            continue;
+
+                        topPrm.getSubParamByName((*it).getName())->getSubParamByName((*itt).getName())->getSubParamByName((*arg).getName())->setValue((*arg).getValue());
+                        args.append((*arg).getValue());
+                    }
+
+                    ok4 = plugin->runPythonFunctionOnAnObjectAndGetStringOutput(cwId, prmName, subPrmName, args.length(), args, len, out, true);
+
+                    topPrm.getSubParamByName((*it).getName())->getSubParamByName((*itt).getName())->getSubParamByName("Run?")->setValue("false");
+                    topPrm.getSubParamByName((*it).getName())->getSubParamByName((*itt).getName())->getSubParamByName("Result")->setValue(out);
+
+                     qDebug("%s", ("c"));
+                    if (!ok) {
+                        topPrm.setState(TConfigParam::TState::TWarning, "Cannot run a function on a subobject.");
+                        qDebug("%s", ("Error running a function " + subPrmName + " on object " + prmName + "res: " + out).toLocal8Bit().constData());
+                    }
+                    qDebug("%s", ("d"));
+
                 } else { // normal property
                     if (write) {
                         QString val = (*itt).getValue();
                         if (!((*itt).isReadonly())) //do not write readonly params
-                            plugin->setPythonSubparameter(cwId, prmName, subPrmName, val, out, true);
+                            ok4 = plugin->setPythonSubparameter(cwId, prmName, subPrmName, val, out, true);
                     } else {
-                        plugin->getPythonSubparameter(cwId, prmName, subPrmName, out, true);
+                        ok4 = plugin->getPythonSubparameter(cwId, prmName, subPrmName, out, true);
                     }
                 }
                 topPrm.getSubParamByName(prmName, &ok)->getSubParamByName(subPrmName, &ok2)->setValue(out.toLower(), &ok3);
-                if (!ok || !ok2 || !ok3) {
-                    topPrm.setState(TConfigParam::TState::TWarning, "Cannot read some params.");
-                    qDebug("%s", ("Error reading subparam " + subPrmName + " of param " + prmName).toLocal8Bit().constData());
+                if (!ok || !ok2 || !ok3 || !ok4) {
+                    topPrm.setState(TConfigParam::TState::TWarning, "Cannot read/write some params.");
+                    qDebug("%s", ("Error reading/writing subparam " + subPrmName + " of param " + prmName).toLocal8Bit().constData());
                 }
             }
-        } else if ((*it).getHint() == READ_ONLY_STRING && !write) { //get a param that needs a function call with no args
+        } else if ((*it).getHint() == READ_ONLY_STRING) { //get a param that needs a function call with no args
+            if (write)
+                continue;
+
             plugin->runPythonFunctionAndGetStringOutput(cwId, prmName, 0, args, len, out, true);
             topPrm.getSubParamByName(prmName, &ok)->setValue(out.toLower(), &ok2);
             if (!ok || !ok2) {
                 topPrm.setState(TConfigParam::TState::TWarning, "Cannot read some params.");
-                qDebug("%s", ("Error reading param " + prmName + " res: " + out).toLocal8Bit().constData());
+                qDebug("%s", ("Error reading param " + prmName + " res(1): " + out).toLocal8Bit().constData());
             }
         } else if ((*it).getHint() == WRITE_ONLY_STRING) { // function that sets stuff
             if (!write)
@@ -146,10 +179,15 @@ TConfigParam TnewaeDevice::updatePostInitParams(TConfigParam paramsIn, bool writ
                 args.append((*arg).getValue());
             }
 
-            plugin->runPythonFunctionAndGetStringOutput(cwId, prmName, args.length(), args, len, out, true);
+            ok = plugin->runPythonFunctionAndGetStringOutput(cwId, prmName, args.length(), args, len, out, true);
 
             topPrm.getSubParamByName((*it).getName())->getSubParamByName("Run?")->setValue("false");
             topPrm.getSubParamByName((*it).getName())->getSubParamByName("Result")->setValue(out);
+
+            if (!ok) {
+                topPrm.setState(TConfigParam::TState::TWarning, "Cannot run a function.");
+                qDebug("%s", ("Error running a function " + prmName + " res: " + out).toLocal8Bit().constData());
+            }
         } else { //normal param (python object property)
             if (write) {
                 QString val = (*it).getValue();
@@ -160,45 +198,18 @@ TConfigParam TnewaeDevice::updatePostInitParams(TConfigParam paramsIn, bool writ
             }
             topPrm.getSubParamByName(prmName, &ok)->setValue(out.toLower(), &ok2);
             if (!ok || !ok2) {
-                topPrm.setState(TConfigParam::TState::TWarning, "Cannot read some params.");
-                qDebug("%s", ("Error reading param " + prmName).toLocal8Bit().constData());
+                if (write) {
+                    topPrm.setState(TConfigParam::TState::TWarning, "Cannot write some params.");
+                    qDebug("%s", ("Error writing param " + prmName + " res(2): " + out).toLocal8Bit().constData());
+                } else {
+                    topPrm.setState(TConfigParam::TState::TWarning, "Cannot read some params.");
+                    qDebug("%s", ("Error reading param " + prmName + " res(2): " + out).toLocal8Bit().constData());
+                }
             }
         }
     }
 
-    //todo functions that actually do stuff (see above)
-
     return topPrm;
-
-/*
-    if (write){
-        QString out;
-        bool ok1;
-        plugin->setPythonParameter(cwId, "baud", paramsIn.getSubParamByName("Baudrate", &ok1)->getValue(), out, true);
-        if (!ok1) {
-            paramsIn.setState(TConfigParam::TState::TError, "Write error: Unable to obtain data from the postinitparams structure.");
-            return paramsIn;
-        }
-
-    }
-
-    bool ok1, ok2, ok3, ok11, ok22, ok33, ook1, ook2, ook3;
-    QString out1, out2, out3;
-
-    ook1 = plugin->getPythonParameter(cwId, "baud", out1, true);
-
-    if (!ook1) {
-        paramsIn.setState(TConfigParam::TState::TError, "Read error: Unable to obtain data from the NewAE device.");
-        return paramsIn;
-    }
-
-    paramsIn.getSubParamByName("Baudrate", &ok1)->setValue(out1, &ok11);
-
-    if (!ok1 || !ok11){
-        paramsIn.setState(TConfigParam::TState::TError, "Read error: Unable to write data to the postinitparams structure.");
-    }
-*/
-    return paramsIn;
 }
 
 void TnewaeDevice::init(bool *ok/* = nullptr*/){
@@ -282,7 +293,7 @@ void TnewaeDevice::init(bool *ok/* = nullptr*/){
 
 }
 
-//IMPORTANT: Do not edit the hints that say "alwaysRunFunc" (READ_ONLY_STRING) or "writeOnlyFunc (WRITE_ONLY_STRING)!!!
+//IMPORTANT: Do not edit the hints that say "alwaysRunFunc" (READ_ONLY_STRING) or "writeOnlyFunc" (WRITE_ONLY_STRING)!!!
 TConfigParam TnewaeDevice::_createPostInitParams(){
     TConfigParam postInitParams = TConfigParam("NewAE target " + m_name + " post-init config", "", TConfigParam::TType::TDummy, "");
     if (type == TARGET_NORMAL) {
@@ -307,7 +318,7 @@ TConfigParam TnewaeDevice::_createPostInitParams(){
         br.addSubParam(TConfigParam("batchsize", "1024", TConfigParam::TType::TInt, ""));
         br.addSubParam(TConfigParam("random_key", "True", TConfigParam::TType::TBool, ""));
         br.addSubParam(TConfigParam("random_pt", "True", TConfigParam::TType::TBool, ""));
-        br.addSubParam(TConfigParam("seed", "", TConfigParam::TType::TInt, "")); //todo does this work? Default is none
+        br.addSubParam(TConfigParam("seed", "0", TConfigParam::TType::TInt, "")); //todo does this work? Default is none
         br.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
         br.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
         postInitParams.addSubParam(br);
@@ -343,15 +354,150 @@ TConfigParam TnewaeDevice::_createPostInitParams(){
         sk.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
         postInitParams.addSubParam(sk);
 
+        auto ro = TConfigParam("readOutput", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        ro.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        ro.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        postInitParams.addSubParam(ro);
+
         //pll
         auto pll = TConfigParam("pll", "", TConfigParam::TType::TDummy, "");
+
+        auto cmd = TConfigParam("calcMulDiv", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        cmd.addSubParam(TConfigParam("freqdesired", "1000000", TConfigParam::TType::TInt, ""));
+        cmd.addSubParam(TConfigParam("freqsource", "0", TConfigParam::TType::TInt, ""));
+        cmd.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        cmd.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(cmd);
+
+        auto c9i = TConfigParam("cdce906init", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        c9i.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        c9i.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(c9i);
+
+        auto c9r = TConfigParam("cdce906init", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        c9r.addSubParam(TConfigParam("addr", "0", TConfigParam::TType::TInt, ""));
+        c9r.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        c9r.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(c9r);
+
+        auto c9so = TConfigParam("cdce906setoutput", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        c9so.addSubParam(TConfigParam("outpin", "0", TConfigParam::TType::TInt, ""));
+        c9so.addSubParam(TConfigParam("divsource", "", TConfigParam::TType::TString, ""));
+        c9so.addSubParam(TConfigParam("slewrate", "+0nS", TConfigParam::TType::TString, ""));
+        c9so.addSubParam(TConfigParam("enabled", "true", TConfigParam::TType::TBool, ""));
+        c9so.addSubParam(TConfigParam("inverted", "false", TConfigParam::TType::TBool, ""));
+        c9so.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        c9so.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(c9so);
+
+        auto c9w = TConfigParam("cdce906write", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        c9w.addSubParam(TConfigParam("addr", "0", TConfigParam::TType::TInt, ""));
+        c9w.addSubParam(TConfigParam("data", "", TConfigParam::TType::TString, ""));
+        c9w.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        c9w.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(c9w);
+
+        auto otp = TConfigParam("outnumToPin", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        otp.addSubParam(TConfigParam("outnum", "0", TConfigParam::TType::TInt, ""));
+        otp.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        otp.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(otp);
+
+        auto ouo = TConfigParam("outputUpdateOutputs", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        ouo.addSubParam(TConfigParam("outnum", "0", TConfigParam::TType::TInt, ""));
+        ouo.addSubParam(TConfigParam("pllsrc_new", "None", TConfigParam::TType::TString, ""));
+        ouo.addSubParam(TConfigParam("pllenabled_new", "None", TConfigParam::TType::TString, ""));
+        ouo.addSubParam(TConfigParam("pllslewrate_new", "None", TConfigParam::TType::TString, ""));
+        ouo.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        ouo.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(ouo);
+
         pll.addSubParam(TConfigParam("pll_enable_get", "", TConfigParam::TType::TString, READ_ONLY_STRING, true));
-        //todo more
-        //pll.addSubParam(TConfigParam("", "", TConfigParam::TType::TString, ""));
+
+        auto pes = TConfigParam("pll_enable_set", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        pes.addSubParam(TConfigParam("enabled", "", TConfigParam::TType::TBool, ""));
+        pes.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        pes.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(pes);
+
+        auto pes2 = TConfigParam("pll_outenable_get", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        pes2.addSubParam(TConfigParam("outnum", "0", TConfigParam::TType::TInt, ""));
+        pes2.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        pes2.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(pes);
+
+        auto pos = TConfigParam("pll_outenable_set", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        pos.addSubParam(TConfigParam("enabled", "", TConfigParam::TType::TBool, ""));
+        pos.addSubParam(TConfigParam("outnum", "0", TConfigParam::TType::TInt, ""));
+        pos.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        pos.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(pos);
+
+        auto pog = TConfigParam("pll_outfreq_get", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        pog.addSubParam(TConfigParam("outnum", "0", TConfigParam::TType::TInt, ""));
+        pog.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        pog.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(pog);
+
+        auto pos2 = TConfigParam("pll_outfreq_set", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        pos2.addSubParam(TConfigParam("freq", "1000000", TConfigParam::TType::TInt, ""));
+        pos2.addSubParam(TConfigParam("outnum", "0", TConfigParam::TType::TInt, ""));
+        pos2.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        pos2.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(pos2);
+
+        auto pog2 = TConfigParam("pll_outslew_get", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        pog2.addSubParam(TConfigParam("outnum", "0", TConfigParam::TType::TInt, ""));
+        pog2.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        pog2.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(pog2);
+
+        auto pos3 = TConfigParam("pll_outslew_set", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        pos3.addSubParam(TConfigParam("slew", "", TConfigParam::TType::TString, ""));
+        pos3.addSubParam(TConfigParam("outnum", "0", TConfigParam::TType::TInt, ""));
+        pos3.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        pos3.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(pos3);
+
+        auto pog3 = TConfigParam("pll_outsource_get", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        pog3.addSubParam(TConfigParam("outnum", "0", TConfigParam::TType::TInt, ""));
+        pog3.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        pog3.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(pog3);
+
+        auto pos4 = TConfigParam("pll_outsource_set", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        pos3.addSubParam(TConfigParam("source", "", TConfigParam::TType::TString, ""));
+        pos3.addSubParam(TConfigParam("outnum", "0", TConfigParam::TType::TInt, ""));
+        pos3.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        pos3.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(pos3);
+
+        auto pw = TConfigParam("pll_writedefaults", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        pw.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        pw.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(pw);
+
+        auto pllread = TConfigParam("pllread", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        pllread.addSubParam(TConfigParam("pllnum", "0", TConfigParam::TType::TInt, ""));
+        pllread.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        pllread.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(pllread);
+
+        auto pllwrite = TConfigParam("pllwrite", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
+        pllwrite.addSubParam(TConfigParam("pllnum", "0", TConfigParam::TType::TInt, ""));
+        pllwrite.addSubParam(TConfigParam("N", "0", TConfigParam::TType::TInt, ""));
+        pllwrite.addSubParam(TConfigParam("M", "0", TConfigParam::TType::TInt, ""));
+        pllwrite.addSubParam(TConfigParam("outdiv", "1", TConfigParam::TType::TInt, ""));
+        pllwrite.addSubParam(TConfigParam("Run?", QString("false"), TConfigParam::TType::TBool, ""));
+        pllwrite.addSubParam(TConfigParam("Result", "", TConfigParam::TType::TString, "", true));
+        pll.addSubParam(pllwrite);
+
         postInitParams.addSubParam(pll);
 
-    } else if (type == TARGET_CW310) {
+        //TODO: SAM3U IO Control, SPI Program - is it needed?
 
+    } else if (type == TARGET_CW310) {
+        //lol, give me 150k CZK to buy a CW310 and I'll fix this
     }
     //postInitParams.addSubParam(TConfigParam("simpleserial_last_sent", "", TConfigParam::TType::TString, "The last raw string read by a simpleserial_read* command"));
     //postInitParams.addSubParam(TConfigParam("simpleserial_last_read", "", TConfigParam::TType::TString, "The last raw string written via simpleserial_write"));
@@ -413,9 +559,10 @@ TConfigParam TnewaeDevice::setPostInitParams(TConfigParam params){
 
     bool ok = true;
     ok = _validatePostInitParamsStructure(params);
+    m_postInitParams.resetState();
     if (ok) {
         m_postInitParams = updatePostInitParams(params, true);
-        m_postInitParams = updatePostInitParams(params);
+        m_postInitParams = updatePostInitParams(m_postInitParams);
     } else {
         m_postInitParams = params;
         qWarning("Post init params vadiation for target not successful, nothing was stored");

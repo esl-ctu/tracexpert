@@ -686,7 +686,8 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                                 size_t len;
                                 QString out;
                                 bool ok;
-                                ok = plugin->runPythonFunctionOnAnObjectAndGetStringOutput(cwId, prmName, subPrmName, len, out);
+                                QList<QString> par;
+                                ok = plugin->runPythonFunctionOnAnObjectAndGetStringOutput(cwId, prmName, subPrmName, 0, par, len, out);
                                 subSubPrms[0].setValue("No");
                                 if (!ok) {
                                     topPrm->setState(TConfigParam::TState::TWarning, "Cannot read/write some params.");

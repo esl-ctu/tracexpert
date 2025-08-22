@@ -286,7 +286,7 @@ def FPGAtargetSetup(line, shm, targetDict, sc, cw305, bitstream):
     return True
 
 ##Call a method on an object from the CW package
-##Takes: cwID, "FUNO-", obejct name, function name
+##Takes: cwID, "(T-)FUNO-", obejct name, function name
 ##Outputs: DONE/ERROR, data to shm
 def callCwFuncOnAnObject(line, shm, dct):
     cwID = line[0:3]
@@ -303,7 +303,7 @@ def callCwFuncOnAnObject(line, shm, dct):
             sendCWNotConnected(line)
             return
 
-
+    noParams = False
     #Split to object name and function name
     if asTarget == True:
         objectAndFunctionNames = line[11:]
@@ -311,9 +311,10 @@ def callCwFuncOnAnObject(line, shm, dct):
         objectAndFunctionNames = line[9:]
     objectName = ""
     functionName = ""
+    lineParameters = ""
     splitLine = ""
     try:
-        splitLine = objectAndFunctionNames.split(FIELD_SEPARATOR, 1)
+        splitLine = objectAndFunctionNames.split(FIELD_SEPARATOR, 2)
         objectName = splitLine[0]
         objectName = objectName.rstrip('\r\n')
         functionName = splitLine[1]
@@ -324,6 +325,12 @@ def callCwFuncOnAnObject(line, shm, dct):
         else:
             printToStdout("ERROR", False, cwID) 
         printToStderr("Invalid Python CW function called or it was called on an invalid object (one of the names is probably empty)")
+
+    try:
+        lineParameters = splitLine[2]
+        lineParameters = lineParameters.rstrip('\r\n')
+    except:
+        noParams = True
 
     try:
         if asTarget == True:
@@ -348,10 +355,70 @@ def callCwFuncOnAnObject(line, shm, dct):
         printToStderr("Invalid Python CW function called (this method of the specified subobject of the CW object does not exist)")
         return
 
+    parameters = [None] * 10
+    numParams = 0
+    while (numParams < 10 and lineParameters != "" and (not noParams)):
+        try:
+            parameter = lineParameters.split(FIELD_SEPARATOR, 1)[0]
+            parameter = parameter.rstrip('\r\n')
+        except:
+            try:
+                parameter = lineParameters.split(LINE_SEPARATOR, 1)[0]
+                parameter = parameters[numParams].rstrip('\r\n')
+            except:
+                if asTarget == True:
+                    printToStdout("ERROR", True, cwID) 
+                else:
+                    printToStdout("ERROR", False, cwID) 
+                printToStderr("Error processing fucntion parameters")
+                return
+        
+        parameters[numParams] = parseParameter(parameter)
+        numParams += 1
+
+        try:
+            lineParameters = lineParameters.split(FIELD_SEPARATOR, 1)[1]
+        except:
+            break
+
     ret = ""
     try:
-        tmp = function()
-        ret = cwToStr(tmp)
+        if numParams == 0:
+            tmp = function()
+            ret = cwToStr(tmp)
+        elif numParams == 1:  
+            tmp = function(parameters[0])
+            ret = cwToStr(tmp)   
+        elif numParams == 2:
+            tmp = function(parameters[0], parameters[1])
+            ret = cwToStr(tmp)
+        elif numParams == 3:
+            tmp = function(parameters[0], parameters[1], parameters[2])
+            ret = cwToStr(tmp)
+        elif numParams == 4:
+            tmp = function(parameters[0], parameters[1], parameters[2], parameters[3])
+            ret = cwToStr(tmp)
+        elif numParams == 5:
+            tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4])
+            ret = cwToStr(tmp)
+        elif numParams == 6:
+            tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5])
+            ret = cwToStr(tmp)
+        elif numParams == 7:
+            tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6])
+            ret = cwToStr(tmp)
+        elif numParams == 8:
+            tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7])
+            ret = cwToStr(tmp)
+        elif numParams == 9:
+            tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7], parameters[8])
+            ret = cwToStr(tmp)  
+        else:
+            if asTarget == True:
+                printToStdout("ERROR", True, cwID) 
+            else:
+                printToStdout("ERROR", False, cwID) 
+            printToStderr("Too many parameters passed to a Python function")
     except:
         if asTarget == True:
             printToStdout("ERROR", True, cwID) 
