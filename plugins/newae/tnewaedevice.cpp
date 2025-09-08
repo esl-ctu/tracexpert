@@ -157,9 +157,9 @@ TConfigParam TnewaeDevice::updatePostInitParams(TConfigParam paramsIn, bool writ
             if (write)
                 continue;
 
-            plugin->runPythonFunctionAndGetStringOutput(cwId, prmName, 0, args, len, out, true);
+            bool ok3 = plugin->runPythonFunctionAndGetStringOutput(cwId, prmName, 0, args, len, out, true);
             topPrm.getSubParamByName(prmName, &ok)->setValue(out.toLower(), &ok2);
-            if (!ok || !ok2) {
+            if (!ok || !ok2 || !ok3) {
                 topPrm.setState(TConfigParam::TState::TWarning, "Cannot read some params.");
                 qDebug("%s", ("Error reading param " + prmName + " res(1): " + out).toLocal8Bit().constData());
             }
@@ -297,7 +297,7 @@ void TnewaeDevice::init(bool *ok/* = nullptr*/){
 TConfigParam TnewaeDevice::_createPostInitParams(){
     TConfigParam postInitParams = TConfigParam("NewAE target " + m_name + " post-init config", "", TConfigParam::TType::TDummy, "");
     if (type == TARGET_NORMAL) {
-        postInitParams.addSubParam(TConfigParam("Baudrate", "38400", TConfigParam::TType::TInt, "Baudrate for the target"));
+        postInitParams.addSubParam(TConfigParam("baud", "38400", TConfigParam::TType::TInt, "Baudrate for the target"));
     } else if (type == TARGET_CW305) {
         postInitParams.addSubParam(TConfigParam("INITB_state", "", TConfigParam::TType::TBool, READ_ONLY_STRING, true));
         postInitParams.addSubParam(TConfigParam("get_fpga_buildtime", "", TConfigParam::TType::TString, READ_ONLY_STRING, true));
@@ -512,13 +512,13 @@ bool TnewaeDevice::_validatePostInitParamsStructure(TConfigParam & params){
     if (type == TARGET_NORMAL) {
         bool ok2;
 
-        int val = params.getSubParamByName("Baudrate")->getValue().toInt(&ok2);
+        int val = params.getSubParamByName("baud")->getValue().toInt(&ok2);
 
         if (!(val >= 500 && val <= 2000000))
             ok = false;
 
         if (!ok || !ok2)
-            params.getSubParamByName("Baudrate")->setState(TConfigParam::TState::TWarning);
+            params.getSubParamByName("baud")->setState(TConfigParam::TState::TWarning);
     }
 
     return ok;
@@ -579,7 +579,8 @@ size_t TnewaeDevice::writeData(const uint8_t * buffer, size_t len){
     QList<QString> prms;
     prms.append(toSend);
     size_t lenOut;
-    bool ok = plugin->runPythonFunctionAndGetStringOutput(cwId, "write", 1, prms, lenOut, out, true);
+    bool ok = plugin->runPythonFunctionWithBinaryDataAsOneArgumentAndGetStringOutput(cwId, "write", (char*) buffer, len, lenOut, out, true);
+    //bool ok = plugin->runPythonFunctionAndGetStringOutput(cwId, "write", 1, prms, lenOut, out, true);
 
     if (!ok)
         return 0;

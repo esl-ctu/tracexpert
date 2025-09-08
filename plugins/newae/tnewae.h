@@ -97,6 +97,7 @@ public:
 
     //In this block, cwId is only used for identification if the correct CW is being accessed
     bool writeToPython(uint8_t cwId, const QString &data, bool asTarget = false, bool responseExpected = true, bool wait = true);
+    bool writeBinaryToPython(uint8_t cwId, const char * data, size_t len, bool asTarget = false, bool responseExpected = true, bool wait = true);
     //bool readFromPython(uint8_t cwId, QString &data, bool wait = true);
     bool waitForPythonDone(uint8_t cwId, int timeout = 30000);
     bool waitForPythonTargetDone(uint8_t cwId, int timeout = 30000);
@@ -104,6 +105,7 @@ public:
     //In this block, CW is super important
     void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
     bool runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out, bool asTarget = false);
+    bool runPythonFunctionWithBinaryDataAsOneArgumentAndGetStringOutput(int8_t cwId, QString functionName, char * data, size_t lenIn, size_t &dataLen, QString &out, bool asTarget = false);
     bool runPythonFunctionOnAnObjectAndGetStringOutput(int8_t cwId, QString ObjectName, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out, bool asTarget = false);
     bool getPythonParameter(int8_t cwId, QString paramName, QString &out, bool asTarget = false);
     bool getPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString &out, bool asTarget = false);
@@ -134,6 +136,7 @@ protected:
 
     bool getDataFromShm(size_t &size, QString &data, uint8_t cwId, bool asTarget = false);
     bool getDataFromShm(size_t * size, void * data, uint8_t cwId, size_t bufferSize, bool asTarget = false);
+    bool runPythonFunctionAndGetStringOutputHelper(int8_t cwId, const char* data, size_t len_in, size_t &dataLen, QString &out, bool asTarget = false);
 
     //In this block, CW is super important
     void packagePythonFunction(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out, bool asTarget = false);

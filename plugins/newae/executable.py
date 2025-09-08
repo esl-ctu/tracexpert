@@ -11,6 +11,7 @@ from queue import Queue
 from ctypes import c_uint8 as uint16_t
 from ctypes import c_double as double
 from datetime import datetime
+import base64
 
 ##GLOBALS##
 PLUGIN_ID = "TraceXpert.NewAE"
@@ -93,7 +94,10 @@ def cwToStr(tmp):
     if isinstance(tmp, np.ndarray):
         return tmp
     else:
-        return str(tmp)
+        if tmp == None:
+            return ""
+        else:
+            return str(tmp)
 
 ##Handle error when CW is not connected
 def sendCWNotConnected(line):
@@ -446,6 +450,12 @@ def callCwFuncOnAnObject(line, shm, dct):
 ##Takes: cwID, "FUNC-"/"T-FUNC-", function name, [parameters]
 ##Outputs: DONE/ERROR, data to shm
 def callCwFunc(line, shm, dct):
+    if isinstance(line, bytes):
+        binaryLine = line
+        line = line.decode("ascii", errors="ignore")
+    elif isinstance(line, str):
+        binaryLine = None
+
     cwID = line[0:3]
     asTarget = False
     if line[4] == 't' and line[5] == '-':
@@ -473,7 +483,6 @@ def callCwFunc(line, shm, dct):
         splitLine = functionName.split(FIELD_SEPARATOR, 1)
         functionName = splitLine[0]
         functionName = functionName.rstrip('\r\n')
-
     except:
         if asTarget == True:
             printToStdout("ERROR", True, cwID)
@@ -510,29 +519,39 @@ def callCwFunc(line, shm, dct):
 
     parameters = [None] * 10
     numParams = 0
-    while (numParams < 10 and lineParameters != "" and (not noParams)):
-        try:
-            parameter = lineParameters.split(FIELD_SEPARATOR, 1)[0]
-            parameter = parameter.rstrip('\r\n')
-        except:
-            try:
-                parameter = lineParameters.split(LINE_SEPARATOR, 1)[0]
-                parameter = parameters[numParams].rstrip('\r\n')
-            except:
-                if asTarget == True:
-                    printToStdout("ERROR", True, cwID) 
-                else:
-                    printToStdout("ERROR", False, cwID) 
-                printToStderr("Error processing fucntion parameters")
-                return
-        
-        parameters[numParams] = parseParameter(parameter)
-        numParams += 1
 
-        try:
-            lineParameters = lineParameters.split(FIELD_SEPARATOR, 1)[1]
-        except:
-            break
+    # If input was bytes, pass the *binary payload* as a single argument
+    if binaryLine is not None and not noParams:
+        # Find the offset of lineParameters in the decoded line
+        # Then use that length to slice the original bytes safely
+        headerLen = len(line) - len(lineParameters)
+        payload = binaryLine[headerLen:]
+        parameters = [payload]
+        numParams = 1
+    else:
+        while (numParams < 10 and lineParameters != "" and (not noParams)):
+            try:
+                parameter = lineParameters.split(FIELD_SEPARATOR, 1)[0]
+                parameter = parameter.rstrip('\r\n')
+            except:
+                try:
+                    parameter = lineParameters.split(LINE_SEPARATOR, 1)[0]
+                    parameter = parameters[numParams].rstrip('\r\n')
+                except:
+                    if asTarget == True:
+                        printToStdout("ERROR", True, cwID) 
+                    else:
+                        printToStdout("ERROR", False, cwID) 
+                    printToStderr("Error processing fucntion parameters")
+                    return
+            
+            parameters[numParams] = parseParameter(parameter)
+            numParams += 1
+
+            try:
+                lineParameters = lineParameters.split(FIELD_SEPARATOR, 1)[1]
+            except:
+                break
         
     ret = ""
     try:
@@ -864,7 +883,13 @@ def consumerCw(queue, cwShmDict, cwDict):
 
 def consumerTarget(queue, targetShmDict, targetDict):
      while True:
-        line = queue.get()
+        binaryLine = queue.get()
+        if isinstance(binaryLine, bytes):
+            line = binaryLine.decode("ascii", errors="ignore")
+        elif isinstance(binaryLine, str):
+            line = binaryLine
+        else:
+            line = None
 
         if line == "DIE":
             break
@@ -874,7 +899,11 @@ def consumerTarget(queue, targetShmDict, targetDict):
             cwID = line[0:3]
             tmpline = line
             try:
-                callCwFunc(line[:11].lower() + line[11:], targetShmDict[cwID], targetDict)
+                if isinstance(binaryLine, bytes):
+                    lineToForward = line[:11].lower().encode("ascii") + binaryLine[11:]
+                else:
+                    lineToForward = line[:11].lower() + line[11:]
+                callCwFunc(lineToForward, targetShmDict[cwID], targetDict)
             except(USBError):
                 sendCWNotConnected(tmpline)
 
@@ -906,7 +935,6 @@ def consumerTarget(queue, targetShmDict, targetDict):
             except(USBError):
                 sendCWNotConnected(tmpline)
 
-
 #####EXEXUTABLE START######
 def main():
     print("STARTED", flush=True)
@@ -924,10 +952,22 @@ def main():
     cwConsumerDict = dict()
     targetConsumerDict = dict()
 
-    for line in sys.stdin:
-        print(line + " " + str(datetime.now()), flush=True, file=sys.stderr) # TODO!!! Remove!!
-        if line == "\r" or line == "\n" or line == "\r\n":
+    for b64line in sys.stdin:
+        b64line = b64line.strip()  # removes all leading/trailing whitespace, including \r and \n
+        if not b64line:
+            printToStdout("ERROR", False, NO_CW_ID) 
+            printToStderr("Could not decode received base64 data.")
             continue
+
+        try:
+            lineBinary = base64.b64decode(b64line, validate=True)  # returns bytes
+            line = lineBinary.decode("ascii", errors="ignore")
+        except Exception as e:
+            printToStdout("ERROR", False, NO_CW_ID) 
+            printToStderr("Binary data could not be decoded to ASCII.")
+            continue
+
+        #print(line + " " + str(datetime.now()), flush=True, file=sys.stderr) # TODO!!! Remove!!
 
         ## Test shared memory
         if line.startswith("SMTEST:", 4, 12):
@@ -1016,7 +1056,7 @@ def main():
         ## Call a method from the CW target package
         elif line.startswith("T-FUNC-", 4, 12):
             cwID = line[0:3]
-            targetQueueDict[cwID].put(line)
+            targetQueueDict[cwID].put(lineBinary)
 
         ## Call a method on an object from the CW package
         elif line.startswith("FUNO-", 4, 10):

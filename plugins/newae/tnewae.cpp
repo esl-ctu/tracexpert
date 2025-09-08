@@ -697,12 +697,8 @@ void TNewae::packagePythonSubparam(uint8_t cwId, QString paramName, QString subP
     }
 }
 
-bool TNewae::runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out, bool asTarget /*= false*/){
-    QString toSend;
-    bool succ;
-
-    packagePythonFunction(cwId, functionName, numParams, params, toSend, asTarget);
-    succ = writeToPython(cwId, toSend, asTarget);
+bool TNewae::runPythonFunctionAndGetStringOutputHelper(int8_t cwId, const char* data, size_t len_in, size_t &dataLen, QString &out, bool asTarget /*= false*/){
+    bool succ = writeBinaryToPython(cwId, data, len_in, asTarget);
     if(!succ) {
         return false;
     }
@@ -719,30 +715,57 @@ bool TNewae::runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionNa
         }
     }
 
-
     succ = getDataFromShm(dataLen, out, cwId, asTarget);
     if (!succ) {
         qCritical("Error reading from shared memory");
         return false;
     }
 
-    if (!dataLen) {
+    /*if (!dataLen) {
         qCritical("No data from shared memory");
         return false;
-    }
+    }*/
 
     return true;
+}
+
+//This ugly abomination reimplemets packagePythonFunction and stuff that that method calls. Reason: sending binary data over a serial connection to a target. Could it be prettier? I have no idea...
+bool TNewae::runPythonFunctionWithBinaryDataAsOneArgumentAndGetStringOutput(int8_t cwId, QString functionName, char * data, size_t lenIn, size_t &dataLen, QString &out, bool asTarget /*= false*/){
+    QString newFunctionName;
+    if (asTarget)
+        newFunctionName = "T-FUNC-" + functionName;
+    else
+        newFunctionName = "FUNC-" + functionName;
+
+    QString header;
+    QTextStream(&header) << QString::number(cwId).rightJustified(3, '0');
+    QTextStream(&header) << fieldSeparator << newFunctionName << fieldSeparator;
+    QByteArray toSend = header.toLocal8Bit();
+    toSend.append(data, static_cast<int>(lenIn));
+    toSend.append(lineSeparator);
+
+    return runPythonFunctionAndGetStringOutputHelper(cwId, toSend.constData(), toSend.size(), dataLen, out, asTarget);
+}
+
+
+bool TNewae::runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out, bool asTarget /*= false*/){
+    QString toSend;
+    bool succ;
+
+    packagePythonFunction(cwId, functionName, numParams, params, toSend, asTarget);
+    return runPythonFunctionAndGetStringOutputHelper(cwId, toSend.toLocal8Bit().constData(), toSend.size(), dataLen, out, asTarget);
 }
 
 bool TNewae::readFromTarget(uint8_t cwId, size_t * size, void * out, size_t bufferSize) {
     QString toSend;
     bool succ;
     QList<QString> params;
+    params.append(QString::number(bufferSize));
 
-    packagePythonFunction(cwId, "read", 0, params , toSend, true);
+    packagePythonFunction(cwId, "read", 1, params , toSend, true);
     succ = writeToPython(cwId, toSend, true);
     if(!succ) {
-        qDebug("Error sending the get_last_trace command.");
+        qDebug("Error sending the read command.");
         return false;
     }
 
@@ -920,8 +943,12 @@ bool TNewae::setPythonSubparameter(int8_t cwId, QString paramName, QString subPa
 }
 
 bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool asTarget /*= false*/, bool responseExpected/* = true*/, bool wait/* = true*/){
+    return writeBinaryToPython(cwId, data.toLocal8Bit().constData(), data.size(), asTarget, responseExpected, wait);
+}
+
+bool TNewae::writeBinaryToPython(uint8_t cwId, const char * data, size_t len, bool asTarget /*= false*/, bool responseExpected/* = true*/, bool wait/* = true*/){
     if(asTarget) {
-        waitForPythonTargetDone(cwId, 1000);
+        waitForPythonTargetDone(cwId, 10);
 
         if (!pythonTargetReady[cwId]){
             qDebug("Python not ready! (target)");
@@ -929,7 +956,7 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool asTarget /*= 
         }
         pythonTargetReady[cwId] = false;
     } else {
-        waitForPythonDone(cwId, 1000);
+        waitForPythonDone(cwId, 10);
 
         if (!pythonReady[cwId]){
             qDebug("Python not ready!");
@@ -940,9 +967,15 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool asTarget /*= 
 
     wait = true; //!!!!!
 
-    int succ;
+    QByteArray raw(data, static_cast<int>(len));
+    if (!raw.isEmpty() && raw.endsWith('\n')) {
+        raw.chop(1);  // removes last byte
+    }
+    QByteArray b64 = raw.toBase64();
+    b64.append('\n');
 
-    succ = pythonProcess->write(data.toLocal8Bit().constData());
+    int succ;
+    succ = pythonProcess->write(b64);
 
     if (succ == -1){
         return false;
@@ -1069,6 +1102,9 @@ void TNewae::checkForPythonState(){
 
 
 bool TNewae::waitForPythonDone(uint8_t cwId, int timeout/* = 30000*/){
+    if (timeout < 50)
+        pythonProcess->waitForReadyRead(timeout);
+
     for (int i = 0; i < timeout/50; ++i) {
         if (pythonReady[cwId]){
 
@@ -1081,6 +1117,9 @@ bool TNewae::waitForPythonDone(uint8_t cwId, int timeout/* = 30000*/){
 }
 
 bool TNewae::waitForPythonTargetDone(uint8_t cwId, int timeout/* = 30000*/){
+    if (timeout < 50)
+        pythonProcess->waitForReadyRead(timeout);
+
     for (int i = 0; i < timeout/50; ++i) {
         if (pythonTargetReady[cwId]){
             break;
