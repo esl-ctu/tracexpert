@@ -517,6 +517,9 @@ def callCwFunc(line, shm, dct):
         printToStderr("Invalid Python CW/target function called (this method of the CW/target object does not exist)")
         return
 
+    if functionName != "write":
+        binaryLine = None
+
     parameters = [None] * 10
     numParams = 0
 

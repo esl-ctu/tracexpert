@@ -761,8 +761,9 @@ bool TNewae::readFromTarget(uint8_t cwId, size_t * size, void * out, size_t buff
     bool succ;
     QList<QString> params;
     params.append(QString::number(bufferSize));
+    params.append(QString::number(5));
 
-    packagePythonFunction(cwId, "read", 1, params , toSend, true);
+    packagePythonFunction(cwId, "read", 2, params , toSend, true);
     succ = writeToPython(cwId, toSend, true);
     if(!succ) {
         qDebug("Error sending the read command.");
