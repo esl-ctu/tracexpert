@@ -563,7 +563,7 @@ void TnewaeScope::init(bool *ok/* = nullptr*/){
 }
 
 void TnewaeScope::deInit(bool *ok/* = nullptr*/){
-    m_postInitParams = updatePostInitParams(m_postInitParams);
+    //m_postInitParams = updatePostInitParams(m_postInitParams);
 
     m_initialized = false;
 
