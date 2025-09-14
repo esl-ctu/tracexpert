@@ -87,7 +87,7 @@ TConfigParam TnewaeDevice::updatePostInitParams(TConfigParam paramsIn, bool writ
         QString prmName = (*it).getName();
 
         //Check if the param is local to the plugin and does not need to be written to the device
-        if (prmName == "FPGA read address" || prmName == "FPGA write address"){
+        if (prmName == "FPGA read address" || prmName == "FPGA write address" || prmName == "Function to use when reading from the FPGA"){
             topPrm.getSubParamByName(prmName)->setValue((*it).getValue());
             continue;
         }
@@ -107,16 +107,13 @@ TConfigParam TnewaeDevice::updatePostInitParams(TConfigParam paramsIn, bool writ
                     QList<QString> par;
                     ok4 = plugin->runPythonFunctionOnAnObjectAndGetStringOutput(cwId, prmName, subPrmName, 0, par, len, out, true);
                 } else if ((*itt).getHint() == WRITE_ONLY_STRING) { // function that sets stuff
-                    qDebug("%s", (subPrmName).toLocal8Bit().constData());
                     if (!write)
                         continue;
 
-                    qDebug("%s", ((*itt).getSubParamByName("Run?")->getValue().toLower()).toLocal8Bit().constData());
                     bool run = (*itt).getSubParamByName("Run?")->getValue().toLower() == "true";
                     if (!run)
                         continue;
 
-                    qDebug("%s", ("b"));
                     auto prmArgs = (*itt).getSubParams();
                     for (auto arg = prmArgs.begin(); arg != prmArgs.end(); ++arg) {
                         if ((*arg).getName() == "Run?" || (*arg).getName() == "Result" )
@@ -131,12 +128,10 @@ TConfigParam TnewaeDevice::updatePostInitParams(TConfigParam paramsIn, bool writ
                     topPrm.getSubParamByName((*it).getName())->getSubParamByName((*itt).getName())->getSubParamByName("Run?")->setValue("false");
                     topPrm.getSubParamByName((*it).getName())->getSubParamByName((*itt).getName())->getSubParamByName("Result")->setValue(out);
 
-                     qDebug("%s", ("c"));
                     if (!ok) {
                         topPrm.setState(TConfigParam::TState::TWarning, "Cannot run a function on a subobject.");
                         qDebug("%s", ("Error running a function " + subPrmName + " on object " + prmName + "res: " + out).toLocal8Bit().constData());
                     }
-                    qDebug("%s", ("d"));
 
                 } else { // normal property
                     if (write) {
@@ -217,46 +212,38 @@ void TnewaeDevice::init(bool *ok/* = nullptr*/){
     TnewaeScope * matchingScope = NULL;
 
     if (type != TARGET_NORMAL && m_preInitParams.getSubParamByName("Bind to scope")->getValue() == "None"){
-        // setup target with no scope object, do both!
-        //pozor, v pythonu nemáš cw id!!! asi si musíš vygenerovat nový, koukni na addScopeAutomatically jak handlovat IDs
+        cwId = plugin->addDummyScope();
+    } else {
+        QString snToCheck = type == TARGET_NORMAL ? sn : m_preInitParams.getSubParamByName("Bind to scope")->getValue();
 
-        /* verify that this is ok
-        m_postInitParams = _createPostInitParams();
-        m_postInitParams = updatePostInitParams(m_postInitParams);
+        for (int i = 0; i < scopes.length(); ++i){
+            TnewaeScope * currentScope = (TnewaeScope *) scopes.at(i);
 
-        if(ok != nullptr) *ok = true;
-        m_initialized = true;*/
-    }
-
-    QString snToCheck = type == TARGET_NORMAL ? sn : m_preInitParams.getSubParamByName("Bind to scope")->getValue();
-
-    for (int i = 0; i < scopes.length(); ++i){
-        TnewaeScope * currentScope = (TnewaeScope *) scopes.at(i);
-
-        QString scopeSn = currentScope->getSn();
-        if (scopeSn == snToCheck) {
-            matchingScope = currentScope;
-            break;
-        }
-    }
-
-    if (matchingScope) {
-        scopeParent = matchingScope;
-        cwId = scopeParent->getId();
-        if(!scopeParent->isInitialized()) {
-            qWarning("Matching scope was found but was not initialized yet. Please initialize the scope first!");
-            if (ok != nullptr) {
-                //TODO okýnko
-                *ok = false;
-                return;
+            QString scopeSn = currentScope->getSn();
+            if (scopeSn == snToCheck) {
+                matchingScope = currentScope;
+                break;
             }
         }
-    } else {
-        qWarning("Matching scope was not found. Please set up and initialize the scope first!");
-        if (ok != nullptr) {
-            *ok = false;
-            //TODO okýnko
-            return;
+
+        if (matchingScope) {
+            scopeParent = matchingScope;
+            cwId = scopeParent->getId();
+            if(!scopeParent->isInitialized()) {
+                qWarning("Matching scope was found but was not initialized yet. Please initialize the scope first!");
+                if (ok != nullptr) {
+                    //TODO okýnko
+                    *ok = false;
+                    return;
+                }
+            }
+        } else {
+            qWarning("Matching scope was not found. Please set up and initialize the scope first!");
+            if (ok != nullptr) {
+                *ok = false;
+                //TODO okýnko
+                return;
+            }
         }
     }
 
@@ -308,10 +295,14 @@ TConfigParam TnewaeDevice::_createPostInitParams(){
         postInitParams.addSubParam(TConfigParam("crypt_type", "", TConfigParam::TType::TString, "", true));
 
         //function helpers
-        auto fpgaReadAddres = TConfigParam("FPGA read address", "0", TConfigParam::TType::TInt, "Used in the fpga_read function/stream");
-        auto fpgaWriteAddres = TConfigParam("FPGA write address", "0", TConfigParam::TType::TInt, "Used in the fpga_write function/stream");
+        auto fpgaReadAddres = TConfigParam("FPGA read address", "0", TConfigParam::TType::TULongLong, "Used in the fpga_read function/stream");
+        auto fpgaWriteAddres = TConfigParam("FPGA write address", "0", TConfigParam::TType::TULongLong, "Used in the fpga_write function/stream");
+        auto readUse = TConfigParam("Function to use when reading from the FPGA", "fpga_read", TConfigParam::TType::TEnum, "");
+        readUse.addEnumValue("fpga_read");
+        readUse.addEnumValue("readOutput");
         postInitParams.addSubParam(fpgaReadAddres);
         postInitParams.addSubParam(fpgaWriteAddres);
+        postInitParams.addSubParam(readUse);
 
         //functions
         auto br = TConfigParam("batchRun", "", TConfigParam::TType::TDummy, WRITE_ONLY_STRING);
@@ -574,26 +565,49 @@ size_t TnewaeDevice::writeData(const uint8_t * buffer, size_t len){
     if (len == 0)
         return 0;
 
-    QString toSend = QString::fromLocal8Bit((char *) buffer, len);
+    bool ok;
     QString out;
-    QList<QString> prms;
-    prms.append(toSend);
     size_t lenOut;
-    bool ok = plugin->runPythonFunctionWithBinaryDataAsOneArgumentAndGetStringOutput(cwId, "write", (char*) buffer, len, lenOut, out, true);
-    //bool ok = plugin->runPythonFunctionAndGetStringOutput(cwId, "write", 1, prms, lenOut, out, true);
+
+    if (type == TARGET_NORMAL) {
+        ok = plugin->runPythonFunctionWithBinaryDataAsOneArgumentAndGetStringOutput(cwId, "write", (char*) buffer, len, lenOut, out, true);
+    } else {
+        QString addr = m_postInitParams.getSubParamByName("FPGA write address")->getValue();
+        QByteArray packed;
+        packed.append(addr.toLocal8Bit());              // ASCII address
+        packed.append(fieldSeparator);
+        packed.append(QByteArray::fromRawData((char*) buffer, len));
+        ok = plugin->runPythonFunctionWithBinaryDataAsOneArgumentAndGetStringOutput(cwId, "fpga_write", packed.data(), packed.size(), lenOut, out, true);
+    }
 
     if (!ok)
         return 0;
-
     return len;
 }
 
 size_t TnewaeDevice::readData(uint8_t * buffer, size_t len){
-    size_t size;
-    bool ok = plugin->readFromTarget(cwId, &size, buffer, len);
+    if (type == TARGET_NORMAL) {
+        size_t size;
+        bool ok = plugin->readFromTarget(cwId, &size, buffer, len, "read");
 
-    if (ok)
-        return size;
-    else
-        return 0;
+        if (ok)
+            return size;
+        else
+            return 0;
+    } else {
+        QString func = m_postInitParams.getSubParamByName("Function to use when reading from the FPGA")->getValue();
+        size_t size;
+        bool ok;
+        if (func == "readOutput") {
+            ok = plugin->readFromTarget(cwId, &size, buffer, len, func);
+        } else if (func == "fpga_read") {
+            QString addrStr = m_postInitParams.getSubParamByName("FPGA read address")->getValue();
+            unsigned long long addr = addrStr.toULongLong();
+        }
+
+        if (ok)
+            return size;
+        else
+            return 0;
+    }
 }

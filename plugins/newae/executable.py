@@ -170,10 +170,7 @@ def smSet(line, shm):
     except:
         printToStderr("Invalid SM size")
         printToStderr(line)
-        if asTarget:
-            printToStdout("ERROR", True, cwID)
-        else:
-            printToStdout("ERROR", False, cwID)
+        printToStdout("ERROR", asTarget, cwID)
 
     if asTarget:
         shm.setKey(shmKey + cwID + "t")
@@ -184,10 +181,7 @@ def smSet(line, shm):
 
     if not shm.isAttached():
         printToStderr("Unable to attach SHM.")
-    if asTarget:
-        printToStdout("DONE", True, cwID)
-    else:
-        printToStdout("DONE", False, cwID)    
+    printToStdout("DONE", asTarget, cwID)   
 
 
 ##Detect connected CW devices##
@@ -324,10 +318,7 @@ def callCwFuncOnAnObject(line, shm, dct):
         functionName = splitLine[1]
         functionName = functionName.rstrip('\r\n')
     except:
-        if asTarget == True:
-            printToStdout("ERROR", True, cwID) 
-        else:
-            printToStdout("ERROR", False, cwID) 
+        printToStdout("ERROR", asTarget, cwID)
         printToStderr("Invalid Python CW function called or it was called on an invalid object (one of the names is probably empty)")
 
     try:
@@ -342,20 +333,14 @@ def callCwFuncOnAnObject(line, shm, dct):
         else:
             subObject = getattr(scope, objectName)
     except AttributeError:
-        if asTarget == True:
-            printToStdout("ERROR", True, cwID) 
-        else:
-            printToStdout("ERROR", False, cwID) 
+        printToStdout("ERROR", asTarget, cwID)
         printToStderr("Invalid Python CW object specified  (this object of the CW object does not exist)")
         return
 
     try:
         function = getattr(subObject, functionName)
     except AttributeError:
-        if asTarget == True:
-            printToStdout("ERROR", True, cwID) 
-        else:
-            printToStdout("ERROR", False, cwID)  
+        printToStdout("ERROR", asTarget, cwID)
         printToStderr("Invalid Python CW function called (this method of the specified subobject of the CW object does not exist)")
         return
 
@@ -370,10 +355,7 @@ def callCwFuncOnAnObject(line, shm, dct):
                 parameter = lineParameters.split(LINE_SEPARATOR, 1)[0]
                 parameter = parameters[numParams].rstrip('\r\n')
             except:
-                if asTarget == True:
-                    printToStdout("ERROR", True, cwID) 
-                else:
-                    printToStdout("ERROR", False, cwID) 
+                printToStdout("ERROR", asTarget, cwID)
                 printToStderr("Error processing fucntion parameters")
                 return
         
@@ -418,33 +400,21 @@ def callCwFuncOnAnObject(line, shm, dct):
             tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7], parameters[8])
             ret = cwToStr(tmp)  
         else:
-            if asTarget == True:
-                printToStdout("ERROR", True, cwID) 
-            else:
-                printToStdout("ERROR", False, cwID) 
+            printToStdout("ERROR", asTarget, cwID)
             printToStderr("Too many parameters passed to a Python function")
     except:
-        if asTarget == True:
-            printToStdout("ERROR", True, cwID) 
-        else:
-            printToStdout("ERROR", False, cwID) 
+        printToStdout("ERROR", asTarget, cwID)
         errorMessage = "The Python CW function raised this exception: " + traceback.format_exc()
         printToStderr(errorMessage)
 
     if isinstance(ret, bytes):
-        #tmpLen = "{:016x}".format(len(ret))
-        #ret = bytes(tmpLen, 'ascii') + ret
         pass
     else:
         ret = "{:016x}".format(len(ret)) + ret
     
     writeToSHM(ret, shm)
 
-    if asTarget == True:
-        printToStdout("DONE", True, cwID) 
-    else:
-        printToStdout("DONE", False, cwID)
-
+    printToStdout("DONE", asTarget, cwID) 
 
 ##Call a method from the CW package
 ##Takes: cwID, "FUNC-"/"T-FUNC-", function name, [parameters]
@@ -484,10 +454,7 @@ def callCwFunc(line, shm, dct):
         functionName = splitLine[0]
         functionName = functionName.rstrip('\r\n')
     except:
-        if asTarget == True:
-            printToStdout("ERROR", True, cwID)
-        else:
-            printToStdout("ERROR", False, cwID) 
+        printToStdout("ERROR", asTarget, cwID)
         printToStderr("Invalid Python CW function called (name is empty) (1)")
 
     try:
@@ -497,10 +464,7 @@ def callCwFunc(line, shm, dct):
         noParams = True
 
     if functionName == "":
-        if asTarget == True:
-            printToStdout("ERROR", True, cwID) 
-        else:
-            printToStdout("ERROR", False, cwID) 
+        printToStdout("ERROR", asTarget, cwID)
         printToStderr("Invalid Python CW function called (name is empty) (2)")
         return
 
@@ -510,14 +474,11 @@ def callCwFunc(line, shm, dct):
         else:
             function = getattr(scope, functionName)
     except AttributeError:
-        if asTarget == True:
-            printToStdout("ERROR", True, cwID)
-        else:
-            printToStdout("ERROR", False, cwID) 
+        printToStdout("ERROR", asTarget, cwID) 
         printToStderr("Invalid Python CW/target function called (this method of the CW/target object does not exist)")
         return
 
-    if functionName != "write":
+    if functionName != "write" and functionName != "fpga_write":
         binaryLine = None
 
     parameters = [None] * 10
@@ -525,12 +486,34 @@ def callCwFunc(line, shm, dct):
 
     # If input was bytes, pass the *binary payload* as a single argument
     if binaryLine is not None and not noParams:
-        # Find the offset of lineParameters in the decoded line
-        # Then use that length to slice the original bytes safely
         headerLen = len(line) - len(lineParameters)
-        payload = binaryLine[headerLen:]
-        parameters = [payload]
-        numParams = 1
+
+        #Handle fpga_write edge case (first argument is the address)
+        if functionName == "fpga_write":
+            try:
+                # first parameter is ASCII (address), second is binary payload
+                firstParam, sep, _ = lineParameters.partition(FIELD_SEPARATOR)
+                if sep == "":
+                    raise ValueError("Missing FIELD_SEPARATOR in fpga_write parameters")
+
+                parameters[0] = parseParameter(firstParam.rstrip('\r\n'))
+                numParams = 1
+
+                payloadOffset = headerLen + len(firstParam) + len(sep)
+                if payloadOffset > len(binaryLine):
+                    raise ValueError("Payload offset beyond binaryLine length")
+
+                payload = binaryLine[payloadOffset:]
+                parameters[1] = payload
+                numParams += 1
+
+            except Exception as e:
+                printToStdout("ERROR", asTarget, cwID)
+                printToStderr(f"Malformed fpga_write input: {e}")
+                return
+        else:
+            parameters[0] = binaryLine[headerLen:]
+            numParams = 1
     else:
         while (numParams < 10 and lineParameters != "" and (not noParams)):
             try:
@@ -541,10 +524,7 @@ def callCwFunc(line, shm, dct):
                     parameter = lineParameters.split(LINE_SEPARATOR, 1)[0]
                     parameter = parameters[numParams].rstrip('\r\n')
                 except:
-                    if asTarget == True:
-                        printToStdout("ERROR", True, cwID) 
-                    else:
-                        printToStdout("ERROR", False, cwID) 
+                    printToStdout("ERROR", asTarget, cwID)
                     printToStderr("Error processing fucntion parameters")
                     return
             
@@ -622,17 +602,11 @@ def callCwFunc(line, shm, dct):
             tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7], parameters[8])
             ret = cwToStr(tmp)
         else:
-            if asTarget == True:
-                printToStdout("ERROR", True, cwID) 
-            else:
-                printToStdout("ERROR", False, cwID) 
+            printToStdout("ERROR", asTarget, cwID) 
             printToStderr("Too many parameters passed to a Python function")
     except:
         if functionName != "capture":
-            if asTarget == True:
-                printToStdout("ERROR", True, cwID) 
-            else:
-                printToStdout("ERROR", False, cwID) 
+            printToStdout("ERROR", asTarget, cwID)
             errorMessage = "The Python CW function raised this exception: " + traceback.format_exc()
             printToStderr(errorMessage)
         else:
@@ -640,16 +614,11 @@ def callCwFunc(line, shm, dct):
 
     if isinstance(ret, np.ndarray):
         pass
-        #tmpLen = "{:016x}".format(len(ret))
-        #ret = bytes(tmpLen, 'ascii') + ret
     else:
         ret = "{:016x}".format(len(ret)) + ret
     writeToSHM(ret, shm)
 
-    if asTarget == True:
-        printToStdout("DONE", True, cwID) 
-    else:
-        printToStdout("DONE", False, cwID)
+    printToStdout("DONE", asTarget, cwID) 
 
 ##Set or read a scope object parameter
 ##If No value is provided, read is performed
@@ -682,10 +651,7 @@ def cwParam(line, shm, dct):
     try:
         paramName = params.split(FIELD_SEPARATOR, 1)[0]
     except:
-        if asTarget == True:
-            printToStdout("ERROR", True, cwID) 
-        else:
-            printToStdout("ERROR", False, cwID)
+        printToStdout("ERROR", asTarget, cwID)
         printToStderr("Invalid Python CW attribute reqested (1)") 
         return     
     paramName = paramName.rstrip('\r\n')
@@ -706,10 +672,7 @@ def cwParam(line, shm, dct):
         else:
             param = getattr(scope, paramName)
     except AttributeError:
-        if asTarget == True:
-            printToStdout("ERROR", True, cwID)
-        else:
-            printToStdout("ERROR", False, cwID) 
+        printToStdout("ERROR", asTarget, cwID) 
         printToStderr("Invalid Python CW attribute reqested (2)")
         return
 
@@ -724,10 +687,7 @@ def cwParam(line, shm, dct):
     realParamValue = "{:016x}".format(len(realParamValue)) + realParamValue
     writeToSHM(realParamValue, shm)
 
-    if asTarget == True:
-        printToStdout("DONE", True, cwID)
-    else:
-        printToStdout("DONE", False, cwID)
+    printToStdout("DONE", asTarget, cwID)
 
 ##Set or read a scope/target object subparameter
 ##If No value is provided, read is performed
@@ -761,10 +721,7 @@ def cwSubParam(line, shm, dct):
     try:
         paramName = params.split(FIELD_SEPARATOR, 1)[0]
     except:
-        if asTarget == True:
-            printToStdout("ERROR", True, cwID) 
-        else:
-            printToStdout("ERROR", False, cwID)
+        printToStdout("ERROR", asTarget, cwID)
         printToStderr("Invalid Python CW attribute reqested (1)") 
         return     
     paramName = paramName.rstrip('\r\n')
@@ -772,10 +729,7 @@ def cwSubParam(line, shm, dct):
     try:
         subParamName = params.split(FIELD_SEPARATOR, 2)[1]
     except:
-        if asTarget == True:
-            printToStdout("ERROR", True, cwID) 
-        else:
-            printToStdout("ERROR", False, cwID)
+        printToStdout("ERROR", asTarget, cwID)
         printToStderr("Invalid Python CW subattribute reqested (1)") 
         return     
     subParamName = subParamName.rstrip('\r\n')
@@ -796,20 +750,14 @@ def cwSubParam(line, shm, dct):
         else:
             param = getattr(scope, paramName)
     except AttributeError:
-        if asTarget == True:
-            printToStdout("ERROR", True, cwID) 
-        else:
-            printToStdout("ERROR", False, cwID) 
+        printToStdout("ERROR", asTarget, cwID)
         printToStderr("Invalid Python CW attribute reqested (2)")
         return
 
     try:
         subParam = getattr(param, subParamName)
     except AttributeError:
-        if asTarget == True:
-            printToStdout("ERROR", True, cwID) 
-        else:
-            printToStdout("ERROR", False, cwID)
+        printToStdout("ERROR", asTarget, cwID)
         printToStderr("Invalid Python CW subattribute reqested (2)")
         return
 
@@ -835,11 +783,7 @@ def cwSubParam(line, shm, dct):
         subParamValue = "{:016x}".format(len(subParamValue)) + subParamValue
         writeToSHM(subParamValue, shm)
 
-    if asTarget == True:
-        printToStdout("DONE", True, cwID) 
-    else:
-        printToStdout("DONE", False, cwID)
-
+    printToStdout("DONE", asTarget, cwID) 
 
 def consumerCw(queue, cwShmDict, cwDict):
     while True:
@@ -1014,6 +958,8 @@ def main():
 
         elif line.startswith("T305-SETUP", 4, 15):
             cwID = line[0:3]
+            if cwID not in cwDict:
+                cwDict[cwID] = None
             bitsr = (line[15:]).rstrip('\r\n')
             if FPGAtargetSetup(line.lower(), targetShmDict[cwID], targetDict, cwDict[cwID], True, bitsr):
                 targetQueueDict[cwID] = Queue()
@@ -1022,6 +968,8 @@ def main():
 
         elif line.startswith("T310-SETUP", 4, 15):
             cwID = line[0:3]
+            if cwID not in cwDict:
+                cwDict[cwID] = None
             if FPGAtargetSetup(line.lower(), targetShmDict[cwID], targetDict, cwDict[cwID], False, None):
                 targetQueueDict[cwID] = Queue()
                 targetConsumerDict[cwID] = Thread(target=consumerTarget, args=(targetQueueDict[cwID], targetShmDict, targetDict))

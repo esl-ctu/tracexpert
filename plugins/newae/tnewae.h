@@ -76,6 +76,7 @@ public:
     TScope * addScopeAutomatically(QString name, QString info, bool *ok = nullptr);//Never call this manually!
     /// Add a Analytical device manually
     virtual TAnalDevice * addAnalDevice(QString name, QString info, bool *ok = nullptr) override;
+    uint8_t addDummyScope();
 
 
     /// Get available IO devices, available only after init()
@@ -112,7 +113,7 @@ public:
     bool setPythonParameter(int8_t cwId, QString paramName, QString value, QString &out, bool asTarget = false); //Out is the new value of the parameter, can be discarded
     bool setPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString value, QString &out, bool asTarget = false); //Out is the new value of the subparameter, can be discarded
     bool downloadSamples(uint8_t cwId, size_t * size, void * out, bool asInt, size_t bufferSize);
-    bool readFromTarget(uint8_t cwId, size_t * size, void * out, size_t bufferSize);
+    bool readFromTarget(uint8_t cwId, size_t * size, void * out, size_t bufferSize, QString func, unsigned long long addr = ULLONG_MAX);
 
     //bool getTracesFromShm(size_t &numTraces, size_t &traceSize, QList<double> &data);
 

@@ -597,6 +597,22 @@ TScope * TNewae::addScope(QString name, QString info, bool *ok) {
     return NULL;
 }
 
+uint8_t TNewae::addDummyScope() {
+    if (numDevices + 1 != NO_CW_ID) {
+        TnewaeScope * sc;
+        pythonReady[numDevices] = true;
+        pythonError[numDevices] = false;
+        pythonTargetError[numDevices] = false;
+        pythonTargetReady[numDevices] = true;
+        bool succ = setUpAndTestSHM(numDevices);
+        numDevices++;
+        return numDevices-1;
+    } else {
+        qCritical("Number of available Chipwhisperer slots exceeded. Please de-init and re-init the plugin/component to continue.");
+        return 0;
+    }
+}
+
 TScope * TNewae::addScopeAutomatically(QString name, QString info, bool *ok) {
     //Check if the scope exists
     for (int i = 0; i < m_scopes.length(); ++i){
@@ -756,14 +772,25 @@ bool TNewae::runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionNa
     return runPythonFunctionAndGetStringOutputHelper(cwId, toSend.toLocal8Bit().constData(), toSend.size(), dataLen, out, asTarget);
 }
 
-bool TNewae::readFromTarget(uint8_t cwId, size_t * size, void * out, size_t bufferSize) {
+bool TNewae::readFromTarget(uint8_t cwId, size_t * size, void * out, size_t bufferSize, QString func, unsigned long long addr /*= ULLONG_MAX*/) {
     QString toSend;
     bool succ;
     QList<QString> params;
-    params.append(QString::number(bufferSize));
-    params.append(QString::number(5));
+    if (func == "read") {
+        params.append(QString::number(bufferSize));
+        params.append(QString::number(5));
+        packagePythonFunction(cwId, func, 2, params , toSend, true);
+    } else if (func == "readOutput") {
+        packagePythonFunction(cwId, func, 0, params , toSend, true);
+    } else if (func == "fpga_read") {
+        params.append(QString::number(addr));
+        params.append(QString::number(bufferSize));
+        packagePythonFunction(cwId, func, 2, params , toSend, true);
+    } else {
+        return false;
+    }
 
-    packagePythonFunction(cwId, "read", 2, params , toSend, true);
+
     succ = writeToPython(cwId, toSend, true);
     if(!succ) {
         qDebug("Error sending the read command.");
