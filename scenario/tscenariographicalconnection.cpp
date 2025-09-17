@@ -197,16 +197,22 @@ void TScenarioGraphicalConnection::paint(QPainter * painter, const QStyleOptionG
     // draw different line style based on port type
     if(m_startItemPort->getScenarioItemPort()->getType() == TScenarioItemPort::TItemPortType::TFlowPort) {
         // draw simple line for flow lines
-        color = FLOW_CONNECTION_COLOR;
+        color = FLOW_LINE_COLOR;
         painter->setPen(QPen(color, 2));
         painter->drawPolyline(m_polyline);
     }
-    else {
+    else if(m_startItemPort->getScenarioItemPort()->getType() == TScenarioItemPort::TItemPortType::TDataPort) {
         // draw double line for data lines
-        color = DATA_CONNECTION_COLOR;
+        color = DATA_LINE_COLOR;
         painter->setPen(QPen(color, 5));
         painter->drawPolyline(m_polyline);
         painter->setPen(QPen(Qt::white, 1));
+        painter->drawPolyline(m_polyline);
+    }
+    else {
+        // draw simple line for connection lines
+        color = CONN_LINE_COLOR;
+        painter->setPen(QPen(color, 2));
         painter->drawPolyline(m_polyline);
     }
 

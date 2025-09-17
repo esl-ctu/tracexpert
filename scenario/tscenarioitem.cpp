@@ -339,6 +339,34 @@ void TScenarioItem::addDataOutputPort(const QString & name, const QString & disp
     sortItemPorts();
 }
 
+void TScenarioItem::addConnectionInputPort(const QString & name, const QString & displayName, const QString & description) {
+    if(!verifyPortNameUnique(name)) {
+        return;
+    }
+
+    m_itemPorts.append(
+        new TScenarioItemPort(name,
+                              TScenarioItemPort::TItemPortType::TConnectionPort,
+                              TScenarioItemPort::TItemPortDirection::TInputPort,
+                              this, displayName, description)
+        );
+    sortItemPorts();
+}
+
+void TScenarioItem::addConnectionOutputPort(const QString & name, const QString & displayName, const QString & description) {
+    if(!verifyPortNameUnique(name)) {
+        return;
+    }
+
+    m_itemPorts.append(
+        new TScenarioItemPort(name,
+                              TScenarioItemPort::TItemPortType::TConnectionPort,
+                              TScenarioItemPort::TItemPortDirection::TOutputPort,
+                              this, displayName, description)
+        );
+    sortItemPorts();
+}
+
 void TScenarioItem::removePort(const QString & name) {
     QList<TScenarioItemPort *>::iterator it = m_itemPorts.begin();
     while (it != m_itemPorts.end()) {

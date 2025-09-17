@@ -70,6 +70,13 @@ public:
         return m_params;
     }
 
+    bool cleanup() override {
+        m_subtitle = QString(tr("%1 iterations")).arg(m_params.getSubParamByName("Number of iterations")->getValue());
+        emit appearanceChanged();
+
+        return true;
+    }
+
     bool prepare() override {
         bool ok;
         m_totalIterations = m_params.getSubParamByName("Number of iterations")->getValue().toULongLong(&ok);

@@ -424,6 +424,11 @@ bool TScenarioScene::isLineValidArrow() const {
         return false;
     }
 
+    if(m_tmpLineEndPort->portType() == TScenarioItemPort::TItemPortType::TConnectionPort &&
+        (m_tmpLineStartPort->hasGraphicalConnection() || m_tmpLineEndPort->hasGraphicalConnection())) {
+        return false;
+    }
+
     return true;
 }
 
@@ -433,12 +438,13 @@ QPen TScenarioScene::evaluateLinePen() const {
     }
 
     if(m_tmpLineStartPort->portDirection() == TScenarioItemPort::TItemPortDirection::TInputPort ||
-        (m_tmpLineStartPort->portType() == TScenarioItemPort::TItemPortType::TFlowPort && m_tmpLineStartPort->hasGraphicalConnection()))
+        (m_tmpLineStartPort->portType() == TScenarioItemPort::TItemPortType::TFlowPort && m_tmpLineStartPort->hasGraphicalConnection()) ||
+        (m_tmpLineStartPort->portType() == TScenarioItemPort::TItemPortType::TConnectionPort && m_tmpLineStartPort->hasGraphicalConnection()))
     {
         return QPen(Qt::red, 2);
     }
 
-    Qt::PenStyle style = m_tmpLineStartPort->portType() == TScenarioItemPort::TItemPortType::TFlowPort ? Qt::SolidLine : Qt::DashLine;
+    Qt::PenStyle style = m_tmpLineStartPort->portType() == TScenarioItemPort::TItemPortType::TDataPort ? Qt::DashLine : Qt::SolidLine;
 
     if(m_tmpLineEndPort != nullptr)
     {
@@ -453,6 +459,11 @@ QPen TScenarioScene::evaluateLinePen() const {
             return QPen(Qt::red, 2, style);
         }
 
+        if(m_tmpLineEndPort->portType() == TScenarioItemPort::TItemPortType::TConnectionPort && m_tmpLineEndPort->hasGraphicalConnection())
+        {
+            return QPen(Qt::red, 2, style);
+        }
+
         if(m_tmpLineEndPort->portDirection() == TScenarioItemPort::TItemPortDirection::TOutputPort) {
             return QPen(Qt::red, 2, style);
         }
@@ -462,6 +473,8 @@ QPen TScenarioScene::evaluateLinePen() const {
         return QPen(FLOW_LINE_COLOR, 2, style);
     } else if(m_tmpLineStartPort->portType() == TScenarioItemPort::TItemPortType::TDataPort) {
         return QPen(DATA_LINE_COLOR, 2, style);
+    } else if(m_tmpLineStartPort->portType() == TScenarioItemPort::TItemPortType::TConnectionPort) {
+        return QPen(CONN_LINE_COLOR, 2, style);
     }
 
     return QPen(Qt::red, 2, style);

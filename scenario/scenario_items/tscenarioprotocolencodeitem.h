@@ -45,7 +45,7 @@ public:
         int protocolCount = m_projectModel->protocolContainer()->count();
         int selectedProtocolIndex = protocolCount > 0 ? 0 : -1;
         for(int i = 0; i < protocolCount; i++) {
-            QString protocolName = m_projectModel->protocolContainer()->at(i).getName();
+            QString protocolName = m_projectModel->protocolContainer()->at(i)->name();
             protocolParam->addEnumValue(protocolName);
 
             if(protocolName == protocolParam->getValue()) {
@@ -64,7 +64,7 @@ public:
         int selectedMessageIndex = -1;
         if(selectedProtocolIndex > -1) {
             messageParam->resetState();
-            const TProtocol protocol = m_projectModel->protocolContainer()->at(selectedProtocolIndex);
+            const TProtocol protocol = m_projectModel->protocolContainer()->at(selectedProtocolIndex)->protocol();
 
             int messageCount = protocol.getMessages().count();
             selectedMessageIndex = messageCount > 0 ? 0 : -1;

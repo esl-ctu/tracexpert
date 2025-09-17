@@ -27,7 +27,7 @@ public slots:
     void openProtocolEditor(const QString & protocolName);
 
     void createScenarioManagerWidget();
-    void openScenarioEditor(TScenarioModel * scenario);
+    void createScenarioEditorDockWidget(TScenarioModel * scenario);
 
 private slots:
     void showDeviceWizard();

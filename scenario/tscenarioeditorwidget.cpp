@@ -188,7 +188,6 @@ void TScenarioEditorWidget::pointerToolChanged(TScenarioScene::TScenarioPointerT
 
 void TScenarioEditorWidget::keyPressEvent(QKeyEvent *event) {
     if(event->key() == Qt::Key_Shift) {
-        qDebug() << "ctrl pressed";
         m_pointerTypeGroup->button(TScenarioScene::MouseDrag)->click();
     }
 
@@ -197,7 +196,6 @@ void TScenarioEditorWidget::keyPressEvent(QKeyEvent *event) {
 
 void TScenarioEditorWidget::keyReleaseEvent(QKeyEvent *event) {
     if(event->key() == Qt::Key_Shift) {
-        qDebug() << "ctrl released";
         m_pointerTypeGroup->button(TScenarioScene::MousePointer)->click();
     }
 
@@ -372,7 +370,7 @@ QWidget * TScenarioEditorWidget::createCellWidget(int itemClass) {
 
     QWidget * widget = new QWidget;
     widget->setLayout(layout);
-    widget->setFixedWidth(110);
+    widget->setFixedWidth(120);
 
     delete graphicalItem;
 

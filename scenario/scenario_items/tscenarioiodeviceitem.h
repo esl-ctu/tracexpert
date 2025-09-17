@@ -311,11 +311,15 @@ public:
             }
         }
 
-        if(selectedIODeviceIndex > -1) {
-            TComponentModel * componentModel = m_projectModel->componentContainer()->at(selectedComponentIndex);
-            TIODeviceModel * IODeviceModel = componentModel->IODeviceContainer()->at(selectedIODeviceIndex);
+        if(selectedIODeviceIndex < 0) {
+            return nullptr;
+        }
 
-            return IODeviceModel;
+        TComponentModel * componentModel = m_projectModel->componentContainer()->at(selectedComponentIndex);
+        TIODeviceModel * IODeviceModel = componentModel->IODeviceContainer()->at(selectedIODeviceIndex);
+
+        if(!IODeviceModel->isAvailable()) {
+            return nullptr;
         }
 
         return nullptr;

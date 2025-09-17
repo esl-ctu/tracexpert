@@ -184,6 +184,8 @@ protected:
     void addFlowOutputPort(const QString & name, const QString & displayName = QString(), const QString & description = QString());
     void addDataInputPort (const QString & name, const QString & displayName = QString(), const QString & description = QString());
     void addDataOutputPort(const QString & name, const QString & displayName = QString(), const QString & description = QString());
+    void addConnectionInputPort (const QString & name, const QString & displayName = QString(), const QString & description = QString());
+    void addConnectionOutputPort(const QString & name, const QString & displayName = QString(), const QString & description = QString());
 
     void removePort(const QString & name);
     bool verifyPortNameUnique(const QString & name);

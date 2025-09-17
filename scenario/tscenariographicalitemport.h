@@ -49,6 +49,7 @@ protected:
 private:
     const QColor FLOW_PORT_COLOR = QColor::fromString("#89bac9");
     const QColor DATA_PORT_COLOR = QColor::fromString("#da9a85");
+    const QColor CONN_PORT_COLOR = QColor::fromString("#9a85da");
 
     QPointF m_lastScenePos;
 

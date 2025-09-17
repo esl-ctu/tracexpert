@@ -96,7 +96,7 @@ void TScenarioWidget::onEditButtonClicked() {
 }
 
 void TScenarioWidget::openEditor(TScenarioModel * scenario) {
-    m_mainWindow->openScenarioEditor(scenario);
+    m_mainWindow->createScenarioEditorDockWidget(scenario);
 }
 
 void TScenarioWidget::onRemoveButtonClicked() {

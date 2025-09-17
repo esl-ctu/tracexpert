@@ -66,6 +66,7 @@ protected:
 private:
     const QColor FLOW_LINE_COLOR = QColor::fromString("#99cfe0");
     const QColor DATA_LINE_COLOR = QColor::fromString("#da9a85");
+    const QColor CONN_LINE_COLOR = QColor::fromString("#9a85da");
 
     TScenarioPointerTool m_pointerTool;
 
