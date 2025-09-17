@@ -148,6 +148,8 @@ When you're satisfied with the look of your scenario, it is time to run it.
 To run the scenario, click the green **Run** button in the top left toolbar.
 The output of the run will appear in the **Scenario run log** in the bottom of the editor window.
 
+When the scenario finishes, the **Flow end** block through which the scenario has ended will be highlighted light blue.
+
 ![Run the scenario](images/scenarios_run_scenario.png)
 
 ### Step 7: Edit the block settings
@@ -172,6 +174,8 @@ Continue by editing the Constant block, changing the **Number of iterations**.
 After you're done editing, the scenario should look as follows.
 
 You can run the scenario now and observe the change in the **Scenario run log**.
+
+> 💡 *Notice that during scenario execution, the loop block displays the current iteration number.*
 
 ![After edit](images/scenarios_after_edit.png)
 
@@ -231,7 +235,7 @@ The return value has to be an array with the same number of elements as is set i
 
 ![Script block settings](images/scenarios_script_settings.png)
 
-### IO Device reading/writing
+### IO Device reading and writing
 
 In order to read from and write to IO Devices (which can be files, serial ports, smart card readers etc.) the **IO Device: Read** and **IO Device: Write** blocks can be used.
 
@@ -285,4 +289,36 @@ If a message with payload inputs is selected, they will appear as inputs into th
 
 ### Oscilloscope interfacing
 
-**! TODO !**
+Scenarios currently offer two ways to use oscilloscopes. 
+
+Either, the **Oscilloscope: single capture** block can be used alone, or the **Oscilloscope: start measurement** and **Oscilloscope: download data** blocks can be used together.
+
+The **Oscilloscope: single capture** block performs a single capture and blocks until the measurement is done (until all data is received from the oscilloscope). This means any setup for the measurement has to be done before the measurement. 
+
+The **Oscilloscope: start measurement** and **Oscilloscope: download data** blocks also perform a single capture, but during the measurement, the user can perform actions in the scenario.
+
+The **Oscilloscope: single capture** block and **Oscilloscope: start measurement** have the same settings - Component and Oscilloscope selection, pre- and post- init parameters. Same rules apply for the parameters as with [IO Devices](#io-device-reading-and-writing).
+
+![Oscilloscope block](images/scenarios_oscilloscope_settings.png)
+![Oscilloscope block](images/scenarios_oscilloscope_settings2.png)
+
+The **Oscilloscope: single capture** block shows an error state until an Oscilloscope is assigned. The data ouput ports are as follows:
+
+- **data** - raw measured data
+- **#traces** - total number of traces
+- **#samples** - total number of samples per trace
+- **data type** - data type as string
+- **overvoltage** - boolean indicator of overvoltage
+
+> 💡 The data type can be one of: *UInt8, Int8, UInt16, Int16, UInt32, Int32, Real32, Real64*
+
+![Oscilloscope block](images/scenarios_oscilloscope.png)
+![Oscilloscope block](images/scenarios_oscilloscope2.png)
+
+The **Oscilloscope: start measurement** block also shows an error state until an Oscilloscope is assigned. The data ouput ports on the **Oscilloscope: download data** are identical as on the **single capture** block.
+
+The following image shows a part of an example scenario.
+The **Oscilloscope: start measurement** and **Oscilloscope: download data** have to be connected together through the purple "connection" ports in order to work.
+
+![Oscilloscope block](images/scenarios_oscilloscope_start_stop_example.png)
+![Oscilloscope block](images/scenarios_oscilloscope_start_stop_example2.png)
