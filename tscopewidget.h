@@ -11,18 +11,11 @@
 #include "tconfigparamwidget.h"
 
 struct TScopeTraceData {
-    ~TScopeTraceData() {
-        // correct way to delete using the same operator ([])
-        for(quint8 * buffer : buffers) {
-            delete [] buffer;
-        }
-    }
-
     size_t firstTraceIndex;
     size_t traces;
     size_t samples;
     TScope::TSampleType type;
-    QList<quint8 *> buffers;
+    QList<QByteArray> buffers;
     bool overvoltage;
 };
 
@@ -33,7 +26,6 @@ class TScopeWidget : public QWidget
 
 public:
     explicit TScopeWidget(TScopeModel * scope, QWidget * parent = nullptr);
-    ~TScopeWidget();
 
 public slots:
     void updateChannelStatus();
@@ -45,7 +37,7 @@ public slots:
     void downloadFailed();
     void tracesEmpty();
 
-    void receiveTraces(size_t traces, size_t samples, TScope::TSampleType type, QList<quint8 *> buffers, bool overvoltage);
+    void receiveTraces(size_t traces, size_t samples, TScope::TSampleType type, QList<QByteArray> buffers, bool overvoltage);
 
 private slots:
     bool applyPostInitParam();
@@ -54,8 +46,10 @@ private slots:
     void runButtonClicked();
     void stopButtonClicked();
 
-    void prevTraceButtonClicked();
-    void nextTraceButtonClicked();
+    void clearTraceData();
+
+    void showPrevTrace();
+    void showNextTrace();
 
 private:
     const QList<const char *> channelColorCodes = { "#711415", "#f8cc1b", "#ae311e", "#b5be2f", "#f37324", "#72b043", "#f6a020", "#007f4e" };
@@ -74,14 +68,16 @@ private:
     void createLineSeries(
         QLineSeries * lineSeries,
         TScope::TChannelStatus channel,
-        T * buffer,
+        const T * buffer,
         size_t sampleOffset,
         size_t sampleCount);
+
+    bool m_isDataIntendedForThisWidget;
 
     void setGUItoReady();
     void setGUItoRunning();
 
-    QList<TScopeTraceData *> m_traceDataList;
+    QList<TScopeTraceData> m_traceDataList;
     void displayTrace(size_t traceIndex);
 
     size_t m_currentTraceNumber;
@@ -90,6 +86,7 @@ private:
     QPushButton * m_runOnceButton;
     QPushButton * m_runButton;
     QPushButton * m_stopButton;
+    QPushButton * m_clearDataButton;
 
     QLineEdit * m_traceIndexLineEdit;
     void updateTraceIndexView();
