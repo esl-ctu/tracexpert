@@ -229,6 +229,8 @@ public:
     }
 
     bool prepare() override {
+        resetState();
+
         m_scopeModel = getScopeModel();
 
         if(!m_scopeModel) {

@@ -183,6 +183,8 @@ public:
     }
 
     bool prepare() override {
+        resetState();
+
         m_IODeviceModel = getIODeviceModel();
         m_isFirstBlockExecution = true;
 
@@ -322,7 +324,7 @@ public:
             return nullptr;
         }
 
-        return nullptr;
+        return IODeviceModel;
     }
 
     TScenarioItemPort * getPreferredOutputFlowPort() override {
