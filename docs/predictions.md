@@ -17,5 +17,5 @@ When the "Compute predictions" action is launched, the device enumerates selecte
 
 The device creates 16 output streams, one for each byte of the attacked key. Each output stream then returns 256 bytes for every submitted plaintext/ciphertext. Every byte contains either Hamming weight/distance or Identity, based on the settings.
 
-E.g., consider Hamming distance settings and 10 submitted ciphertexts (i.e., 10*16 bytes), followed by the "Compute predictions" action. The output stream for 4th byte then returns 10 vectors of 256 values, each value belonging to one of the key guesses on the 4th byte of the key. Each value is 1 byte. Every output stream therefore returns 10*256 bytes of data.  
+E.g., consider Hamming distance settings and 10 submitted ciphertexts (i.e., 10\*16 bytes), followed by the "Compute predictions" action. The output stream for 4th byte then returns 10 vectors of 256 values, each value belonging to one of the key guesses on the 4th byte of the key. Each value is 1 byte. Every output stream therefore returns 10\*256 bytes of data.  
 
