@@ -32,7 +32,7 @@ Czech Technical University in Prague, Embedded Security Lab, https://crypto.fit.
 * Vojtěch Miškovský
 * Martin Novotný
 * David Pokorný
-* Tomáš Preucil
+* Tomáš Přeučil
 * Petr Socha
 * Adam Švehla
 
