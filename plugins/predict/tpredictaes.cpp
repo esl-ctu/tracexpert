@@ -18,7 +18,7 @@ TPredictAES::TPredictAES(): m_operation(0) {
     keyType.addEnumValue("256 bit");*/
     m_preInitParams.addSubParam(keyType);
 
-    TConfigParam operationType = TConfigParam("Operation", "Encryption", TConfigParam::TType::TEnum, "AES operation");
+    TConfigParam operationType = TConfigParam("Operation", "Encryption, first round, Hamming weight", TConfigParam::TType::TEnum, "AES operation");
     operationType.addEnumValue("Encryption, first round, Hamming weight");
     operationType.addEnumValue("Encryption, first round, Identity");
     operationType.addEnumValue("Decryption, last round, Hamming distance");
