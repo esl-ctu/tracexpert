@@ -1,18 +1,17 @@
-#ifndef TPREDICTAES_H
-#define TPREDICTAES_H
+#ifndef TAESENGINE_H
+#define TAESENGINE_H
 
 #include <QString>
 #include <QList>
 #include <QQueue>
 #include "tconfigparam.h"
 #include "tanaldevice.h"
-#include "typesmoment.hpp"
 
-class TPredictAES : public TAnalDevice {
+class TAESEngine : public TAnalDevice {
 
 public:
-    TPredictAES();
-    virtual ~TPredictAES();
+    TAESEngine();
+    virtual ~TAESEngine();
 
     /// AnalDevice name
     virtual QString getName() const override;
@@ -45,28 +44,41 @@ public:
     virtual bool isBusy() const override;
 
     size_t addData(const uint8_t * buffer, size_t length);
+    size_t addKeyData(const uint8_t * buffer, size_t length);
 
-    void resetContexts();
-    void computePredictions();
+    void reset();
+    void computeIntermediates();
+    void loadKey();
 
-    size_t getPredictions(uint8_t * buffer, size_t length, size_t byte);
+    size_t getIntermediates(uint8_t * buffer, size_t length);
 
 private:
 
     TConfigParam m_preInitParams;
+    TConfigParam m_postInitParams;
 
     size_t m_operation;
+    size_t m_keysizeB;
 
     QList<TAnalAction *> m_analActions;
     QList<TAnalInputStream *> m_analInputStreams;
     QList<TAnalOutputStream *> m_analOutputStreams;
 
     QList<uint8_t> m_data;
+    QList<uint8_t> m_keyData;
 
-    QList<QList<uint8_t> *> m_predictions;
-    QList<size_t> m_position;
+    QList<uint8_t> m_intermediates;
+    size_t m_position;
+
+    size_t m_breakpoint;
+    size_t m_breakpointN;
+
+    size_t m_outputRestrict;
+    size_t m_outputRestrictM;
+
+    uint8_t m_key[32];
 
 };
 
-#endif // TPREDICTAES_H
+#endif // TAESENGINE_H
 

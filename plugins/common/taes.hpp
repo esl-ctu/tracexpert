@@ -107,51 +107,83 @@ private:
     }
 
 public:
-    static void EncryptBlock(uint8_t out[16], const uint8_t in[16], const uint8_t* key, int keysize) {
+    static void EncryptBlock(uint8_t out[16], const uint8_t in[16], const uint8_t* key, int keysize, int breakpoint = 5, int breakN = 0) {
         uint8_t state[16];
         uint8_t roundKeys[240];
         int Nr;
+        
+        int b1N = 0, b2N = 0, b3N = 0, b4N = 0; 
 
         memcpy(state, in, 16);
+        
+        if(breakpoint == 0) goto encrexit; // breakpoint 0
+        
         KeyExpansion(key, keysize, roundKeys, Nr);
 
         AddRoundKey(state, roundKeys);
+        
+        if(breakpoint == 1 && ++b1N == breakN) goto encrexit; // breakpoint 1
 
         for (int round = 1; round < Nr; round++) {
             SubBytes(state);
+            if(breakpoint == 2 && ++b2N == breakN) goto encrexit; // breakpoint 2
             ShiftRows(state);
+            if(breakpoint == 3 && ++b3N == breakN) goto encrexit; // breakpoint 3
             MixColumns(state);
+            if(breakpoint == 4 && ++b4N == breakN) goto encrexit; // breakpoint 4
             AddRoundKey(state, roundKeys + round * 16);
+            if(breakpoint == 1 && ++b1N == breakN) goto encrexit; // breakpoint 1
         }
 
         SubBytes(state);
+        if(breakpoint == 2 && ++b2N == breakN) goto encrexit; // breakpoint 2
         ShiftRows(state);
+        if(breakpoint == 3 && ++b3N == breakN) goto encrexit; // breakpoint 3
         AddRoundKey(state, roundKeys + Nr * 16);
+        // breakpoint 1
 
+        // breakpoint 5
+       encrexit: 
         memcpy(out, state, 16);
     }
 
-    static void DecryptBlock(uint8_t out[16], const uint8_t in[16], const uint8_t* key, int keysize) {
+    static void DecryptBlock(uint8_t out[16], const uint8_t in[16], const uint8_t* key, int keysize, int breakpoint = 5, int breakN = 0) {
         uint8_t state[16];
         uint8_t roundKeys[240];
         int Nr;
 
+        int b1N = 0, b2N = 0, b3N = 0, b4N = 0; 
+
         memcpy(state, in, 16);
+        
+        if(breakpoint == 0) goto decrexit; // breakpoint 0
+        
         KeyExpansion(key, keysize, roundKeys, Nr);
 
         AddRoundKey(state, roundKeys + Nr * 16);
+        
+        if(breakpoint == 1 && ++b1N == breakN) goto decrexit; // breakpoint 1
 
         for (int round = Nr - 1; round > 0; round--) {
             InvShiftRows(state);
+            if(breakpoint == 2 && ++b2N == breakN) goto decrexit; // breakpoint 2
             InvSubBytes(state);
+            if(breakpoint == 3 && ++b3N == breakN) goto decrexit; // breakpoint 3
             AddRoundKey(state, roundKeys + round * 16);
+            if(breakpoint == 1 && ++b1N == breakN) goto decrexit; // breakpoint 1
             InvMixColumns(state);
+            if(breakpoint == 4 && ++b4N == breakN) goto decrexit; // breakpoint 4
         }
 
         InvShiftRows(state);
+        if(breakpoint == 2 && ++b2N == breakN) goto decrexit; // breakpoint 2
         InvSubBytes(state);
+        if(breakpoint == 3 && ++b3N == breakN) goto decrexit; // breakpoint 3
         AddRoundKey(state, roundKeys);
-
+        // breakpoint 1
+        // breakpoint 5
+        
+       decrexit:
         memcpy(out, state, 16);
     }
 };

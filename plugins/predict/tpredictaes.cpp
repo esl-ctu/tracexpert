@@ -6,7 +6,7 @@
 #include "tpredictinputstream.h"
 #include "tpredictoutputstream.h"
 
-TPredictAES::TPredictAES() {
+TPredictAES::TPredictAES(): m_operation(0) {
 
     m_preInitParams = TConfigParam("AES configuration", "", TConfigParam::TType::TDummy, "");
 
