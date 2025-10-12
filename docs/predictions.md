@@ -21,7 +21,7 @@ The first two options make predictions about the leakage at the output of the S-
 
 The latter two make predictions about leakage depicted below, either the Hamming distance, or the Identity of STATE 9. The device then accepts ciphertext blocks.
 
-A typical choice for CPA on software AES is the option #1, while for CPA on hardware AES the option #2. 
+A typical choice for CPA on software AES is the option #1, while for CPA on hardware AES the option #3. 
 
 ![Hamming distance diagram](images/aes-hd.png)
 
