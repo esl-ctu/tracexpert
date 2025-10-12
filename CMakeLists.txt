@@ -20,7 +20,10 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts Xml Concur
 
 add_subdirectory(ads)
 
+set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/appicon.rc")
+
 add_executable(${PROJECT_NAME} WIN32
+    ${APP_ICON_RESOURCE_WINDOWS}
     application.qrc
     main.cpp
     tdockmanager.cpp
