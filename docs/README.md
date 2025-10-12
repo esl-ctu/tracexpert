@@ -19,12 +19,26 @@ TraceXpert 1.0 supports both Windows and Linux platforms and is distributed as o
 ## Index
 
 * Getting Started
+* Component architecture
 * I/O Devices
-    - [Protocols](protocols.md)
+    - File
+    - Random number generator
+    - Serial port
+    - Smart card
+* [Protocols](protocols.md)    
 * Oscilloscopes
+    - NewAE (ChipWhisperer)
+    - Picoscope 6000 A/B/C/D/E series
 * Analytical devices
+    - Correlation power analysis
+    - [Ciphers](ciphers.md)
     - [Leakage predictions](predictions.md)
+    - Welch's t-test
 * [Scenarios](scenarios.md)
+* Example use-case
+    - Correlation power analysis
+    - Non-specific t-test
+    - Specific t-test
 * Build instructions
 
 ## Acknowledgment

@@ -1,10 +1,10 @@
 # Leakage predictions
 
-TraceExpert plugin *Leakage predictions* creates leakage predictions suitable for a CPA attack.
+TraceExpert component *Leakage predictions* creates leakage predictions suitable for a CPA attack.
 
 ## AES-128
 
-The plugin contains an analytical device for AES-128, which provides leakage predictions that can be correlated to actually measured power consumption or electromagnetic radiation.
+The component contains an analytical device for AES-128, which provides leakage predictions that can be correlated to actually measured power consumption or electromagnetic radiation.
 
 ### Pre-initialization configuration
 
