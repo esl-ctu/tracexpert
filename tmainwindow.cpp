@@ -113,18 +113,18 @@ void TMainWindow::createActions()
 }
 
 void TMainWindow::createWelcome() {
-    m_welcomeDockWidget = new TDockWidget("Welcome");
+    m_welcomeDockWidget = new TDockWidget(tr("Welcome"));
     QTextEdit * textedit = new QTextEdit("TODO");
     textedit->setMinimumHeight(700);
     m_welcomeDockWidget->setWidget(textedit);
     m_welcomeDockWidget->setFeature(ads::CDockWidget::DockWidgetMovable, false);
     m_welcomeDockWidget->setFeature(ads::CDockWidget::DockWidgetFloatable, false);
     m_welcomeDockWidget->setFeature(ads::CDockWidget::DockWidgetClosable, false);
-    m_dockManager->addDockWidget(ads::CenterDockWidgetArea, m_welcomeDockWidget);
+    m_dockManager->addDockWidget(TDockArea::CenterDockWidgetArea, m_welcomeDockWidget);
 }
 
 void TMainWindow::createLog() {
-    TDockWidget * dockWidget = new TDockWidget("Log");
+    TDockWidget * dockWidget = new TDockWidget(tr("Log"));
     m_logWidget->setReadOnly(true);
     m_logWidget->setMinimumHeight(100);
     dockWidget->setWidget(m_logWidget);
