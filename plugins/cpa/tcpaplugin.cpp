@@ -11,11 +11,11 @@ TCPAPlugin::~TCPAPlugin() {
 }
 
 QString TCPAPlugin::getName() const {
-    return QString("Univariate CPA plugin");
+    return QString("Correlation power analysis");
 }
 
 QString TCPAPlugin::getInfo() const {
-    return QString("Plugin for univariate correlation power analysis");
+    return QString("Component for univariate correlation power analysis");
 }
 
 

@@ -21,8 +21,8 @@ TPredictAES::TPredictAES(): m_operation(0) {
     TConfigParam operationType = TConfigParam("Operation", "Encryption, first round, Hamming weight", TConfigParam::TType::TEnum, "AES operation");
     operationType.addEnumValue("Encryption, first round, Hamming weight");
     operationType.addEnumValue("Encryption, first round, Identity");
-    operationType.addEnumValue("Decryption, last round, Hamming distance");
-    operationType.addEnumValue("Decryption, last round, Identity");
+    operationType.addEnumValue("Encryption, last round, Hamming distance");
+    operationType.addEnumValue("Encryption, last round, Identity");
     m_preInitParams.addSubParam(operationType);
 
     /*TConfigParam cipherMode = TConfigParam("Mode", "ECB", TConfigParam::TType::TEnum, "Cipher mode", true);
@@ -97,7 +97,7 @@ TConfigParam TPredictAES::setPreInitParams(TConfigParam params) {
         m_operation = 0;
     } else if(operationParam->getValue() == "Encryption, first round, Identity") {
         m_operation = 1;
-    } else if(operationParam->getValue() == "Decryption, last round, Hamming distance") {
+    } else if(operationParam->getValue() == "Encryption, last round, Hamming distance") {
         m_operation = 2;
     } else {
         m_operation = 3;
