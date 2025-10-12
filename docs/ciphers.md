@@ -30,8 +30,8 @@ where **N** is set as the *Intermediate value* subparameter. In case of decrypti
 The **Output** parameter can be one of the follows:
 
 1. **Whole block** - The analytical device returns the whole cipher context (size of the block).
-2. **Mth byte** -- The analytical device returns only the selected byte (leftmost byte is #0).
-3. **Mth bit** -- The analytical device returns only the selected bit, as a byte-sized value, i.e. 0x00 or 0x01 (rightmost byte is #0).
+2. **Mth byte** -- The analytical device returns only the selected byte (leftmost byte is 0).
+3. **Mth bit** -- The analytical device returns only the selected bit, as a byte-sized value, i.e. 0x00 or 0x01 (rightmost byte is 0).
 
 ### Input
 
@@ -68,7 +68,7 @@ Then she submits 10 plaintexts (10\*16 bytes) to the **Plaintext** stream, launc
 
 ### Example usage 2
 
-The analyst wants to perform a specific t-test aimed at bit #0 after the 1st SubBytes. She sets the **Intermediate value** to *After Nth SubBytes*, **N** to *1*, and she sets the **Output** to *Mth bit*.
+The analyst wants to perform a specific t-test aimed at bit 0 after the 1st SubBytes. She sets the **Intermediate value** to *After Nth SubBytes*, **N** to *1*, and she sets the **Output** to *Mth bit*.
 
 The **Intermediate values** stream then returns a byte (0x00 or 0x01) for every submitted plaintext, according to the bit value in the selected intermediate value.
 
