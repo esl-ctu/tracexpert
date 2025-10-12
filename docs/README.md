@@ -1,3 +1,5 @@
+![Hamming distance diagram](../icons/tracexpert256.png)
+
 # TraceXpert 1.0
 
 **An integrated environment for side-channel data acquisition and analysis**
@@ -21,22 +23,11 @@ TraceXpert 1.0 supports both Windows and Linux platforms and is distributed as o
     - [Protocols](protocols.md)
 * Oscilloscopes
 * Analytical devices
-    - [Power predictions (CPA)](predictions.md)
+    - [Leakage predictions](predictions.md)
 * [Scenarios](scenarios.md)
 * Build instructions
 
-## Contributors (alphabetically)
-
-Czech Technical University in Prague, Embedded Security Lab, https://crypto.fit.cvut.cz/
-
-* Vojtěch Miškovský
-* Martin Novotný
-* David Pokorný
-* Tomáš Přeučil
-* Petr Socha
-* Adam Švehla
-
 ## Acknowledgment
 
-This work is supported by Ministry of the Interior of the Czech Republic under Grant VJ02010010.
+This work is supported by Ministry of the Interior of the Czech Republic under Grant VJ02010010 (2022-2025).
 
