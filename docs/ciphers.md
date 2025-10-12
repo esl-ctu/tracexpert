@@ -74,3 +74,13 @@ The **Intermediate values** stream then returns a byte (0x00 or 0x01) for every 
 
 These byte-sized values can then be used as labels for the **Welch's t-test** component.
 
+## PRESENT
+
+The component contains an analytical device for PRESENT, which generates intermediate values during either encryption or decryption.
+
+The differences compared to the AES device are as follows:
+1. The block is of size 64 bit, compared to 128 bits in AES.
+2. The key lengths are either 80 or 128 bits-
+
+Otherwise, the usage of the PRESENT analytical device is the same as for AES. 
+
