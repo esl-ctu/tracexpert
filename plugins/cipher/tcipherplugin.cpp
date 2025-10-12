@@ -1,6 +1,7 @@
 #include "tcipherplugin.h"
 
 #include "taesengine.h"
+#include "tpresentengine.h"
 
 TCipherPlugin::TCipherPlugin() {
     
@@ -31,6 +32,7 @@ void TCipherPlugin::init(bool *ok) {
     if(ok != nullptr) *ok = true;
 
     m_analDevices.append(new TAESEngine());
+    m_analDevices.append(new TPRESENTEngine());
 }
 
 void TCipherPlugin::deInit(bool *ok) {

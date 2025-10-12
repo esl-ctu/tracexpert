@@ -1,47 +1,46 @@
-#include "taesengine.h"
+#include "tpresentengine.h"
 
 #include <QtGlobal>
 
 #include "tcipheraction.h"
 #include "tcipherinputstream.h"
 #include "tcipheroutputstream.h"
-#include "taes.hpp"
+#include "tpresent.hpp"
 
-TAESEngine::TAESEngine(): m_operation(0), m_keysizeB(16), m_position(0), m_breakpoint(5), m_breakpointN(1), m_outputRestrict(0), m_outputRestrictM(0) {
+TPRESENTEngine::TPRESENTEngine(): m_operation(0), m_keysizeB(10), m_position(0), m_breakpoint(4), m_breakpointN(1), m_outputRestrict(0), m_outputRestrictM(0) {
 
-    m_preInitParams = TConfigParam("AES configuration", "", TConfigParam::TType::TDummy, "");
+    m_preInitParams = TConfigParam("PRESENT configuration", "", TConfigParam::TType::TDummy, "");
 
-    TConfigParam keyType = TConfigParam("Key length", "128 bit", TConfigParam::TType::TEnum, "Size of the AES key");
+    TConfigParam keyType = TConfigParam("Key length", "80 bit", TConfigParam::TType::TEnum, "Size of the PRESENT key");
+    keyType.addEnumValue("80 bit");
     keyType.addEnumValue("128 bit");
-    keyType.addEnumValue("192 bit");
-    keyType.addEnumValue("256 bit");
     m_preInitParams.addSubParam(keyType);
 
-    TConfigParam operationType = TConfigParam("Operation", "Encryption", TConfigParam::TType::TEnum, "AES operation");
+    TConfigParam operationType = TConfigParam("Operation", "Encryption", TConfigParam::TType::TEnum, "PRESENT operation");
     operationType.addEnumValue("Encryption");
     operationType.addEnumValue("Decryption");
     m_preInitParams.addSubParam(operationType);
 
 }
 
-TAESEngine::~TAESEngine() {
-    (*this).TAESEngine::deInit();
+TPRESENTEngine::~TPRESENTEngine() {
+    (*this).TPRESENTEngine::deInit();
 }
 
-QString TAESEngine::getName() const {
-    return QString("AES");
+QString TPRESENTEngine::getName() const {
+    return QString("PRESENT");
 }
 
-QString TAESEngine::getInfo() const {
-    return QString("Provides AES intermediate values during encryption/decryption.");
+QString TPRESENTEngine::getInfo() const {
+    return QString("Provides PRESENT intermediate values during encryption/decryption.");
 }
 
 
-TConfigParam TAESEngine::getPreInitParams() const {
+TConfigParam TPRESENTEngine::getPreInitParams() const {
     return m_preInitParams;
 }
 
-TConfigParam TAESEngine::setPreInitParams(TConfigParam params) {
+TConfigParam TPRESENTEngine::setPreInitParams(TConfigParam params) {
 
     bool iok;
 
@@ -50,7 +49,7 @@ TConfigParam TAESEngine::setPreInitParams(TConfigParam params) {
 
     TConfigParam * operationParam = m_preInitParams.getSubParamByName("Operation", &iok);
     if(!iok) {
-        qCritical("AES operation parameter not found in the pre-init params");
+        qCritical("PRESENT operation parameter not found in the pre-init params");
         TConfigParam errorParam;
         errorParam.setState(TConfigParam::TState::TError);
         return errorParam;
@@ -63,71 +62,63 @@ TConfigParam TAESEngine::setPreInitParams(TConfigParam params) {
 
     TConfigParam * keyParam = m_preInitParams.getSubParamByName("Key length", &iok);
     if(!iok) {
-        qCritical("AES key size parameter not found in the pre-init params");
+        qCritical("PRESENT key size parameter not found in the pre-init params");
         TConfigParam errorParam;
         errorParam.setState(TConfigParam::TState::TError);
         return errorParam;
     }
-    if(keyParam->getValue() == "128 bit"){
-        m_keysizeB = 16;
-    } else if (keyParam->getValue() == "192 bit"){
-        m_keysizeB = 24;
+    if(keyParam->getValue() == "80 bit"){
+        m_keysizeB = 10;
     } else {
-        m_keysizeB = 32;
+        m_keysizeB = 16;
     }
 
     return m_preInitParams;
 
 }
 
-void TAESEngine::init(bool *ok) {
+void TPRESENTEngine::init(bool *ok) {
 
     TConfigParam postInitParams;
     if(m_operation == 0){
-        if(m_keysizeB == 16){
-            postInitParams = TConfigParam("AES-128 encryption output config", "", TConfigParam::TType::TDummy, "");
-        } else if(m_keysizeB == 24) {
-            postInitParams = TConfigParam("AES-192 encryption output config", "", TConfigParam::TType::TDummy, "");
+        if(m_keysizeB == 10){
+            postInitParams = TConfigParam("PRESENT-80 encryption output config", "", TConfigParam::TType::TDummy, "");
         } else {
-            postInitParams = TConfigParam("AES-256 encryption output config", "", TConfigParam::TType::TDummy, "");
+            postInitParams = TConfigParam("PRESENT-128 encryption output config", "", TConfigParam::TType::TDummy, "");
         }
     } else {
-        if(m_keysizeB == 16){
-            postInitParams = TConfigParam("AES-128 decryption output config", "", TConfigParam::TType::TDummy, "");
-        } else if(m_keysizeB == 24) {
-            postInitParams = TConfigParam("AES-192 decryption output config", "", TConfigParam::TType::TDummy, "");
+        if(m_keysizeB == 10){
+            postInitParams = TConfigParam("PRESENT-80 decryption output config", "", TConfigParam::TType::TDummy, "");
         } else {
-            postInitParams = TConfigParam("AES-256 decryption output config", "", TConfigParam::TType::TDummy, "");
+            postInitParams = TConfigParam("PRESENT-128 decryption output config", "", TConfigParam::TType::TDummy, "");
         }
     }
 
     if(m_operation == 0){ // Encryption
         TConfigParam interValPar = TConfigParam("Intermediate value", "Ciphertext", TConfigParam::TType::TEnum, "Intermediate value to return");
         interValPar.addEnumValue("Plaintext");
-        interValPar.addEnumValue("After Nth AddRoundKey");
-        interValPar.addEnumValue("After Nth SubBytes");
-        interValPar.addEnumValue("After Nth ShiftRows");
-        interValPar.addEnumValue("After Nth MixColumns");
+        interValPar.addEnumValue("After Nth key addition");
+        interValPar.addEnumValue("After Nth SBox-Layer");
+        interValPar.addEnumValue("After Nth P-Layer");
         interValPar.addEnumValue("Ciphertext");
         interValPar.addSubParam(TConfigParam("N", "1", TConfigParam::TType::TUShort, "Value N, greater than 0"));
         postInitParams.addSubParam(interValPar);
     } else { // Decryption
         TConfigParam interValPar = TConfigParam("Intermediate value", "Plaintext", TConfigParam::TType::TEnum, "Intermediate value to return");
         interValPar.addEnumValue("Ciphertext");
-        interValPar.addEnumValue("After Nth AddRoundKey");
-        interValPar.addEnumValue("After Nth InvShiftRows");
-        interValPar.addEnumValue("After Nth InvSubBytes");
-        interValPar.addEnumValue("After Nth InvMixColumns");
+        interValPar.addEnumValue("After Nth key addition");
+        interValPar.addEnumValue("After Nth Inv P-Layer");
+        interValPar.addEnumValue("After Nth Inv SBox-Layer");
         interValPar.addEnumValue("Plaintext");
         interValPar.addSubParam(TConfigParam("N", "1", TConfigParam::TType::TUShort, "Value N, greater than 0"));
         postInitParams.addSubParam(interValPar);
     }
 
-    TConfigParam outPar = TConfigParam("Output", "Whole block", TConfigParam::TType::TEnum, "Stream returns either 16 bytes for Whole block, or a byte when restricted to byte or bit");
+    TConfigParam outPar = TConfigParam("Output", "Whole block", TConfigParam::TType::TEnum, "Stream returns either 8 bytes for Whole block, or a byte when restricted to byte or bit");
     outPar.addEnumValue("Whole block");
     outPar.addEnumValue("Mth byte (leftmost byte = 0)");
     outPar.addEnumValue("Mth bit (rightmost bit = 0)");
-    outPar.addSubParam(TConfigParam("M", "0", TConfigParam::TType::TUShort, "Non-negative value M lesser than 16 or 128 respectively"));
+    outPar.addSubParam(TConfigParam("M", "0", TConfigParam::TType::TUShort, "Non-negative value M lesser than 8 or 64 respectively"));
     postInitParams.addSubParam(outPar);
 
     m_postInitParams = postInitParams;
@@ -147,7 +138,7 @@ void TAESEngine::init(bool *ok) {
 
 }
 
-void TAESEngine::deInit(bool *ok) {
+void TPRESENTEngine::deInit(bool *ok) {
 
     for (int i = 0; i < m_analActions.length(); i++) {
         delete m_analActions[i];
@@ -172,11 +163,11 @@ void TAESEngine::deInit(bool *ok) {
     if (ok != nullptr) *ok = true;
 }
 
-TConfigParam TAESEngine::getPostInitParams() const {
+TConfigParam TPRESENTEngine::getPostInitParams() const {
     return m_postInitParams;
 }
 
-TConfigParam TAESEngine::setPostInitParams(TConfigParam params) {
+TConfigParam TPRESENTEngine::setPostInitParams(TConfigParam params) {
 
     m_postInitParams = params; // read the parameters
     m_postInitParams.resetState(true); // reset all warnings and errors
@@ -211,32 +202,28 @@ TConfigParam TAESEngine::setPostInitParams(TConfigParam params) {
     if(m_operation == 0){ // Encryption
         if(interVal == "Plaintext") {
             m_breakpoint = 0;
-        } else if (interVal == "After Nth AddRoundKey") {
+        } else if (interVal == "After Nth key addition") {
             m_breakpoint = 1;
-        } else if (interVal == "After Nth SubBytes") {
+        } else if (interVal == "After Nth SBox-Layer") {
             m_breakpoint = 2;
-        } else if (interVal == "After Nth ShiftRows") {
+        } else if (interVal == "After Nth P-Layer") {
             m_breakpoint = 3;
-        } else if (interVal == "After Nth MixColumns") {
-            m_breakpoint = 4;
         } else if (interVal == "Ciphertext") {
-            m_breakpoint = 5;
+            m_breakpoint = 4;
         } else {
             interValPar->setState(TConfigParam::TState::TError, "Invalid intermediate value");
         }
     } else { // Decryption
         if(interVal == "Ciphertext") {
             m_breakpoint = 0;
-        } else if (interVal == "After Nth AddRoundKey") {
+        } else if (interVal == "After Nth key addition") {
             m_breakpoint = 1;
-        } else if (interVal == "After Nth InvShiftRows") {
+        } else if (interVal == "After Nth Inv P-Layer") {
             m_breakpoint = 2;
-        } else if (interVal == "After Nth InvSubBytes") {
+        } else if (interVal == "After Nth Inv SBox-Layer") {
             m_breakpoint = 3;
-        } else if (interVal == "After Nth InvMixColumns") {
-            m_breakpoint = 4;
         } else if (interVal == "Plaintext") {
-            m_breakpoint = 5;
+            m_breakpoint = 4;
         } else {
             interValPar->setState(TConfigParam::TState::TError, "Invalid intermediate value");
         }
@@ -263,10 +250,10 @@ TConfigParam TAESEngine::setPostInitParams(TConfigParam params) {
     size_t MValUInt = MVal.toUShort();
     if(MValUInt < 0){
         MValPar->setState(TConfigParam::TState::TError, "M value must be greater than 0");
-    } else if(MValUInt > 15 && m_outputRestrict == 1) {
-        MValPar->setState(TConfigParam::TState::TError, "M value must be lower than 16");
-    } else if(MValUInt > 127 && m_outputRestrict == 2) {
-        MValPar->setState(TConfigParam::TState::TError, "M value must be lower than 128");
+    } else if(MValUInt > 7 && m_outputRestrict == 1) {
+        MValPar->setState(TConfigParam::TState::TError, "M value must be lower than 8");
+    } else if(MValUInt > 63 && m_outputRestrict == 2) {
+        MValPar->setState(TConfigParam::TState::TError, "M value must be lower than 64");
     } else {
         m_outputRestrictM = MValUInt;
     }
@@ -274,27 +261,27 @@ TConfigParam TAESEngine::setPostInitParams(TConfigParam params) {
     return m_postInitParams;
 }
 
-QList<TAnalAction *> TAESEngine::getActions() const
+QList<TAnalAction *> TPRESENTEngine::getActions() const
 {
     return m_analActions;
 }
 
-QList<TAnalInputStream *> TAESEngine::getInputDataStreams() const
+QList<TAnalInputStream *> TPRESENTEngine::getInputDataStreams() const
 {
     return m_analInputStreams;
 }
 
-QList<TAnalOutputStream *> TAESEngine::getOutputDataStreams() const
+QList<TAnalOutputStream *> TPRESENTEngine::getOutputDataStreams() const
 {
     return m_analOutputStreams;
 }
 
-bool TAESEngine::isBusy() const
+bool TPRESENTEngine::isBusy() const
 {
     return false;
 }
 
-size_t TAESEngine::addData(const uint8_t * buffer, size_t length){
+size_t TPRESENTEngine::addData(const uint8_t * buffer, size_t length){
 
     m_data.reserve(m_data.size() + length); // preallocate space
 
@@ -306,7 +293,7 @@ size_t TAESEngine::addData(const uint8_t * buffer, size_t length){
 
 }
 
-size_t TAESEngine::addKeyData(const uint8_t * buffer, size_t length){
+size_t TPRESENTEngine::addKeyData(const uint8_t * buffer, size_t length){
 
     m_keyData.reserve(m_keyData.size() + length); // preallocate space
 
@@ -318,7 +305,7 @@ size_t TAESEngine::addKeyData(const uint8_t * buffer, size_t length){
 
 }
 
-void TAESEngine::reset() {
+void TPRESENTEngine::reset() {
 
     m_data.clear();
     m_keyData.clear();
@@ -329,7 +316,7 @@ void TAESEngine::reset() {
 
 }
 
-size_t TAESEngine::getIntermediates(uint8_t * buffer, size_t length){
+size_t TPRESENTEngine::getIntermediates(uint8_t * buffer, size_t length){
 
     size_t sent = 0;
 
@@ -346,10 +333,10 @@ size_t TAESEngine::getIntermediates(uint8_t * buffer, size_t length){
 
 }
 
-void TAESEngine::loadKey(){
+void TPRESENTEngine::loadKey(){
 
     if(m_keyData.length() != m_keysizeB){
-        qCritical("Key buffer does not contain a valid amount of bytes (16 B for AES-128, 24 B for AES-192, 32 B for AES-256)");
+        qCritical("Key buffer does not contain a valid amount of bytes (10 B for PRESENT-80, 16 B for PRESENT-128)");
         return;
     }
 
@@ -361,10 +348,10 @@ void TAESEngine::loadKey(){
 
 }
 
-void TAESEngine::computeIntermediates(){
+void TPRESENTEngine::computeIntermediates(){
 
-    if(m_data.length() % 16 != 0){
-        qCritical("Plaintext/Ciphertext buffer does not contain a valid amount of bytes (not divisible by 16)");
+    if(m_data.length() % 8 != 0){
+        qCritical("Plaintext/Ciphertext buffer does not contain a valid amount of bytes (not divisible by 8)");
         return;
     }
 
@@ -372,34 +359,34 @@ void TAESEngine::computeIntermediates(){
     m_intermediates.clear();
     m_position = m_intermediates.length();
 
-    size_t blocksN = m_data.length() / 16;
+    size_t blocksN = m_data.length() / 8;
 
-    uint8_t AESOut[16];
+    uint8_t PRESENTOut[8];
 
     m_intermediates.reserve(m_intermediates.size() + m_data.length());
 
     for(int block = 0; block < blocksN; block++){
 
-        uint8_t * AESIn = &(m_data[block * 16]);
+        uint8_t * PRESENTIn = &(m_data[block * 8]);
 
         if(m_operation == 0){
 
-            TAES::EncryptBlock(AESOut, AESIn, m_key, m_keysizeB, m_breakpoint, m_breakpointN);
+            TPRESENT::EncryptBlock(PRESENTOut, PRESENTIn, m_key, m_keysizeB, m_breakpoint, m_breakpointN);
 
         } else {
 
-            TAES::DecryptBlock(AESOut, AESIn, m_key, m_keysizeB, m_breakpoint, m_breakpointN);
+            TPRESENT::DecryptBlock(PRESENTOut, PRESENTIn, m_key, m_keysizeB, m_breakpoint, m_breakpointN);
 
         }
 
         if(m_outputRestrict == 0){ // return whole block
-            for(int byte = 0; byte < 16; byte++){
-                m_intermediates.append(AESOut[byte]);
+            for(int byte = 0; byte < 8; byte++){
+                m_intermediates.append(PRESENTOut[byte]);
             }
         } else if(m_outputRestrict == 1) { // Mth byte
-            m_intermediates.append(AESOut[m_outputRestrictM]);
+            m_intermediates.append(PRESENTOut[m_outputRestrictM]);
         } else { // Mth bit
-            uint8_t bitValue = (AESOut[15 - (m_outputRestrictM / 8)] >> (m_outputRestrictM % 8)) & 0x01;
+            uint8_t bitValue = (PRESENTOut[7 - (m_outputRestrictM / 8)] >> (m_outputRestrictM % 8)) & 0x01;
             m_intermediates.append(bitValue);
         }
 

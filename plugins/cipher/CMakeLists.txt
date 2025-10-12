@@ -24,6 +24,8 @@ add_library(${PROJECT_NAME} SHARED
     tcipherinputstream.h
     tcipheroutputstream.cpp
     tcipheroutputstream.h
+    tpresentengine.cpp
+    tpresentengine.h
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ../../common)
