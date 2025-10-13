@@ -585,29 +585,51 @@ size_t TnewaeDevice::writeData(const uint8_t * buffer, size_t len){
     return len;
 }
 
-size_t TnewaeDevice::readData(uint8_t * buffer, size_t len){
-    if (type == TARGET_NORMAL) {
-        size_t size;
-        bool ok = plugin->readFromTarget(cwId, &size, buffer, len, "read");
+void TnewaeDevice::performHardwareRead() {
+    QMutexLocker locker(&m_readMutex);
 
-        if (ok)
-            return size;
-        else
-            return 0;
+    QByteArray tmp;
+    tmp.resize(4096); // read in chunks of up to 4 KiB per call
+
+    size_t size = 0;
+    bool ok = false;
+
+    if (type == TARGET_NORMAL) {
+        ok = plugin->readFromTarget(cwId, &size, reinterpret_cast<uint8_t*>(tmp.data()), tmp.size(), "read");
     } else {
         QString func = m_postInitParams.getSubParamByName("Function to use when reading from the FPGA")->getValue();
-        size_t size;
-        bool ok;
-        if (func == "readOutput") {
-            ok = plugin->readFromTarget(cwId, &size, buffer, len, func);
-        } else if (func == "fpga_read") {
+
+        if (func == "fpga_read") {
             QString addrStr = m_postInitParams.getSubParamByName("FPGA read address")->getValue();
             unsigned long long addr = addrStr.toULongLong();
-        }
 
-        if (ok)
-            return size;
-        else
-            return 0;
+            ok = plugin->readFromTarget(cwId, &size, reinterpret_cast<uint8_t*>(tmp.data()), tmp.size(), func, addr);
+        } else {
+            ok = plugin->readFromTarget(cwId, &size, reinterpret_cast<uint8_t*>(tmp.data()), tmp.size(), func);
+        }
     }
+
+    if (ok && size > 0)
+        m_readBuffer.append(tmp.constData(), size);
+}
+
+size_t TnewaeDevice::readData(uint8_t * buffer, size_t len){
+    if (!m_lastReadTimer.isValid())
+        m_lastReadTimer.start();
+
+    if (m_lastReadTimer.elapsed() >= TIMER_READ_INTERVAL) {
+        m_lastReadTimer.restart();
+        performHardwareRead();
+    }
+
+    QMutexLocker locker(&m_readMutex);
+
+    const size_t toCopy = std::min<size_t>(len, m_readBuffer.size());
+    if (toCopy == 0)
+        return 0;
+
+    std::memcpy(buffer, m_readBuffer.constData(), toCopy);
+    m_readBuffer.remove(0, toCopy);
+
+    return toCopy;
 }

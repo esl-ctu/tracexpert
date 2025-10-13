@@ -8,6 +8,9 @@
 
 #include "tiodevice.h"
 
+#include <QElapsedTimer>
+#include <QMutex>
+
 class TNewae;
 
 class TnewaeDevice : public TIODevice {
@@ -64,6 +67,12 @@ protected:
     bool m_initialized;
     const QString READ_ONLY_STRING = "alwaysRunFunc";
     const QString WRITE_ONLY_STRING = "writeOnlyFunc";
+
+    const size_t TIMER_READ_INTERVAL = 250;
+    QByteArray m_readBuffer;       // dynamic buffer
+    QElapsedTimer m_lastReadTimer;
+    QMutex m_readMutex;
+    void performHardwareRead();
 
 };
 
