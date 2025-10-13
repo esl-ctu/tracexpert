@@ -951,7 +951,7 @@ bool TAIAPIConnectEngineDevice::analyzeData() { //predict endpoint
         running = false;
         return false;
     } else {
-        qDebug() << "Processing " << m_lengthTrain << " bytes of input\n";
+        qDebug() << "Processing " << m_lengthPredict << " bytes of input\n";
     }
 
     if (m_lengthPredict % inputItemSize == 0 && type != "Text") {
