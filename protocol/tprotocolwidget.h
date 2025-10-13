@@ -22,6 +22,10 @@ private slots:
     void onEditButtonClicked();
     void onRowDoubleClicked(const QModelIndex & index);
     void onRemoveButtonClicked();
+
+    void onLoadButtonClicked();
+    void onSaveButtonClicked();
+
     void onEditorFinished(int finished);  
 
 private:

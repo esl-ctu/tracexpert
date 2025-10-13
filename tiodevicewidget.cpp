@@ -218,8 +218,8 @@ void TIODeviceWidget::updateDisplayedProtocols() {
     m_receiveProtocolComboBox->addItem("No protocol");
 
     for(int i = 0; i < m_protocolContainer->count(); i++) {
-        m_sendProtocolComboBox->addItem(m_protocolContainer->at(i).getName());
-        m_receiveProtocolComboBox->addItem(m_protocolContainer->at(i).getName());
+        m_sendProtocolComboBox->addItem(m_protocolContainer->at(i)->name());
+        m_receiveProtocolComboBox->addItem(m_protocolContainer->at(i)->name());
     }
 }
 

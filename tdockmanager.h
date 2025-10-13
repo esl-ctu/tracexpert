@@ -31,11 +31,25 @@ public:
     explicit TDockWidget(const QString & title, QWidget * parent = nullptr);
 
     void setDeleteOnClose(bool value);
+
+#ifdef USE_ADS
     void setWidget(QWidget* widget, eInsertMode InsertMode = AutoScrollArea);
+#endif
+
+#ifndef USE_ADS
+    bool isClosed();
+    void closeEvent(QCloseEvent *event) override;
+#endif
 
 public slots:
     void show();
     void close();
+
+
+signals:
+#ifndef USE_ADS
+    void closed();
+#endif
 
 };
 

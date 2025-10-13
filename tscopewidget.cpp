@@ -45,27 +45,21 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
     m_iconAxis->setLabelsPosition(QCategoryAxis::AxisLabelsPositionOnValue);
     m_chart->addAxis(m_iconAxis, Qt::AlignRight);
 
-    // Hack to make app window reopen in OpenGL mode when scope widget
-    // is first created instead of when graph is first drawn:
-    QLineSeries * dummyLineSeries = new QLineSeries();
-    dummyLineSeries->setUseOpenGL(true);
-    m_chart->addSeries(dummyLineSeries);
-    m_chart->removeSeries(dummyLineSeries);
-
     m_paramWidget = new TConfigParamWidget(m_scopeModel->postInitParams());
+    m_paramWidget->setMinimumWidth(320);
 
     QPushButton * applyButton = new QPushButton(tr("Apply"));
     connect(applyButton, &QPushButton::clicked, this, &TScopeWidget::applyPostInitParam);
 
-    QVBoxLayout * paramLayout = new QVBoxLayout;
+    QVBoxLayout * paramLayout = new QVBoxLayout();
     paramLayout->addWidget(m_paramWidget);
     paramLayout->addWidget(applyButton);
 
-    QHBoxLayout * lowerLayout = new QHBoxLayout;
+    QHBoxLayout * lowerLayout = new QHBoxLayout();
     lowerLayout->addWidget(chartView, 1);
     lowerLayout->addLayout(paramLayout);
 
-    QGroupBox * lowerGroupBox = new QGroupBox;
+    QGroupBox * lowerGroupBox = new QGroupBox();
     lowerGroupBox->setLayout(lowerLayout);
 
     m_runOnceButton = new QPushButton();
@@ -87,11 +81,17 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
     m_stopButton->setEnabled(false);
     connect(m_stopButton, &QPushButton::clicked, this, &TScopeWidget::stopButtonClicked);
 
+    m_clearDataButton = new QPushButton();
+    m_clearDataButton->setIcon(QIcon(":/icons/delete.png"));
+    m_clearDataButton->setIconSize(QSize(22, 22));
+    m_clearDataButton->setToolTip("Clear trace data");
+    connect(m_clearDataButton, &QPushButton::clicked, this, &TScopeWidget::clearTraceData);
+
     m_prevTraceButton = new QPushButton();
     m_prevTraceButton->setIcon(QIcon(":/icons/prev.png"));
     m_prevTraceButton->setIconSize(QSize(22, 22));
     m_prevTraceButton->setToolTip("Previous trace");
-    connect(m_prevTraceButton, &QPushButton::clicked, this, &TScopeWidget::prevTraceButtonClicked);
+    connect(m_prevTraceButton, &QPushButton::clicked, this, &TScopeWidget::showPrevTrace);
 
     m_currentTraceNumber = 0;
     m_totalTraceCount = 0;
@@ -104,12 +104,13 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
     m_nextTraceButton->setIcon(QIcon(":/icons/next.png"));
     m_nextTraceButton->setIconSize(QSize(22, 22));
     m_nextTraceButton->setToolTip("Next trace");
-    connect(m_nextTraceButton, &QPushButton::clicked, this, &TScopeWidget::nextTraceButtonClicked);
+    connect(m_nextTraceButton, &QPushButton::clicked, this, &TScopeWidget::showNextTrace);
 
     QHBoxLayout * toolbarLayout = new QHBoxLayout;
     toolbarLayout->addWidget(m_runOnceButton);
     toolbarLayout->addWidget(m_runButton);
     toolbarLayout->addWidget(m_stopButton);
+    toolbarLayout->addWidget(m_clearDataButton);
     toolbarLayout->addStretch();
     toolbarLayout->addWidget(m_prevTraceButton);
     toolbarLayout->addWidget(m_traceIndexLineEdit);
@@ -122,12 +123,9 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
     layout->addWidget(upperGroupBox);
     layout->addWidget(lowerGroupBox);
 
-    setLayout(layout);
-}
+    m_isDataIntendedForThisWidget = false;
 
-TScopeWidget::~TScopeWidget() {
-    qDeleteAll(m_traceDataList);
-    m_traceDataList.clear();
+    setLayout(layout);
 }
 
 bool TScopeWidget::applyPostInitParam() {
@@ -142,20 +140,35 @@ bool TScopeWidget::applyPostInitParam() {
     return true;
 }
 
-void TScopeWidget::setGUItoRunning() {
-    m_runOnceButton->setEnabled(false);
-    m_runButton->setEnabled(false);
-    m_stopButton->setEnabled(true);
+void TScopeWidget::clearTraceData() {
+
+    m_traceDataList.clear();
 
     m_totalTraceCount = 0;
     m_currentTraceNumber = 0;
     updateTraceIndexView();
+
+    m_chart->removeAllSeries();
+}
+
+void TScopeWidget::setGUItoRunning() {
+    m_runOnceButton->setEnabled(false);
+    m_runButton->setEnabled(false);
+    m_stopButton->setEnabled(true);
+    m_clearDataButton->setEnabled(false);
+
+    clearTraceData();
+
+    m_isDataIntendedForThisWidget = true;
 }
 
 void TScopeWidget::setGUItoReady() {
     m_runOnceButton->setEnabled(true);
     m_runButton->setEnabled(true);
     m_stopButton->setEnabled(false);
+    m_clearDataButton->setEnabled(true);
+
+    m_isDataIntendedForThisWidget = false;
 }
 
 void TScopeWidget::runOnceButtonClicked() {
@@ -172,11 +185,12 @@ void TScopeWidget::stopButtonClicked() {
     m_runOnceButton->setEnabled(false);
     m_runButton->setEnabled(false);
     m_stopButton->setEnabled(false);
+    m_clearDataButton->setEnabled(false);
 
     m_scopeModel->stop();
 }
 
-void TScopeWidget::prevTraceButtonClicked() {
+void TScopeWidget::showPrevTrace() {
     if(m_currentTraceNumber <= 1)
         return;
 
@@ -186,7 +200,7 @@ void TScopeWidget::prevTraceButtonClicked() {
     displayTrace(m_currentTraceNumber-1);
 }
 
-void TScopeWidget::nextTraceButtonClicked() {
+void TScopeWidget::showNextTrace() {
     if(m_currentTraceNumber >= m_totalTraceCount)
         return;
 
@@ -209,6 +223,7 @@ void TScopeWidget::stopFailed() {
     m_runOnceButton->setEnabled(false);
     m_runButton->setEnabled(false);
     m_stopButton->setEnabled(true);
+    m_clearDataButton->setEnabled(false);
 
     QMessageBox::critical(this, "Error", "Failed to stop sampling");
 }
@@ -235,18 +250,14 @@ void TScopeWidget::updateTraceIndexView() {
     m_traceIndexLineEdit->setText(QString("%1 of %2").arg(m_currentTraceNumber).arg(m_totalTraceCount));
 }
 
-void TScopeWidget::receiveTraces(size_t traces, size_t samples, TScope::TSampleType type, QList<quint8 *> buffers, bool overvoltage) {
-    // deleting old trace data moved here
-    // due to immediate delete causing problems
-    if(m_totalTraceCount == 0){
-        qDeleteAll(m_traceDataList);
-        m_traceDataList.clear();
+void TScopeWidget::receiveTraces(size_t traces, size_t samples, TScope::TSampleType type, QList<QByteArray> buffers, bool overvoltage) {
+    // if the user did not start sampling from this widget, ignore any incoming data
+    if(!m_isDataIntendedForThisWidget) {
+        return;
     }
 
     // save data to internal buffers
-    m_traceDataList.append(
-        new TScopeTraceData{m_totalTraceCount, traces, samples, type, buffers, overvoltage}
-    );
+    m_traceDataList.append(TScopeTraceData{m_totalTraceCount, traces, samples, type, buffers, overvoltage});
 
     // update GUI
     m_totalTraceCount += traces;
@@ -266,7 +277,7 @@ void TScopeWidget::displayTrace(size_t traceIndex) {
     bool found = false;
     size_t traceDataListIndex = 0;
     while(traceDataListIndex < (size_t)m_traceDataList.size()) {
-        if(m_traceDataList[traceDataListIndex]->firstTraceIndex + m_traceDataList[traceDataListIndex]->traces > traceIndex) {
+        if(m_traceDataList[traceDataListIndex].firstTraceIndex + m_traceDataList[traceDataListIndex].traces > traceIndex) {
             found = true;
             break;
         }
@@ -279,12 +290,12 @@ void TScopeWidget::displayTrace(size_t traceIndex) {
         return;
     }
 
-    const TScopeTraceData * traceData = m_traceDataList[traceDataListIndex];
-    size_t traceBufferIndex = traceIndex - m_traceDataList[traceDataListIndex]->firstTraceIndex;    
+    const TScopeTraceData traceData = m_traceDataList[traceDataListIndex];
+    size_t traceBufferIndex = traceIndex - m_traceDataList[traceDataListIndex].firstTraceIndex;
 
     m_chart->removeAllSeries();
 
-    m_axisX->setRange(0, traceData->samples);
+    m_axisX->setRange(0, traceData.samples);
     updateAxes();
 
     QList<QLineSeries *> preparedLineSeries;
@@ -302,7 +313,7 @@ void TScopeWidget::displayTrace(size_t traceIndex) {
     size_t channelIndex = 0;
     for(TScope::TChannelStatus channel : m_scopeModel->channelsStatus()) {
 
-        if(!channel.isEnabled() || traceData->buffers[channelIndex] == nullptr) {
+        if(!channel.isEnabled() || traceData.buffers[channelIndex] == nullptr) {
             channelIndex++;
             continue;
         }
@@ -310,23 +321,23 @@ void TScopeWidget::displayTrace(size_t traceIndex) {
         QLineSeries * lineSeries = preparedLineSeries.first();
         preparedLineSeries.pop_front();
 
-        switch(traceData->type) {
+        switch(traceData.type) {
             case TScope::TSampleType::TUInt8:
-                createLineSeries(lineSeries, channel, (uint8_t*) traceData->buffers[channelIndex], traceBufferIndex, traceData->samples); break;
+                createLineSeries(lineSeries, channel, (uint8_t*) traceData.buffers[channelIndex].constData(), traceBufferIndex, traceData.samples); break;
             case TScope::TSampleType::TInt8:
-                createLineSeries(lineSeries, channel, (int8_t*)  traceData->buffers[channelIndex], traceBufferIndex, traceData->samples); break;
+                createLineSeries(lineSeries, channel, (int8_t*)  traceData.buffers[channelIndex].constData(), traceBufferIndex, traceData.samples); break;
             case TScope::TSampleType::TUInt16:
-                createLineSeries(lineSeries, channel, (uint16_t*)traceData->buffers[channelIndex], traceBufferIndex, traceData->samples); break;
+                createLineSeries(lineSeries, channel, (uint16_t*)traceData.buffers[channelIndex].constData(), traceBufferIndex, traceData.samples); break;
             case TScope::TSampleType::TInt16:
-                createLineSeries(lineSeries, channel, (int16_t*) traceData->buffers[channelIndex], traceBufferIndex, traceData->samples); break;
+                createLineSeries(lineSeries, channel, (int16_t*) traceData.buffers[channelIndex].constData(), traceBufferIndex, traceData.samples); break;
             case TScope::TSampleType::TUInt32:
-                createLineSeries(lineSeries, channel, (uint32_t*)traceData->buffers[channelIndex], traceBufferIndex, traceData->samples); break;
+                createLineSeries(lineSeries, channel, (uint32_t*)traceData.buffers[channelIndex].constData(), traceBufferIndex, traceData.samples); break;
             case TScope::TSampleType::TInt32:
-                createLineSeries(lineSeries, channel, (int32_t*) traceData->buffers[channelIndex], traceBufferIndex, traceData->samples); break;
+                createLineSeries(lineSeries, channel, (int32_t*) traceData.buffers[channelIndex].constData(), traceBufferIndex, traceData.samples); break;
             case TScope::TSampleType::TReal32:
-                createLineSeries(lineSeries, channel, (float*)   traceData->buffers[channelIndex], traceBufferIndex, traceData->samples); break;
+                createLineSeries(lineSeries, channel, (float*)   traceData.buffers[channelIndex].constData(), traceBufferIndex, traceData.samples); break;
             case TScope::TSampleType::TReal64:
-                createLineSeries(lineSeries, channel, (double*)  traceData->buffers[channelIndex], traceBufferIndex, traceData->samples); break;
+                createLineSeries(lineSeries, channel, (double*)  traceData.buffers[channelIndex].constData(), traceBufferIndex, traceData.samples); break;
         }
 
         channelIndex++;
@@ -399,7 +410,7 @@ void TScopeWidget::updateIconAxis() {
 }
 
 template <class T>
-void TScopeWidget::createLineSeries(QLineSeries * lineSeries, TScope::TChannelStatus channel, T * buffer, size_t traceBufferIndex, size_t sampleCount) {
+void TScopeWidget::createLineSeries(QLineSeries * lineSeries, TScope::TChannelStatus channel, const T * buffer, size_t traceBufferIndex, size_t sampleCount) {
     lineSeries->setUseOpenGL(true);
     lineSeries->setName(QString(tr("%1 [channel %2]")).arg(channel.getAlias()).arg(channel.getIndex()));
     lineSeries->setColor(QColor(channelColorCodes[channel.getIndex() % 8]));

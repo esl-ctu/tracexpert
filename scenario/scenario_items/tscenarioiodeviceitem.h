@@ -59,6 +59,10 @@ public:
         return new TScenarioIODeviceItem(*this);
     }
 
+    const QString getIconResourcePath() const override {
+        return ":/icons/file.png";
+    }
+
     bool shouldUpdateParams(TConfigParam newParams) override {
         return isParamValueDifferent(newParams, m_params, "Component") ||
                 isParamValueDifferent(newParams, m_params, "IO Device");
@@ -67,6 +71,7 @@ public:
     void updateParams(bool paramValuesChanged) override {
         TConfigParam * componentParam = m_params.getSubParamByName("Component");
         componentParam->clearEnumValues();
+        componentParam->resetState();
 
         int componentCount = m_projectModel->componentContainer()->count();
         int selectedComponentIndex = componentCount > 0 ? 0 : -1;
@@ -178,6 +183,8 @@ public:
     }
 
     bool prepare() override {
+        resetState();
+
         m_IODeviceModel = getIODeviceModel();
         m_isFirstBlockExecution = true;
 
@@ -221,7 +228,7 @@ public:
         }
 
         m_isFirstBlockExecution = false;
-        m_errorOccurred = false;
+        resetState();
     }
 
     void setPreInitParams() {
@@ -306,24 +313,27 @@ public:
             }
         }
 
-        if(selectedIODeviceIndex > -1) {
-            TComponentModel * componentModel = m_projectModel->componentContainer()->at(selectedComponentIndex);
-            TIODeviceModel * IODeviceModel = componentModel->IODeviceContainer()->at(selectedIODeviceIndex);
-
-            return IODeviceModel;
+        if(selectedIODeviceIndex < 0) {
+            return nullptr;
         }
 
-        return nullptr;
+        TComponentModel * componentModel = m_projectModel->componentContainer()->at(selectedComponentIndex);
+        TIODeviceModel * IODeviceModel = componentModel->IODeviceContainer()->at(selectedIODeviceIndex);
+
+        if(!IODeviceModel->isAvailable()) {
+            return nullptr;
+        }
+
+        return IODeviceModel;
     }
 
     TScenarioItemPort * getPreferredOutputFlowPort() override {
-        return m_errorOccurred ? this->getItemPortByName("flowOutError") : this->getItemPortByName("flowOut");
+        return m_state == TState::TRuntimeError ? this->getItemPortByName("flowOutError") : this->getItemPortByName("flowOut");
     }
 
 protected:
     TIODeviceModel * m_IODeviceModel;
     bool m_isFirstBlockExecution;
-    bool m_errorOccurred;
 };
 
 #endif // TSCENARIOIODEVICEITEM_H

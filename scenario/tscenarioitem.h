@@ -8,6 +8,7 @@
 #include <QMetaType>
 #include <QPoint>
 #include <QDebug>
+#include <qsize.h>
 
 #include "tconfigparam.h"
 #include "../tprojectmodel.h"
@@ -46,7 +47,10 @@ public:
         TOk = (int)TConfigParam::TState::TOk,
         TInfo = (int)TConfigParam::TState::TInfo,
         TWarning = (int)TConfigParam::TState::TWarning,
-        TError = (int)TConfigParam::TState::TError
+        TError = (int)TConfigParam::TState::TError,
+        TRuntimeInfo,
+        TRuntimeWarning,
+        TRuntimeError
     };
 
     TScenarioItem();
@@ -73,7 +77,10 @@ public:
         out << x.m_itemPorts.size();
         for(TScenarioItemPort * itemPort : x.m_itemPorts) {
             out << *itemPort;
-        }        
+        }
+
+        out << x.m_configWindowSize;
+
         return out;
     }
 
@@ -100,7 +107,10 @@ public:
                 TScenarioItemPort * itemPort = new TScenarioItemPort(x);
                 in >> *itemPort;
                 x->m_itemPorts.append(itemPort);
-            }            
+            }
+
+            in >> x->m_configWindowSize;
+
         } else {
             qCritical("Failed deserializing TScenarioItem: Wrong version or wrong data.");
         }
@@ -134,7 +144,7 @@ public:
 
     void setState(TState state);
     void setState(TState state, const QString &message);
-    void resetState();
+    void resetState(bool resetOnlyRuntime = false);
 
     QList<TScenarioItemPort *> & getItemPorts();
     TScenarioItemPort * getItemPortByName(const QString & name);
@@ -149,8 +159,14 @@ public:
     virtual bool supportsImmediateExecution() const;
     virtual QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & inputData);
     virtual void execute(const QHash<TScenarioItemPort *, QByteArray> & inputData);
+    virtual bool stopExecution();
     virtual TScenarioItemPort * getPreferredOutputFlowPort();
     virtual bool cleanup();
+
+    virtual const QString getIconResourcePath() const;
+
+    QSize getConfigWindowSize();
+    void setConfigWindowSize(QSize value);
 
 signals:
     void appearanceChanged();
@@ -168,6 +184,8 @@ protected:
     void addFlowOutputPort(const QString & name, const QString & displayName = QString(), const QString & description = QString());
     void addDataInputPort (const QString & name, const QString & displayName = QString(), const QString & description = QString());
     void addDataOutputPort(const QString & name, const QString & displayName = QString(), const QString & description = QString());
+    void addConnectionInputPort (const QString & name, const QString & displayName = QString(), const QString & description = QString());
+    void addConnectionOutputPort(const QString & name, const QString & displayName = QString(), const QString & description = QString());
 
     void removePort(const QString & name);
     bool verifyPortNameUnique(const QString & name);
@@ -196,6 +214,9 @@ protected:
     QString m_stateMessage;
 
     QList<TScenarioItemPort *> m_itemPorts;
+
+    // convenience serialized fields
+    QSize m_configWindowSize = QSize(0, 0);
 };
 
 #endif // TSCENARIOITEM_H

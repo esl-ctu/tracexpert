@@ -9,12 +9,21 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Remove the 'lib' prefix for all libraries
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
+# Ensure no 'lib' prefix is added to library names
+set(CMAKE_SHARED_LIBRARY_PREFIX "")
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Charts Xml Concurrent)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts Xml Concurrent)
 
 add_subdirectory(ads)
 
-add_executable(${PROJECT_NAME}
+set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/appicon.rc")
+
+add_executable(${PROJECT_NAME} WIN32
+    ${APP_ICON_RESOURCE_WINDOWS}
     application.qrc
     main.cpp
     tdockmanager.cpp
@@ -123,9 +132,23 @@ add_executable(${PROJECT_NAME}
     scenario/graphical_items/tscenariographicalembeddedsubtitleitem.h
     scenario/scenario_items/tscenariodelayitem.h
     scenario/scenario_items/tscenarioprotocolencodeitem.h
+    scenario/scenario_items/tscenariooutputfileitem.h
+    scenario/scenario_items/tscenariovariablewriteitem.h
+    scenario/scenario_items/tscenariovariablereaditem.h
+    scenario/scenario_items/tscenarioscriptitem.h
+    tcodeedit.h tcodeedit.cpp
+    scenario/scenario_items/tscenarioscopestartitem.h
+    scenario/scenario_items/tscenarioscopestopitem.h
+    scenario/scenario_items/tscenarioscopesingleitem.h
+    scenario/scenario_items/tscenarioscopestartitem.cpp
+    scenario/scenario_items/tscenarioscopestopitem.cpp
+    tlogwidget.h
+    tlogwidget.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE common)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE qt${QT_VERSION_MAJOR}advanceddocking)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
@@ -135,25 +158,37 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Xml)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Concurrent)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE qt${QT_VERSION_MAJOR}advanceddocking)
-
-function (add_plugin dir target)
+function(add_plugin dir target additional_files)
+  # Add the subdirectory for the plugin
   add_subdirectory(plugins/${dir})
+
+  # Copy the library (.dll) file to the plugin directory
   add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
           "$<TARGET_FILE:${target}>"
           "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins")
+
+  # Copy additional files (if provided) to the plugin directory (separate by ";")
+  if(additional_files)
+    foreach(file IN LISTS additional_files)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_SOURCE_DIR}/plugins/${dir}/${file}"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/${file}")
+      endforeach()
+    endif()
 endfunction()
 
-add_plugin(analtestingplugin TAnalTestingPlugin)
-add_plugin(cpa TCPAPlugin)
-add_plugin(dummyscope TDummyScopePlugin)
-add_plugin(emptyplugin TEmptyPlugin)
-add_plugin(file TFile)
-add_plugin(newplugin TNewPlugin)
-add_plugin(ps6000 TPS6000)
-add_plugin(ps6000a TPS6000a)
-add_plugin(random TRandom)
-add_plugin(serialport TSerialPort)
-add_plugin(smartcard TSmartCard)
-add_plugin(ttest TTTestPlugin)
+
+add_plugin(cipher TCipherPlugin "")
+add_plugin(predict TPredictPlugin "")
+add_plugin(cpa TCPAPlugin "")
+add_plugin(dummyscope TDummyScopePlugin "")
+add_plugin(file TFile "")
+add_plugin(ps6000 TPS6000 "")
+add_plugin(ps6000a TPS6000a "")
+add_plugin(random TRandom "")
+add_plugin(serialport TSerialPort "")
+add_plugin(smartcard TSmartCard "")
+add_plugin(newae Tnewae executable.py)
+add_plugin(ttest TTTestPlugin "")

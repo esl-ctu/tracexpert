@@ -3,6 +3,7 @@
 #include <QFile>
 #include <QMessageBox>
 #include <QSettings>
+#include <QOpenGLWidget>
 
 #include "tmainwindow.h"
 #include "qfiledialog.h"
@@ -16,15 +17,22 @@
 #include "tprojectmodel.h"
 #include "protocol/tprotocolwidget.h"
 
-TMainWindow::TMainWindow(QWidget * parent)
+
+TMainWindow::TMainWindow(TLogWidget * logWidget, QWidget * parent)
     : QMainWindow(parent)
 {
+    // Workaround to prevent window reopening when oscilloscope widget is loaded for the first time
+    QOpenGLWidget w;
+    setCentralWidget(&w);
+
     setCentralWidget(nullptr);
 
     m_dockManager = TDockManagerInstance;
     m_projectModel = nullptr;
     m_projectView = nullptr;
 
+    m_logWidget = logWidget;
+    m_welcomeDockWidget = nullptr;
     m_protocolManagerDockWidget = nullptr;
     m_projectDockWidget = nullptr;
     m_scenarioManagerDockWidget = nullptr;
@@ -34,11 +42,14 @@ TMainWindow::TMainWindow(QWidget * parent)
 
     readSettings();
 
-    //createScenarioEditorWidget();
+    createWelcome();
+    createLog();
+
 }
 
 TMainWindow::~TMainWindow()
 {
+
 }
 
 void TMainWindow::createMenus()
@@ -101,10 +112,32 @@ void TMainWindow::createActions()
     connect(m_openDeviceAction, SIGNAL(triggered()), this, SLOT(showDeviceWizard()));
 }
 
+void TMainWindow::createWelcome() {
+    m_welcomeDockWidget = new TDockWidget(tr("Welcome"));
+    QTextEdit * textedit = new QTextEdit("TODO");
+    textedit->setMinimumHeight(700);
+    textedit->setMinimumWidth(1500);
+    m_welcomeDockWidget->setWidget(textedit);
+    m_welcomeDockWidget->setFeature(ads::CDockWidget::DockWidgetMovable, false);
+    m_welcomeDockWidget->setFeature(ads::CDockWidget::DockWidgetFloatable, false);
+    m_welcomeDockWidget->setFeature(ads::CDockWidget::DockWidgetClosable, false);
+    m_dockManager->addDockWidget(TDockArea::CenterDockWidgetArea, m_welcomeDockWidget);
+}
+
+void TMainWindow::createLog() {
+    TDockWidget * dockWidget = new TDockWidget(tr("Log"));
+    m_logWidget->setReadOnly(true);
+    m_logWidget->setMinimumHeight(100);
+    dockWidget->setWidget(m_logWidget);
+    m_viewMenu->addAction(dockWidget->toggleViewAction());
+    m_dockManager->addDockWidget(TDockArea::BottomDockWidgetArea, dockWidget);
+}
+
 void TMainWindow::createProjectDockWidget(TProjectModel * model)
 {
     m_projectDockWidget = new TDockWidget(tr("Project"), this);
     m_projectView = new TProjectView(this);
+    m_projectView->setMinimumWidth(450);
     m_projectModel = model;
     m_projectDirectory = QDir::current();
     m_projectView->setModel(m_projectModel);
@@ -128,9 +161,10 @@ void TMainWindow::createIODeviceDockWidget(TIODeviceModel * IODevice)
     dockWidget->setWidget(widget);
     m_viewMenu->addAction(dockWidget->toggleViewAction());
     connect(IODevice, &TIODeviceModel::deinitialized, dockWidget, [=](){ m_viewMenu->removeAction(dockWidget->toggleViewAction()); });
-    connect(IODevice, &TIODeviceModel::deinitialized, dockWidget, &TDockWidget::close);
+    connect(IODevice, &TIODeviceModel::deinitialized, dockWidget, [=](){ m_dockManager->removeDockWidget(dockWidget); });
+    connect(IODevice, &TIODeviceModel::deinitialized, dockWidget, &QObject::deleteLater);
     connect(IODevice, &TIODeviceModel::showRequested, dockWidget, &TDockWidget::show);
-    m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
+    m_dockManager->addDockWidget(TDockArea::CenterDockWidgetArea, dockWidget, m_welcomeDockWidget->dockAreaWidget());
 }
 
 void TMainWindow::createScopeDockWidget(TScopeModel * scope)
@@ -141,9 +175,10 @@ void TMainWindow::createScopeDockWidget(TScopeModel * scope)
     dockWidget->setWidget(widget);
     m_viewMenu->addAction(dockWidget->toggleViewAction());
     connect(scope, &TScopeModel::deinitialized, dockWidget, [=](){ m_viewMenu->removeAction(dockWidget->toggleViewAction()); });
-    connect(scope, &TScopeModel::deinitialized, dockWidget, &TDockWidget::close);
+    connect(scope, &TScopeModel::deinitialized, dockWidget, [=](){ m_dockManager->removeDockWidget(dockWidget); });
+    connect(scope, &TScopeModel::deinitialized, dockWidget, &QObject::deleteLater);
     connect(scope, &TScopeModel::showRequested, dockWidget, &TDockWidget::show);
-    m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
+    m_dockManager->addDockWidget(TDockArea::CenterDockWidgetArea, dockWidget, m_welcomeDockWidget->dockAreaWidget());
 }
 
 void TMainWindow::createAnalDeviceDockWidget(TAnalDeviceModel * analDevice)
@@ -154,9 +189,10 @@ void TMainWindow::createAnalDeviceDockWidget(TAnalDeviceModel * analDevice)
     dockWidget->setWidget(widget);
     m_viewMenu->addAction(dockWidget->toggleViewAction());
     connect(analDevice, &TAnalDeviceModel::deinitialized, dockWidget, [=](){ m_viewMenu->removeAction(dockWidget->toggleViewAction()); });
-    connect(analDevice, &TAnalDeviceModel::deinitialized, dockWidget, &TDockWidget::close);
+    connect(analDevice, &TAnalDeviceModel::deinitialized, dockWidget, [=](){ m_dockManager->removeDockWidget(dockWidget); });
+    connect(analDevice, &TAnalDeviceModel::deinitialized, dockWidget, &QObject::deleteLater);
     connect(analDevice, &TAnalDeviceModel::showRequested, dockWidget, &TDockWidget::show);
-    m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
+    m_dockManager->addDockWidget(TDockArea::CenterDockWidgetArea, dockWidget, m_welcomeDockWidget->dockAreaWidget());
 }
 
 
@@ -169,8 +205,7 @@ void TMainWindow::openProtocolEditor(const QString & protocolName)
     protocolWidget->openEditor(protocolName, &ok);
 
     if(!ok) {
-        // TODO TDialog:: protocol not found
-        return;
+        qWarning("Protocol not found, editor widget could not be opened.");
     }
 }
 
@@ -193,10 +228,10 @@ void TMainWindow::createProtocolManagerWidget()
     m_protocolManagerDockWidget->setWidget(widget);
 
     m_viewMenu->addAction(m_protocolManagerDockWidget->toggleViewAction());
-    m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, m_protocolManagerDockWidget);
+    m_dockManager->addDockWidget(TDockArea::CenterDockWidgetArea, m_protocolManagerDockWidget, m_welcomeDockWidget->dockAreaWidget());
 }
 
-void TMainWindow::openScenarioEditor(TScenarioModel * scenario)
+void TMainWindow::createScenarioEditorDockWidget(TScenarioModel * scenario)
 {
     //create dock widget with Scenario Editor Widget
     TScenarioEditorWidget * scenarioEditorWidget = new TScenarioEditorWidget(scenario, m_projectModel, this);
@@ -209,10 +244,10 @@ void TMainWindow::openScenarioEditor(TScenarioModel * scenario)
         m_scenarioEditorDockWidgets.removeAll(scenarioEditorDockWidget);
         m_dockManager->removeDockWidget(scenarioEditorDockWidget);
     });
-    connect(scenarioEditorDockWidget, &TDockWidget::closed, scenarioEditorDockWidget, &QObject::deleteLater);
+    // no need to connect &QObject::deleteLater the scenarioEditorDockWidget, since it has setDeleteOnClose(true)
 
     m_viewMenu->addAction(scenarioEditorDockWidget->toggleViewAction());
-    m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, scenarioEditorDockWidget);
+    m_dockManager->addDockWidget(TDockArea::CenterDockWidgetArea, scenarioEditorDockWidget, m_welcomeDockWidget->dockAreaWidget());
 
     m_scenarioEditorDockWidgets.append(scenarioEditorDockWidget);
 }
@@ -237,7 +272,7 @@ void TMainWindow::createScenarioManagerWidget()
     m_scenarioManagerDockWidget->setWidget(widget);
 
     m_viewMenu->addAction(m_scenarioManagerDockWidget->toggleViewAction());
-    m_dockManager->addDockWidget(TDockArea::RightDockWidgetArea, m_scenarioManagerDockWidget);
+    m_dockManager->addDockWidget(TDockArea::CenterDockWidgetArea, m_scenarioManagerDockWidget, m_welcomeDockWidget->dockAreaWidget());
 }
 
 

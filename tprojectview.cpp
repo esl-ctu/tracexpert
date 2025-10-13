@@ -532,6 +532,6 @@ void TProjectView::editScenario()
         return;
     }
 
-    m_mainWindow->openScenarioEditor(m_scenario);
+    m_mainWindow->createScenarioEditorDockWidget(m_scenario);
 }
 

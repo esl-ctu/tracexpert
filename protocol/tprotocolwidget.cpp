@@ -12,6 +12,7 @@
 #include <QTableView>
 #include <QDialog>
 #include <QHeaderView>
+#include <QMessageBox>
 
 TProtocolWidget::TProtocolWidget(TProtocolContainer * protocolContainer, QWidget * parent) : QWidget(parent)
 {
@@ -28,13 +29,27 @@ TProtocolWidget::TProtocolWidget(TProtocolContainer * protocolContainer, QWidget
     QPushButton * removeMessageButton = new QPushButton("Remove");
     connect(removeMessageButton, &QPushButton::clicked, this, &TProtocolWidget::onRemoveButtonClicked);
 
+    QFrame * line = new QFrame();
+    line->setFrameShape(QFrame::HLine);
+    line->setFrameShadow(QFrame::Sunken);
+
+    QPushButton * loadButton = new QPushButton("Import");
+    connect(loadButton, &QPushButton::clicked, this, &TProtocolWidget::onLoadButtonClicked);
+
+    QPushButton * saveButton = new QPushButton("Export");
+    connect(saveButton, &QPushButton::clicked, this, &TProtocolWidget::onSaveButtonClicked);
+
     QVBoxLayout * sideButtonsLayout = new QVBoxLayout();
     sideButtonsLayout->addWidget(addMessageButton);
     sideButtonsLayout->addWidget(editMessageButton);
     sideButtonsLayout->addWidget(removeMessageButton);
+    sideButtonsLayout->addWidget(line);
+    sideButtonsLayout->addWidget(loadButton);
+    sideButtonsLayout->addWidget(saveButton);
     sideButtonsLayout->addStretch();
 
     QTableView * protocolView = new TProtocolTableView();
+    protocolView->setSelectionMode(QAbstractItemView::ExtendedSelection);
     protocolView->setModel(m_protocolContainer);
     connect(protocolView, &QTableView::doubleClicked, this, &TProtocolWidget::onEditButtonClicked);
 
@@ -81,7 +96,7 @@ void TProtocolWidget::openEditor(const QString & protocolName, bool *ok) {
 }
 
 void TProtocolWidget::openEditor() {
-    m_protocolEditor = new TProtocolEditor(m_protocolContainer->at(m_editedItemIndex), m_protocolContainer, this);
+    m_protocolEditor = new TProtocolEditor(m_protocolContainer->at(m_editedItemIndex)->protocol(), m_protocolContainer, this);
     connect(m_protocolEditor, &QWizard::finished, this, &TProtocolWidget::onEditorFinished);
     m_protocolEditor->open();
 }
@@ -109,4 +124,43 @@ void TProtocolWidget::onRemoveButtonClicked() {
         return;
 
     m_protocolContainer->remove(m_protocolView->selectionModel()->selectedIndexes().first().row());
+}
+
+void TProtocolWidget::onLoadButtonClicked() {
+    try {
+        int loadedCount = m_protocolContainer->loadProtocolFromFile();
+        if(loadedCount > 0) {
+            QMessageBox::information(this, tr("Protocol import success"), tr("Protocol(s) imported successfully."));
+        }
+    }
+    catch(QString message) {
+        QMessageBox::critical(this, tr("Protocol import failed"), tr("Unable to parse selected protocol file: %1").arg(message));
+    }
+}
+
+void TProtocolWidget::onSaveButtonClicked() {
+    if(m_protocolView->selectionModel()->selectedIndexes().isEmpty()) {
+        QMessageBox::warning(this, tr("Protocol export failed"), tr("Select protocol(s) to be exported!"));
+        return;
+    }
+
+    QModelIndexList rows = m_protocolView->selectionModel()->selectedRows();
+
+    int totalSavedCount = 0;
+    for (const QModelIndex &rowIndex : rows) {
+        const TProtocolModel * protocolModel = m_protocolContainer->at(rowIndex.row());
+
+        try {
+            int savedCount = m_protocolContainer->saveProtocolToFile(protocolModel);
+            totalSavedCount += savedCount;
+        }
+        catch(QString message) {
+            QMessageBox::critical(this, tr("Protocol export failed"), tr("Unable to export selected protocol file: %1").arg(message));
+            break;
+        }
+    }
+
+    if(totalSavedCount > 0) {
+        QMessageBox::information(this, tr("Protocol export success"), tr("Protocol(s) exported successfully."));
+    }
 }

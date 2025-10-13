@@ -23,12 +23,38 @@ public:
 
     TScenarioLogItem() : TScenarioItem(tr("Logger"), tr("This block logs data input to scenario run log.")) {
         addFlowInputPort("flowIn");
-        addDataInputPort("dataIn");
+        addDataInputPort("dataIn", "", tr("Data pased through this port will be put into the scenario run log."));
         addFlowOutputPort("flowOut");
+
+        m_params = TConfigParam(m_name + " configuration", "", TConfigParam::TType::TDummy, "");
+        TConfigParam modeParam("Log format", "raw", TConfigParam::TType::TEnum, tr("Log format - raw or hex."), false);
+        modeParam.addEnumValue("raw");
+        modeParam.addEnumValue("hex");
+        m_params.addSubParam(modeParam);
     }
 
     TScenarioItem * copy() const override {
         return new TScenarioLogItem(*this);
+    }
+
+    const QString getIconResourcePath() const override {
+        return ":/icons/log.png";
+    }
+
+    TConfigParam setParams(TConfigParam params) override {
+
+        bool iok = false;
+        params.getSubParamByName("Log format", &iok);
+
+        if(!iok) {
+            params.setState(TConfigParam::TState::TError, "Wrong structure of the pre-init params.");
+            return params;
+        }
+
+        m_params = params;
+        m_params.resetState(true);
+
+        return m_params;
     }
 
     QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
@@ -36,6 +62,9 @@ public:
 
         if(dataToLog.size() > SCENARIO_LOG_ENTRY_SIZE_LIMIT) {
             log(tr("Passed data is too big to be shown in the log..."), "orange");
+        }
+        else if(m_params.getSubParamByName("Log format")->getValue() == "hex") {
+            log(dataToLog.toHex(' '));
         }
         else {
             log(dataToLog);

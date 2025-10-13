@@ -11,11 +11,11 @@ TTTestPlugin::~TTTestPlugin() {
 }
 
 QString TTTestPlugin::getName() const {
-    return QString("Univariate Welch's t-test plugin");
+    return QString("Welch's t-test");
 }
 
 QString TTTestPlugin::getInfo() const {
-    return QString("Plugin for t-test leakage assessment");
+    return QString("Component for t-test leakage assessment");
 }
 
 

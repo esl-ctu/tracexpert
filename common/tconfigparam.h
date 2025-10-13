@@ -43,7 +43,9 @@ public:
         TDummy,
         TEnum,
         TFileName,
-        TTime
+        TDirectoryName,
+        TTime,
+        TCode
     };
 
     enum class TState {
@@ -165,6 +167,8 @@ public:
         switch(m_type) {
             case TType::TString:
             case TType::TFileName:
+            case TType::TDirectoryName:
+            case TType::TCode:
                 iok = true;
                 break;
             case TType::TInt:

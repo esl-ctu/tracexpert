@@ -13,6 +13,8 @@ class TReceiver : public QObject
 public:
     explicit TReceiver(QObject * parent = nullptr);
 
+    bool isBusy();
+
 public slots:
     void receiveData(int length);
     void startReceiving();
@@ -23,6 +25,7 @@ protected:
 
 private:
     bool m_stopReceiving;
+    bool m_isBusy = false;
 
 signals:
     void dataReceived(QByteArray data);

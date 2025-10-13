@@ -41,6 +41,8 @@ private:
 
     bool executeNextFlowItem();
 
+    bool executeCurrentItem();
+
     void haltExecution();
 
     void saveOutputData(QHash<TScenarioItemPort *, QByteArray> outputData);
@@ -56,7 +58,8 @@ private:
     TProjectModel * m_projectModel = nullptr;
 
     QHash<TScenarioItem *, QHash<TScenarioItemPort *, QByteArray>> m_scenarioItemDataInputValues;
-    QHash<TScenarioItemPort *, TScenarioItemPort *> m_connectionMap;
+    QHash<TScenarioItemPort *, TScenarioItemPort *> m_flowConnectionMap;
+    QHash<TScenarioItemPort *, QList<TScenarioItemPort *>> m_dataConnectionMap;
 
     TScenarioItem * m_currentItem;
 };

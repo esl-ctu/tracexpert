@@ -230,7 +230,7 @@ bool TNewae::setUpPythonProcess(){
     QString program = pythonPath;
 
     QStringList arguments;
-    arguments << runDir + "/executable.py";
+    arguments << runDir + "/plugins/executable.py";
 
     pythonProcess = new QProcess;
     pythonProcess->setProcessChannelMode(QProcess::SeparateChannels);

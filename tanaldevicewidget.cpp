@@ -175,15 +175,21 @@ TAnalDeviceWidget::TAnalDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolCo
 
     QComboBox * actionComboBox = new QComboBox;
 
-    for (int i = 0; i < m_actionModels.length(); i++) {
-        actionComboBox->addItem(m_actionModels[i]->name());
-        connect(m_actionModels[i], &TAnalActionModel::started, actionComboBox, [=](){ actionComboBox->setDisabled(true); runActionButton->setDisabled(true); abortActionButton->setDisabled(false); });
-        connect(m_actionModels[i], &TAnalActionModel::finished, actionComboBox, [=](){ actionComboBox->setDisabled(false); runActionButton->setDisabled(!m_currentActionModel->isEnabled()); abortActionButton->setDisabled(true); });
+    if (!m_actionModels.empty()) {
+        for (int i = 0; i < m_actionModels.length(); i++) {
+            actionComboBox->addItem(m_actionModels[i]->name());
+            connect(m_actionModels[i], &TAnalActionModel::started, actionComboBox, [=](){ actionComboBox->setDisabled(true); runActionButton->setDisabled(true); abortActionButton->setDisabled(false); });
+            connect(m_actionModels[i], &TAnalActionModel::finished, actionComboBox, [=](){ actionComboBox->setDisabled(false); runActionButton->setDisabled(!m_currentActionModel->isEnabled()); abortActionButton->setDisabled(true); });
+        }
+
+        actionComboBox->setCurrentIndex(0);
+        actionChanged(0);
+        connect(actionComboBox, &QComboBox::currentIndexChanged, this, &TAnalDeviceWidget::actionChanged);
+        connect(actionComboBox, &QComboBox::currentIndexChanged, this, [=](int index){ runActionButton->setDisabled(!m_currentActionModel->isEnabled()); });
     }
-    actionComboBox->setCurrentIndex(0);
-    actionChanged(0);
-    connect(actionComboBox, &QComboBox::currentIndexChanged, this, &TAnalDeviceWidget::actionChanged);
-    connect(actionComboBox, &QComboBox::currentIndexChanged, this, [=](int index){ runActionButton->setDisabled(!m_currentActionModel->isEnabled()); });
+    else {
+        runActionButton->setDisabled(true);
+    }
 
     QHBoxLayout * actionLayout = new QHBoxLayout;
     actionLayout->addWidget(actionLabel);
@@ -238,8 +244,8 @@ void TAnalDeviceWidget::updateDisplayedProtocols() {
     m_receiveProtocolComboBox->addItem("raw data");
 
     for(int i = 0; i < m_protocolContainer->count(); i++) {
-        m_sendProtocolComboBox->addItem(m_protocolContainer->at(i).getName());
-        m_receiveProtocolComboBox->addItem(m_protocolContainer->at(i).getName());
+        m_sendProtocolComboBox->addItem(m_protocolContainer->at(i)->name());
+        m_receiveProtocolComboBox->addItem(m_protocolContainer->at(i)->name());
     }
 }
 
