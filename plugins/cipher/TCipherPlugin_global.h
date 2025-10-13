@@ -1,0 +1,13 @@
+#ifndef TCIPHERPLUGIN_GLOBAL_H
+#define TCIPHERPLUGIN_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(TCIPHERPLUGIN_LIBRARY)
+#  define TCIPHERPLUGIN_EXPORT Q_DECL_EXPORT
+#else
+#  define TCIPHERPLUGIN_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // TCIPHERPLUGIN_GLOBAL_H
+

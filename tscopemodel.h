@@ -18,7 +18,7 @@ public slots:
     void collectData(size_t bufferSize);
 
 signals:
-    void dataCollected(size_t traces, size_t samples, TScope::TSampleType type, QList<quint8 *> buffers, bool overvoltage);
+    void dataCollected(size_t traces, size_t samples, TScope::TSampleType type, QList<QByteArray> buffers, bool overvoltage);
     void collectionStopped();
     void nothingCollected();
 
@@ -64,7 +64,7 @@ signals:
     void stopFailed();
     void downloadFailed();
 
-    void tracesDownloaded(size_t traces, size_t samples, TScope::TSampleType type, QList<quint8 *> buffers, bool overvoltage);
+    void tracesDownloaded(size_t traces, size_t samples, TScope::TSampleType type, QList<QByteArray> buffers, bool overvoltage);
     void tracesEmpty();
     void stopped();
 
@@ -77,7 +77,7 @@ public slots:
     void stop();
 
 private slots:
-    void dataCollected(size_t traces, size_t samples, TScope::TSampleType type, QList<quint8 *> buffers, bool overvoltage);
+    void dataCollected(size_t traces, size_t samples, TScope::TSampleType type, QList<QByteArray> buffers, bool overvoltage);
 
     void dataCollectionStopped();
     void noDataCollected();

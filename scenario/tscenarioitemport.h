@@ -22,8 +22,9 @@ class TScenarioItemPort {
 
 public:
     enum class TItemPortType {
-        TFlowPort = 0,
-        TDataPort = 1
+        TConnectionPort = 0,
+        TFlowPort = 1,
+        TDataPort = 2,
     };
 
     enum class TItemPortDirection {
@@ -31,7 +32,7 @@ public:
         TOutputPort = 1
     };
 
-    TScenarioItemPort(TScenarioItem * parentItem) : m_parentItem(parentItem) { }
+    TScenarioItemPort(TScenarioItem * parentItem) : m_parentItem(parentItem), m_connectedPorts() { }
 
     TScenarioItemPort(const QString &name, TItemPortType type, TItemPortDirection direction, TScenarioItem * parentItem, const QString &displayName = QString(), const QString &description = QString()):
         m_name(name),
@@ -39,7 +40,8 @@ public:
         m_direction(direction),
         m_parentItem(parentItem),
         m_displayName(displayName),
-        m_description(description)
+        m_description(description),
+        m_connectedPorts()
     { }
 
     TScenarioItemPort(const TScenarioItemPort &x):
@@ -48,7 +50,8 @@ public:
         m_direction(x.m_direction),
         m_parentItem(nullptr),
         m_displayName(x.m_displayName),
-        m_description(x.m_description)
+        m_description(x.m_description),
+        m_connectedPorts()
     { }
 
     TScenarioItemPort & operator=(const TScenarioItemPort &x){
@@ -58,7 +61,7 @@ public:
             m_direction = x.m_direction;
             m_parentItem = nullptr;
             m_displayName = x.m_displayName;
-            m_description = x.m_description;
+            m_description = x.m_description;            
         }
         return *this;
     }
@@ -150,6 +153,22 @@ public:
         m_displayName = value;
     }
 
+    bool hasConnectedPort() const {
+        return !m_connectedPorts.empty();
+    }
+
+    QList<TScenarioItemPort *> getConnectedPorts() const {
+        return m_connectedPorts;
+    }
+
+    void clearConnectedPorts() {
+        m_connectedPorts.clear();
+    }
+
+    void addConnectedPort(TScenarioItemPort * itemPort) {
+        m_connectedPorts.append(itemPort);
+    }
+
 protected:
     QString m_name;
     TItemPortType m_type;
@@ -161,7 +180,10 @@ protected:
 
     QString m_displayName;
     QString m_description;
-};
 
+    // not serialized, only available/valid when scenario is executed
+    // TScenarioItems that are connected through this port
+    QList<TScenarioItemPort*> m_connectedPorts;
+};
 
 #endif // TSCENARIOITEMPORT_H

@@ -15,10 +15,11 @@
 #include "scenario_items/tscenarioloopitem.h"
 #include "scenario_items/tscenariooutputfileitem.h"
 #include "scenario_items/tscenariorandomstringitem.h"
-#include "scenario_items/tscenarioscopeitem.h"
+#include "scenario_items/tscenarioscopesingleitem.h"
+#include "scenario_items/tscenarioscopestartitem.h"
+#include "scenario_items/tscenarioscopestopitem.h"
 #include "scenario_items/tscenarioprotocolencodeitem.h"
 #include "scenario_items/tscenariorandomstringitem.h"
-#include "scenario_items/tscenarioscopeitem.h"
 #include "scenario_items/tscenariovariablereaditem.h"
 #include "scenario_items/tscenariovariablewriteitem.h"
 #include "scenario_items/tscenarioscriptitem.h"
@@ -126,8 +127,12 @@ TScenarioItem * TScenarioItem::createScenarioItemByClass(int itemClass) {
             return new TScenarioConditionItem();
         case TScenarioLoopItem::TItemClass:
             return new TScenarioLoopItem();
-        case TScenarioScopeItem::TItemClass:
-            return new TScenarioScopeItem();
+        case TScenarioScopeSingleItem::TItemClass:
+            return new TScenarioScopeSingleItem();
+        case TScenarioScopeStartItem::TItemClass:
+            return new TScenarioScopeStartItem();
+        case TScenarioScopeStopItem::TItemClass:
+            return new TScenarioScopeStopItem();
         case TScenarioOutputFileItem::TItemClass:
             return new TScenarioOutputFileItem();
         case TScenarioVariableReadItem::TItemClass:
@@ -328,6 +333,34 @@ void TScenarioItem::addDataOutputPort(const QString & name, const QString & disp
     m_itemPorts.append(
         new TScenarioItemPort(name,
                               TScenarioItemPort::TItemPortType::TDataPort,
+                              TScenarioItemPort::TItemPortDirection::TOutputPort,
+                              this, displayName, description)
+        );
+    sortItemPorts();
+}
+
+void TScenarioItem::addConnectionInputPort(const QString & name, const QString & displayName, const QString & description) {
+    if(!verifyPortNameUnique(name)) {
+        return;
+    }
+
+    m_itemPorts.append(
+        new TScenarioItemPort(name,
+                              TScenarioItemPort::TItemPortType::TConnectionPort,
+                              TScenarioItemPort::TItemPortDirection::TInputPort,
+                              this, displayName, description)
+        );
+    sortItemPorts();
+}
+
+void TScenarioItem::addConnectionOutputPort(const QString & name, const QString & displayName, const QString & description) {
+    if(!verifyPortNameUnique(name)) {
+        return;
+    }
+
+    m_itemPorts.append(
+        new TScenarioItemPort(name,
+                              TScenarioItemPort::TItemPortType::TConnectionPort,
                               TScenarioItemPort::TItemPortDirection::TOutputPort,
                               this, displayName, description)
         );

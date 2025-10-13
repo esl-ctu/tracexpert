@@ -148,6 +148,8 @@ When you're satisfied with the look of your scenario, it is time to run it.
 To run the scenario, click the green **Run** button in the top left toolbar.
 The output of the run will appear in the **Scenario run log** in the bottom of the editor window.
 
+When the scenario finishes, the **Flow end** block through which the scenario has ended will be highlighted light blue.
+
 ![Run the scenario](images/scenarios_run_scenario.png)
 
 ### Step 7: Edit the block settings
@@ -172,6 +174,8 @@ Continue by editing the Constant block, changing the **Number of iterations**.
 After you're done editing, the scenario should look as follows.
 
 You can run the scenario now and observe the change in the **Scenario run log**.
+
+> 💡 *Notice that during scenario execution, the loop block displays the current iteration number.*
 
 ![After edit](images/scenarios_after_edit.png)
 
@@ -231,14 +235,90 @@ The return value has to be an array with the same number of elements as is set i
 
 ![Script block settings](images/scenarios_script_settings.png)
 
-### IO Device reading/writing
+### IO Device reading and writing
 
-**! TODO !**
+In order to read from and write to IO Devices (which can be files, serial ports, smart card readers etc.) the **IO Device: Read** and **IO Device: Write** blocks can be used.
 
-### Oscilloscope interfacing
+These blocks cannot be used before being configured first, so when you first place them onto the scenario editor canvas, they are in an error state.
 
-**! TODO !**
+![IO Device blocks - error](images/scenarios_io_device_blocks.png)
+
+To configure the blocks, double click them. The **Edit block parameters** window appears.
+
+![IO Device block settings](images/scenarios_io_device_settings.png)
+
+In this window, it is necessary to select the Component, which the IO Device you want to use is from, and the IO Device itself.
+
+> 💡 *If there are any errors in your configuration, they will show up on the right side along with an explanation.*
+> 
+> ![IO Device block settings error](images/scenarios_io_device_settings_error.png)
+
+When you select an IO Device, its pre- and post-init parameters will be shown.
+
+![IO Device block settings](images/scenarios_io_device_settings1.png)
+
+However, these parameters will not be applied unless one of the following options is selected:
+
+![IO Device block settings](images/scenarios_io_device_settings2.png)
+
+> 💡 *The **Update available options** button is used to refresh block configuration options that might have changed in the project while the scenario editor was opened, such as adding or removing devices, protocols, etc. It also prevents accidental overwriting of the IO Device configuration.*
+
+When the block is set up successfully, the blocks in the scenario show the selected IO Device.
+
+![IO Device blocks](images/scenarios_io_device_blocks2.png)
 
 ### Formating Protocol messages
 
-**! TODO !**
+In order to use your defined protocols along with their messages, you can use the **Protocol: format message** block.
+
+This block cannot be used before being configured first, so when you first place it onto the scenario editor canvas, it is in an error state.
+
+![Protocol block](images/scenarios_protocol.png)
+
+To configure the blocks, double click it. The **Edit block parameters** window appears.
+
+![Protocol block settings](images/scenarios_protocol_settings.png)
+
+In this window, it is necessary to select the Protocol and the Protocol Message the block is supposed to format.
+
+If a message with payload inputs is selected, they will appear as inputs into the block.
+
+![Protocol block](images/scenarios_protocol2.png)
+
+> 💡 *If you update the protocol message definitions, remember to use the **Update available options** for the changes to take effect.*
+
+### Oscilloscope interfacing
+
+Scenarios currently offer two ways to use oscilloscopes. 
+
+Either, the **Oscilloscope: single capture** block can be used alone, or the **Oscilloscope: start measurement** and **Oscilloscope: download data** blocks can be used together.
+
+The **Oscilloscope: single capture** block performs a single capture and blocks until the measurement is done (until all data is received from the oscilloscope). This means any setup for the measurement has to be done before the measurement. 
+
+The **Oscilloscope: start measurement** and **Oscilloscope: download data** blocks also perform a single capture, but during the measurement, the user can perform actions in the scenario.
+
+The **Oscilloscope: single capture** block and **Oscilloscope: start measurement** have the same settings - Component and Oscilloscope selection, pre- and post- init parameters. Same rules apply for the parameters as with [IO Devices](#io-device-reading-and-writing).
+
+![Oscilloscope block](images/scenarios_oscilloscope_settings.png)
+![Oscilloscope block](images/scenarios_oscilloscope_settings2.png)
+
+The **Oscilloscope: single capture** block shows an error state until an Oscilloscope is assigned. The data ouput ports are as follows:
+
+- **data** - raw measured data
+- **#traces** - total number of traces
+- **#samples** - total number of samples per trace
+- **data type** - data type as string
+- **overvoltage** - boolean indicator of overvoltage
+
+> 💡 The data type can be one of: *UInt8, Int8, UInt16, Int16, UInt32, Int32, Real32, Real64*
+
+![Oscilloscope block](images/scenarios_oscilloscope.png)
+![Oscilloscope block](images/scenarios_oscilloscope2.png)
+
+The **Oscilloscope: start measurement** block also shows an error state until an Oscilloscope is assigned. The data ouput ports on the **Oscilloscope: download data** are identical as on the **single capture** block.
+
+The following image shows a part of an example scenario.
+The **Oscilloscope: start measurement** and **Oscilloscope: download data** have to be connected together through the purple "connection" ports in order to work.
+
+![Oscilloscope block](images/scenarios_oscilloscope_start_stop_example.png)
+![Oscilloscope block](images/scenarios_oscilloscope_start_stop_example2.png)

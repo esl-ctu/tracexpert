@@ -46,8 +46,9 @@ protected:
     void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = nullptr) override;
 
 private:
-    const QColor FLOW_CONNECTION_COLOR = QColor::fromString("#99cfe0");
-    const QColor DATA_CONNECTION_COLOR = QColor::fromString("#da9a85");
+    const QColor FLOW_LINE_COLOR = QColor::fromString("#99cfe0");
+    const QColor DATA_LINE_COLOR = QColor::fromString("#da9a85");
+    const QColor CONN_LINE_COLOR = QColor::fromString("#9a85da");
 
     const int CLEARANCE = 20;       // distance from block to first "bend" of the connection
     const int CLEARANCE_STEP = 10;  // distance addition for each following port

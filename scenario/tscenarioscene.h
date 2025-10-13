@@ -28,7 +28,7 @@ class TScenarioScene : public QGraphicsScene
     Q_OBJECT
 
 public:
-    enum Mode { MousePointer, MouseDrag, InsertLine, InsertItem };
+    enum TScenarioPointerTool { MousePointer, MouseDrag, InsertLine, InsertItem };
 
     explicit TScenarioScene(TProjectModel * projectModel, QObject *parent = nullptr);
     ~TScenarioScene();
@@ -47,15 +47,16 @@ public:
     void sendSelectedToBack();
     void bringSelectedToFront();
 
-    TScenarioScene::Mode mode();
+    TScenarioScene::TScenarioPointerTool pointerTool();
 
 public slots:
-    void setMode(Mode mode);
+    void setPointerTool(TScenarioPointerTool mode);
     void setInsertItemMode(TScenarioGraphicalItem * insertedBlockInstance);
 
 signals:
     void itemInserted(TScenarioGraphicalItem * item);
     void itemInsertCanceled();
+    void pointerToolChanged(TScenarioPointerTool tool);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent) override;
@@ -65,8 +66,9 @@ protected:
 private:
     const QColor FLOW_LINE_COLOR = QColor::fromString("#99cfe0");
     const QColor DATA_LINE_COLOR = QColor::fromString("#da9a85");
+    const QColor CONN_LINE_COLOR = QColor::fromString("#9a85da");
 
-    Mode m_mode;
+    TScenarioPointerTool m_pointerTool;
 
     TScenario * m_scenario;
     TProjectModel * m_projectModel;

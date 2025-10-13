@@ -11,7 +11,7 @@ TAnalTestingPlugin::~TAnalTestingPlugin() {
 }
 
 QString TAnalTestingPlugin::getName() const {
-    return QString("Anal testing plugin");
+    return QString("Analytical testing plugin");
 }
 
 QString TAnalTestingPlugin::getInfo() const {

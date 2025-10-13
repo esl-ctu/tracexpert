@@ -30,7 +30,7 @@ QT_END_NAMESPACE
 // https://doc.qt.io/qt-6/qtwidgets-graphicsview-diagramscene-example.html
 // under BSD-3-Clause license
 
-class TScenarioScene;
+#include "tscenarioscene.h"
 
 /*!
  * \brief The TScenarioEditorWidget class provides a widget for editing a scenario.
@@ -59,7 +59,8 @@ private slots:
     void saveScenario();
     void deleteItem();
 
-    void pointerGroupClicked();
+    void pointerGroupButtonClicked();
+    void pointerToolChanged(TScenarioScene::TScenarioPointerTool tool);
 
     void bringToFront();
     void sendToBack();
@@ -68,6 +69,7 @@ private slots:
 
     void scaleChangedUsingMouseWheel(qreal scale);
     void sceneScaleChangedBySelection(const QString &scale);
+
 
     void lineButtonTriggered();
 

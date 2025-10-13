@@ -1,6 +1,8 @@
 #include "tprotocolcontainer.h"
 #include "tprotocolmodel.h"
 #include "../tprojectmodel.h"
+#include <qfiledialog.h>
+#include <QMessageBox>
 
 TProtocolContainer::TProtocolContainer(TProjectModel * parent) : QAbstractTableModel(parent), TProjectItem(parent->model(), parent) {
     m_typeName = "protocols";
@@ -35,8 +37,8 @@ int TProtocolContainer::getIndexByName(const QString &name, bool *ok) const {
     return -1;
 }
 
-const TProtocol & TProtocolContainer::at(int index) const {
-    return m_protocolModels[index]->protocol();
+const TProtocolModel * TProtocolContainer::at(int index) const {
+    return m_protocolModels.at(index);
 }
 
 int TProtocolContainer::count() const{
@@ -199,4 +201,76 @@ QString TProtocolContainer::name() const
 TProjectItem::Status TProtocolContainer::status() const
 {
     return Status::None;
+}
+
+
+int TProtocolContainer::loadProtocolFromFile() {
+    QStringList filters;
+    filters << "TraceXpert protocol file (*.txpp)"
+            << "Any files (*)";
+
+    QFileDialog openDialog;
+    openDialog.setNameFilters(filters);
+    openDialog.setAcceptMode(QFileDialog::AcceptOpen);
+    openDialog.setFileMode(QFileDialog::ExistingFiles);
+
+    // TODO: open specific directory?
+    // openDialog.setDirectory(m_projectDirectory);
+
+    if (!openDialog.exec()) return 0;
+
+    QStringList files = openDialog.selectedFiles();
+
+    for (const QString &fileName : files) {
+        QFile protocolFile(fileName);
+        protocolFile.open(QIODevice::ReadOnly | QIODevice::Text);
+
+        QByteArray documentArray = protocolFile.readAll();
+        protocolFile.close();
+
+        QDomDocument document;
+        document.setContent(documentArray);
+
+        QDomElement projectElement = document.documentElement();
+        TProtocolModel * protocolModel = new TProtocolModel(this);
+
+        try {
+            protocolModel->load(&projectElement);
+            add(protocolModel);
+        }
+        catch (QString message) {
+            if (protocolModel)
+                delete protocolModel;
+            throw message;
+        }
+    }
+
+    return files.count();
+}
+
+int TProtocolContainer::saveProtocolToFile(const TProtocolModel * protocolModel) {
+    QDomDocument document;
+    document.appendChild(protocolModel->save(document));
+
+    QStringList filters;
+    filters << "TraceXpert protocol file (*.txpp)"
+            << "Any files (*)";
+
+    QFileDialog saveDialog;
+    saveDialog.setNameFilters(filters);
+    saveDialog.setAcceptMode(QFileDialog::AcceptSave);
+    saveDialog.setFileMode(QFileDialog::AnyFile);
+
+    // TODO: open specific directory?
+    // openDialog.setDirectory(m_projectDirectory);
+
+    saveDialog.selectFile(protocolModel->name());
+    if (!saveDialog.exec()) return 0;
+
+    QFile projectFile(saveDialog.selectedFiles().constFirst());
+    projectFile.open(QIODevice::WriteOnly | QIODevice::Text);
+    projectFile.write(document.toByteArray());
+    projectFile.close();
+
+    return 1;
 }

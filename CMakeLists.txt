@@ -20,7 +20,10 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts Xml Concur
 
 add_subdirectory(ads)
 
+set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/appicon.rc")
+
 add_executable(${PROJECT_NAME} WIN32
+    ${APP_ICON_RESOURCE_WINDOWS}
     application.qrc
     main.cpp
     tdockmanager.cpp
@@ -134,6 +137,13 @@ add_executable(${PROJECT_NAME} WIN32
     scenario/scenario_items/tscenariovariablereaditem.h
     scenario/scenario_items/tscenarioscriptitem.h
     tcodeedit.h tcodeedit.cpp
+    scenario/scenario_items/tscenarioscopestartitem.h
+    scenario/scenario_items/tscenarioscopestopitem.h
+    scenario/scenario_items/tscenarioscopesingleitem.h
+    scenario/scenario_items/tscenarioscopestartitem.cpp
+    scenario/scenario_items/tscenarioscopestopitem.cpp
+    tlogwidget.h
+    tlogwidget.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE common)
@@ -170,12 +180,11 @@ function(add_plugin dir target additional_files)
 endfunction()
 
 
-add_plugin(analtestingplugin TAnalTestingPlugin "")
+add_plugin(cipher TCipherPlugin "")
+add_plugin(predict TPredictPlugin "")
 add_plugin(cpa TCPAPlugin "")
 add_plugin(dummyscope TDummyScopePlugin "")
-add_plugin(emptyplugin TEmptyPlugin "")
 add_plugin(file TFile "")
-add_plugin(newplugin TNewPlugin "")
 add_plugin(ps6000 TPS6000 "")
 add_plugin(ps6000a TPS6000a "")
 add_plugin(random TRandom "")

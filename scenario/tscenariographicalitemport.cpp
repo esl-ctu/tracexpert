@@ -35,16 +35,31 @@ TScenarioGraphicalItemPort::TScenarioGraphicalItemPort(TScenarioItemPort * scena
         m_colorStrip->setPen(QPen(FLOW_PORT_COLOR, 1));
         m_colorStrip->setBrush(QBrush(FLOW_PORT_COLOR, Qt::SolidPattern));
     }
-    else {
+    else if(scenarioItemPort->getType() == TScenarioItemPort::TItemPortType::TDataPort) {
         m_colorStrip->setPen(QPen(DATA_PORT_COLOR, 1));
         m_colorStrip->setBrush(QBrush(DATA_PORT_COLOR, Qt::SolidPattern));
     }
+    else {
+        m_colorStrip->setPen(QPen(CONN_PORT_COLOR, 1));
+        m_colorStrip->setBrush(QBrush(CONN_PORT_COLOR, Qt::SolidPattern));
+    }
+
 
     toolTipText.append("<i><b>");
     toolTipText.append(scenarioItemPort->getName());
     toolTipText.append("</b> (");
     toolTipText.append(scenarioItemPort->getDirection() == TScenarioItemPort::TItemPortDirection::TInputPort ? "input " : "output ");
-    toolTipText.append(scenarioItemPort->getType() == TScenarioItemPort::TItemPortType::TFlowPort ? "flow " : "data ");
+
+    if(scenarioItemPort->getType() == TScenarioItemPort::TItemPortType::TFlowPort) {
+        toolTipText.append("flow ");
+    }
+    else if(scenarioItemPort->getType() == TScenarioItemPort::TItemPortType::TDataPort) {
+        toolTipText.append("data ");
+    }
+    else {
+        toolTipText.append("connection ");
+    }
+
     toolTipText.append("port)</i>");
 
     if(!scenarioItemPort->getDescription().isEmpty()) {

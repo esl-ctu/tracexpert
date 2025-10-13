@@ -18,17 +18,10 @@ void TScenarioExecutor::setScenario(TScenario * scenario) {
     QHash<QString, QList<TScenarioItemPort *>> variableDataInPorts;
     QHash<QString, QList<TScenarioItemPort *>> variableDataOutPorts;
 
-    m_prepareSuccessful = true;
     for(TScenarioItem * item : m_scenario->getItems()) {
-        connect(item, &TScenarioItem::asyncLog, this, &TScenarioExecutor::log, Qt::BlockingQueuedConnection);
-        connect(item, &TScenarioItem::syncLog, this, &TScenarioExecutor::log);
-        item->setProjectModel(m_projectModel);
-        item->updateParams(false);
-        item->resetState(true);
-
-        if(!item->prepare()) {
-            m_prepareSuccessful = false;
-            emit log("Failed to prepare block \"" + item->getName() + "\"!", "red");
+        // clear all ports' "connected ports"
+        for(TScenarioItemPort * itemPort : item->getItemPorts()) {
+            itemPort->clearConnectedPorts();
         }
 
         // gather all variable write items and their dataIn ports
@@ -54,13 +47,6 @@ void TScenarioExecutor::setScenario(TScenario * scenario) {
 
             ports.append(item->getItemPortByName("dataOut"));
             variableDataOutPorts.insert(variableName, ports);
-        }
-    }
-
-    if(!m_prepareSuccessful) {
-        for(TScenarioItem * item : m_scenario->getItems()) {
-            disconnect(item, &TScenarioItem::asyncLog, this, &TScenarioExecutor::log);
-            disconnect(item, &TScenarioItem::syncLog, this, &TScenarioExecutor::log);
         }
     }
 
@@ -91,8 +77,13 @@ void TScenarioExecutor::setScenario(TScenario * scenario) {
     m_flowConnectionMap.clear();
     m_dataConnectionMap.clear();
     for(TScenarioConnection * connection : m_scenario->getConnections()) {
+
+        // add connection information to the ports themselves
+        connection->getSourcePort()->addConnectedPort(connection->getTargetPort());
+        connection->getTargetPort()->addConnectedPort(connection->getSourcePort());
+
         if(connection->getSourcePort()->getType() == TScenarioItemPort::TItemPortType::TFlowPort) {
-            m_flowConnectionMap.insert(connection->getSourcePort(), connection->getTargetPort());
+            m_flowConnectionMap.insert(connection->getSourcePort(), connection->getTargetPort());            
         }
         else {
             QList<TScenarioItemPort *> ports;
@@ -111,15 +102,47 @@ void TScenarioExecutor::setScenario(TScenario * scenario) {
             m_dataConnectionMap.insert(connection->getSourcePort(), ports);
         }
     }
+
+    m_prepareSuccessful = true;
+    for(TScenarioItem * item : m_scenario->getItems()) {
+        try {
+            connect(item, &TScenarioItem::asyncLog, this, &TScenarioExecutor::log, Qt::BlockingQueuedConnection);
+            connect(item, &TScenarioItem::syncLog, this, &TScenarioExecutor::log);
+            item->setProjectModel(m_projectModel);
+            item->updateParams(false);
+            item->resetState(true);
+
+            if(!item->prepare()) {
+                m_prepareSuccessful = false;
+                emit log("Failed to prepare block \"" + item->getName() + "\"!", "red");
+            }
+        }
+        catch(...) {
+            m_prepareSuccessful = false;
+            emit log("Failed to prepare block \"" + item->getName() + "\", exception thrown!", "red");
+        }
+    }
+
+    if(!m_prepareSuccessful) {
+        for(TScenarioItem * item : m_scenario->getItems()) {
+            disconnect(item, &TScenarioItem::asyncLog, this, &TScenarioExecutor::log);
+            disconnect(item, &TScenarioItem::syncLog, this, &TScenarioExecutor::log);
+        }
+    }
 }
 
 void TScenarioExecutor::haltExecution() {
     m_isRunning = false;
 
-    for(TScenarioItem * item : m_scenario->getItems()) {        
-        disconnect(item, nullptr, this, nullptr);
-        if(!item->cleanup()) {
-            emit log("Failed to cleanup block \"" + item->getName() + "\"!", "orange");
+    for(TScenarioItem * item : m_scenario->getItems()) {
+        try {
+            disconnect(item, nullptr, this, nullptr);
+            if(!item->cleanup()) {
+                emit log("Failed to cleanup block \"" + item->getName() + "\"!", "orange");
+            }
+        }
+        catch(...) {
+            emit log("Failed to cleanup block \"" + item->getName() + "\", exception thrown!", "orange");
         }
     }
 }
@@ -166,8 +189,17 @@ void TScenarioExecutor::start() {
     connect(watcher, &QFutureWatcher<void>::finished, this, &TScenarioExecutor::scenarioExecutionFinished);
     connect(watcher, &QFutureWatcher<void>::finished, watcher, &QFutureWatcher<void>::deleteLater);
     watcher->setFuture((m_runFuture = QtConcurrent::run([this] {
-        executeNonFlowItems();
-        executeFlowItems();
+        try {
+            executeNonFlowItems();
+            executeFlowItems();
+        }
+        catch(...) {
+            qWarning("An unhandled exception occured during scenario execution, halting!");
+            emit log("An unhandled exception occured during scenario execution, halting!", "red");
+
+            haltExecution();
+            emit scenarioExecutionFinished();
+        }
     })));
 }
 
@@ -320,13 +352,12 @@ void TScenarioExecutor::saveOutputData(QHash<TScenarioItemPort *, QByteArray> ou
     // figure out where to send the data output values
     for (auto [sourceScenarioItemPort, value] : outputData.asKeyValueRange()) {
         if(!m_dataConnectionMap.contains(sourceScenarioItemPort)) {
-            qWarning("Failed to pass output data to next block - no connection.");
-            emit log("Failed to pass output data to next block - no connection.", "orange");
+            QString portName = sourceScenarioItemPort->getDisplayName().isEmpty() ?
+                                   sourceScenarioItemPort->getName() : sourceScenarioItemPort->getDisplayName();
+            emit log("Failed to pass output data to next block - no connection (" + portName + ").", "orange");
             m_currentItem->setState(
                 TScenarioItem::TState::TRuntimeWarning,
-                "Failed to pass data: unconnected output data port (" \
-                + (sourceScenarioItemPort->getDisplayName().isEmpty() ? sourceScenarioItemPort->getName() : sourceScenarioItemPort->getDisplayName()) \
-                + ")!"
+                "Failed to pass data: unconnected output data port (" + portName + ")!"
             );
             continue;
         }

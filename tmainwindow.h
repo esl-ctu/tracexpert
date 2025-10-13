@@ -7,13 +7,14 @@
 #include "tdockmanager.h"
 #include "tprojectmodel.h"
 #include "tprojectview.h"
+#include "tlogwidget.h"
 
 class TMainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit TMainWindow(QWidget * parent = nullptr);
+    explicit TMainWindow(TLogWidget * logWidget, QWidget * parent = nullptr);
     ~TMainWindow();
 
 public slots:
@@ -27,7 +28,7 @@ public slots:
     void openProtocolEditor(const QString & protocolName);
 
     void createScenarioManagerWidget();
-    void openScenarioEditor(TScenarioModel * scenario);
+    void createScenarioEditorDockWidget(TScenarioModel * scenario);
 
 private slots:
     void showDeviceWizard();
@@ -41,6 +42,9 @@ private slots:
 private:
     void createMenus();
     void createActions();
+
+    void createWelcome();
+    void createLog();
 
     void readSettings();
     void writeSettings();
@@ -63,6 +67,8 @@ private:
 
     TDockManager * m_dockManager;
 
+    TLogWidget * m_logWidget;
+    TDockWidget * m_welcomeDockWidget;
     TDockWidget * m_projectDockWidget;
     TDockWidget * m_protocolManagerDockWidget;
     TDockWidget * m_scenarioManagerDockWidget;

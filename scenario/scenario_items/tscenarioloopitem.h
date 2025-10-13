@@ -21,8 +21,8 @@ public:
 
     TScenarioLoopItem() : TScenarioItem(tr("Loop"), tr("This block represents a loop.")) {
         addFlowInputPort("flowIn");
-        addFlowOutputPort("flowOutDone", "done");
-        addFlowOutputPort("flowOutRepeat", "repeat");
+        addFlowOutputPort("flowOutDone", "done", tr("After the final iteration, flow will continue through this port."));
+        addFlowOutputPort("flowOutRepeat", "repeat", tr("Flow will continue through this port at the start of every iteration."));
 
         m_params = TConfigParam(m_name + " configuration", "", TConfigParam::TType::TDummy, "");
         m_params.addSubParam(TConfigParam("Block name", "Loop", TConfigParam::TType::TString, tr("Display name of the block."), false));
@@ -68,6 +68,13 @@ public:
         emit appearanceChanged();
 
         return m_params;
+    }
+
+    bool cleanup() override {
+        m_subtitle = QString(tr("%1 iterations")).arg(m_params.getSubParamByName("Number of iterations")->getValue());
+        emit appearanceChanged();
+
+        return true;
     }
 
     bool prepare() override {

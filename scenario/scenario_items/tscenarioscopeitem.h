@@ -21,19 +21,23 @@ public:
     enum { TItemClass = 60 };
     int itemClass() const override { return TItemClass; }
 
-    TScenarioScopeItem() : TScenarioItem(tr("Oscilloscope"), tr("This block interfaces a selected Oscilloscope.")) {
+    TScenarioScopeItem(QString name, QString description) : TScenarioItem(name, description) {
+        m_isFirstBlockExecution = true;
+
         addFlowInputPort("flowIn");
         addFlowOutputPort("flowOut", "done", tr("Flow continues through this port on success."));
         addFlowOutputPort("flowOutError", "error", tr("Flow continues through this port on error."));
+    }
 
+    void initializeDataOutputPorts() {
         addDataOutputPort("buffers", "data", tr("Byte array with read data."));
         addDataOutputPort("traceCount", "#traces",tr("Number of traces."));
         addDataOutputPort("sampleCount", "#samples", tr("Number of samples per trace."));
         addDataOutputPort("type", "data type", tr("Data type of samples."));
         addDataOutputPort("overvoltage", "overvoltage", tr("Overvoltage indication."));
+    }
 
-        m_subtitle = tr("no Oscilloscope selected");
-
+    void initializeConfigParams() {
         m_params = TConfigParam("Block configuration", "", TConfigParam::TType::TDummy, "");
         m_params.addSubParam(TConfigParam("Component", "", TConfigParam::TType::TEnum, tr("Component that the Oscilloscope belongs to."), false));
         m_params.addSubParam(TConfigParam("Oscilloscope", "", TConfigParam::TType::TEnum, tr("The Oscilloscope this block represents."), false));
@@ -56,6 +60,7 @@ public:
 
         // item has to be initialized, , otherwise it cannot be used
         setState(TState::TError, tr("Block configuration contains errors!"));
+        m_subtitle = tr("no Oscilloscope selected");
     }
 
     bool supportsImmediateExecution() const override {
@@ -78,6 +83,7 @@ public:
     void updateParams(bool paramValuesChanged) override {
         TConfigParam * componentParam = m_params.getSubParamByName("Component");
         componentParam->clearEnumValues();
+        componentParam->resetState();
 
         int componentCount = m_projectModel->componentContainer()->count();
         int selectedComponentIndex = -1;
@@ -179,7 +185,6 @@ public:
         m_params = params;
         updateParams(shouldUpdate);
 
-        m_title = "";
         m_subtitle = "no Oscilloscope selected";
 
         if(m_params.getState(true) == TConfigParam::TState::TError) {
@@ -187,7 +192,6 @@ public:
         }
         else {
             setState(TState::TOk);
-            m_title = m_params.getSubParamByName("Component")->getValue();
             m_subtitle = m_params.getSubParamByName("Oscilloscope")->getValue();
         }
 
@@ -195,8 +199,7 @@ public:
         return m_params;
     }
 
-    bool prepare() override {
-        m_scopeModel = getScopeModel();
+    bool checkAndSetInitParamsAtPreparation() {
         m_isFirstBlockExecution = true;
 
         if(!m_scopeModel) {
@@ -225,6 +228,28 @@ public:
         return true;
     }
 
+    bool prepare() override {
+        resetState();
+
+        m_scopeModel = getScopeModel();
+
+        if(!m_scopeModel) {
+            setState(TState::TError, tr("Failed to obtain selected Oscilloscope, is it available?"));
+            return false;
+        }
+
+        if(!checkAndSetInitParamsAtPreparation()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    bool cleanup() override {
+        m_outputData.clear();
+        return true;
+    }
+
     void setPreInitParams() {
         TConfigParam * preInitParams = m_params.getSubParamByName("Oscilloscope configuration")->getSubParamByName("pre-init params");
 
@@ -234,7 +259,7 @@ public:
             return;
         }
 
-        if(!m_scopeModel->deInit()) {
+        if(!m_scopeModel->isInit() || !m_scopeModel->deInit()) {
             qWarning("Could not deinitialize Oscilloscope to set pre-init params.");
             setState(TState::TError, tr("Could not deinitialize Oscilloscope to set pre-init params."));
             return;
@@ -307,17 +332,21 @@ public:
             }
         }
 
-        if(selectedScopeIndex > -1) {
-            TComponentModel * componentModel = m_projectModel->componentContainer()->at(selectedComponentIndex);
-            TScopeModel * scopeModel = componentModel->scopeContainer()->at(selectedScopeIndex);
-
-            return scopeModel;
+        if(selectedScopeIndex < 0) {
+            return nullptr;
         }
 
-        return nullptr;
+        TComponentModel * componentModel = m_projectModel->componentContainer()->at(selectedComponentIndex);
+        TScopeModel * scopeModel = componentModel->scopeContainer()->at(selectedScopeIndex);
+
+        if(!scopeModel->isAvailable()) {
+            return nullptr;
+        }
+
+        return scopeModel;
     }
 
-    void execute(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
+    void checkAndSetInitParamsBeforeExecution() {
         TConfigParam * preInitParamConf = m_params.getSubParamByName("Set pre-init params");
         if(preInitParamConf->getValue() == "Each time this block is executed" ||
             (preInitParamConf->getValue() == "Once; before this block is first executed" && m_isFirstBlockExecution)) {
@@ -331,43 +360,38 @@ public:
         }
 
         m_isFirstBlockExecution = false;
-
-        connect(m_scopeModel, &TScopeModel::runFailed, this, &TScenarioScopeItem::runFailed);
-        connect(m_scopeModel, &TScopeModel::stopFailed, this, &TScenarioScopeItem::stopFailed);
-        connect(m_scopeModel, &TScopeModel::downloadFailed, this, &TScenarioScopeItem::downloadFailed);
-
-        connect(m_scopeModel, &TScopeModel::tracesDownloaded, this, &TScenarioScopeItem::tracesDownloaded);
-        connect(m_scopeModel, &TScopeModel::tracesEmpty, this, &TScenarioScopeItem::tracesEmpty);
-        connect(m_scopeModel, &TScopeModel::stopped, this, &TScenarioScopeItem::stopped);
-
-        m_scopeModel->runSingle();
     }
 
-    void tracesDownloaded(size_t traces, size_t samples, TScope::TSampleType type, QList<quint8 *> buffers, bool overvoltage) {
+    void tracesDownloaded(size_t traces, size_t samples, TScope::TSampleType type, QList<QByteArray> buffers, bool overvoltage) {
+        log(QString(tr("[%1] Trace data downloaded")).arg(m_scopeModel->name()));
         m_outputData.clear();
         m_outputData.insert(getItemPortByName("traceCount"), QByteArray::number(traces));
         m_outputData.insert(getItemPortByName("sampleCount"), QByteArray::number(samples));
 
-        int sampleSize;
         QString typeName;
         switch (type) {
-            case TScope::TSampleType::TUInt8:   sampleSize = 1; typeName = "UInt8";     break;
-            case TScope::TSampleType::TInt8:    sampleSize = 1; typeName = "Int8";      break;
-            case TScope::TSampleType::TUInt16:  sampleSize = 2; typeName = "UInt16";    break;
-            case TScope::TSampleType::TInt16:   sampleSize = 2; typeName = "Int16";     break;
-            case TScope::TSampleType::TUInt32:  sampleSize = 4; typeName = "UInt32";    break;
-            case TScope::TSampleType::TInt32:   sampleSize = 4; typeName = "Int32";     break;
-            case TScope::TSampleType::TReal32:  sampleSize = 4; typeName = "Real32";    break;
-            case TScope::TSampleType::TReal64:  sampleSize = 8; typeName = "Real64";    break;
+            case TScope::TSampleType::TUInt8:   typeName = "UInt8";     break;
+            case TScope::TSampleType::TInt8:    typeName = "Int8";      break;
+            case TScope::TSampleType::TUInt16:  typeName = "UInt16";    break;
+            case TScope::TSampleType::TInt16:   typeName = "Int16";     break;
+            case TScope::TSampleType::TUInt32:  typeName = "UInt32";    break;
+            case TScope::TSampleType::TInt32:   typeName = "Int32";     break;
+            case TScope::TSampleType::TReal32:  typeName = "Real32";    break;
+            case TScope::TSampleType::TReal64:  typeName = "Real64";    break;
             default: break;
         }
         m_outputData.insert(getItemPortByName("type"), typeName.toUtf8());
 
-        QByteArray buffersData;
-        for(int i = 0; i < traces; i++) {
-            buffersData.append((const char *)buffers[i], samples*sampleSize);
+        QByteArray data;
+        for(QByteArray buffer : buffers) {
+            data.append(buffer);
+
+            // assuming no other part of the program will be using the data
+            // and to free space for the data array (since we might be dealing with very big data)
+            // let's delete the oroginal buffer
+            buffer.clear();
         }
-        m_outputData.insert(getItemPortByName("buffers"), buffersData);
+        m_outputData.insert(getItemPortByName("buffers"), data);
 
         m_outputData.insert(getItemPortByName("overvoltage"), QByteArray::number(overvoltage ? 1 : 0));
     }
@@ -407,8 +431,7 @@ public:
     void stopped() {
         disconnect(m_scopeModel, nullptr, this, nullptr);
 
-        log(QString(tr("[%1] Trace data downloaded")).arg(m_scopeModel->name()));
-
+        log(QString(tr("[%1] Measurement stopped")).arg(m_scopeModel->name()));
         m_preferredOutputFlowPortName = "flowOut";
         emit executionFinishedWithOutput(m_outputData);
     }

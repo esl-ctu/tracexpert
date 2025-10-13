@@ -15,7 +15,7 @@ public:
     int getIndexByName(const QString &name, bool *ok = nullptr) const;
 
     int count() const;
-    const TProtocol & at(int index) const;
+    const TProtocolModel * at(int index) const;
 
     bool add(TProtocolModel * protocolModel);
     bool add(const TProtocol & protocol);
@@ -33,6 +33,9 @@ public:
     TProjectItem * child(int row) const override;
     QString name() const override;
     Status status() const override;
+
+    int loadProtocolFromFile();
+    int saveProtocolToFile(const TProtocolModel * protocolModel);
 
 signals:
     void protocolsUpdated();

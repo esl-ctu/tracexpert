@@ -134,7 +134,7 @@ void TScopeModel::stop()
     emit stopped();
 }
 
-void TScopeModel::dataCollected(size_t traces, size_t samples, TScope::TSampleType type, QList<quint8 *> buffers, bool overvoltage)
+void TScopeModel::dataCollected(size_t traces, size_t samples, TScope::TSampleType type, QList<QByteArray> buffers, bool overvoltage)
 {
     emit tracesDownloaded(traces, samples, type, buffers, overvoltage);
 
@@ -186,7 +186,7 @@ void TScopeCollector::collectData(size_t bufferSize)
 {
     QList<TScope::TChannelStatus> status = m_scope->getChannelsStatus();
 
-    QList<quint8 *> buffers;
+    QList<QByteArray> buffers;
     TScope::TSampleType type;
     size_t samplesPerTrace;
     size_t traces;
@@ -194,20 +194,18 @@ void TScopeCollector::collectData(size_t bufferSize)
     int channels = 0;
 
     for (int i = 0; i < status.count(); i++) {
-        quint8 * buffer = nullptr;
+        QByteArray buffer;
 
         if (status[i].isEnabled()) {
             bool overloadSingle;
-            buffer = new uint8_t[bufferSize];
 
-            m_scope->downloadSamples(status[i].getIndex(), buffer, bufferSize, &type, &samplesPerTrace, &traces, &overloadSingle);
+            buffer.resize(bufferSize);
+            m_scope->downloadSamples(status[i].getIndex(), (uint8_t *)buffer.data(), bufferSize, &type, &samplesPerTrace, &traces, &overloadSingle);
+
+            // shrink the internal array
+            buffer.squeeze();
 
             if (!traces) {
-                for (int j = 0; j < buffers.count(); j++)
-                    if (buffers[j])
-                        delete [] buffers[j];
-                delete [] buffer;
-
                 emit collectionStopped();
                 return;
             }
