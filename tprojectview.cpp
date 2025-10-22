@@ -400,6 +400,9 @@ void TProjectView::initIODevice()
     if (!m_IODevice->init()) {
         TDialog::deviceInitFailedGeneralMessage(this);
     }
+    else {
+        m_IODevice->show();
+    }
 }
 
 void TProjectView::deinitIODevice()
@@ -442,6 +445,9 @@ void TProjectView::initScope()
     if (!m_scope->init()) {
         TDialog::deviceInitFailedGeneralMessage(this);
     }
+    else {
+        m_scope->show();
+    }
 }
 
 void TProjectView::deinitScope()
@@ -483,6 +489,9 @@ void TProjectView::initAnalDevice()
 
     if (!m_analDevice->init()) {
         TDialog::deviceInitFailedGeneralMessage(this);
+    }
+    else {
+        m_analDevice->show();
     }
 }
 

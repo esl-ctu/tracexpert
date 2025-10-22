@@ -112,6 +112,9 @@ bool TDeviceWizardPage::initDevice(TConfigParam * param)
     if (!ok) {
         TDialog::deviceInitFailedGeneralMessage(this);
     }
+    else {
+        m_selectedDevice->show();
+    }
 
     return ok;
 }

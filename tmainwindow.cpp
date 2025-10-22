@@ -28,11 +28,10 @@ TMainWindow::TMainWindow(TLogHandler * logHandler, QWidget * parent)
 
     setCentralWidget(nullptr);
 
-    m_dockManager = TDockManagerInstance;
+    m_dockManager = new TDockManager(this);
     m_projectModel = nullptr;
     m_projectView = nullptr;
 
-    m_logWidget = logWidget;
     m_welcomeDockWidget = nullptr;
     m_protocolManagerDockWidget = nullptr;
     m_projectDockWidget = nullptr;
@@ -119,10 +118,7 @@ void TMainWindow::createWelcome() {
     textedit->setMinimumHeight(700);
     textedit->setMinimumWidth(1500);
     m_welcomeDockWidget->setWidget(textedit);
-    m_welcomeDockWidget->setFeature(ads::CDockWidget::DockWidgetMovable, false);
-    m_welcomeDockWidget->setFeature(ads::CDockWidget::DockWidgetFloatable, false);
-    m_welcomeDockWidget->setFeature(ads::CDockWidget::DockWidgetClosable, false);
-    m_dockManager->addDockWidget(TDockArea::CenterDockWidgetArea, m_welcomeDockWidget);
+    m_dockManager->addCenterDockWidget(m_welcomeDockWidget);
 }
 
 void TMainWindow::createLog(TLogWidget * logWidget) {
@@ -179,7 +175,7 @@ void TMainWindow::createIODeviceDockWidget(TIODeviceModel * IODevice)
     connect(IODevice, &TIODeviceModel::deinitialized, dockWidget, [=](){ m_dockManager->removeDockWidget(dockWidget); });
     connect(IODevice, &TIODeviceModel::deinitialized, dockWidget, &QObject::deleteLater);
     connect(IODevice, &TIODeviceModel::showRequested, dockWidget, &TDockWidget::show);
-    m_dockManager->addDockWidget(TDockArea::CenterDockWidgetArea, dockWidget, m_welcomeDockWidget->dockAreaWidget());
+    m_dockManager->addCenterDockWidgetTab(dockWidget, m_welcomeDockWidget);
 }
 
 void TMainWindow::createScopeDockWidget(TScopeModel * scope)
@@ -193,7 +189,7 @@ void TMainWindow::createScopeDockWidget(TScopeModel * scope)
     connect(scope, &TScopeModel::deinitialized, dockWidget, [=](){ m_dockManager->removeDockWidget(dockWidget); });
     connect(scope, &TScopeModel::deinitialized, dockWidget, &QObject::deleteLater);
     connect(scope, &TScopeModel::showRequested, dockWidget, &TDockWidget::show);
-    m_dockManager->addDockWidget(TDockArea::CenterDockWidgetArea, dockWidget, m_welcomeDockWidget->dockAreaWidget());
+    m_dockManager->addCenterDockWidgetTab(dockWidget, m_welcomeDockWidget);
 }
 
 void TMainWindow::createAnalDeviceDockWidget(TAnalDeviceModel * analDevice)
@@ -207,7 +203,7 @@ void TMainWindow::createAnalDeviceDockWidget(TAnalDeviceModel * analDevice)
     connect(analDevice, &TAnalDeviceModel::deinitialized, dockWidget, [=](){ m_dockManager->removeDockWidget(dockWidget); });
     connect(analDevice, &TAnalDeviceModel::deinitialized, dockWidget, &QObject::deleteLater);
     connect(analDevice, &TAnalDeviceModel::showRequested, dockWidget, &TDockWidget::show);
-    m_dockManager->addDockWidget(TDockArea::CenterDockWidgetArea, dockWidget, m_welcomeDockWidget->dockAreaWidget());
+    m_dockManager->addCenterDockWidgetTab(dockWidget, m_welcomeDockWidget);
 }
 
 
@@ -228,7 +224,7 @@ void TMainWindow::createProtocolManagerWidget()
 {
     if(m_protocolManagerDockWidget) {
         if(!m_protocolManagerDockWidget->isClosed()) {
-            m_protocolManagerDockWidget->focusWidget();
+            m_protocolManagerDockWidget->show();
             return;
         }
         else {
@@ -243,7 +239,10 @@ void TMainWindow::createProtocolManagerWidget()
     m_protocolManagerDockWidget->setWidget(widget);
 
     m_viewMenu->addAction(m_protocolManagerDockWidget->toggleViewAction());
-    m_dockManager->addDockWidget(TDockArea::CenterDockWidgetArea, m_protocolManagerDockWidget, m_welcomeDockWidget->dockAreaWidget());
+    m_dockManager->addCenterDockWidgetTab(m_protocolManagerDockWidget, m_welcomeDockWidget);
+
+    // show the widget automatically
+    m_protocolManagerDockWidget->show();
 }
 
 void TMainWindow::createScenarioEditorDockWidget(TScenarioModel * scenario)
@@ -262,7 +261,10 @@ void TMainWindow::createScenarioEditorDockWidget(TScenarioModel * scenario)
     // no need to connect &QObject::deleteLater the scenarioEditorDockWidget, since it has setDeleteOnClose(true)
 
     m_viewMenu->addAction(scenarioEditorDockWidget->toggleViewAction());
-    m_dockManager->addDockWidget(TDockArea::CenterDockWidgetArea, scenarioEditorDockWidget, m_welcomeDockWidget->dockAreaWidget());
+    m_dockManager->addCenterDockWidgetTab(scenarioEditorDockWidget, m_welcomeDockWidget);
+
+    // show the widget automatically
+    scenarioEditorDockWidget->show();
 
     m_scenarioEditorDockWidgets.append(scenarioEditorDockWidget);
 }
@@ -272,7 +274,7 @@ void TMainWindow::createScenarioManagerWidget()
 {
     if(m_scenarioManagerDockWidget) {
         if(!m_scenarioManagerDockWidget->isClosed()) {
-            m_scenarioManagerDockWidget->focusWidget();
+            m_scenarioManagerDockWidget->show();
             return;
         }
         else {
@@ -287,7 +289,10 @@ void TMainWindow::createScenarioManagerWidget()
     m_scenarioManagerDockWidget->setWidget(widget);
 
     m_viewMenu->addAction(m_scenarioManagerDockWidget->toggleViewAction());
-    m_dockManager->addDockWidget(TDockArea::CenterDockWidgetArea, m_scenarioManagerDockWidget, m_welcomeDockWidget->dockAreaWidget());
+    m_dockManager->addCenterDockWidgetTab(m_scenarioManagerDockWidget, m_welcomeDockWidget);
+
+    // show the widget automatically
+    m_scenarioManagerDockWidget->show();
 }
 
 

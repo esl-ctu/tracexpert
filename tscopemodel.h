@@ -36,7 +36,7 @@ public:
     explicit TScopeModel(TScope * scope, TScopeContainer * parent, bool manual = false);
     ~TScopeModel();
 
-    void show();
+    void show() override;
 
     bool init() override;
     bool deInit() override;

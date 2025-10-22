@@ -7,18 +7,17 @@
 
 #include "DockManager.h"
 
-typedef ads::CDockManager TDockManager;
+typedef ads::CDockManager TDockManagerBase;
 typedef ads::CDockWidget TDockWidgetBase;
-#define TDockManagerInstance new TDockManager(this)
 #define TDockArea ads::DockWidgetArea
 
 #else
 
 #include <QDockWidget>
+#include <QMainWindow>
 
-typedef QMainWindow TDockManager;
+typedef QMainWindow TDockManagerBase;
 typedef QDockWidget TDockWidgetBase;
-#define TDockManagerInstance this
 #define TDockArea Qt::DockWidgetArea
 
 #endif
@@ -51,6 +50,29 @@ signals:
     void closed();
 #endif
 
+};
+
+class TDockManager
+#ifdef USE_ADS
+    : public TDockManagerBase
+#endif
+{
+
+public:
+    explicit TDockManager(QWidget *parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
+
+#ifndef USE_ADS
+    void addDockWidget(TDockArea dockArea, TDockWidget * dockWidget);
+    void removeDockWidget(TDockWidget * dockWidget);
+#endif
+
+    void addCenterDockWidget(TDockWidget * dockWidget);
+    void addCenterDockWidgetTab(TDockWidget * dockWidget, TDockWidget * existingDockWidget);
+
+#ifndef USE_ADS
+protected:
+    TDockManagerBase * m_mainWindow = nullptr;
+#endif
 };
 
 #endif // TDOCKMANAGER_H

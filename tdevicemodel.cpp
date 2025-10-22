@@ -15,6 +15,11 @@ TDeviceModel::~TDeviceModel()
     TDeviceModel::deInit();
 }
 
+void TDeviceModel::show()
+{
+
+}
+
 int TDeviceModel::childrenCount() const
 {
     return 0;

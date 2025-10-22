@@ -18,7 +18,7 @@ public:
     explicit TIODeviceModel(TIODevice * IODevice, TIODeviceContainer * parent, bool manual = false);
     ~TIODeviceModel();
 
-    void show();
+    void show() override;
 
     bool init() override;
     bool deInit() override;

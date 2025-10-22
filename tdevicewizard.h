@@ -25,7 +25,7 @@ public:
 private:
     TComponentContainer * m_componentContainer;
     TComponentModel * m_selectedComponent = nullptr;
-    TPluginUnitModel * m_selectedDevice = nullptr;
+    TDeviceModel * m_selectedDevice = nullptr;
 
     friend class TDeviceWizardPage;
 };
@@ -48,7 +48,7 @@ protected:
 
     TComponentContainer * m_componentContainer;
     TComponentModel * & m_selectedComponent;
-    TPluginUnitModel * & m_selectedDevice;
+    TDeviceModel * & m_selectedDevice;
 };
 
 
