@@ -229,19 +229,26 @@ void TConfigParamDialog::accept()
     TConfigParam param = m_preInit ? m_unit->setPreInitParams(m_paramWidget->param()) : m_unit->setPostInitParams(m_paramWidget->param());
 
     TConfigParam::TState state = param.getState();
-    if (state == TConfigParam::TState::TError) {
-        m_paramWidget->setParam(param);
-        return;
-    }
-    else if (state == TConfigParam::TState::TWarning) {
+
+    if (state == TConfigParam::TState::TWarning) {
         if (!TDialog::paramWarningQuestion(this)) {
             m_paramWidget->setParam(param);
             return;
         }
     }
-    else {
-        QDialog::accept();
+    // if state is TError or unknown enum value...
+    else if (state != TConfigParam::TState::TOk && state != TConfigParam::TState::TInfo) {
+
+        if(state != TConfigParam::TState::TError) {
+            qWarning("An unknown value was encuntered as config param state!");
+        }
+
+        m_paramWidget->setParam(param);
+        TDialog::paramValueErrorMessage(this);
+        return;
     }
+
+    QDialog::accept();
 }
 
 TScenarioConfigParamDialog::TScenarioConfigParamDialog(QString acceptText, QString title, TScenarioItem * item, QWidget * parent)
@@ -304,16 +311,23 @@ void TScenarioConfigParamDialog::accept()
     TConfigParam param = m_item->setParams(m_paramWidget->param());
 
     TConfigParam::TState state = param.getState(true);
-    if (state == TConfigParam::TState::TError) {
-        m_paramWidget->setParam(param);
-        TDialog::paramValueErrorMessage(this);
-        return;
-    }
-    else if (state == TConfigParam::TState::TWarning) {
+
+    if (state == TConfigParam::TState::TWarning) {
         if (!TDialog::paramWarningQuestion(this)) {
             m_paramWidget->setParam(param);
             return;
         }
+    }
+    // if state is TError or unknown enum value...
+    else if (state != TConfigParam::TState::TOk && state != TConfigParam::TState::TInfo) {
+
+        if(state != TConfigParam::TState::TError) {
+            qWarning("An unknown value was encuntered as config param state!");
+        }
+
+        m_paramWidget->setParam(param);
+        TDialog::paramValueErrorMessage(this);
+        return;
     }
 
     QDialog::accept();
