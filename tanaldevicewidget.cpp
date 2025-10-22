@@ -108,6 +108,7 @@ TAnalDeviceWidget::TAnalDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolCo
 
     for (int i = 0; i < m_receiverModels.length(); i++) {
         receiverComboBox->addItem(m_receiverModels[i]->name());
+        m_receivedData.append(new QByteArray);
     }
     receiverComboBox->setCurrentIndex(0);
     receiverChanged(0);
@@ -150,9 +151,23 @@ TAnalDeviceWidget::TAnalDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolCo
     receiveFormLayout->addRow(tr("Bytes"), m_receiveBytesEdit);
     receiveFormLayout->addWidget(receiveButton);
 
+    QGroupBox * receiveFileGroupBox = new QGroupBox("Save to file");
+
+    QLayout * receiveFileLayout = new QVBoxLayout();
+
+    TFileNameEdit * receiveFileEdit = new TFileNameEdit(QFileDialog::AnyFile);
+    QPushButton * receiveFileButton = new QPushButton("Save");
+    connect(receiveFileButton, &QPushButton::clicked, this, [=](){ receiveFile(receiveFileEdit->text()); });
+
+    receiveFileLayout->addWidget(receiveFileEdit);
+    receiveFileLayout->addWidget(receiveFileButton);
+
+    receiveFileGroupBox->setLayout(receiveFileLayout);
+
     QVBoxLayout * receiveLayout = new QVBoxLayout;
     receiveLayout->addLayout(receiveFormLayout);
     receiveLayout->addLayout(autoReceiveLayout);
+    receiveLayout->addWidget(receiveFileGroupBox);
     receiveLayout->addStretch();
 
     QGroupBox * receiveMessageBox = new QGroupBox("Receive data");
@@ -217,6 +232,8 @@ TAnalDeviceWidget::TAnalDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolCo
 
 TAnalDeviceWidget::~TAnalDeviceWidget() {
     delete m_messageFormManager;
+    for (int i = 0; i < m_receiverModels.length(); i++)
+        delete m_receivedData[i];
 }
 
 bool TAnalDeviceWidget::validateRawInputValues() {
@@ -380,7 +397,11 @@ void TAnalDeviceWidget::receiveFailed()
 }
 
 void TAnalDeviceWidget::dataReceived(QByteArray data, TAnalStreamReceiverModel * receiverModel)
-{
+{    
+    int modelIndex;
+    if ((modelIndex = m_receiverModels.indexOf(receiverModel)) >= 0)
+        m_receivedData[modelIndex]->append(data);
+
     m_communicationLogTextEdit->appendHtml(QString("<b>Received: (%1)</b>").arg(receiverModel->name()));
 
     QString selectedProtocolName = m_receiveProtocolComboBox->currentText();
@@ -425,6 +446,26 @@ void TAnalDeviceWidget::sendFile(QString fileName)
     }
 
     m_currentSenderModel->writeData(file.readAll());
+
+    file.close();
+}
+
+void TAnalDeviceWidget::receiveFile(QString fileName)
+{
+    int modelIndex;
+    if ((modelIndex = m_receiverModels.indexOf(m_currentReceiverModel)) < 0) {
+        qWarning("No receive stream selected.");
+        return;
+    }
+
+    QFile file(fileName);
+
+    if (!file.open(QIODevice::WriteOnly)) {
+        qWarning("Data cannot be saved to file because it failed to open.");
+        return;
+    }
+
+    file.write(*m_receivedData[modelIndex]);
 
     file.close();
 }
