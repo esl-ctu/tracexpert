@@ -4,6 +4,7 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QOpenGLWidget>
+#include <qstatusbar.h>
 
 #include "tmainwindow.h"
 #include "qfiledialog.h"
@@ -18,7 +19,7 @@
 #include "protocol/tprotocolwidget.h"
 
 
-TMainWindow::TMainWindow(TLogWidget * logWidget, QWidget * parent)
+TMainWindow::TMainWindow(TLogHandler * logHandler, QWidget * parent)
     : QMainWindow(parent)
 {
     // Workaround to prevent window reopening when oscilloscope widget is loaded for the first time
@@ -43,8 +44,8 @@ TMainWindow::TMainWindow(TLogWidget * logWidget, QWidget * parent)
     readSettings();
 
     createWelcome();
-    createLog();
-
+    createLog(logHandler->logWidget());
+    createStatusBar(logHandler->logLineWidget());
 }
 
 TMainWindow::~TMainWindow()
@@ -124,13 +125,27 @@ void TMainWindow::createWelcome() {
     m_dockManager->addDockWidget(TDockArea::CenterDockWidgetArea, m_welcomeDockWidget);
 }
 
-void TMainWindow::createLog() {
-    TDockWidget * dockWidget = new TDockWidget(tr("Log"));
-    m_logWidget->setReadOnly(true);
-    m_logWidget->setMinimumHeight(100);
-    dockWidget->setWidget(m_logWidget);
-    m_viewMenu->addAction(dockWidget->toggleViewAction());
-    m_dockManager->addDockWidget(TDockArea::BottomDockWidgetArea, dockWidget);
+void TMainWindow::createLog(TLogWidget * logWidget) {
+    m_logDockWidget = new TDockWidget(tr("Log"));
+    logWidget->setReadOnly(true);
+    logWidget->setMinimumHeight(100);
+    m_logDockWidget->setWidget(logWidget);
+    m_viewMenu->addAction(m_logDockWidget->toggleViewAction());
+    m_dockManager->addDockWidget(TDockArea::BottomDockWidgetArea, m_logDockWidget);
+    m_logDockWidget->close();
+}
+
+void TMainWindow::createStatusBar(TLogLineWidget * logLineWidget) {
+    QStatusBar * statusBar = this->statusBar();
+
+    connect(logLineWidget, &TLogLineWidget::clicked, this, [this]() {
+        m_logDockWidget->isClosed() ? m_logDockWidget->show() : m_logDockWidget->close();
+
+    });
+
+    logLineWidget->setStatusTip(tr("Toggle the Log widget"));
+    logLineWidget->setText("Log messages will appear here. <i>You can click on them to show or hide the Log widget.</i>");
+    statusBar->addPermanentWidget(logLineWidget);
 }
 
 void TMainWindow::createProjectDockWidget(TProjectModel * model)

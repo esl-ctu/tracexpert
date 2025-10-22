@@ -142,8 +142,9 @@ add_executable(${PROJECT_NAME} WIN32
     scenario/scenario_items/tscenarioscopesingleitem.h
     scenario/scenario_items/tscenarioscopestartitem.cpp
     scenario/scenario_items/tscenarioscopestopitem.cpp
-    tlogwidget.h
-    tlogwidget.cpp
+    tloghandler.h
+    tloghandler.cpp
+    tloglinewidget.h tloglinewidget.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE common)
