@@ -7,7 +7,7 @@
 TAnalDeviceModel::TAnalDeviceModel(TAnalDevice * analDevice, TAnalDeviceContainer * parent, bool manual)
     : TProjectItem(parent->model(), parent), TDeviceModel(analDevice, parent, manual), m_analDevice(analDevice)
 {
-    m_typeName = "iodevice";
+    m_typeName = "analdevice";
 }
 
 TAnalDeviceModel::~TAnalDeviceModel() {

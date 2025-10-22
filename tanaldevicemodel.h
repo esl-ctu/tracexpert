@@ -17,7 +17,7 @@ public:
     explicit TAnalDeviceModel(TAnalDevice * IODevice, TAnalDeviceContainer * parent, bool manual = false);
     ~TAnalDeviceModel();
 
-    void show();
+    void show() override;
 
     bool init() override;
     bool deInit() override;

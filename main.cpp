@@ -1,11 +1,11 @@
 #include "tmainwindow.h"
-#include "tlogwidget.h"
+#include "tloghandler.h"
 
 #include <QApplication>
 #include <QMutex>
 
 
-static TLogWidget *gLogWidget = nullptr;
+static TLogHandler *gLogHandler = nullptr;
 static QMutex gLogMutex;
 
 void logMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
@@ -14,9 +14,9 @@ void logMessageHandler(QtMsgType type, const QMessageLogContext &context, const 
 
     QMutexLocker locker(&gLogMutex);
 
-    if (gLogWidget) {
+    if (gLogHandler) {
         QMetaObject::invokeMethod(
-            gLogWidget,
+            gLogHandler,
             "appendLogMessage",
             Qt::QueuedConnection,
             Q_ARG(QtMsgType, type),
@@ -28,10 +28,10 @@ int main(int argc, char * argv[])
 {
     QApplication a(argc, argv);
 
-    gLogWidget = new TLogWidget;
+    gLogHandler = new TLogHandler;
     qInstallMessageHandler(logMessageHandler);
 
-    TMainWindow w(gLogWidget);
+    TMainWindow w(gLogHandler);
     w.show();
     return a.exec();
 }
