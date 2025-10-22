@@ -179,6 +179,9 @@ void TPluginUnitModel::load(QDomElement * element)
 void TPluginUnitModel::bind(TCommon * unit)
 {
     m_unit = unit;
+
+    if (m_unit && !m_preInitParam.isEmpty())
+        m_unit->setPreInitParams(m_preInitParam);
 }
 
 void TPluginUnitModel::release()
