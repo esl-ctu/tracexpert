@@ -156,7 +156,7 @@ void TMainWindow::createProjectDockWidget(TProjectModel * model)
     m_projectModel = model;
     m_projectDirectory = QDir::current();
     m_projectView->setModel(m_projectModel);
-    m_projectView->expandAll();
+    m_projectView->expandToDepth(1);
     m_projectView->resizeColumnToContents(0);
     m_projectDockWidget->setWidget(m_projectView);
     m_dockManager->addDockWidget(TDockArea::LeftDockWidgetArea, m_projectDockWidget);

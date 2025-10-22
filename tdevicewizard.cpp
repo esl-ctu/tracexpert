@@ -12,6 +12,8 @@ TDeviceWizard::TDeviceWizard(TComponentContainer * componentContainer, QWidget *
 {
     setWindowTitle(tr("Open Device Wizard"));
 
+    setMinimumSize(600, 650);
+
     setWindowModality(Qt::WindowModal);
 
     setOptions(QWizard::NoCancelButtonOnLastPage);
