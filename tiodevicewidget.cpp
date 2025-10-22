@@ -161,9 +161,23 @@ TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContaine
     receiveFormLayout->addRow(tr("Bytes"), m_receiveBytesEdit);
     receiveFormLayout->addWidget(receiveButton);
 
+    QGroupBox * receiveFileGroupBox = new QGroupBox("Save to file");
+
+    QLayout * receiveFileLayout = new QVBoxLayout();
+
+    TFileNameEdit * receiveFileEdit = new TFileNameEdit(QFileDialog::AnyFile);
+    QPushButton * receiveFileButton = new QPushButton("Save");
+    connect(receiveFileButton, &QPushButton::clicked, this, [=](){ receiveFile(receiveFileEdit->text()); });
+
+    receiveFileLayout->addWidget(receiveFileEdit);
+    receiveFileLayout->addWidget(receiveFileButton);
+
+    receiveFileGroupBox->setLayout(receiveFileLayout);
+
     QVBoxLayout * receiveLayout = new QVBoxLayout;
     receiveLayout->addLayout(receiveFormLayout);
     receiveLayout->addLayout(autoReceiveLayout);
+    receiveLayout->addWidget(receiveFileGroupBox);
     receiveLayout->addStretch();
 
     QGroupBox * receiveMessageBox = new QGroupBox("Receive data");
@@ -329,7 +343,9 @@ void TIODeviceWidget::receiveFailed()
 }
 
 void TIODeviceWidget::dataReceived(QByteArray data)
-{
+{    
+    m_receivedData.append(data);
+
     QTime time = QTime::currentTime();
     QString formattedTime = time.toString("hh:mm:ss");
 
@@ -439,6 +455,20 @@ void TIODeviceWidget::sendFile(QString fileName)
     }
 
     m_senderModel->writeData(file.readAll());
+
+    file.close();
+}
+
+void TIODeviceWidget::receiveFile(QString fileName)
+{
+    QFile file(fileName);
+
+    if (!file.open(QIODevice::WriteOnly)) {
+        qWarning("Data cannot be saved to file because it failed to open.");
+        return;
+    }
+
+    file.write(m_receivedData);
 
     file.close();
 }

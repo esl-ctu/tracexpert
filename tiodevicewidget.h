@@ -36,6 +36,7 @@ public slots:
     void sendProtocolBytes();
 
     void sendFile(QString fileName);
+    void receiveFile(QString fileName);
 
     void sendBusy();
     void sendFailed();
@@ -81,6 +82,8 @@ private:
 
     QPlainTextEdit * m_communicationLogTextEdit;
     QComboBox * m_logFormat;
+
+    QByteArray m_receivedData;
 };
 
 #endif // TIODEVICEWIDGET_H

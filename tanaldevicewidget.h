@@ -29,6 +29,7 @@ public slots:
     void dataReceived(QByteArray data, TAnalStreamReceiverModel * receiverModel);
 
     void sendFile(QString fileName);
+    void receiveFile(QString fileName);
 
     void sendBytes();
     void sendRawBytes();
@@ -87,6 +88,8 @@ private:
     QHBoxLayout * m_rawMessageEditLayout;
 
     QPlainTextEdit * m_communicationLogTextEdit;
+
+    QList<QByteArray *> m_receivedData;
 };
 
 #endif // TANALDEVICEWIDGET_H
