@@ -8,7 +8,7 @@
 
 #include "protocol/tprotocolcontainer.h"
 #include "tanaldevicemodel.h"
-#include "tconfigparamwidget.h"
+#include "common/widgets/tconfigparamwidget.h"
 #include "tmessageformmanager.h"
 
 class TAnalDeviceWidget : public QWidget

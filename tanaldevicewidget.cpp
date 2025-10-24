@@ -4,7 +4,7 @@
 #include <QCheckBox>
 
 #include "tdialog.h"
-#include "tfilenameedit.h"
+#include "widgets/tfilenameedit.h"
 
 TAnalDeviceWidget::TAnalDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolContainer * protocolContainer, QWidget * parent)
     : QWidget(parent), m_deviceModel(deviceModel), m_senderModels(deviceModel->senderModels()), m_receiverModels(deviceModel->receiverModels()), m_actionModels(deviceModel->actionModels()), m_protocolContainer(protocolContainer)

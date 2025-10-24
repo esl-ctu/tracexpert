@@ -33,6 +33,16 @@ add_executable(${PROJECT_NAME} WIN32
     common/tplugin.h
     common/tprotocol.h
     common/tscope.h
+    common/widgets/tcodeedit.cpp
+    common/widgets/tcodeedit.h
+    common/widgets/tcombobox.cpp
+    common/widgets/tcombobox.h
+    common/widgets/tconfigparamwidget.cpp
+    common/widgets/tconfigparamwidget.h
+    common/widgets/tfilenameedit.cpp
+    common/widgets/tfilenameedit.h
+    common/widgets/ttimeedit.cpp
+    common/widgets/ttimeedit.h
     application.qrc
     main.cpp
     tdockmanager.cpp
@@ -41,12 +51,6 @@ add_executable(${PROJECT_NAME} WIN32
     tmainwindow.h
     tscopewidget.cpp
     tscopewidget.h
-    tconfigparamwidget.cpp
-    tconfigparamwidget.h
-    tfilenameedit.cpp
-    tfilenameedit.h
-    ttimeedit.cpp
-    ttimeedit.h
     tiodevicewidget.cpp
     tiodevicewidget.h
     tdevicewizard.cpp
@@ -95,7 +99,6 @@ add_executable(${PROJECT_NAME} WIN32
     protocol/tprotocoltableview.h
     tmessageformmanager.h
     tmessageformmanager.cpp
-    tcombobox.h tcombobox.cpp
     tdevicemodel.h
     tdevicemodel.cpp
     treceiver.h treceiver.cpp
@@ -145,7 +148,6 @@ add_executable(${PROJECT_NAME} WIN32
     scenario/scenario_items/tscenariovariablewriteitem.h
     scenario/scenario_items/tscenariovariablereaditem.h
     scenario/scenario_items/tscenarioscriptitem.h
-    tcodeedit.h tcodeedit.cpp
     scenario/scenario_items/tscenarioscopestartitem.h
     scenario/scenario_items/tscenarioscopestopitem.h
     scenario/scenario_items/tscenarioscopesingleitem.h

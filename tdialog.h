@@ -3,7 +3,7 @@
 
 #include <QDialog>
 
-#include "tconfigparamwidget.h"
+#include "widgets/tconfigparamwidget.h"
 #include "tcomponentmodel.h"
 #include "tiodevicemodel.h"
 #include "scenario/tscenarioitem.h"

@@ -10,7 +10,7 @@
 #include <QMessageBox>
 
 #include "tscopewidget.h"
-#include "tconfigparamwidget.h"
+#include "widgets/tconfigparamwidget.h"
 
 TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(parent), m_scopeModel(scope) {
     setWindowTitle(tr("Oscilloscope - %1").arg(m_scopeModel->name()));

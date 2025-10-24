@@ -8,7 +8,7 @@
 #include <QGroupBox>
 #include <QLabel>
 
-#include "tconfigparamwidget.h"
+#include "widgets/tconfigparamwidget.h"
 #include "tcomponentcontainer.h"
 #include "tcomponentmodel.h"
 #include "tpluginunitcontainerview.h"

@@ -8,7 +8,7 @@
 #include <QtCharts/QCategoryAxis>
 
 #include "tscopemodel.h"
-#include "tconfigparamwidget.h"
+#include "widgets/tconfigparamwidget.h"
 
 struct TScopeTraceData {
     size_t firstTraceIndex;

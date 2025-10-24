@@ -11,9 +11,9 @@
 #include <QComboBox>
 #include <QFormLayout>
 
-#include "tconfigparamwidget.h"
+#include "widgets/tconfigparamwidget.h"
 #include "tdialog.h"
-#include "tfilenameedit.h"
+#include "widgets/tfilenameedit.h"
 
 
 TIODeviceWidget::TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContainer * protocolContainer, QWidget * parent)

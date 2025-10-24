@@ -11,7 +11,7 @@
 
 #include "protocol/tprotocolcontainer.h"
 #include "tiodevicemodel.h"
-#include "tconfigparamwidget.h"
+#include "widgets/tconfigparamwidget.h"
 #include "tmessageformmanager.h"
 
 class TIODeviceWidget : public QWidget
