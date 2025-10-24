@@ -24,6 +24,15 @@ set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/appicon.rc")
 
 add_executable(${PROJECT_NAME} WIN32
     ${APP_ICON_RESOURCE_WINDOWS}
+    common/tanaldevice.h
+    common/tcommon.h
+    common/tconfigparam.h
+    common/tiodevice.h
+    common/tmessage.h
+    common/tmessagepart.h
+    common/tplugin.h
+    common/tprotocol.h
+    common/tscope.h
     application.qrc
     main.cpp
     tdockmanager.cpp
