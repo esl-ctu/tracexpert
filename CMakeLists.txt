@@ -24,6 +24,18 @@ set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/appicon.rc")
 
 add_executable(${PROJECT_NAME} WIN32
     ${APP_ICON_RESOURCE_WINDOWS}
+    application.qrc
+    main.cpp
+    tdevicewizard.cpp
+    tdevicewizard.h
+    tdialog.cpp
+    tdialog.h
+    tdockmanager.cpp
+    tdockmanager.h
+    tmainwindow.cpp
+    tmainwindow.h
+    tmessageformmanager.cpp
+    tmessageformmanager.h
     common/tanaldevice.h
     common/tcommon.h
     common/tconfigparam.h
@@ -43,119 +55,124 @@ add_executable(${PROJECT_NAME} WIN32
     common/widgets/tfilenameedit.h
     common/widgets/ttimeedit.cpp
     common/widgets/ttimeedit.h
-    application.qrc
-    main.cpp
-    tdockmanager.cpp
-    tdockmanager.h
-    tmainwindow.cpp
-    tmainwindow.h
-    tscopewidget.cpp
-    tscopewidget.h
-    tiodevicewidget.cpp
-    tiodevicewidget.h
-    tdevicewizard.cpp
-    tdevicewizard.h
-    tdialog.cpp
-    tdialog.h
-    tiodevicemodel.cpp
-    tiodevicemodel.h
-    tcomponentmodel.cpp
-    tcomponentmodel.h
-    tscopemodel.cpp
-    tscopemodel.h
-    tpluginunitmodel.cpp
-    tpluginunitmodel.h
-    tpluginunitcontainer.cpp
-    tpluginunitcontainer.h
-    tpluginunitcontainerview.cpp
-    tpluginunitcontainerview.h
-    tcomponentcontainer.cpp
-    tcomponentcontainer.h
-    tiodevicecontainer.cpp
-    tiodevicecontainer.h
-    tscopecontainer.cpp
-    tscopecontainer.h
-    tprojectmodel.cpp
-    tprojectmodel.h
-    tprojectview.cpp
-    tprojectview.h
-    tprojectitem.cpp
-    tprojectitem.h
+    logger/tloghandler.cpp
+    logger/tloghandler.h
+    logger/tloglinewidget.cpp
+    logger/tloglinewidget.h
+    pluginunit/tpluginunitcontainer.cpp
+    pluginunit/tpluginunitcontainer.h
+    pluginunit/tpluginunitcontainerview.cpp
+    pluginunit/tpluginunitcontainerview.h
+    pluginunit/tpluginunitmodel.cpp
+    pluginunit/tpluginunitmodel.h
+    pluginunit/anal/tanaldevicecontainer.cpp
+    pluginunit/anal/tanaldevicecontainer.h
+    pluginunit/anal/tanaldevicemodel.cpp
+    pluginunit/anal/tanaldevicemodel.h
+    pluginunit/anal/tanaldevicewidget.cpp
+    pluginunit/anal/tanaldevicewidget.h
+    pluginunit/anal/action/tanalactionaborter.cpp
+    pluginunit/anal/action/tanalactionaborter.h
+    pluginunit/anal/action/tanalactionmodel.cpp
+    pluginunit/anal/action/tanalactionmodel.h
+    pluginunit/anal/action/tanalactionrunner.cpp
+    pluginunit/anal/action/tanalactionrunner.h
+    pluginunit/anal/stream/tanalstreamreceiver.cpp
+    pluginunit/anal/stream/tanalstreamreceiver.h
+    pluginunit/anal/stream/tanalstreamreceivermodel.cpp
+    pluginunit/anal/stream/tanalstreamreceivermodel.h
+    pluginunit/anal/stream/tanalstreamsender.cpp
+    pluginunit/anal/stream/tanalstreamsender.h
+    pluginunit/anal/stream/tanalstreamsendermodel.cpp
+    pluginunit/anal/stream/tanalstreamsendermodel.h
+    pluginunit/common/tdevicemodel.cpp
+    pluginunit/common/tdevicemodel.h
+    pluginunit/common/receiver/treceiver.cpp
+    pluginunit/common/receiver/treceiver.h
+    pluginunit/common/receiver/treceivermodel.cpp
+    pluginunit/common/receiver/treceivermodel.h
+    pluginunit/common/sender/tsender.cpp
+    pluginunit/common/sender/tsender.h
+    pluginunit/common/sender/tsendermodel.cpp
+    pluginunit/common/sender/tsendermodel.h
+    pluginunit/component/tcomponentcontainer.cpp
+    pluginunit/component/tcomponentcontainer.h
+    pluginunit/component/tcomponentmodel.cpp
+    pluginunit/component/tcomponentmodel.h
+    pluginunit/io/tiodevicecontainer.cpp
+    pluginunit/io/tiodevicecontainer.h
+    pluginunit/io/tiodevicemodel.cpp
+    pluginunit/io/tiodevicemodel.h
+    pluginunit/io/tiodevicereceiver.cpp
+    pluginunit/io/tiodevicereceiver.h
+    pluginunit/io/tiodevicesender.cpp
+    pluginunit/io/tiodevicesender.h
+    pluginunit/io/tiodevicewidget.cpp
+    pluginunit/io/tiodevicewidget.h
+    pluginunit/scope/tscopecontainer.cpp
+    pluginunit/scope/tscopecontainer.h
+    pluginunit/scope/tscopemodel.cpp
+    pluginunit/scope/tscopemodel.h
+    pluginunit/scope/tscopewidget.cpp
+    pluginunit/scope/tscopewidget.h
+    project/tprojectitem.cpp
+    project/tprojectitem.h
+    project/tprojectmodel.cpp
+    project/tprojectmodel.h
+    project/tprojectview.cpp
+    project/tprojectview.h
     protocol/tabstracttablemodel.h
-    protocol/tprotocolwidget.cpp
-    protocol/tprotocolwidget.h
+    protocol/tmessageeditor.cpp
+    protocol/tmessageeditor.h
+    protocol/tmessageparteditor.cpp
+    protocol/tmessageparteditor.h
+    protocol/tmessagepartsimplecontainer.h
+    protocol/tmessagesimplecontainer.h
+    protocol/tprotocolcontainer.cpp
+    protocol/tprotocolcontainer.h
     protocol/tprotocoleditor.cpp
     protocol/tprotocoleditor.h
-    protocol/tmessagesimplecontainer.h
-    protocol/tmessageeditor.h
-    protocol/tmessageeditor.cpp
-    protocol/tmessagepartsimplecontainer.h
-    protocol/tmessageparteditor.h
-    protocol/tprotocolcontainer.h
-    protocol/tprotocolcontainer.cpp
-    protocol/tprotocolmodel.h
     protocol/tprotocolmodel.cpp
-    protocol/tmessageparteditor.cpp
+    protocol/tprotocolmodel.h
     protocol/tprotocoltableview.h
-    tmessageformmanager.h
-    tmessageformmanager.cpp
-    tdevicemodel.h
-    tdevicemodel.cpp
-    treceiver.h treceiver.cpp
-    tsender.h tsender.cpp
-    tanaldevicemodel.h tanaldevicemodel.cpp
-    tanaldevicecontainer.h tanaldevicecontainer.cpp
-    tanalstreamreceiver.h tanalstreamreceiver.cpp
-    tiodevicereceiver.h tiodevicereceiver.cpp
-    tiodevicesender.h tiodevicesender.cpp
-    tanalstreamsender.h tanalstreamsender.cpp
-    tsendermodel.h tsendermodel.cpp
-    treceivermodel.h treceivermodel.cpp
-    tanalactionrunner.h tanalactionrunner.cpp
-    tanalactionaborter.h tanalactionaborter.cpp
-    tanalactionmodel.h tanalactionmodel.cpp
-    tanaldevicewidget.h tanaldevicewidget.cpp
-    tanalstreamreceivermodel.h tanalstreamreceivermodel.cpp
-    tanalstreamsendermodel.h tanalstreamsendermodel.cpp
-    scenario/tscenariographicalconnection.h
-    scenario/tscenariographicalconnection.cpp
-    scenario/tscenariographicalitem.h
-    scenario/tscenariographicalitem.cpp
-    scenario/tscenariographicalitemport.h
-    scenario/tscenariographicalitemport.cpp
-    scenario/tscenariocontainer.h
-    scenario/tscenariocontainer.cpp
-    scenario/tscenarioeditorwidget.h
-    scenario/tscenarioeditorwidget.cpp
-    scenario/tscenariomodel.h
-    scenario/tscenariomodel.cpp
-    scenario/tscenarioscene.h
-    scenario/tscenarioscene.cpp
-    scenario/tscenariowidget.h
-    scenario/tscenariowidget.cpp
-    scenario/tscenarioexecutor.h
-    scenario/tscenarioexecutor.cpp
-    scenario/tscenarioitem.h
-    scenario/tscenarioitem.cpp
-    scenario/tscenarioitemport.h
+    protocol/tprotocolwidget.cpp
+    protocol/tprotocolwidget.h
     scenario/tscenarioconnection.h
-    scenario/tscenariographicsview.h
+    scenario/tscenariocontainer.cpp
+    scenario/tscenariocontainer.h
+    scenario/tscenarioeditorwidget.cpp
+    scenario/tscenarioeditorwidget.h
+    scenario/tscenarioexecutor.cpp
+    scenario/tscenarioexecutor.h
+    scenario/tscenariographicalconnection.cpp
+    scenario/tscenariographicalconnection.h
+    scenario/tscenariographicalitem.cpp
+    scenario/tscenariographicalitem.h
+    scenario/tscenariographicalitemport.cpp
+    scenario/tscenariographicalitemport.h
     scenario/tscenariographicsview.cpp
+    scenario/tscenariographicsview.h
+    scenario/tscenarioitem.cpp
+    scenario/tscenarioitem.h
+    scenario/tscenarioitemport.h
+    scenario/tscenariomodel.cpp
+    scenario/tscenariomodel.h
+    scenario/tscenarioscene.cpp
+    scenario/tscenarioscene.h
+    scenario/tscenariowidget.cpp
+    scenario/tscenariowidget.h
     scenario/graphical_items/tscenariographicalembeddedsubtitleitem.h
     scenario/scenario_items/tscenariodelayitem.h
-    scenario/scenario_items/tscenarioprotocolencodeitem.h
     scenario/scenario_items/tscenariooutputfileitem.h
-    scenario/scenario_items/tscenariovariablewriteitem.h
-    scenario/scenario_items/tscenariovariablereaditem.h
-    scenario/scenario_items/tscenarioscriptitem.h
-    scenario/scenario_items/tscenarioscopestartitem.h
-    scenario/scenario_items/tscenarioscopestopitem.h
+    scenario/scenario_items/tscenarioprotocolencodeitem.h
     scenario/scenario_items/tscenarioscopesingleitem.h
     scenario/scenario_items/tscenarioscopestartitem.cpp
+    scenario/scenario_items/tscenarioscopestartitem.h
     scenario/scenario_items/tscenarioscopestopitem.cpp
-    tloghandler.h
-    tloghandler.cpp
-    tloglinewidget.h tloglinewidget.cpp
+    scenario/scenario_items/tscenarioscopestopitem.h
+    scenario/scenario_items/tscenarioscriptitem.h
+    scenario/scenario_items/tscenariovariablereaditem.h
+    scenario/scenario_items/tscenariovariablewriteitem.h
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE common)

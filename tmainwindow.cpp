@@ -9,13 +9,13 @@
 #include "tmainwindow.h"
 #include "qfiledialog.h"
 #include "tdevicewizard.h"
-#include "tiodevicewidget.h"
-#include "tanaldevicewidget.h"
+#include "pluginunit/io/tiodevicewidget.h"
+#include "pluginunit/anal/tanaldevicewidget.h"
 #include "scenario/tscenariowidget.h"
 #include "scenario/tscenarioeditorwidget.h"
-#include "tscopewidget.h"
-#include "tprojectview.h"
-#include "tprojectmodel.h"
+#include "pluginunit/scope/tscopewidget.h"
+#include "project/tprojectview.h"
+#include "project/tprojectmodel.h"
 #include "protocol/tprotocolwidget.h"
 
 

@@ -5,9 +5,9 @@
 #include <QDir>
 
 #include "tdockmanager.h"
-#include "tprojectmodel.h"
-#include "tprojectview.h"
-#include "tloghandler.h"
+#include "project/tprojectmodel.h"
+#include "project/tprojectview.h"
+#include "logger/tloghandler.h"
 
 class TMainWindow : public QMainWindow
 {

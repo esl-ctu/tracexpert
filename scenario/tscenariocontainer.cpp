@@ -1,6 +1,6 @@
 #include "tscenario.h"
 #include "tscenariocontainer.h"
-#include "../tprojectmodel.h"
+#include "../project/tprojectmodel.h"
 
 TScenarioContainer::TScenarioContainer(TProjectModel * parent) : TProjectItem(parent->model(), parent) {
     m_typeName = "scenarios";

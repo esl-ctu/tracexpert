@@ -23,7 +23,7 @@
 #include "scenario_items/tscenariovariablereaditem.h"
 #include "scenario_items/tscenariovariablewriteitem.h"
 #include "scenario_items/tscenarioscriptitem.h"
-#include "../tprojectmodel.h"
+#include "../project/tprojectmodel.h"
 #include "tscenarioitem.h"
 
 #include "tconfigparam.h"

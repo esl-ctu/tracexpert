@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QFuture>
 
-#include "../tprojectmodel.h"
+#include "../project/tprojectmodel.h"
 #include "tscenario.h"
 
 /*!

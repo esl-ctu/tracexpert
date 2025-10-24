@@ -4,11 +4,11 @@
 #include <QDialog>
 
 #include "widgets/tconfigparamwidget.h"
-#include "tcomponentmodel.h"
-#include "tiodevicemodel.h"
+#include "pluginunit/component/tcomponentmodel.h"
+#include "pluginunit/io/tiodevicemodel.h"
 #include "scenario/tscenarioitem.h"
-#include "tscopemodel.h"
-#include "tanaldevicemodel.h"
+#include "pluginunit/scope/tscopemodel.h"
+#include "pluginunit/anal/tanaldevicemodel.h"
 
 class TDialog
 {

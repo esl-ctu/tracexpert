@@ -9,9 +9,9 @@
 #include <QLabel>
 
 #include "widgets/tconfigparamwidget.h"
-#include "tcomponentcontainer.h"
-#include "tcomponentmodel.h"
-#include "tpluginunitcontainerview.h"
+#include "pluginunit/component/tcomponentcontainer.h"
+#include "pluginunit/component/tcomponentmodel.h"
+#include "pluginunit/tpluginunitcontainerview.h"
 
 class TDeviceWizard : public QWizard
 {

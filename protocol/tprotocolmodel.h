@@ -4,7 +4,7 @@
 #include <QObject>
 
 #include "tprotocol.h"
-#include "../tprojectitem.h"
+#include "../project/tprojectitem.h"
 
 class TProtocolContainer;
 

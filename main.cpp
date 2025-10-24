@@ -1,5 +1,5 @@
 #include "tmainwindow.h"
-#include "tloghandler.h"
+#include "logger/tloghandler.h"
 
 #include <QApplication>
 #include <QMutex>
