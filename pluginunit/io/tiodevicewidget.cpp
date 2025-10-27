@@ -384,13 +384,30 @@ QString TIODeviceWidget::byteArraytoHumanReadableString(const QByteArray & byteA
 {
     static QRegularExpression nonAsciiRegExp("[^ -~]");
     bool isHumanReadable = !((QString)byteArray).contains(nonAsciiRegExp);
+    bool showHex = m_logFormat->currentIndex() == 0;
 
-    if(m_logFormat->currentIndex() == 0){
-        return (byteArray.toHex(' '));
-    } else {
-        return isHumanReadable ? "<i>\"" + QString(byteArray).toHtmlEscaped() + "\"</i>" : (byteArray.toHex(' '));
+    if(byteArray.size() <= DISPLAY_DATA_LENGTH_LIMIT) {
+        if(showHex || !isHumanReadable) {
+            return byteArray.toHex(' ');
+        }
+        else {
+            return "<i>\"" + QString(byteArray).toHtmlEscaped() + "\"</i>";
+        }
     }
-
+    else {
+        if(showHex || !isHumanReadable) {
+            return QString("%1 ... <i>skipping %2 bytes</i> ... %3")
+                    .arg(byteArray.first(5).toHex(' '))
+                    .arg(byteArray.length() - 10)
+                    .arg(byteArray.last(5).toHex(' '));
+        }
+        else {
+            return QString("<i>\"%1\" ... skipping %2 bytes ... \"%3\"</i>")
+                    .arg(QString(byteArray.first(5)).toHtmlEscaped())
+                    .arg(byteArray.length() - 10)
+                    .arg(QString(byteArray.last(5)).toHtmlEscaped());
+        }
+    }
 }
 
 void TIODeviceWidget::sendBytes()
@@ -497,15 +514,10 @@ void TIODeviceWidget::dataSent(QByteArray data)
     QString formattedTime = time.toString("hh:mm:ss");
     m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Sent " + QString::number(data.size()) + " B</b>"));
 
-    if(data.size() > 512) {
-        m_communicationLogTextEdit->appendHtml("<div style=\"color:blue\">Payload is too big to be shown...</div>");
+    if(data == m_messageToBeSent.getData()) {
+        m_communicationLogTextEdit->appendHtml("<div style=\"color:blue\">" + m_messageToBeSent.getPayloadSummary() + "</div>");
     }
     else {
-        if(data == m_messageToBeSent.getData()) {
-            m_communicationLogTextEdit->appendHtml("<div style=\"color:blue\">" + m_messageToBeSent.getPayloadSummary() + "</div>");
-        }
-        else {
-            m_communicationLogTextEdit->appendHtml("<div style=\"color:blue\">" + byteArraytoHumanReadableString(data) + "</div>");
-        }
+        m_communicationLogTextEdit->appendHtml("<div style=\"color:blue\">" + byteArraytoHumanReadableString(data) + "</div>");
     }
 }

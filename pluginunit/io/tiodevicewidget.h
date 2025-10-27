@@ -14,6 +14,8 @@
 #include "widgets/tconfigparamwidget.h"
 #include "../../tmessageformmanager.h"
 
+#define DISPLAY_DATA_LENGTH_LIMIT 300
+
 class TIODeviceWidget : public QWidget
 {
     Q_OBJECT

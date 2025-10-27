@@ -407,7 +407,7 @@ void TAnalDeviceWidget::dataReceived(QByteArray data, TAnalStreamReceiverModel *
     QString selectedProtocolName = m_receiveProtocolComboBox->currentText();
 
     if(selectedProtocolName == "raw data") {
-        m_communicationLogTextEdit->appendPlainText(byteArraytoHumanReadableString(data));
+        m_communicationLogTextEdit->appendHtml(byteArraytoHumanReadableString(data));
         return;
     }
 
@@ -416,7 +416,7 @@ void TAnalDeviceWidget::dataReceived(QByteArray data, TAnalStreamReceiverModel *
 
     if(!protocolFound) {
         qWarning("Unknown protocol selected, could not interpret message.");
-        m_communicationLogTextEdit->appendPlainText(byteArraytoHumanReadableString(data));
+        m_communicationLogTextEdit->appendHtml(byteArraytoHumanReadableString(data));
         return;
     }
 
@@ -424,11 +424,11 @@ void TAnalDeviceWidget::dataReceived(QByteArray data, TAnalStreamReceiverModel *
 
     if(matchedMessage.getName().isEmpty()) {
         qWarning("Received data could not be interpreted as any of the protocol's defined messages.");
-        m_communicationLogTextEdit->appendPlainText(byteArraytoHumanReadableString(data));
+        m_communicationLogTextEdit->appendHtml(byteArraytoHumanReadableString(data));
         return;
     }
 
-    m_communicationLogTextEdit->appendPlainText(matchedMessage.getPayloadSummary());
+    m_communicationLogTextEdit->appendHtml(matchedMessage.getPayloadSummary());
 }
 
 void TAnalDeviceWidget::sendFile(QString fileName)
@@ -445,7 +445,11 @@ void TAnalDeviceWidget::sendFile(QString fileName)
         return;
     }
 
-    m_currentSenderModel->writeData(file.readAll());
+    QByteArray data = file.readAll();
+    m_currentSenderModel->writeData(data);
+
+    m_communicationLogTextEdit->appendHtml(QString("<b>Sent from file: (%1)</b>").arg(m_currentSenderModel->name()));
+    m_communicationLogTextEdit->appendHtml(QString("[%1 bytes]").arg(data.length()));
 
     file.close();
 }
@@ -475,7 +479,28 @@ QString TAnalDeviceWidget::byteArraytoHumanReadableString(const QByteArray & byt
     static QRegularExpression nonAsciiRegExp("[^ -~]");
     bool isHumanReadable = !((QString)byteArray).contains(nonAsciiRegExp);
 
-    return isHumanReadable ? byteArray : ("0x" + byteArray.toHex());
+    if(byteArray.size() <= DISPLAY_DATA_LENGTH_LIMIT) {
+        if(!isHumanReadable) {
+            return byteArray.toHex(' ');
+        }
+        else {
+            return "<i>\"" + QString(byteArray).toHtmlEscaped() + "\"</i>";
+        }
+    }
+    else {
+        if(!isHumanReadable) {
+            return QString("%1 ... <i>skipping %2 bytes</i> ... %3")
+            .arg(byteArray.first(5).toHex(' '))
+                .arg(byteArray.length() - 10)
+                .arg(byteArray.last(5).toHex(' '));
+        }
+        else {
+            return QString("<i>\"%1\" ... skipping %2 bytes ... \"%3\"</i>")
+            .arg(QString(byteArray.first(5)).toHtmlEscaped())
+                .arg(byteArray.length() - 10)
+                .arg(QString(byteArray.last(5)).toHtmlEscaped());
+        }
+    }
 }
 
 void TAnalDeviceWidget::sendBytes()
@@ -505,7 +530,7 @@ void TAnalDeviceWidget::sendRawBytes()
     m_currentSenderModel->writeData(dataToWrite);
 
     m_communicationLogTextEdit->appendHtml(QString("<b>Sent: (%1)</b>").arg(m_currentSenderModel->name()));
-    m_communicationLogTextEdit->appendPlainText(byteArraytoHumanReadableString(dataToWrite));
+    m_communicationLogTextEdit->appendHtml(byteArraytoHumanReadableString(dataToWrite));
 }
 
 void TAnalDeviceWidget::sendProtocolBytes()
@@ -525,7 +550,7 @@ void TAnalDeviceWidget::sendProtocolBytes()
 
     m_communicationLogTextEdit->appendHtml(QStringLiteral("<b>Sent:</b>"));
     m_currentSenderModel->writeData(messageData);
-    m_communicationLogTextEdit->appendPlainText(messageToBeSent.getPayloadSummary());
+    m_communicationLogTextEdit->appendHtml(messageToBeSent.getPayloadSummary());
 }
 
 void TAnalDeviceWidget::sendBusy()
