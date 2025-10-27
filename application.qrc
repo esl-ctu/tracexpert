@@ -21,5 +21,6 @@
         <file>icons/constant.png</file>
         <file>icons/log.png</file>
         <file>icons/message.png</file>
+        <file>icons/analytic.png</file>
     </qresource>
 </RCC>

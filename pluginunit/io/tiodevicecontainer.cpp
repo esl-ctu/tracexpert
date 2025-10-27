@@ -23,6 +23,16 @@ TIODeviceModel * TIODeviceContainer::at(int index) const
     }
 }
 
+TIODeviceModel * TIODeviceContainer::getByName(const QString &name) const {
+    for(TIODeviceModel * deviceModel : m_IODevices) {
+        if(deviceModel->name() == name) {
+            return deviceModel;
+        }
+    }
+
+    return nullptr;
+}
+
 bool TIODeviceContainer::add(TIODeviceModel * unit)
 {
     if (hasName(unit->name())) {

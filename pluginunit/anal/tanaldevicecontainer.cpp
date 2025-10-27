@@ -23,6 +23,16 @@ TAnalDeviceModel * TAnalDeviceContainer::at(int index) const
     }
 }
 
+TAnalDeviceModel * TAnalDeviceContainer::getByName(const QString &name) const {
+    for(TAnalDeviceModel * deviceModel : m_analDevices) {
+        if(deviceModel->name() == name) {
+            return deviceModel;
+        }
+    }
+
+    return nullptr;
+}
+
 bool TAnalDeviceContainer::add(TAnalDeviceModel * unit)
 {
     if (hasName(unit->name())) {

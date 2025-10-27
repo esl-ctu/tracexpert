@@ -30,14 +30,14 @@ public:
     void updateParams(bool paramValuesChanged) override;
 
     bool prepare() override;
-    void execute(const QHash<TScenarioItemPort *, QByteArray> & inputData) override;
+    void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override;
 
     void clearOutputData() {
         m_outputData.clear();
     }
 
 protected:
-    TScenarioScopeStartItem * m_startItem;
+    TScenarioScopeStartItem * m_startItem = nullptr;
 
 };
 

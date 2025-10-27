@@ -50,7 +50,7 @@ public:
     ~TScenarioEditorWidget();
 
 private slots:
-    void buttonGroupClicked(QAbstractButton *button);
+    void itemGroupButtonClicked(QAbstractButton *button);
 
     void runScenario();
     void stopScenario();
@@ -65,7 +65,8 @@ private slots:
     void bringToFront();
     void sendToBack();
 
-    void resetPressedButtons();
+    void checkItemButton(int itemType);
+    void uncheckItemButton(int itemType);
 
     void scaleChangedUsingMouseWheel(qreal scale);
     void sceneScaleChangedBySelection(const QString &scale);
@@ -100,9 +101,11 @@ private:
     QTextBrowser * m_logView;
 
     TScenarioExecutor * m_scenarioExecutor;
+    bool m_stopRequested;
+    bool m_terminateRequested;
 
     QAction * m_runAction;
-    QAction * m_stopAction;
+    QAction * m_stopAction;    
 
     QAction * m_addAction;
     QAction * m_deleteAction;
@@ -110,17 +113,14 @@ private:
     QAction * m_toFrontAction;
     QAction * m_sendBackAction;
 
-
     QToolBar * m_editToolBar;
     QToolBar * m_pointerToolbar;
 
     QComboBox * m_sceneScaleCombo;
 
     QToolBox * m_toolBox;
-    QButtonGroup * m_buttonGroup;
+    QButtonGroup * itemGroup;
     QButtonGroup * m_pointerTypeGroup;
-
-    int m_insertedItemClass = -1;
 };
 
 #endif // TSCENARIOEDITORWIDGET_H

@@ -15,6 +15,7 @@ public:
     
     int count() const override;
     TScopeModel * at(int index) const override;
+    TScopeModel * getByName(const QString &name) const override;
 
     void add(TScopeModel * unit);
     bool remove(TScopeModel * unit);

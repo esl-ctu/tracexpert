@@ -173,6 +173,10 @@ add_executable(${PROJECT_NAME} WIN32
     scenario/scenario_items/tscenarioscriptitem.h
     scenario/scenario_items/tscenariovariablereaditem.h
     scenario/scenario_items/tscenariovariablewriteitem.h
+    scenario/scenario_items/tscenarioanaldeviceactionitem.h
+    scenario/scenario_items/tscenarioanaldevicereaditem.h
+    scenario/scenario_items/tscenarioanaldevicewriteitem.h
+    scenario/tscenarioexecutionexceptions.h
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE common)

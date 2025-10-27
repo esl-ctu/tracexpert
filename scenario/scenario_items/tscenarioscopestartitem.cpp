@@ -32,7 +32,7 @@ bool TScenarioScopeStartItem::prepare() {
 }
 
 
-QHash<TScenarioItemPort *, QByteArray> TScenarioScopeStartItem::executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & inputData) {
+QHash<TScenarioItemPort *, QByteArray> TScenarioScopeStartItem::executeDirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) {
     checkAndSetInitParamsBeforeExecution();
 
     connect(m_scopeModel, &TScopeModel::runFailed, this, &TScenarioScopeItem::runFailed);

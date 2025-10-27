@@ -15,6 +15,7 @@ public:
 
     int count() const override;
     TIODeviceModel * at(int index) const override;
+    TIODeviceModel * getByName(const QString &name) const override;
 
     bool add(TIODeviceModel * unit);
     bool remove(TIODeviceModel * unit);

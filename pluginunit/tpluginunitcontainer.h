@@ -15,6 +15,7 @@ public:
 
     virtual int count() const = 0;
     virtual TPluginUnitModel * at(int index) const = 0;
+    virtual TPluginUnitModel * getByName(const QString &name) const = 0;
 
     int rowCount(const QModelIndex & parent = QModelIndex()) const override;
     int columnCount(const QModelIndex & parent = QModelIndex()) const override;

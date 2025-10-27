@@ -1,34 +1,34 @@
-#ifndef TSCENARIOIODEVICEITEM_H
-#define TSCENARIOIODEVICEITEM_H
+#ifndef TSCENARIOANALDEVICEITEM_H
+#define TSCENARIOANALDEVICEITEM_H
 
 #include "../tscenarioitem.h"
 
 /*!
- * \brief The TScenarioIODeviceItem class represents a block that represents an IO Device.
+ * \brief The TScenarioAnalDeviceItem class represents a block that represents an Analytic Device.
  *
- * The class represents a block that represents an IO Device.
- * It is a base class for IO Device Read and Write blocks, it cannot be used on its own.
+ * The class represents a block that represents an Analytic Device.
+ * It is a base class for Analytic Device Read and Write blocks, it cannot be used on its own.
  * In its basic form, is a block with one input flow port and two output flow ports.
- * The output flow ports are "done" and "error" - they are selected based on the success of the IO Device operation.
- * The IO Device can be selected in the configuration. It is selected from the list of available IO Devices in the selected Component.
- * The IO Device can be configured with pre-init and post-init parameters that can be set once,
+ * The output flow ports are "done" and "error" - they are selected based on the success of the Analytic Device operation.
+ * The Analytic Device can be selected in the configuration. It is selected from the list of available Analytic Devices in the selected Component.
+ * The Analytic Device can be configured with pre-init and post-init parameters that can be set once,
  * before the scenario is launched, before the block is first executed, or each time the block is executed.
  *
  */
-class TScenarioIODeviceItem : public TScenarioItem {
+class TScenarioAnalDeviceItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 30 };
+    enum { TItemClass = 130 };
     int itemClass() const override { return TItemClass; }
 
-    TScenarioIODeviceItem(QString name, QString description) : TScenarioItem(name, description) {
+    TScenarioAnalDeviceItem(QString name, QString description) : TScenarioItem(name, description) {
         addFlowInputPort("flowIn");
         addFlowOutputPort("flowOut", "done", tr("Flow continues through this port on success."));
         addFlowOutputPort("flowOutError", "error", tr("Flow continues through this port on error."));
 
         m_params = TConfigParam("Block configuration", "", TConfigParam::TType::TDummy, "");
-        m_params.addSubParam(TConfigParam("Component", "", TConfigParam::TType::TEnum, tr("Component that the IO Device belongs to."), false));
-        m_params.addSubParam(TConfigParam("IO Device", "", TConfigParam::TType::TEnum, tr("The IO Device this block represents."), false));
+        m_params.addSubParam(TConfigParam("Component", "", TConfigParam::TType::TEnum, tr("Component that the Analytic Device belongs to."), false));
+        m_params.addSubParam(TConfigParam("Analytic Device", "", TConfigParam::TType::TEnum, tr("The Analytic Device this block represents."), false));
 
         TConfigParam preInitParamConf("Set pre-init params", "", TConfigParam::TType::TEnum, tr("Select if and when the configured pre-init parameters should be set."), false);
         preInitParamConf.addEnumValue("Never");
@@ -44,10 +44,13 @@ public:
         postInitParamConf.addEnumValue("Each time this block is executed");
         m_params.addSubParam(postInitParamConf);
 
-        m_params.addSubParam(TConfigParam("IO Device configuration", "", TConfigParam::TType::TDummy, tr("The IO Device pre-init and post-init configuration."), false));
+        TConfigParam paramConf("Analytic Device configuration", "", TConfigParam::TType::TDummy, tr("The Analytic Device pre-init and post-init configuration."), false);
+        paramConf.setState(TConfigParam::TState::TInfo, tr("If you change pre-init params here, keep in mind you need to <b>reinitialize the device with these parameters now</b> to see updated options for post-init params and further configuration."));
+        m_params.addSubParam(paramConf);
+
 
         // item has to be initialized, otherwise it cannot be used
-        m_subtitle = "no IO device selected";
+        m_subtitle = "no Analytic Device selected";
         setState(TState::TError, tr("Block configuration contains errors!"));
     }
 
@@ -56,90 +59,70 @@ public:
     }
 
     TScenarioItem * copy() const override {
-        return new TScenarioIODeviceItem(*this);
+        return new TScenarioAnalDeviceItem(*this);
     }
 
     const QString getIconResourcePath() const override {
-        return ":/icons/file.png";
+        return ":/icons/analytic.png";
     }
 
     bool shouldUpdateParams(TConfigParam newParams) override {
         return isParamValueDifferent(newParams, m_params, "Component") ||
-                isParamValueDifferent(newParams, m_params, "IO Device");
+                isParamValueDifferent(newParams, m_params, "Analytic Device");
     }
 
     void updateParams(bool paramValuesChanged) override {
         TConfigParam * componentParam = m_params.getSubParamByName("Component");
         componentParam->clearEnumValues();
         componentParam->resetState();
+        componentParam->addEnumValue("");
 
-        int componentCount = m_projectModel->componentContainer()->count();
-        int selectedComponentIndex = -1;
-        for(int i = 0; i < componentCount; i++) {
-            if(!m_projectModel->componentContainer()->at(i)->canAddIODevice() &&
-                m_projectModel->componentContainer()->at(i)->IODeviceCount() == 0)
+        TConfigParam * deviceParam = m_params.getSubParamByName("Analytic Device");
+        deviceParam->clearEnumValues();
+        deviceParam->resetState();
+        deviceParam->addEnumValue("");
+
+        TConfigParam * configParam = m_params.getSubParamByName("Analytic Device configuration");
+
+        TDeviceModel * selectedDeviceModel = nullptr;
+        TComponentModel * selectedComponentModel = nullptr;
+
+        for(int i = 0; i < m_projectModel->componentContainer()->count(); i++) {
+            TComponentModel * componentModel = m_projectModel->componentContainer()->at(i);
+
+            if(!componentModel->canAddAnalDevice() && componentModel->analDeviceCount() == 0) {
                 continue;
-
-            if(selectedComponentIndex == -1) {
-                selectedComponentIndex = i;
             }
 
-            QString componentName = m_projectModel->componentContainer()->at(i)->name();
-            componentParam->addEnumValue(componentName);
-
-            if(componentName == componentParam->getValue()) {
-                selectedComponentIndex = i;
-            }
+            componentParam->addEnumValue(componentModel->name());
         }
 
-        if(selectedComponentIndex == -1) {
-            componentParam->setValue("");
+        selectedComponentModel = m_projectModel->componentContainer()->getByName(componentParam->getValue());
+        if(!selectedComponentModel) {
             componentParam->setState(TConfigParam::TState::TError, tr("Selected value is invalid!"));
         }
 
-        TConfigParam * IODeviceParam = m_params.getSubParamByName("IO Device");
-        IODeviceParam->clearEnumValues();
-
-        int selectedIODeviceIndex = -1;
-        if(selectedComponentIndex > -1) {
-            IODeviceParam->resetState();
-            TComponentModel * componentModel = m_projectModel->componentContainer()->at(selectedComponentIndex);
-
-            int IODeviceCount = componentModel->IODeviceCount();
-            selectedIODeviceIndex = IODeviceCount > 0 ? 0 : -1;
-            for(int i = 0; i < IODeviceCount; i++) {
-                QString IODeviceName = componentModel->IODeviceContainer()->at(i)->name();
-                IODeviceParam->addEnumValue(IODeviceName);
-
-                if(IODeviceName == IODeviceParam->getValue()) {
-                    selectedIODeviceIndex = i;
-                }
+        if(selectedComponentModel) {
+            for(int i = 0; i < selectedComponentModel->analDeviceCount(); i++) {
+                deviceParam->addEnumValue(selectedComponentModel->analDevice(i)->name());
             }
 
-            if(selectedIODeviceIndex > -1) {
-                IODeviceParam->setValue(componentModel->IODeviceContainer()->at(selectedIODeviceIndex)->name());
-            }
+            selectedDeviceModel = selectedComponentModel->analDeviceContainer()->getByName(deviceParam->getValue());
         }
 
-        if(selectedIODeviceIndex == -1) {
-            IODeviceParam->setValue("");
-            IODeviceParam->setState(TConfigParam::TState::TError, tr("Selected value is invalid!"));
+        if(!selectedDeviceModel) {
+            deviceParam->setState(TConfigParam::TState::TError, tr("Selected value is invalid!"));
         }
 
-        TConfigParam * configParam = m_params.getSubParamByName("IO Device configuration");
-
-        if(selectedIODeviceIndex > -1 && paramValuesChanged) {
+        if(selectedDeviceModel && paramValuesChanged) {
             configParam->clearSubParams();
 
-            TComponentModel * componentModel = m_projectModel->componentContainer()->at(selectedComponentIndex);
-            TIODeviceModel * IODeviceModel = componentModel->IODeviceContainer()->at(selectedIODeviceIndex);
-
-            TConfigParam preInitParams = IODeviceModel->preInitParams();
+            TConfigParam preInitParams = selectedDeviceModel->preInitParams();
             preInitParams.setName("pre-init params");
 
             configParam->addSubParam(preInitParams);
 
-            TConfigParam postInitParams = IODeviceModel->postInitParams();
+            TConfigParam postInitParams = selectedDeviceModel->postInitParams();
             postInitParams.setName("post-init params");
 
             configParam->addSubParam(postInitParams);
@@ -152,7 +135,7 @@ public:
         params.getSubParamByName("Component", &iok);
         if(!iok) return false;
 
-        params.getSubParamByName("IO Device", &iok);
+        params.getSubParamByName("Analytic Device", &iok);
         if(!iok) return false;
 
         params.getSubParamByName("Set pre-init params", &iok);
@@ -161,7 +144,7 @@ public:
         params.getSubParamByName("Set post-init params", &iok);
         if(!iok) return false;
 
-        params.getSubParamByName("IO Device configuration", &iok);
+        params.getSubParamByName("Analytic Device configuration", &iok);
         if(!iok) return false;
 
         return true;
@@ -190,11 +173,11 @@ public:
     bool prepare() override {
         resetState();
 
-        m_IODeviceModel = getIODeviceModel();
+        m_analDeviceModel = getAnalDeviceModel();
         m_isFirstBlockExecution = true;
 
-        if(!m_IODeviceModel) {
-            setState(TState::TError, tr("Failed to obtain selected IO device, is it available?"));
+        if(!m_analDeviceModel) {
+            setState(TState::TError, tr("Failed to obtain selected Analytic Device, is it available?"));
             return false;
         }
 
@@ -236,7 +219,7 @@ public:
     }
 
     void setPreInitParams() {
-        TConfigParam * preInitParams = m_params.getSubParamByName("IO Device configuration")->getSubParamByName("pre-init params");
+        TConfigParam * preInitParams = m_params.getSubParamByName("Analytic Device configuration")->getSubParamByName("pre-init params");
 
         if(!preInitParams) {
             qWarning("No pre-init params were found, could not be set.");
@@ -244,17 +227,17 @@ public:
             return;
         }
 
-        if(m_IODeviceModel->isInit() && !m_IODeviceModel->deInit()) {
-            qWarning("Could not deinitialize IO device to set pre-init params.");
-            setState(TState::TError, tr("Could not deinitialize IO device to set pre-init params."));
+        if(m_analDeviceModel->isInit() && !m_analDeviceModel->deInit()) {
+            qWarning("Could not deinitialize Analytic Device to set pre-init params.");
+            setState(TState::TError, tr("Could not deinitialize Analytic Device to set pre-init params."));
             return;
         }
 
-        TConfigParam params = m_IODeviceModel->setPreInitParams(*preInitParams);
+        TConfigParam params = m_analDeviceModel->setPreInitParams(*preInitParams);
 
-        if(!m_IODeviceModel->init()) {
-            qWarning("Could not initialize IO device after setting pre-init params.");
-            setState(TState::TError, tr("Could not initialize IO device after setting pre-init params."));
+        if(!m_analDeviceModel->init()) {
+            qWarning("Could not initialize Analytic Device after setting pre-init params.");
+            setState(TState::TError, tr("Could not initialize Analytic Device after setting pre-init params."));
             return;
         }
 
@@ -265,11 +248,11 @@ public:
             return;
         }
 
-        log(QString("[%1] Pre-init params were set").arg(m_IODeviceModel->name()));
+        log(QString("[%1] Pre-init params were set").arg(m_analDeviceModel->name()));
     }
 
     void setPostInitParams() {
-        TConfigParam * postInitParams = m_params.getSubParamByName("IO Device configuration")->getSubParamByName("post-init params");
+        TConfigParam * postInitParams = m_params.getSubParamByName("Analytic Device configuration")->getSubParamByName("post-init params");
 
         if(!postInitParams) {
             qWarning("No post-init params were found, could not be set.");
@@ -277,7 +260,7 @@ public:
             return;
         }
 
-        TConfigParam params = m_IODeviceModel->setPostInitParams(*postInitParams);
+        TConfigParam params = m_analDeviceModel->setPostInitParams(*postInitParams);
 
         if(params.getState(true) == TConfigParam::TState::TError) {
             QString errorMessage = QString("Failed to set post-init parameters: %1").arg(params.getStateMessage());
@@ -286,48 +269,25 @@ public:
             return;
         }
 
-        log(QString("[%1] Post-init params were set").arg(m_IODeviceModel->name()));
+        log(QString("[%1] Post-init params were set").arg(m_analDeviceModel->name()));
     }
 
-    TIODeviceModel * getIODeviceModel() {
+    TAnalDeviceModel * getAnalDeviceModel() {
         TConfigParam * componentParam = m_params.getSubParamByName("Component");
+        TComponentModel * componentModel = m_projectModel->componentContainer()->getByName(componentParam->getValue());
 
-        int componentCount = m_projectModel->componentContainer()->count();
-        int selectedComponentIndex = -1;
-        for(int i = 0; i < componentCount; i++) {
-            QString componentName = m_projectModel->componentContainer()->at(i)->name();
-            if(componentName == componentParam->getValue()) {
-                selectedComponentIndex = i;
-            }
-        }
-
-        TConfigParam * IODeviceParam = m_params.getSubParamByName("IO Device");
-
-        int selectedIODeviceIndex = -1;
-        if(selectedComponentIndex > -1) {
-            TComponentModel * componentModel = m_projectModel->componentContainer()->at(selectedComponentIndex);
-
-            int IODeviceCount = componentModel->IODeviceCount();
-            for(int i = 0; i < IODeviceCount; i++) {
-                QString IODeviceName = componentModel->IODeviceContainer()->at(i)->name();
-                if(IODeviceName == IODeviceParam->getValue()) {
-                    selectedIODeviceIndex = i;
-                }
-            }
-        }
-
-        if(selectedIODeviceIndex < 0) {
+        if(!componentModel) {
             return nullptr;
         }
 
-        TComponentModel * componentModel = m_projectModel->componentContainer()->at(selectedComponentIndex);
-        TIODeviceModel * IODeviceModel = componentModel->IODeviceContainer()->at(selectedIODeviceIndex);
+        TConfigParam * analDeviceParam = m_params.getSubParamByName("Analytic Device");
+        TAnalDeviceModel * analDeviceModel = componentModel->analDeviceContainer()->getByName(analDeviceParam->getValue());
 
-        if(!IODeviceModel->isAvailable()) {
+        if(!analDeviceModel || !analDeviceModel->isAvailable()) {
             return nullptr;
         }
 
-        return IODeviceModel;
+        return analDeviceModel;
     }
 
     TScenarioItemPort * getPreferredOutputFlowPort() override {
@@ -335,8 +295,8 @@ public:
     }
 
 protected:
-    TIODeviceModel * m_IODeviceModel = nullptr;
+    TAnalDeviceModel * m_analDeviceModel = nullptr;
     bool m_isFirstBlockExecution;
 };
 
-#endif // TSCENARIOIODEVICEITEM_H
+#endif // TSCENARIOANALDEVICEITEM_H

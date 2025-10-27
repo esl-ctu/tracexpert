@@ -23,6 +23,16 @@ TComponentModel * TComponentContainer::at(int index) const
     }
 }
 
+TComponentModel * TComponentContainer::getByName(const QString &name) const {
+    for(TComponentModel * componentModel : m_components) {
+        if(componentModel->name() == name) {
+            return componentModel;
+        }
+    }
+
+    return nullptr;
+}
+
 void TComponentContainer::add(TComponentModel * unit)
 {
     unit->setParent(this);

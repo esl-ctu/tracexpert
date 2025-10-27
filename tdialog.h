@@ -45,6 +45,7 @@ public:
     static void protocolMessageCouldNotBeFormed(QWidget * parent);
 
     static bool closeConfirmation(QWidget * parent);
+    static bool scenarioTerminationConfirmation(QWidget * parent);
 
 protected:
     static bool question(QWidget * parent, const QString & title, const QString & text);

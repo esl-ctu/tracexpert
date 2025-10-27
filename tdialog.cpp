@@ -193,6 +193,16 @@ bool TDialog::closeConfirmation(QWidget * parent)
         QMessageBox::No) == QMessageBox::Yes;
 }
 
+bool TDialog::scenarioTerminationConfirmation(QWidget * parent)
+{
+    return QMessageBox::question(
+               parent,
+               parent->tr("Terminate"),
+               parent->tr("Are you sure you want to terminate scenario execution?"),
+               QMessageBox::Yes | QMessageBox::No,
+               QMessageBox::No) == QMessageBox::Yes;
+}
+
 bool TDialog::question(QWidget * parent, const QString &title, const QString &text)
 {
     return QMessageBox::question(parent, title, text) == QMessageBox::Yes;
@@ -254,15 +264,16 @@ void TConfigParamDialog::accept()
 TScenarioConfigParamDialog::TScenarioConfigParamDialog(QString acceptText, QString title, TScenarioItem * item, QWidget * parent)
     : QDialog(parent), m_item(item)
 {
+    setWindowTitle(title);
+    setMinimumSize(500, 400);
+
     TConfigParam param = m_item->getParams();
     m_originalParams = param;
 
     m_paramWidget = new TConfigParamWidget(param);
 
-    //evaluate validity immediately on widget open
-    m_paramWidget->setParam(m_paramWidget->param());
-
-    setWindowTitle(title);
+    // evaluate validity immediately on widget open
+    m_paramWidget->setParam(m_paramWidget->param());  
 
     if(item->getConfigWindowSize() != QSize(0, 0)) {
         resize(item->getConfigWindowSize());

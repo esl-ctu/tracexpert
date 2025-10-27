@@ -145,7 +145,7 @@ public:
         return m_params;
     }
 
-    QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
+    QHash<TScenarioItemPort *, QByteArray> executeDirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
         QString stringValue = m_params.getSubParamByName("Value")->getValue();
 
         QByteArray byteValue;

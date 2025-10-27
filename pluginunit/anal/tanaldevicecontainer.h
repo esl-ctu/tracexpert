@@ -15,6 +15,7 @@ public:
 
     int count() const override;
     TAnalDeviceModel * at(int index) const override;
+    TAnalDeviceModel * getByName(const QString &name) const override;
 
     bool add(TAnalDeviceModel * unit);
     bool remove(TAnalDeviceModel * unit);

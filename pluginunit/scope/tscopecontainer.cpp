@@ -23,6 +23,16 @@ TScopeModel * TScopeContainer::at(int index) const
     }
 }
 
+TScopeModel * TScopeContainer::getByName(const QString &name) const {
+    for(TScopeModel * scopeModel : m_scopes) {
+        if(scopeModel->name() == name) {
+            return scopeModel;
+        }
+    }
+
+    return nullptr;
+}
+
 void TScopeContainer::add(TScopeModel * unit)
 {
     unit->setParent(this);

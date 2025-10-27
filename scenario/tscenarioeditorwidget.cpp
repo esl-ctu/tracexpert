@@ -18,6 +18,9 @@
 #include "scenario_items/tscenariovariablereaditem.h"
 #include "scenario_items/tscenariovariablewriteitem.h"
 #include "scenario_items/tscenarioscriptitem.h"
+#include "scenario_items/tscenarioanaldevicereaditem.h"
+#include "scenario_items/tscenarioanaldevicewriteitem.h"
+#include "scenario_items/tscenarioanaldeviceactionitem.h"
 #include "tscenarioscene.h"
 #include "../tdialog.h"
 
@@ -32,8 +35,9 @@ TScenarioEditorWidget::TScenarioEditorWidget(TScenarioModel * scenarioModel, TPr
     m_scene = new TScenarioScene(projectModel, this);
     m_scene->loadScenario(scenarioModel->scenario());
     m_scene->setSceneRect(QRectF(0, 0, 5000, 5000));
-    connect(m_scene, &TScenarioScene::itemInserted, this, &TScenarioEditorWidget::resetPressedButtons);
-    connect(m_scene, &TScenarioScene::itemInsertCanceled, this, &TScenarioEditorWidget::resetPressedButtons);
+    connect(m_scene, &TScenarioScene::itemInserted, this, &TScenarioEditorWidget::uncheckItemButton);
+    connect(m_scene, &TScenarioScene::itemInsertStarted, this, &TScenarioEditorWidget::checkItemButton);
+    connect(m_scene, &TScenarioScene::itemInsertCancelled, this, &TScenarioEditorWidget::uncheckItemButton);
 
     createActions();
     createToolBox();
@@ -51,7 +55,10 @@ TScenarioEditorWidget::TScenarioEditorWidget(TScenarioModel * scenarioModel, TPr
     createToolBoxDrawer(tr("Component blocks"),
         {   TScenarioIODeviceReadItem::TItemClass, TScenarioIODeviceWriteItem::TItemClass,
             TScenarioScopeStartItem::TItemClass, TScenarioScopeStopItem::TItemClass,
-            TScenarioScopeSingleItem::TItemClass, TScenarioProtocolEncodeItem::TItemClass });
+            TScenarioScopeSingleItem::TItemClass,
+            TScenarioAnalDeviceReadItem::TItemClass, TScenarioAnalDeviceWriteItem::TItemClass,
+            TScenarioAnalDeviceActionItem::TItemClass,
+            TScenarioProtocolEncodeItem::TItemClass });
 
     QVBoxLayout * layout = new QVBoxLayout;
 
@@ -126,15 +133,26 @@ void TScenarioEditorWidget::saveScenario() {
 void TScenarioEditorWidget::runScenario() {
     m_runAction->setEnabled(false);
     m_stopAction->setEnabled(true);
+    m_stopRequested = false;
+    m_terminateRequested = false;
 
     m_logView->clear();
 
-    m_scenarioExecutor->setScenario(m_scene->scenario());
-    m_scenarioExecutor->start();
+    m_scenarioExecutor->start(m_scene->scenario());
 }
 
 void TScenarioEditorWidget::stopScenario() {
-    m_scenarioExecutor->stop();
+    if(!m_stopRequested) {
+        m_stopRequested = true;
+
+        m_scenarioExecutor->stop();
+    }
+    else if(!m_terminateRequested && TDialog::scenarioTerminationConfirmation(this)) {
+        m_terminateRequested = true;
+        m_stopAction->setEnabled(false);
+
+        m_scenarioExecutor->terminate();
+    }
 }
 
 void TScenarioEditorWidget::scenarioStopped() {
@@ -142,19 +160,12 @@ void TScenarioEditorWidget::scenarioStopped() {
     m_stopAction->setEnabled(false);
 }
 
-void TScenarioEditorWidget::buttonGroupClicked(QAbstractButton * button)
+void TScenarioEditorWidget::itemGroupButtonClicked(QAbstractButton * button)
 {
-    QAbstractButton * previouslyPressedButton = m_buttonGroup->button(m_insertedItemClass);
-    if(previouslyPressedButton) {
-        previouslyPressedButton->setChecked(false);
-    }
-
-    button->setChecked(true);
-
-    m_insertedItemClass = m_buttonGroup->id(button);
+    int insertedItemClass = itemGroup->id(button);
     m_scene->setInsertItemMode(
         TScenarioGraphicalItem::createScenarioGraphicalItem(
-            TScenarioItem::createScenarioItemByClass(m_insertedItemClass)
+            TScenarioItem::createScenarioItemByClass(insertedItemClass)
         )
     );
 }
@@ -202,9 +213,17 @@ void TScenarioEditorWidget::keyReleaseEvent(QKeyEvent *event) {
     QWidget::keyPressEvent(event);
 }
 
-void TScenarioEditorWidget::resetPressedButtons()
+void TScenarioEditorWidget::checkItemButton(int itemClass)
 {
-    QAbstractButton * pressedButton = m_buttonGroup->button(m_insertedItemClass);
+    QAbstractButton * pressedButton = itemGroup->button(itemClass);
+    if(pressedButton) {
+        pressedButton->setChecked(true);
+    }
+}
+
+void TScenarioEditorWidget::uncheckItemButton(int itemClass)
+{
+    QAbstractButton * pressedButton = itemGroup->button(itemClass);
     if(pressedButton) {
         pressedButton->setChecked(false);
     }
@@ -230,9 +249,9 @@ void TScenarioEditorWidget::sceneScaleChangedBySelection(const QString &scale)
 
 void TScenarioEditorWidget::createToolBox()
 {
-    m_buttonGroup = new QButtonGroup(this);
-    m_buttonGroup->setExclusive(false);
-    connect(m_buttonGroup, QOverload<QAbstractButton *>::of(&QButtonGroup::buttonClicked), this, &TScenarioEditorWidget::buttonGroupClicked);
+    itemGroup = new QButtonGroup(this);
+    itemGroup->setExclusive(false);
+    connect(itemGroup, QOverload<QAbstractButton *>::of(&QButtonGroup::buttonClicked), this, &TScenarioEditorWidget::itemGroupButtonClicked);
 
     m_toolBox = new QToolBox;
     m_toolBox->setSizePolicy(QSizePolicy(QSizePolicy::Maximum, QSizePolicy::Ignored));
@@ -246,7 +265,13 @@ void TScenarioEditorWidget::createToolBoxDrawer(const QString & title, QList<int
     //layout->setColumnStretch(2, 10);
 
     for(int i = 0; i < itemClassList.count(); i++) {
-        layout->addWidget(createCellWidget(itemClassList[i]), i/2, i%2);
+        QWidget * widget = createCellWidget(itemClassList[i]);
+
+        if(!widget) {
+            continue;
+        }
+
+        layout->addWidget(widget, i/2, i%2);
     }
 
     QWidget * itemWidget = new QWidget;
@@ -343,9 +368,13 @@ void TScenarioEditorWidget::createToolbars() {
 
 QWidget * TScenarioEditorWidget::createCellWidget(int itemClass) {
 
-    TScenarioGraphicalItem * graphicalItem = TScenarioGraphicalItem::createScenarioGraphicalItem(
-        TScenarioItem::createScenarioItemByClass(itemClass)
-    );
+    TScenarioItem * scenarioItem = TScenarioItem::createScenarioItemByClass(itemClass);
+
+    if(!scenarioItem) {
+        return nullptr;
+    }
+
+    TScenarioGraphicalItem * graphicalItem = TScenarioGraphicalItem::createScenarioGraphicalItem(scenarioItem);
 
     QIcon icon(graphicalItem->image());
 
@@ -353,7 +382,7 @@ QWidget * TScenarioEditorWidget::createCellWidget(int itemClass) {
     button->setIcon(icon);
     button->setIconSize(QSize(50, 50));
     button->setCheckable(true);
-    m_buttonGroup->addButton(button, itemClass);
+    itemGroup->addButton(button, itemClass);
 
     QString labelText = graphicalItem->getScenarioItem()->getName();
     if(labelText.contains(':')) {
