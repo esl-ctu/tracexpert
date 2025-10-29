@@ -478,7 +478,7 @@ def callCwFunc(line, shm, dct):
         printToStderr("Invalid Python CW/target function called (this method of the CW/target object does not exist)")
         return
 
-    if functionName != "write" and functionName != "fpga_write":
+    if functionName != "write" and functionName != "fpga_write" and functionName != "loadInput":
         binaryLine = None
 
     parameters = [None] * 10
@@ -536,11 +536,9 @@ def callCwFunc(line, shm, dct):
             except:
                 break
         
-    ret = ""
     try:
         if numParams == 0:
             tmp = function()
-            ret = cwToStr(tmp)
         elif numParams == 1:
             '''if functionName == "get_last_trace":
                 shm.lock()
@@ -575,32 +573,23 @@ def callCwFunc(line, shm, dct):
             else:
                 tmp = function(parameters[0])
                 ret = cwToStr(tmp)'''
-            tmp = function(parameters[0])
-            ret = cwToStr(tmp)   
+            tmp = function(parameters[0])  
         elif numParams == 2:
             tmp = function(parameters[0], parameters[1])
-            ret = cwToStr(tmp)
         elif numParams == 3:
             tmp = function(parameters[0], parameters[1], parameters[2])
-            ret = cwToStr(tmp)
         elif numParams == 4:
             tmp = function(parameters[0], parameters[1], parameters[2], parameters[3])
-            ret = cwToStr(tmp)
         elif numParams == 5:
             tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4])
-            ret = cwToStr(tmp)
         elif numParams == 6:
             tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5])
-            ret = cwToStr(tmp)
         elif numParams == 7:
             tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6])
-            ret = cwToStr(tmp)
         elif numParams == 8:
             tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7])
-            ret = cwToStr(tmp)
         elif numParams == 9:
             tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7], parameters[8])
-            ret = cwToStr(tmp)
         else:
             printToStdout("ERROR", asTarget, cwID) 
             printToStderr("Too many parameters passed to a Python function")
@@ -612,10 +601,20 @@ def callCwFunc(line, shm, dct):
         else:
             pass
 
+    if functionName == "read" or functionName == "fpga_read" or functionName == "readOutput":
+        ret = tmp.encode('latin1')
+    else:
+        ret = cwToStr(tmp) 
+
     if isinstance(ret, np.ndarray):
         pass
     else:
-        ret = "{:016x}".format(len(ret)) + ret
+        if isinstance(ret, bytes):
+            header = f"{len(ret):016x}".encode("ascii")  # ASCII header in bytes
+            ret = header + ret
+        else:
+            ret = "{:016x}".format(len(ret)) + ret
+
     writeToSHM(ret, shm)
 
     printToStdout("DONE", asTarget, cwID) 
@@ -847,7 +846,7 @@ def consumerTarget(queue, targetShmDict, targetDict):
             tmpline = line
             try:
                 if isinstance(binaryLine, bytes):
-                    lineToForward = line[:11].lower().encode("ascii") + binaryLine[11:]
+                    lineToForward = line[:11].lower().encode("ascii") + binaryLine[11:] 
                 else:
                     lineToForward = line[:11].lower() + line[11:]
                 callCwFunc(lineToForward, targetShmDict[cwID], targetDict)
@@ -901,6 +900,7 @@ def main():
 
     for b64line in sys.stdin:
         b64line = b64line.strip()  # removes all leading/trailing whitespace, including \r and \n
+        #print(b64line + " " + str(datetime.now()), flush=True, file=sys.stderr) # TODO!!! Remove!!
         if not b64line:
             printToStdout("ERROR", False, NO_CW_ID) 
             printToStderr("Could not decode received base64 data.")
@@ -908,6 +908,7 @@ def main():
 
         try:
             lineBinary = base64.b64decode(b64line, validate=True)  # returns bytes
+            #print(lineBinary + " " + str(datetime.now()), flush=True, file=sys.stderr) # TODO!!! Remove!!
             line = lineBinary.decode("ascii", errors="ignore")
         except Exception as e:
             printToStdout("ERROR", False, NO_CW_ID) 
