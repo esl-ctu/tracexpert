@@ -23,7 +23,10 @@
 #include "scenario_items/tscenariovariablereaditem.h"
 #include "scenario_items/tscenariovariablewriteitem.h"
 #include "scenario_items/tscenarioscriptitem.h"
-#include "../tprojectmodel.h"
+#include "../project/tprojectmodel.h"
+#include "scenario_items/tscenarioanaldevicereaditem.h"
+#include "scenario_items/tscenarioanaldevicewriteitem.h"
+#include "scenario_items/tscenarioanaldeviceactionitem.h"
 #include "tscenarioitem.h"
 
 #include "tconfigparam.h"
@@ -141,6 +144,12 @@ TScenarioItem * TScenarioItem::createScenarioItemByClass(int itemClass) {
             return new TScenarioVariableWriteItem();
         case TScenarioScriptItem::TItemClass:
             return new TScenarioScriptItem();
+        case TScenarioAnalDeviceReadItem::TItemClass:
+            return new TScenarioAnalDeviceReadItem();
+        case TScenarioAnalDeviceWriteItem::TItemClass:
+            return new TScenarioAnalDeviceWriteItem();
+        case TScenarioAnalDeviceActionItem::TItemClass:
+            return new TScenarioAnalDeviceActionItem();
         case TScenarioItem::TItemClass:
             return new TScenarioItem();
         default:
@@ -224,7 +233,8 @@ void TScenarioItem::setState(TState state, const QString &message){
 
 void TScenarioItem::resetState(bool resetOnlyRuntime){
     if(resetOnlyRuntime) {
-        if( m_state != TState::TRuntimeInfo &&
+        if( m_state != TState::TBeingExecuted &&
+            m_state != TState::TRuntimeInfo &&
             m_state != TState::TRuntimeWarning &&
             m_state != TState::TRuntimeError)
         {
@@ -435,8 +445,8 @@ bool TScenarioItem::prepare() {
     return true;
 }
 
-QHash<TScenarioItemPort *, QByteArray> TScenarioItem::executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & inputData) {
-    if(!supportsImmediateExecution()) {
+QHash<TScenarioItemPort *, QByteArray> TScenarioItem::executeDirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) {
+    if(!supportsDirectExecution()) {
         qWarning("Scenario item was executed using the wrong method!");
     }
 
@@ -444,8 +454,8 @@ QHash<TScenarioItemPort *, QByteArray> TScenarioItem::executeImmediate(const QHa
     return QHash<TScenarioItemPort *, QByteArray>();
 }
 
-void TScenarioItem::execute(const QHash<TScenarioItemPort *, QByteArray> & inputData) {
-    if(supportsImmediateExecution()) {
+void TScenarioItem::executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) {
+    if(supportsDirectExecution()) {
         qWarning("Scenario item was executed using the wrong method!");
     }
 
@@ -453,9 +463,24 @@ void TScenarioItem::execute(const QHash<TScenarioItemPort *, QByteArray> & input
     emit executionFinished();
 }
 
-bool TScenarioItem::stopExecution() {
-    return false;
-}
+/**
+ * This method is meant to abort execution,
+ * meaning it gives an opportunity to the item to cancel its execution gracefully.
+ *
+ * IMPLEMENTATION NOTE:
+ * The ScenarioExecutor still *expects to receive the executionFinished signal* after this method is called.
+ * Indicate that cancelling was successful by emitting the signal!
+ */
+void TScenarioItem::stopExecution() { }
+
+/**
+ * This method is meant to terminate execution forcefully.
+ * There is no opportunity to take time executing this method.
+ *
+ * IMPLEMENTATION NOTE:
+ * The ScenarioExecutor does not expect the executionFinished signal after this method is called.
+ */
+void TScenarioItem::terminateExecution() { }
 
 TScenarioItemPort * TScenarioItem::getPreferredOutputFlowPort() {
     return getItemPortByName(m_preferredOutputFlowPortName);
@@ -469,7 +494,7 @@ void TScenarioItem::setProjectModel(TProjectModel * projectModel) {
     m_projectModel = projectModel;
 }
 
-bool TScenarioItem::supportsImmediateExecution() const {
+bool TScenarioItem::supportsDirectExecution() const {
     return true;
 }
 
@@ -489,9 +514,13 @@ void TScenarioItem::log(const QString & message, const QString & color) {
     QString prefixedMessage = QString("[%1] %2").arg(m_title.isEmpty() ? m_name : m_title, message);
 
     if (QObject().thread() != thread()) {
-        // BlockingQueuedConnection  would dead-lock if in same thread
+        // BlockingQueuedConnection would dead-lock if in same thread
         emit asyncLog(prefixedMessage, color);
     } else {
         emit syncLog(prefixedMessage, color);
     }
+}
+
+bool TScenarioItem::validateParamsStructure(TConfigParam params) {
+    return true;
 }

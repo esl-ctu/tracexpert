@@ -74,11 +74,11 @@ public:
         return m_params;
     }
 
-    bool supportsImmediateExecution() const override {
+    bool supportsDirectExecution() const override {
         return false;
     }
 
-    void execute(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
+    void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
 
         bool iok;
         double delay = m_params.getSubParamByName("Length")->getValue().toDouble(&iok);

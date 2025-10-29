@@ -84,7 +84,7 @@ public:
         return ok;
     }
 
-    QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
+    QHash<TScenarioItemPort *, QByteArray> executeDirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
         if(m_numIterationsLeft == 0) {
             m_numIterationsLeft = m_totalIterations;
         }

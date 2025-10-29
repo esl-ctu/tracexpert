@@ -57,7 +57,7 @@ public:
         return m_params;
     }
 
-    QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
+    QHash<TScenarioItemPort *, QByteArray> executeDirect(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
         QByteArray dataToLog = dataInputValues.value(getItemPortByName("dataIn"));
 
         if(dataToLog.size() > SCENARIO_LOG_ENTRY_SIZE_LIMIT) {

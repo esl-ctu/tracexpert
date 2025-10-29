@@ -100,6 +100,7 @@ void TScenarioGraphicalItem::updateTooltip() {
             break;
         case TScenarioItem::TState::TInfo:
         case TScenarioItem::TState::TRuntimeInfo:
+        case TScenarioItem::TState::TBeingExecuted:
             setBrush(QBrush(QColor::fromRgb(225, 235, 255), Qt::SolidPattern));
             toolTipText.append("<span style=\"color:blue\"><b><i>" + m_scenarioItem->getStateMessage() + "</i></b></span>");
             break;

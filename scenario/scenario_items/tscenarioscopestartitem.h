@@ -26,16 +26,16 @@ public:
         return new TScenarioScopeStartItem(*this);
     }
 
-    bool supportsImmediateExecution() const override {
+    bool supportsDirectExecution() const override {
         return true;
     }
 
     bool prepare() override;
 
-    QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & inputData) override;
+    QHash<TScenarioItemPort *, QByteArray> executeDirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override;
 
 protected:
-    TScenarioScopeStopItem * m_stopItem;
+    TScenarioScopeStopItem * m_stopItem = nullptr;
 
 };
 

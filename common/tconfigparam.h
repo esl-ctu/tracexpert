@@ -55,9 +55,10 @@ public:
         TError = 30
     };
 
-    TConfigParam(){
+    TConfigParam(): m_type(TType::TDummy), m_state(TState::TOk) {
 
     }
+
     TConfigParam(const QString &name, const QString &defaultValue, enum TType type, const QString &hint, bool readonly = false): m_name(name), m_defaultValue(defaultValue), m_value(defaultValue), m_type(type), m_hint(hint), m_state(TState::TOk), m_stateMessage(), m_readonly(readonly), m_enums(), m_subParams() {
 
     }

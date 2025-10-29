@@ -30,11 +30,12 @@ public:
     }
 
     void initializeDataOutputPorts() {
-        addDataOutputPort("buffers", "data", tr("Byte array with read data."));
+        m_channelPortCount = 1;        
         addDataOutputPort("traceCount", "#traces",tr("Number of traces."));
         addDataOutputPort("sampleCount", "#samples", tr("Number of samples per trace."));
         addDataOutputPort("type", "data type", tr("Data type of samples."));
         addDataOutputPort("overvoltage", "overvoltage", tr("Overvoltage indication."));
+        addDataOutputPort("channel1", "ch. 1 data", tr("Byte array with data from the channel."));
     }
 
     void initializeConfigParams() {
@@ -63,7 +64,7 @@ public:
         m_subtitle = tr("no Oscilloscope selected");
     }
 
-    bool supportsImmediateExecution() const override {
+    bool supportsDirectExecution() const override {
         return false;
     }
 
@@ -88,10 +89,10 @@ public:
         int componentCount = m_projectModel->componentContainer()->count();
         int selectedComponentIndex = -1;
         for(int i = 0; i < componentCount; i++) {
-            if(!m_projectModel->componentContainer()->at(i)->canAddScope())
+            if(!m_projectModel->componentContainer()->at(i)->canAddScope() &&
+                m_projectModel->componentContainer()->at(i)->scopeCount() == 0)
                 continue;
 
-            // TODO: put condition into IODevice as well
             if(selectedComponentIndex == -1) {
                 selectedComponentIndex = i;
             }
@@ -154,7 +155,7 @@ public:
         }
     }
 
-    bool validateParamsStructure(TConfigParam params) {
+    bool validateParamsStructure(TConfigParam params) override {
         bool iok = false;
 
         params.getSubParamByName("Component", &iok);
@@ -194,6 +195,32 @@ public:
             setState(TState::TOk);
             m_subtitle = m_params.getSubParamByName("Oscilloscope")->getValue();
         }
+
+        TScopeModel * scopeModel = getScopeModel();
+        quint32 channelCount = m_channelPortCount;
+
+        if(!scopeModel) {
+            setState(TState::TError, tr("Cannot obtain oscilloscope!"));
+        }
+        else {
+           channelCount = scopeModel->channelsStatus().count();
+        }
+
+        if(channelCount != m_channelPortCount) {
+            for(quint32 i = 0; i < std::max(channelCount, m_channelPortCount); i++) {
+                if(i >= channelCount) {
+                    // remove this port
+                    removePort(QString("channel%1").arg(i+1));
+                }
+                else {
+                    // create a new port
+                    addDataOutputPort(QString("channel%1").arg(i+1), QString("ch. %1 data").arg(i+1), tr("Byte array with data from the channel."));
+                }
+            }
+
+            m_channelPortCount = channelCount;
+        }
+
 
         emit appearanceChanged();
         return m_params;
@@ -308,7 +335,7 @@ public:
         TConfigParam * componentParam = m_params.getSubParamByName("Component");
 
         int componentCount = m_projectModel->componentContainer()->count();
-        int selectedComponentIndex = componentCount > 0 ? 0 : -1;
+        int selectedComponentIndex = -1;
         for(int i = 0; i < componentCount; i++) {
             QString componentName = m_projectModel->componentContainer()->at(i)->name();
             if(componentName == componentParam->getValue()) {
@@ -323,7 +350,6 @@ public:
             TComponentModel * componentModel = m_projectModel->componentContainer()->at(selectedComponentIndex);
 
             int scopeCount = componentModel->scopeCount();
-            selectedScopeIndex = scopeCount > 0 ? 0 : -1;
             for(int i = 0; i < scopeCount; i++) {
                 QString scopeName = componentModel->scopeContainer()->at(i)->name();
                 if(scopeName == scopeParam->getValue()) {
@@ -364,6 +390,14 @@ public:
 
     void tracesDownloaded(size_t traces, size_t samples, TScope::TSampleType type, QList<QByteArray> buffers, bool overvoltage) {
         log(QString(tr("[%1] Trace data downloaded")).arg(m_scopeModel->name()));
+
+        QList<TScope::TChannelStatus> status = m_scopeModel->channelsStatus();
+
+        if(buffers.count() != status.count()) {
+            log(QString(tr("[%1] Incorrect number of data buffers received")).arg(m_scopeModel->name()), "red");
+            return;
+        }
+
         m_outputData.clear();
         m_outputData.insert(getItemPortByName("traceCount"), QByteArray::number(traces));
         m_outputData.insert(getItemPortByName("sampleCount"), QByteArray::number(samples));
@@ -382,16 +416,21 @@ public:
         }
         m_outputData.insert(getItemPortByName("type"), typeName.toUtf8());
 
-        QByteArray data;
-        for(QByteArray buffer : buffers) {
-            data.append(buffer);
+        for (int i = 0; i < status.count(); i++) {
+            TScenarioItemPort * channelPort = getItemPortByName(QString("channel%1").arg(i+1));
+
+            if(!channelPort) {
+                log(QString(tr("[%1] Channel port unavailable")).arg(m_scopeModel->name()), "red");
+                return;
+            }
+
+            m_outputData.insert(channelPort, buffers[i]);
 
             // assuming no other part of the program will be using the data
             // and to free space for the data array (since we might be dealing with very big data)
             // let's delete the oroginal buffer
-            buffer.clear();
+            buffers[i].clear();
         }
-        m_outputData.insert(getItemPortByName("buffers"), data);
 
         m_outputData.insert(getItemPortByName("overvoltage"), QByteArray::number(overvoltage ? 1 : 0));
     }
@@ -433,7 +472,7 @@ public:
 
         log(QString(tr("[%1] Measurement stopped")).arg(m_scopeModel->name()));
         m_preferredOutputFlowPortName = "flowOut";
-        emit executionFinishedWithOutput(m_outputData);
+        emit executionFinished(m_outputData);
     }
 
 
@@ -442,6 +481,7 @@ protected:
 
     TScopeModel * m_scopeModel;
     bool m_isFirstBlockExecution;
+    quint32 m_channelPortCount;
 };
 
 #endif // TSCENARIOSCOPEITEM_H

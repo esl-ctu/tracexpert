@@ -146,7 +146,7 @@ public:
         return new TScenarioConditionItem(*this);
     }
 
-    QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
+    QHash<TScenarioItemPort *, QByteArray> executeDirect(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
         // evaluates bool value of first byte array byte
         QByteArray predicateIn = dataInputValues.value(this->getItemPortByName("predicateIn"));
         m_predicateInBoolValue = predicateIn.size() > 0 ? predicateIn.at(0) : false;

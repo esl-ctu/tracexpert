@@ -1,6 +1,6 @@
 #include "tprotocolcontainer.h"
 #include "tprotocolmodel.h"
-#include "../tprojectmodel.h"
+#include "../project/tprojectmodel.h"
 #include <qfiledialog.h>
 #include <QMessageBox>
 

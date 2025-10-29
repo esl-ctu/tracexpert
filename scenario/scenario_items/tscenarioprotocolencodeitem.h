@@ -159,7 +159,7 @@ public:
         return true;
     }
 
-    QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
+    QHash<TScenarioItemPort *, QByteArray> executeDirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
 
         bool iok;
         TMessage message = getMessage(&iok);

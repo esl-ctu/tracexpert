@@ -27,7 +27,7 @@ public:
     void dataWritten(QByteArray data) {
         disconnect(m_IODeviceModel->senderModel(), nullptr, this, nullptr);
 
-        log(QString("[%1] Written %2 bytes").arg(m_IODeviceModel->name()).arg(data.size()));
+        log(QString("[%1] Written %2 bytes.").arg(m_IODeviceModel->name()).arg(data.size()));
         emit executionFinished();
     }
 
@@ -35,7 +35,7 @@ public:
         setState(TState::TRuntimeError, tr("Write failed."));
         disconnect(m_IODeviceModel->senderModel(), nullptr, this, nullptr);
 
-        log(QString("[%1] Write failed").arg(m_IODeviceModel->name()));
+        log(QString("[%1] Write failed.").arg(m_IODeviceModel->name()));
         emit executionFinished();
     }
 
@@ -43,27 +43,27 @@ public:
         setState(TState::TRuntimeError, tr("Write failed - device busy."));
         disconnect(m_IODeviceModel->senderModel(), nullptr, this, nullptr);
 
-        log(QString("[%1] Write failed - device busy").arg(m_IODeviceModel->name()));
+        log(QString("[%1] Write failed - device busy.").arg(m_IODeviceModel->name()));
         emit executionFinished();
     }
 
-    void execute(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
-        TScenarioIODeviceItem::execute(inputData);
+    void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
+        TScenarioIODeviceItem::executeIndirect(inputData);
 
         size_t dataLen = inputData.value(getItemPortByName("dataIn")).length();
         if(dataLen == 0) {
             setState(TState::TRuntimeWarning, "Requested to write 0 bytes.");
             emit executionFinished();
             return;
-        }
-
-        log(QString("[%1] Writing %2 bytes...").arg(m_IODeviceModel->name()).arg(dataLen));
+        }        
 
         if(!m_IODeviceModel || !m_IODeviceModel->receiverModel()) {
             setState(TState::TRuntimeError, tr("The target device is not initialized or was not found."));
             emit executionFinished();
             return;
         }
+
+        log(QString("[%1] Writing %2 bytes...").arg(m_IODeviceModel->name()).arg(dataLen));
 
         connect(m_IODeviceModel->senderModel(), &TSenderModel::dataWritten, this, &TScenarioIODeviceWriteItem::dataWritten);
         connect(m_IODeviceModel->senderModel(), &TSenderModel::writeFailed, this, &TScenarioIODeviceWriteItem::writeFailed);

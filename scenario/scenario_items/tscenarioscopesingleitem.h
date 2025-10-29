@@ -24,7 +24,7 @@ public:
         return new TScenarioScopeSingleItem(*this);
     }
 
-    void execute(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
+    void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
         checkAndSetInitParamsBeforeExecution();
 
         connect(m_scopeModel, &TScopeModel::runFailed, this, &TScenarioScopeItem::runFailed);

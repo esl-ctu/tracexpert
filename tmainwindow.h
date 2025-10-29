@@ -5,16 +5,16 @@
 #include <QDir>
 
 #include "tdockmanager.h"
-#include "tprojectmodel.h"
-#include "tprojectview.h"
-#include "tlogwidget.h"
+#include "project/tprojectmodel.h"
+#include "project/tprojectview.h"
+#include "logger/tloghandler.h"
 
 class TMainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit TMainWindow(TLogWidget * logWidget, QWidget * parent = nullptr);
+    explicit TMainWindow(TLogHandler * logHandler, QWidget * parent = nullptr);
     ~TMainWindow();
 
 public slots:
@@ -44,7 +44,8 @@ private:
     void createActions();
 
     void createWelcome();
-    void createLog();
+    void createLog(TLogWidget * logWidget);
+    void createStatusBar(TLogLineWidget * logLineWidget);
 
     void readSettings();
     void writeSettings();
@@ -67,7 +68,7 @@ private:
 
     TDockManager * m_dockManager;
 
-    TLogWidget * m_logWidget;
+    TDockWidget * m_logDockWidget;
     TDockWidget * m_welcomeDockWidget;
     TDockWidget * m_projectDockWidget;
     TDockWidget * m_protocolManagerDockWidget;

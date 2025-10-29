@@ -31,7 +31,7 @@ public:
         return new TScenarioRandomStringItem(*this);
     }
 
-    QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
+    QHash<TScenarioItemPort *, QByteArray> executeDirect(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
         QStringList list{"a", "b", "c", "d"};
         std::random_device rd;
         std::mt19937 g(rd());

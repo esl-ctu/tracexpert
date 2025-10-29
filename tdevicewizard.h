@@ -8,10 +8,10 @@
 #include <QGroupBox>
 #include <QLabel>
 
-#include "tconfigparamwidget.h"
-#include "tcomponentcontainer.h"
-#include "tcomponentmodel.h"
-#include "tpluginunitcontainerview.h"
+#include "widgets/tconfigparamwidget.h"
+#include "pluginunit/component/tcomponentcontainer.h"
+#include "pluginunit/component/tcomponentmodel.h"
+#include "pluginunit/tpluginunitcontainerview.h"
 
 class TDeviceWizard : public QWizard
 {
@@ -25,7 +25,7 @@ public:
 private:
     TComponentContainer * m_componentContainer;
     TComponentModel * m_selectedComponent = nullptr;
-    TPluginUnitModel * m_selectedDevice = nullptr;
+    TDeviceModel * m_selectedDevice = nullptr;
 
     friend class TDeviceWizardPage;
 };
@@ -48,7 +48,7 @@ protected:
 
     TComponentContainer * m_componentContainer;
     TComponentModel * & m_selectedComponent;
-    TPluginUnitModel * & m_selectedDevice;
+    TDeviceModel * & m_selectedDevice;
 };
 
 

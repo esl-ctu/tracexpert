@@ -31,7 +31,7 @@ bool TScenarioScopeStopItem::prepare() {
     return true;
 }
 
-void TScenarioScopeStopItem::execute(const QHash<TScenarioItemPort *, QByteArray> & inputData) {
+void TScenarioScopeStopItem::executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) {
     if(!m_outputData.empty()) {
         emit executionFinished();
     }

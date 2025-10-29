@@ -11,7 +11,7 @@
 #include <qsize.h>
 
 #include "tconfigparam.h"
-#include "../tprojectmodel.h"
+#include "../project/tprojectmodel.h"
 #include "tscenarioitemport.h"
 
 #define TSCENARIOITEMVER "cz.cvut.fit.TraceXpert.TScenarioItem/0.1"
@@ -48,6 +48,7 @@ public:
         TInfo = (int)TConfigParam::TState::TInfo,
         TWarning = (int)TConfigParam::TState::TWarning,
         TError = (int)TConfigParam::TState::TError,
+        TBeingExecuted,
         TRuntimeInfo,
         TRuntimeWarning,
         TRuntimeError
@@ -155,13 +156,19 @@ public:
     // methods for execution purposes
     void setProjectModel(TProjectModel * projectModel);
 
-    virtual bool prepare();
-    virtual bool supportsImmediateExecution() const;
-    virtual QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & inputData);
-    virtual void execute(const QHash<TScenarioItemPort *, QByteArray> & inputData);
-    virtual bool stopExecution();
-    virtual TScenarioItemPort * getPreferredOutputFlowPort();
-    virtual bool cleanup();
+    virtual bool                                    prepare();
+    virtual bool                                    cleanup();
+
+    virtual bool                                    supportsDirectExecution() const;
+    virtual QHash<TScenarioItemPort *, QByteArray>  executeDirect(const QHash<TScenarioItemPort *, QByteArray> & inputData);
+
+    virtual void                                    executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData);
+
+    virtual void                                    stopExecution();
+    virtual void                                    terminateExecution();
+
+    virtual TScenarioItemPort *                     getPreferredOutputFlowPort();
+
 
     virtual const QString getIconResourcePath() const;
 
@@ -174,12 +181,13 @@ signals:
     void portsChanged();
 
     // signals for execution purposes
-    void executionFinished();
-    void executionFinishedWithOutput(QHash<TScenarioItemPort *, QByteArray> outputData);
+    void executionFinished(QHash<TScenarioItemPort *, QByteArray> outputData = {});
     void asyncLog(const QString & message, const QString & color = "black");
     void syncLog(const QString & message, const QString & color = "black");
 
 protected:
+    virtual bool validateParamsStructure(TConfigParam params);
+
     void addFlowInputPort (const QString & name, const QString & displayName = QString(), const QString & description = QString());
     void addFlowOutputPort(const QString & name, const QString & displayName = QString(), const QString & description = QString());
     void addDataInputPort (const QString & name, const QString & displayName = QString(), const QString & description = QString());

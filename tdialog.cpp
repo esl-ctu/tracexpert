@@ -193,6 +193,16 @@ bool TDialog::closeConfirmation(QWidget * parent)
         QMessageBox::No) == QMessageBox::Yes;
 }
 
+bool TDialog::scenarioTerminationConfirmation(QWidget * parent)
+{
+    return QMessageBox::question(
+               parent,
+               parent->tr("Terminate"),
+               parent->tr("Are you sure you want to terminate scenario execution?"),
+               QMessageBox::Yes | QMessageBox::No,
+               QMessageBox::No) == QMessageBox::Yes;
+}
+
 bool TDialog::question(QWidget * parent, const QString &title, const QString &text)
 {
     return QMessageBox::question(parent, title, text) == QMessageBox::Yes;
@@ -229,33 +239,41 @@ void TConfigParamDialog::accept()
     TConfigParam param = m_preInit ? m_unit->setPreInitParams(m_paramWidget->param()) : m_unit->setPostInitParams(m_paramWidget->param());
 
     TConfigParam::TState state = param.getState();
-    if (state == TConfigParam::TState::TError) {
-        m_paramWidget->setParam(param);
-        return;
-    }
-    else if (state == TConfigParam::TState::TWarning) {
+
+    if (state == TConfigParam::TState::TWarning) {
         if (!TDialog::paramWarningQuestion(this)) {
             m_paramWidget->setParam(param);
             return;
         }
     }
-    else {
-        QDialog::accept();
+    // if state is TError or unknown enum value...
+    else if (state != TConfigParam::TState::TOk && state != TConfigParam::TState::TInfo) {
+
+        if(state != TConfigParam::TState::TError) {
+            qWarning("An unknown value was encuntered as config param state!");
+        }
+
+        m_paramWidget->setParam(param);
+        TDialog::paramValueErrorMessage(this);
+        return;
     }
+
+    QDialog::accept();
 }
 
 TScenarioConfigParamDialog::TScenarioConfigParamDialog(QString acceptText, QString title, TScenarioItem * item, QWidget * parent)
     : QDialog(parent), m_item(item)
 {
+    setWindowTitle(title);
+    setMinimumSize(500, 400);
+
     TConfigParam param = m_item->getParams();
     m_originalParams = param;
 
     m_paramWidget = new TConfigParamWidget(param);
 
-    //evaluate validity immediately on widget open
-    m_paramWidget->setParam(m_paramWidget->param());
-
-    setWindowTitle(title);
+    // evaluate validity immediately on widget open
+    m_paramWidget->setParam(m_paramWidget->param());  
 
     if(item->getConfigWindowSize() != QSize(0, 0)) {
         resize(item->getConfigWindowSize());
@@ -304,16 +322,23 @@ void TScenarioConfigParamDialog::accept()
     TConfigParam param = m_item->setParams(m_paramWidget->param());
 
     TConfigParam::TState state = param.getState(true);
-    if (state == TConfigParam::TState::TError) {
-        m_paramWidget->setParam(param);
-        TDialog::paramValueErrorMessage(this);
-        return;
-    }
-    else if (state == TConfigParam::TState::TWarning) {
+
+    if (state == TConfigParam::TState::TWarning) {
         if (!TDialog::paramWarningQuestion(this)) {
             m_paramWidget->setParam(param);
             return;
         }
+    }
+    // if state is TError or unknown enum value...
+    else if (state != TConfigParam::TState::TOk && state != TConfigParam::TState::TInfo) {
+
+        if(state != TConfigParam::TState::TError) {
+            qWarning("An unknown value was encuntered as config param state!");
+        }
+
+        m_paramWidget->setParam(param);
+        TDialog::paramValueErrorMessage(this);
+        return;
     }
 
     QDialog::accept();

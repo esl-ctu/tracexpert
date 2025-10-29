@@ -59,7 +59,7 @@ def process_data():
         cleanupProcess();
     }
 
-    bool supportsImmediateExecution() const override {
+    bool supportsDirectExecution() const override {
         return false;
     }
 
@@ -212,15 +212,21 @@ def process_data():
         }
 
         cleanupProcess();
-        emit executionFinishedWithOutput(decodedData);
+        emit executionFinished(decodedData);
     }
 
-    bool stopExecution() override {
+    void stopExecution() override {
+        if(m_pythonProcess) {
+            m_pythonProcess->terminate();
+        }
+
+        emit executionFinished();
+    }
+
+    void terminateExecution() override {
         if(m_pythonProcess) {
             m_pythonProcess->kill();
-            return true;
         }
-        return false;
     }
 
     void cleanupProcess() {
@@ -230,10 +236,10 @@ def process_data():
         }
     }
 
-    void execute(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
+    void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
         cleanupProcess();
 
-        m_pythonProcess = new QProcess(this);
+        m_pythonProcess = new QProcess();
         connect(m_pythonProcess, &QProcess::finished, this, &TScenarioScriptItem::processFinished);
 
         if(m_params.getSubParamByName("Python path")->getValue().isEmpty()) {
@@ -448,7 +454,7 @@ except Exception as e:
             return false;
         }
 
-        int index = 0;
+        qsizetype index = 0;
         int numSegments = static_cast<unsigned char>(response[index++]);
 
         if (numSegments != outputCount) {

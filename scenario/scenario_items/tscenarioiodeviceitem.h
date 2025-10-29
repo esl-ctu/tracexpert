@@ -51,7 +51,7 @@ public:
         setState(TState::TError, tr("Block configuration contains errors!"));
     }
 
-    bool supportsImmediateExecution() const override {
+    bool supportsDirectExecution() const override {
         return false;
     }
 
@@ -74,10 +74,15 @@ public:
         componentParam->resetState();
 
         int componentCount = m_projectModel->componentContainer()->count();
-        int selectedComponentIndex = componentCount > 0 ? 0 : -1;
+        int selectedComponentIndex = -1;
         for(int i = 0; i < componentCount; i++) {
-            if(!m_projectModel->componentContainer()->at(i)->canAddIODevice())
+            if(!m_projectModel->componentContainer()->at(i)->canAddIODevice() &&
+                m_projectModel->componentContainer()->at(i)->IODeviceCount() == 0)
                 continue;
+
+            if(selectedComponentIndex == -1) {
+                selectedComponentIndex = i;
+            }
 
             QString componentName = m_projectModel->componentContainer()->at(i)->name();
             componentParam->addEnumValue(componentName);
@@ -141,7 +146,7 @@ public:
         }
     }
 
-    bool validateParamsStructure(TConfigParam params) {
+    bool validateParamsStructure(TConfigParam params) override {
         bool iok = false;
 
         params.getSubParamByName("Component", &iok);
@@ -214,7 +219,7 @@ public:
         return true;
     }
 
-    void execute(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
+    void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
         TConfigParam * preInitParamConf = m_params.getSubParamByName("Set pre-init params");
         if(preInitParamConf->getValue() == "Each time this block is executed" ||
             (preInitParamConf->getValue() == "Once; before this block is first executed" && m_isFirstBlockExecution)) {
@@ -228,7 +233,6 @@ public:
         }
 
         m_isFirstBlockExecution = false;
-        resetState();
     }
 
     void setPreInitParams() {
@@ -289,7 +293,7 @@ public:
         TConfigParam * componentParam = m_params.getSubParamByName("Component");
 
         int componentCount = m_projectModel->componentContainer()->count();
-        int selectedComponentIndex = componentCount > 0 ? 0 : -1;
+        int selectedComponentIndex = -1;
         for(int i = 0; i < componentCount; i++) {
             QString componentName = m_projectModel->componentContainer()->at(i)->name();
             if(componentName == componentParam->getValue()) {
@@ -304,7 +308,6 @@ public:
             TComponentModel * componentModel = m_projectModel->componentContainer()->at(selectedComponentIndex);
 
             int IODeviceCount = componentModel->IODeviceCount();
-            selectedIODeviceIndex = IODeviceCount > 0 ? 0 : -1;
             for(int i = 0; i < IODeviceCount; i++) {
                 QString IODeviceName = componentModel->IODeviceContainer()->at(i)->name();
                 if(IODeviceName == IODeviceParam->getValue()) {
@@ -332,7 +335,7 @@ public:
     }
 
 protected:
-    TIODeviceModel * m_IODeviceModel;
+    TIODeviceModel * m_IODeviceModel = nullptr;
     bool m_isFirstBlockExecution;
 };
 

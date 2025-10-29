@@ -87,7 +87,7 @@ public:
         return true;
     }
 
-    QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
+    QHash<TScenarioItemPort *, QByteArray> executeDirect(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
         QString directory = m_params.getSubParamByName("Path to folder")->getValue();
         QString filename = m_params.getSubParamByName("File name")->getValue();
 

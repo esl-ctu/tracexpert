@@ -45,7 +45,7 @@ public:
         return true;
     }
 
-    bool validateParamsStructure(TConfigParam params) {
+    bool validateParamsStructure(TConfigParam params) override {
         bool iok = false;
 
         params.getSubParamByName("Block name", &iok);
@@ -91,7 +91,7 @@ public:
         return m_params;
     }
 
-    QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
+    QHash<TScenarioItemPort *, QByteArray> executeDirect(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
         // purposefully left blank
         return QHash<TScenarioItemPort *, QByteArray>();
     }
