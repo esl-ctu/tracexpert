@@ -166,9 +166,9 @@ add_executable(${PROJECT_NAME} WIN32
     scenario/scenario_items/tscenariooutputfileitem.h
     scenario/scenario_items/tscenarioprotocolencodeitem.h
     scenario/scenario_items/tscenarioscopesingleitem.h
-    scenario/scenario_items/tscenarioscopestartitem.cpp
+
     scenario/scenario_items/tscenarioscopestartitem.h
-    scenario/scenario_items/tscenarioscopestopitem.cpp
+
     scenario/scenario_items/tscenarioscopestopitem.h
     scenario/scenario_items/tscenarioscriptitem.h
     scenario/scenario_items/tscenariovariablereaditem.h
@@ -177,6 +177,8 @@ add_executable(${PROJECT_NAME} WIN32
     scenario/scenario_items/tscenarioanaldevicereaditem.h
     scenario/scenario_items/tscenarioanaldevicewriteitem.h
     scenario/tscenarioexecutionexceptions.h
+    scenario/scenario_items/tscenariocomponentitem.h
+
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE common)

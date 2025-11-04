@@ -27,7 +27,7 @@ void TScenarioExecutor::setScenario(TScenario * scenario) {
         }
 
         // gather all variable write items and their dataIn ports
-        if(item->itemClass() == TScenarioVariableWriteItem::TItemClass) {
+        if(item->itemClass() == TScenarioItem::TItemClass::TScenarioVariableWriteItem) {
             QString variableName = ((TScenarioVariableWriteItem*)item)->variableName();
 
             QList<TScenarioItemPort *> ports;
@@ -39,7 +39,7 @@ void TScenarioExecutor::setScenario(TScenario * scenario) {
             variableDataInPorts.insert(variableName, ports);
         }
         // gather all variable read items and their dataOut ports
-        else if(item->itemClass() == TScenarioVariableReadItem::TItemClass) {
+        else if(item->itemClass() == TScenarioItem::TItemClass::TScenarioVariableReadItem) {
             QString variableName = ((TScenarioVariableReadItem*)item)->variableName();
 
             QList<TScenarioItemPort *> ports;
@@ -110,40 +110,23 @@ bool TScenarioExecutor::prepareScenarioItems() {
     bool prepareSuccessful = true;
     for(TScenarioItem * item : m_scenario->getItems()) {
         try {
-            // TODO: to be removed after Scenario log is removed
-            connect(item, &TScenarioItem::asyncLog, this, &TScenarioExecutor::log, Qt::BlockingQueuedConnection);
-            connect(item, &TScenarioItem::syncLog, this, &TScenarioExecutor::log);
-
             item->setProjectModel(m_projectModel);
             item->updateParams(false);
             item->resetState(true);
 
             if(!item->prepare()) {
                 prepareSuccessful = false;
-                qWarning() << "Failed to prepare block \"" << item->getName() << "\"!";
+                qWarning("Failed to prepare block \"%s\"!", qPrintable(item->getName()));
             }
         }
         catch(...) {
             prepareSuccessful = false;
-            qWarning() << "Failed to prepare block \"" << item->getName() << "\", exception thrown!";
+            qWarning("Failed to prepare block \"%s\", exception thrown!", qPrintable(item->getName()));
         }
     }
 
     if(!prepareSuccessful) {
-        for(TScenarioItem * item : m_scenario->getItems()) {
-            // TODO: to be removed after Scenario log is removed
-            disconnect(item, &TScenarioItem::asyncLog, this, &TScenarioExecutor::log);
-            disconnect(item, &TScenarioItem::syncLog, this, &TScenarioExecutor::log);
-
-            try {
-                if(!item->cleanup()) {
-                    qWarning() << "Failed to cleanup after block \"" << item->getName() << "\"!";
-                }
-            }
-            catch(...) {
-                qWarning() << "Failed to cleanup after block \"" << item->getName() << "\", exception thrown!";
-            }
-        }
+        cleanupScenarioItems();
     }
 
     return prepareSuccessful;
@@ -152,16 +135,13 @@ bool TScenarioExecutor::prepareScenarioItems() {
 void TScenarioExecutor::cleanupScenarioItems() {
     for(TScenarioItem * item : m_scenario->getItems()) {
         try {
-            disconnect(item, &TScenarioItem::asyncLog, this, &TScenarioExecutor::log);
-            disconnect(item, &TScenarioItem::syncLog, this, &TScenarioExecutor::log);
-
             if(!item->cleanup()) {
-                qWarning() << "Failed to cleanup block \"" << item->getName() << "\"!";
+                qWarning("Failed to cleanup after block \"%s\"!", qPrintable(item->getName()));
             }
         }
         catch(...) {
-            qWarning() << "Failed to cleanup block \"" << item->getName() << "\", exception thrown!";
-        }        
+            qWarning("Failed to cleanup after block \"%s\", exception thrown!", qPrintable(item->getName()));
+        }
     }
 }
 
@@ -197,7 +177,7 @@ void TScenarioExecutor::start(TScenario * scenario) {
 
     if(!m_scenario->validate()) {
         if(m_scenario->getState() != TScenario::TState::TOk) {
-            qWarning() << "Scenario validation result: " << m_scenario->getStateMessage();
+            qWarning("Scenario validation result: %s", qPrintable(m_scenario->getStateMessage()));
         }
 
         qWarning("Scenario cannot be executed, validation failed. Fix scenario errors first.");
@@ -257,7 +237,7 @@ void TScenarioExecutor::executeNonFlowItems() {
         if(m_stopRequested || m_terminationRequested)
             throw ScenarioHaltRequestedException();
 
-        if(!item->hasFlowInputPort() && item->itemClass() != TScenarioFlowStartItem::TItemClass) {
+        if(!item->hasFlowInputPort() && item->itemClass() != TScenarioItem::TItemClass::TScenarioFlowStartItem) {
             executeItem(item);
         }        
     }
@@ -279,7 +259,7 @@ void TScenarioExecutor::executeItem(TScenarioItem * item) {
     }
 
     if(item->getState() == TScenarioItem::TState::TBeingExecuted) {
-        item->setState(TScenarioItem::TState::TOk);
+        item->resetState();
     }
 }
 
@@ -365,22 +345,18 @@ void TScenarioExecutor::executeFlowItems() {
     }
 
     TScenarioItem * currentItem = findNextFlowItem(firstItem);
-    TScenarioItem * nextItem;
 
     while(currentItem) {
         if(m_stopRequested || m_terminationRequested)
             throw ScenarioHaltRequestedException();
 
-        executeItem(currentItem);
-
-        nextItem = findNextFlowItem(currentItem);
-
-        if(nextItem->getType() == TScenarioItem::TItemAppearance::TFlowEnd) {
-            nextItem->setState(TScenarioItem::TState::TRuntimeInfo, "Execution finished here successfully.");
+        if(currentItem->getType() == TScenarioItem::TItemAppearance::TFlowEnd) {
+            currentItem->setState(TScenarioItem::TState::TRuntimeInfo, "Execution finished here successfully.");
             break;
         }
 
-        currentItem = nextItem;
+        executeItem(currentItem);
+        currentItem = findNextFlowItem(currentItem);
     }
 }
 

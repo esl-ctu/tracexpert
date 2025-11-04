@@ -6,8 +6,9 @@
 class TScenarioProtocolEncodeItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 80 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioProtocolEncodeItem;
+    }
 
     TScenarioProtocolEncodeItem() : TScenarioItem(tr("Protocol: format message"), tr("This block formats a message from selected Protocol.")) {
         addFlowInputPort("flowIn");
@@ -119,7 +120,7 @@ public:
             setState(TState::TError, tr("Block configuration contains errors!"));
         }
         else {
-            setState(TState::TOk);
+            resetState();
         }
 
         for(QString & portName : m_generatedPortNames) {
@@ -176,7 +177,7 @@ public:
             messagePart.setValue(inputData.value(getItemPortByName(messagePart.getName())), &iok);
 
             if(!iok) {
-                log(QString("Failed to set value of \"%1\" message part.").arg(messagePart.getName()), "orange");
+                log(QString("Failed to set value of \"%1\" message part.").arg(messagePart.getName()), TLogLevel::TWarning);
                 setState(TState::TRuntimeWarning, tr("Failed to set one or more message part values!"));
             }
         }

@@ -9,8 +9,9 @@ class TScenarioScopeStartItem;
 class TScenarioScopeStopItem : public TScenarioScopeItem {
 
 public:
-    enum { TItemClass = 63 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioScopeStopItem;
+    }
 
     TScenarioScopeStopItem() :
         TScenarioScopeItem(
@@ -20,25 +21,55 @@ public:
     {
         addConnectionInputPort("startConnection", "", tr("Connect a \"start measurement\" block to this port."));
         initializeDataOutputPorts();
+
+        // reset config params, subtitle and state
+        // as this block doesn't require configuration
+        m_params = TConfigParam();
+        m_subtitle = "";
+        resetState();
     }
 
     TScenarioItem * copy() const override {
         return new TScenarioScopeStopItem(*this);
     }
 
-    bool shouldUpdateParams(TConfigParam newParams) override;
-    void updateParams(bool paramValuesChanged) override;
+    void updateParams(bool paramValuesChanged) override { }
 
-    bool prepare() override;
-    void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override;
 
-    void clearOutputData() {
-        m_outputData.clear();
+    TScenarioScopeItem * getConnectedItem() {
+        if(!this->getItemPortByName("startConnection")->hasConnectedPort()) {
+            return nullptr;
+        }
+
+        QSet<TScenarioItemPort*> connectedItemPorts = this->getItemPortByName("startConnection")->getConnectedPorts();
+        TScenarioItem * connectedItem = (*connectedItemPorts.begin())->getParentItem();
+
+        if(connectedItem->itemClass() != TItemClass::TScenarioScopeStartItem) {
+            return nullptr;
+        }
+
+        return (TScenarioScopeItem *)connectedItem;
     }
 
-protected:
-    TScenarioScopeStartItem * m_startItem = nullptr;
+    bool prepare() override {
+        resetState();
 
+        TScenarioItem * startItem = getConnectedItem();
+        if(!startItem) {
+            setState(TState::TError, tr("Failed to get \"start measurement\" item, is it connected?"));
+            return false;
+        }
+
+        m_deviceModel = getDeviceModel();
+
+        return true;
+    }
+
+    void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
+        if(!m_outputData.empty()) {
+            emit executionFinished();
+        }
+    }
 };
 
 #endif // TSCENARIOSCOPESTOPITEM_H

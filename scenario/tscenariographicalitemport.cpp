@@ -93,13 +93,24 @@ bool TScenarioGraphicalItemPort::hasGraphicalConnection() const {
 
 void TScenarioGraphicalItemPort::removeGraphicalConnections() {
     m_scenarioGraphicalConnections.clear();
+    m_scenarioItemPort->clearConnectedPorts();
 }
 
 void TScenarioGraphicalItemPort::addGraphicalConnection(TScenarioGraphicalConnection * connection) {
     m_scenarioGraphicalConnections.append(connection);
+
+    TScenarioGraphicalItemPort * otherItemPort = connection->otherItemPort(this);
+    if(otherItemPort) {
+        m_scenarioItemPort->addConnectedPort(otherItemPort->m_scenarioItemPort);
+    }
 }
 
 bool TScenarioGraphicalItemPort::removeGraphicalConnection(TScenarioGraphicalConnection * connection) {
+    TScenarioGraphicalItemPort * otherItemPort = connection->otherItemPort(this);
+    if(otherItemPort) {
+        m_scenarioItemPort->removeConnectedPort(otherItemPort->m_scenarioItemPort);
+    }
+
     return m_scenarioGraphicalConnections.removeAll(connection);
 }
 

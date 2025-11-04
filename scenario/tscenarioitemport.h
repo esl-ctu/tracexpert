@@ -2,7 +2,7 @@
 #define TSCENARIOITEMPORT_H
 
 #include <QString>
-#include <QList>
+#include <QSet>
 #include <QDataStream>
 
 #define TSCENARIOITEMPORTVER "cz.cvut.fit.TraceXpert.TScenarioItemPort/0.1"
@@ -61,9 +61,13 @@ public:
             m_direction = x.m_direction;
             m_parentItem = nullptr;
             m_displayName = x.m_displayName;
-            m_description = x.m_description;            
+            m_description = x.m_description;
         }
         return *this;
+    }
+
+    bool operator==(const TScenarioItemPort *x) const {
+        return (m_name == x->m_name && m_parentItem == x->m_parentItem);
     }
 
     bool operator==(const TScenarioItemPort &x) const {
@@ -157,7 +161,7 @@ public:
         return !m_connectedPorts.empty();
     }
 
-    QList<TScenarioItemPort *> getConnectedPorts() const {
+    QSet<TScenarioItemPort *> getConnectedPorts() const {
         return m_connectedPorts;
     }
 
@@ -166,7 +170,11 @@ public:
     }
 
     void addConnectedPort(TScenarioItemPort * itemPort) {
-        m_connectedPorts.append(itemPort);
+        m_connectedPorts.insert(itemPort);
+    }
+
+    void removeConnectedPort(TScenarioItemPort * itemPort) {
+        m_connectedPorts.remove(itemPort);
     }
 
 protected:
@@ -181,9 +189,10 @@ protected:
     QString m_displayName;
     QString m_description;
 
-    // not serialized, only available/valid when scenario is executed
+    // NOT copied, NOT serialized,
+    // available both during editing and execution
     // TScenarioItems that are connected through this port
-    QList<TScenarioItemPort*> m_connectedPorts;
+    QSet<TScenarioItemPort*> m_connectedPorts;
 };
 
 #endif // TSCENARIOITEMPORT_H

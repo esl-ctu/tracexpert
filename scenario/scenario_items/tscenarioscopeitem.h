@@ -1,7 +1,7 @@
 #ifndef TSCENARIOSCOPEITEM_H
 #define TSCENARIOSCOPEITEM_H
 
-#include "../tscenarioitem.h"
+#include "tscenariocomponentitem.h"
 
 /**
  * @brief The TScenarioScopeItem class represents a block that interfaces a selected Scope.
@@ -15,19 +15,10 @@
  * before the scenario is launched, before the block is first executed, or each time the block is executed.
  *
  */
-class TScenarioScopeItem : public TScenarioItem {
+class TScenarioScopeItem : public TScenarioComponentItem<TScopeModel> {
 
 public:
-    enum { TItemClass = 60 };
-    int itemClass() const override { return TItemClass; }
-
-    TScenarioScopeItem(QString name, QString description) : TScenarioItem(name, description) {
-        m_isFirstBlockExecution = true;
-
-        addFlowInputPort("flowIn");
-        addFlowOutputPort("flowOut", "done", tr("Flow continues through this port on success."));
-        addFlowOutputPort("flowOutError", "error", tr("Flow continues through this port on error."));
-    }
+    TScenarioScopeItem(QString name, QString description) : TScenarioComponentItem<TScopeModel>("Oscilloscope", name, description) { }
 
     void initializeDataOutputPorts() {
         m_channelPortCount = 1;        
@@ -38,36 +29,6 @@ public:
         addDataOutputPort("channel1", "ch. 1 data", tr("Byte array with data from the channel."));
     }
 
-    void initializeConfigParams() {
-        m_params = TConfigParam("Block configuration", "", TConfigParam::TType::TDummy, "");
-        m_params.addSubParam(TConfigParam("Component", "", TConfigParam::TType::TEnum, tr("Component that the Oscilloscope belongs to."), false));
-        m_params.addSubParam(TConfigParam("Oscilloscope", "", TConfigParam::TType::TEnum, tr("The Oscilloscope this block represents."), false));
-
-        TConfigParam preInitParamConf("Set pre-init params", "", TConfigParam::TType::TEnum, tr("Select if and when the configured pre-init parameters should be set."), false);
-        preInitParamConf.addEnumValue("Never");
-        preInitParamConf.addEnumValue("Once; when the scenario is launched");
-        preInitParamConf.addEnumValue("Once; before this block is first executed");
-        preInitParamConf.addEnumValue("Each time this block is executed");
-        m_params.addSubParam(preInitParamConf);
-
-        TConfigParam postInitParamConf("Set post-init params", "", TConfigParam::TType::TEnum, tr("Select if and when the configured post-init parameters should be set."), false);
-        postInitParamConf.addEnumValue("Never");
-        postInitParamConf.addEnumValue("Once; when the scenario is launched");
-        postInitParamConf.addEnumValue("Once; before this block is first executed");
-        postInitParamConf.addEnumValue("Each time this block is executed");
-        m_params.addSubParam(postInitParamConf);
-
-        m_params.addSubParam(TConfigParam("Oscilloscope configuration", "", TConfigParam::TType::TDummy, tr("The Oscilloscope pre-init and post-init configuration."), false));
-
-        // item has to be initialized, , otherwise it cannot be used
-        setState(TState::TError, tr("Block configuration contains errors!"));
-        m_subtitle = tr("no Oscilloscope selected");
-    }
-
-    bool supportsDirectExecution() const override {
-        return false;
-    }
-
     TScenarioItem * copy() const override {
         return new TScenarioScopeItem(*this);
     }
@@ -76,134 +37,27 @@ public:
         return ":/icons/oscilloscope.png";
     }
 
-    bool shouldUpdateParams(TConfigParam newParams) override {
-        return isParamValueDifferent(newParams, m_params, "Component") ||
-               isParamValueDifferent(newParams, m_params, "Oscilloscope");
+    bool isCompatibleComponent(TComponentModel * componentModel) override {
+        return componentModel->canAddScope() || componentModel->scopeCount() > 0;
     }
 
-    void updateParams(bool paramValuesChanged) override {
-        TConfigParam * componentParam = m_params.getSubParamByName("Component");
-        componentParam->clearEnumValues();
-        componentParam->resetState();
-
-        int componentCount = m_projectModel->componentContainer()->count();
-        int selectedComponentIndex = -1;
-        for(int i = 0; i < componentCount; i++) {
-            if(!m_projectModel->componentContainer()->at(i)->canAddScope() &&
-                m_projectModel->componentContainer()->at(i)->scopeCount() == 0)
-                continue;
-
-            if(selectedComponentIndex == -1) {
-                selectedComponentIndex = i;
-            }
-
-            QString componentName = m_projectModel->componentContainer()->at(i)->name();
-            componentParam->addEnumValue(componentName);
-
-            if(componentName == componentParam->getValue()) {
-                selectedComponentIndex = i;
-            }
-        }
-
-        if(selectedComponentIndex == -1) {
-            componentParam->setValue("");
-            componentParam->setState(TConfigParam::TState::TError, tr("Selected value is invalid!"));
-        }
-
-        TConfigParam * scopeParam = m_params.getSubParamByName("Oscilloscope");
-        scopeParam->clearEnumValues();
-
-        int selectedScopeIndex = -1;
-        if(selectedComponentIndex > -1) {
-            scopeParam->resetState();
-            TComponentModel * componentModel = m_projectModel->componentContainer()->at(selectedComponentIndex);
-
-            int scopeCount = componentModel->scopeCount();
-            selectedScopeIndex = scopeCount > 0 ? 0 : -1;
-            for(int i = 0; i < scopeCount; i++) {
-                QString scopeName = componentModel->scopeContainer()->at(i)->name();
-                scopeParam->addEnumValue(scopeName);
-
-                if(scopeName == scopeParam->getValue()) {
-                    selectedScopeIndex = i;
-                }
-            }
-        }
-
-        if(selectedScopeIndex == -1) {
-            scopeParam->setValue("");
-            scopeParam->setState(TConfigParam::TState::TError, tr("Selected value is invalid!"));
-        }
-
-        TConfigParam * configParam = m_params.getSubParamByName("Oscilloscope configuration");
-
-        if(selectedScopeIndex > -1 && paramValuesChanged) {
-            configParam->clearSubParams();
-
-            TComponentModel * componentModel = m_projectModel->componentContainer()->at(selectedComponentIndex);
-            TScopeModel * scopeModel = componentModel->scopeContainer()->at(selectedScopeIndex);
-
-            TConfigParam preInitParams = scopeModel->preInitParams();
-            preInitParams.setName("pre-init params");
-
-            configParam->addSubParam(preInitParams);
-
-            TConfigParam postInitParams = scopeModel->postInitParams();
-            postInitParams.setName("post-init params");
-
-            configParam->addSubParam(postInitParams);
-        }
+    int deviceCount(TComponentModel * componentModel) override {
+        return componentModel->scopeCount();
     }
 
-    bool validateParamsStructure(TConfigParam params) override {
-        bool iok = false;
-
-        params.getSubParamByName("Component", &iok);
-        if(!iok) return false;
-
-        params.getSubParamByName("Oscilloscope", &iok);
-        if(!iok) return false;
-
-        params.getSubParamByName("Set pre-init params", &iok);
-        if(!iok) return false;
-
-        params.getSubParamByName("Set post-init params", &iok);
-        if(!iok) return false;
-
-        params.getSubParamByName("Oscilloscope configuration", &iok);
-        if(!iok) return false;
-
-        return true;
+    TScopeModel * deviceByIndex(TComponentModel * componentModel, int index) override {
+        return componentModel->scope(index);
     }
 
-    TConfigParam setParams(TConfigParam params) override {
-        if(!validateParamsStructure(params)) {
-            params.setState(TConfigParam::TState::TError, tr("Wrong structure of the pre-init params."));
-            return params;
-        }
+    TScopeModel * deviceByName(TComponentModel * componentModel, const QString & name) override {
+        return componentModel->scopeContainer()->getByName(name);
+    }
 
-        bool shouldUpdate = shouldUpdateParams(params);
-        m_params = params;
-        updateParams(shouldUpdate);
-
-        m_subtitle = "no Oscilloscope selected";
-
-        if(m_params.getState(true) == TConfigParam::TState::TError) {
-            setState(TState::TError, tr("Block configuration contains errors!"));
-        }
-        else {
-            setState(TState::TOk);
-            m_subtitle = m_params.getSubParamByName("Oscilloscope")->getValue();
-        }
-
-        TScopeModel * scopeModel = getScopeModel();
+    void drawChannelOutputPorts(TScopeModel * scopeModel) {
         quint32 channelCount = m_channelPortCount;
 
-        if(!scopeModel) {
-            setState(TState::TError, tr("Cannot obtain oscilloscope!"));
-        }
-        else {
-           channelCount = scopeModel->channelsStatus().count();
+        if(scopeModel) {
+            channelCount = scopeModel->channelsStatus().count();
         }
 
         if(channelCount != m_channelPortCount) {
@@ -220,56 +74,18 @@ public:
 
             m_channelPortCount = channelCount;
         }
+    }
 
+    TConfigParam setParams(TConfigParam params) override {
+        TConfigParam paramsToReturn = TScenarioComponentItem::setParams(params);
+
+        m_subtitle = "no Oscilloscope selected";
+        if(m_params.getState(true) != TConfigParam::TState::TError) {
+            m_subtitle = m_params.getSubParamByName("Oscilloscope")->getValue();
+        }
 
         emit appearanceChanged();
-        return m_params;
-    }
-
-    bool checkAndSetInitParamsAtPreparation() {
-        m_isFirstBlockExecution = true;
-
-        if(!m_scopeModel) {
-            setState(TState::TError, tr("Failed to obtain selected Oscilloscope, is it available?"));
-            return false;
-        }
-
-        TConfigParam * preInitParamConf = m_params.getSubParamByName("Set pre-init params");
-        if(preInitParamConf->getValue() == "Once; when the scenario is launched") {
-            setPreInitParams();
-        }
-
-        if(getState() == TState::TError) {
-            return false;
-        }
-
-        TConfigParam * postInitParamConf = m_params.getSubParamByName("Set post-init params");
-        if(postInitParamConf->getValue() == "Once; when the scenario is launched") {
-            setPostInitParams();
-        }
-
-        if(getState() == TState::TError) {
-            return false;
-        }
-
-        return true;
-    }
-
-    bool prepare() override {
-        resetState();
-
-        m_scopeModel = getScopeModel();
-
-        if(!m_scopeModel) {
-            setState(TState::TError, tr("Failed to obtain selected Oscilloscope, is it available?"));
-            return false;
-        }
-
-        if(!checkAndSetInitParamsAtPreparation()) {
-            return false;
-        }
-
-        return true;
+        return paramsToReturn;
     }
 
     bool cleanup() override {
@@ -277,124 +93,13 @@ public:
         return true;
     }
 
-    void setPreInitParams() {
-        TConfigParam * preInitParams = m_params.getSubParamByName("Oscilloscope configuration")->getSubParamByName("pre-init params");
-
-        if(!preInitParams) {
-            qWarning("No pre-init params were found, could not be set.");
-            setState(TState::TError, tr("No pre-init params were found, could not be set."));
-            return;
-        }
-
-        if(!m_scopeModel->isInit() || !m_scopeModel->deInit()) {
-            qWarning("Could not deinitialize Oscilloscope to set pre-init params.");
-            setState(TState::TError, tr("Could not deinitialize Oscilloscope to set pre-init params."));
-            return;
-        }
-
-        TConfigParam params = m_scopeModel->setPreInitParams(*preInitParams);
-
-        if(!m_scopeModel->init()) {
-            qWarning("Could not initialize Oscilloscope after setting pre-init params.");
-            setState(TState::TError, tr("Could not initialize Oscilloscope after setting pre-init params."));
-            return;
-        }
-
-        if(params.getState(true) == TConfigParam::TState::TError) {
-            QString errorMessage = QString("Failed to set pre-init parameters: %1").arg(params.getStateMessage());
-            qWarning(errorMessage.toStdString().c_str());
-            setState(TState::TError, errorMessage);
-            return;
-        }
-
-        log(QString("[%1] Pre-init params were set").arg(m_scopeModel->name()));
-    }
-
-    void setPostInitParams() {
-        TConfigParam * postInitParams = m_params.getSubParamByName("Oscilloscope configuration")->getSubParamByName("post-init params");
-
-        if(!postInitParams) {
-            qWarning("No post-init params were found, could not be set.");
-            setState(TState::TError, tr("No post-init params were found, could not be set."));
-            return;
-        }
-
-        TConfigParam params = m_scopeModel->setPostInitParams(*postInitParams);
-
-        if(params.getState(true) == TConfigParam::TState::TError) {
-            QString errorMessage = QString("Failed to set post-init parameters: %1").arg(params.getStateMessage());
-            qWarning(errorMessage.toStdString().c_str());
-            setState(TState::TError, errorMessage);
-            return;
-        }
-
-        log(QString(tr("[%1] Post-init params were set")).arg(m_scopeModel->name()));
-    }
-
-    TScopeModel * getScopeModel() {
-        TConfigParam * componentParam = m_params.getSubParamByName("Component");
-
-        int componentCount = m_projectModel->componentContainer()->count();
-        int selectedComponentIndex = -1;
-        for(int i = 0; i < componentCount; i++) {
-            QString componentName = m_projectModel->componentContainer()->at(i)->name();
-            if(componentName == componentParam->getValue()) {
-                selectedComponentIndex = i;
-            }
-        }
-
-        TConfigParam * scopeParam = m_params.getSubParamByName("Oscilloscope");
-
-        int selectedScopeIndex = -1;
-        if(selectedComponentIndex > -1) {
-            TComponentModel * componentModel = m_projectModel->componentContainer()->at(selectedComponentIndex);
-
-            int scopeCount = componentModel->scopeCount();
-            for(int i = 0; i < scopeCount; i++) {
-                QString scopeName = componentModel->scopeContainer()->at(i)->name();
-                if(scopeName == scopeParam->getValue()) {
-                    selectedScopeIndex = i;
-                }
-            }
-        }
-
-        if(selectedScopeIndex < 0) {
-            return nullptr;
-        }
-
-        TComponentModel * componentModel = m_projectModel->componentContainer()->at(selectedComponentIndex);
-        TScopeModel * scopeModel = componentModel->scopeContainer()->at(selectedScopeIndex);
-
-        if(!scopeModel->isAvailable()) {
-            return nullptr;
-        }
-
-        return scopeModel;
-    }
-
-    void checkAndSetInitParamsBeforeExecution() {
-        TConfigParam * preInitParamConf = m_params.getSubParamByName("Set pre-init params");
-        if(preInitParamConf->getValue() == "Each time this block is executed" ||
-            (preInitParamConf->getValue() == "Once; before this block is first executed" && m_isFirstBlockExecution)) {
-            setPreInitParams();
-        }
-
-        TConfigParam * postInitParamConf = m_params.getSubParamByName("Set post-init params");
-        if(postInitParamConf->getValue() == "Each time this block is executed" ||
-            (postInitParamConf->getValue() == "Once; before this block is first executed" && m_isFirstBlockExecution)) {
-            setPostInitParams();
-        }
-
-        m_isFirstBlockExecution = false;
-    }
-
     void tracesDownloaded(size_t traces, size_t samples, TScope::TSampleType type, QList<QByteArray> buffers, bool overvoltage) {
-        log(QString(tr("[%1] Trace data downloaded")).arg(m_scopeModel->name()));
+        log(QString(tr("[%1] Trace data downloaded")).arg(m_deviceModel->name()));
 
-        QList<TScope::TChannelStatus> status = m_scopeModel->channelsStatus();
+        QList<TScope::TChannelStatus> status = m_deviceModel->channelsStatus();
 
         if(buffers.count() != status.count()) {
-            log(QString(tr("[%1] Incorrect number of data buffers received")).arg(m_scopeModel->name()), "red");
+            log(QString(tr("[%1] Incorrect number of data buffers received")).arg(m_deviceModel->name()), TLogLevel::TError);
             return;
         }
 
@@ -420,7 +125,7 @@ public:
             TScenarioItemPort * channelPort = getItemPortByName(QString("channel%1").arg(i+1));
 
             if(!channelPort) {
-                log(QString(tr("[%1] Channel port unavailable")).arg(m_scopeModel->name()), "red");
+                log(QString(tr("[%1] Channel %2 port unavailable.")).arg(m_deviceModel->name()).arg(i+1), TLogLevel::TError);
                 return;
             }
 
@@ -435,42 +140,46 @@ public:
         m_outputData.insert(getItemPortByName("overvoltage"), QByteArray::number(overvoltage ? 1 : 0));
     }
 
-    void runFailed() {
-        disconnect(m_scopeModel, nullptr, this, nullptr);
+    void clearOutputData() {
+        m_outputData.clear();
+    }
 
-        log(QString(tr("[%1] Read failed - run failed")).arg(m_scopeModel->name()));
+    void runFailed() {
+        disconnect(m_deviceModel, nullptr, this, nullptr);
+
+        log(QString(tr("[%1] Read failed - run failed")).arg(m_deviceModel->name()));
         m_preferredOutputFlowPortName = "flowOutError";
         emit executionFinished();
     }
 
     void stopFailed() {
-        disconnect(m_scopeModel, nullptr, this, nullptr);
+        disconnect(m_deviceModel, nullptr, this, nullptr);
 
-        log(QString(tr("[%1] Read failed - stop failed")).arg(m_scopeModel->name()));
+        log(QString(tr("[%1] Read failed - stop failed")).arg(m_deviceModel->name()));
         m_preferredOutputFlowPortName = "flowOutError";
         emit executionFinished();
     }
 
     void downloadFailed() {
-        disconnect(m_scopeModel, nullptr, this, nullptr);
+        disconnect(m_deviceModel, nullptr, this, nullptr);
 
-        log(QString(tr("[%1] Read failed - download failed")).arg(m_scopeModel->name()));
+        log(QString(tr("[%1] Read failed - download failed")).arg(m_deviceModel->name()));
         m_preferredOutputFlowPortName  = "flowOutError";
         emit executionFinished();
     }
 
     void tracesEmpty() {
-        disconnect(m_scopeModel, nullptr, this, nullptr);
+        disconnect(m_deviceModel, nullptr, this, nullptr);
 
-        log(QString(tr("[%1] Read failed - traces empty")).arg(m_scopeModel->name()));
+        log(QString(tr("[%1] Read failed - traces empty")).arg(m_deviceModel->name()));
         m_preferredOutputFlowPortName = "flowOutError";
         emit executionFinished();
     }
 
     void stopped() {
-        disconnect(m_scopeModel, nullptr, this, nullptr);
+        disconnect(m_deviceModel, nullptr, this, nullptr);
 
-        log(QString(tr("[%1] Measurement stopped")).arg(m_scopeModel->name()));
+        log(QString(tr("[%1] Measurement stopped")).arg(m_deviceModel->name()));
         m_preferredOutputFlowPortName = "flowOut";
         emit executionFinished(m_outputData);
     }
@@ -478,10 +187,7 @@ public:
 
 protected:
     QHash<TScenarioItemPort *, QByteArray> m_outputData;
-
-    TScopeModel * m_scopeModel;
-    bool m_isFirstBlockExecution;
-    quint32 m_channelPortCount;
+    quint32 m_channelPortCount = 0;
 };
 
 #endif // TSCENARIOSCOPEITEM_H

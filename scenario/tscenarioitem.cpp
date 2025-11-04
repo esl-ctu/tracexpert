@@ -14,12 +14,10 @@
 #include "scenario_items/tscenariologitem.h"
 #include "scenario_items/tscenarioloopitem.h"
 #include "scenario_items/tscenariooutputfileitem.h"
-#include "scenario_items/tscenariorandomstringitem.h"
 #include "scenario_items/tscenarioscopesingleitem.h"
 #include "scenario_items/tscenarioscopestartitem.h"
 #include "scenario_items/tscenarioscopestopitem.h"
 #include "scenario_items/tscenarioprotocolencodeitem.h"
-#include "scenario_items/tscenariorandomstringitem.h"
 #include "scenario_items/tscenariovariablereaditem.h"
 #include "scenario_items/tscenariovariablewriteitem.h"
 #include "scenario_items/tscenarioscriptitem.h"
@@ -104,53 +102,51 @@ TScenarioItem * TScenarioItem::copy() const {
     return new TScenarioItem(*this);
 }
 
-TScenarioItem * TScenarioItem::createScenarioItemByClass(int itemClass) {
+TScenarioItem * TScenarioItem::createScenarioItemByClass(TScenarioItem::TItemClass itemClass) {
     switch(itemClass) {
-        case TScenarioProtocolEncodeItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioProtocolEncodeItem:
             return new TScenarioProtocolEncodeItem();
-        case TScenarioDelayItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioDelayItem:
             return new TScenarioDelayItem();
-        case TScenarioConstantValueItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioConstantValueItem:
             return new TScenarioConstantValueItem();
-        case TScenarioIODeviceReadItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioIODeviceReadItem:
             return new TScenarioIODeviceReadItem();
-        case TScenarioIODeviceWriteItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioIODeviceWriteItem:
             return new TScenarioIODeviceWriteItem();
-        case TScenarioRandomStringItem::TItemClass:
-            return new TScenarioRandomStringItem();
-        case TScenarioLogItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioLogItem:
             return new TScenarioLogItem();
-        case TScenarioFlowStartItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioFlowStartItem:
             return new TScenarioFlowStartItem();
-        case TScenarioFlowEndItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioFlowEndItem:
             return new TScenarioFlowEndItem();
-        case TScenarioFlowMergeItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioFlowMergeItem:
             return new TScenarioFlowMergeItem();
-        case TScenarioConditionItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioConditionItem:
             return new TScenarioConditionItem();
-        case TScenarioLoopItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioLoopItem:
             return new TScenarioLoopItem();
-        case TScenarioScopeSingleItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioScopeSingleItem:
             return new TScenarioScopeSingleItem();
-        case TScenarioScopeStartItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioScopeStartItem:
             return new TScenarioScopeStartItem();
-        case TScenarioScopeStopItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioScopeStopItem:
             return new TScenarioScopeStopItem();
-        case TScenarioOutputFileItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioOutputFileItem:
             return new TScenarioOutputFileItem();
-        case TScenarioVariableReadItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioVariableReadItem:
             return new TScenarioVariableReadItem();
-        case TScenarioVariableWriteItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioVariableWriteItem:
             return new TScenarioVariableWriteItem();
-        case TScenarioScriptItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioScriptItem:
             return new TScenarioScriptItem();
-        case TScenarioAnalDeviceReadItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioAnalDeviceReadItem:
             return new TScenarioAnalDeviceReadItem();
-        case TScenarioAnalDeviceWriteItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioAnalDeviceWriteItem:
             return new TScenarioAnalDeviceWriteItem();
-        case TScenarioAnalDeviceActionItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioAnalDeviceActionItem:
             return new TScenarioAnalDeviceActionItem();
-        case TScenarioItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioItem:
             return new TScenarioItem();
         default:
             qWarning("Failed to instantiate scenario item: unknown item class");
@@ -221,14 +217,25 @@ const QString & TScenarioItem::getStateMessage() const {
 }
 
 void TScenarioItem::setState(TState state){
-    m_state = state;
-    emit stateChanged();
+
+    if(state >= m_state) {
+        m_state = state;
+        emit stateChanged();
+    }
+    else {
+        qDebug() << "Block " << m_name << " ignoring setState to " << (int)state << ", current state " << (int)m_state << ".";
+    }
 }
 
 void TScenarioItem::setState(TState state, const QString &message){
-    m_state = state;
-    m_stateMessage = message;
-    emit stateChanged();
+    if(state >= m_state) {
+        m_state = state;
+        m_stateMessage = message;
+        emit stateChanged();
+    }
+    else {
+        qDebug() << "Block " << m_name << " ignoring setState to " << (int)state << ", message " << message << ", current state " << (int)m_state << ".";
+    }
 }
 
 void TScenarioItem::resetState(bool resetOnlyRuntime){
@@ -510,14 +517,19 @@ void TScenarioItem::setConfigWindowSize(QSize value) {
     m_configWindowSize = value;
 }
 
-void TScenarioItem::log(const QString & message, const QString & color) {
-    QString prefixedMessage = QString("[%1] %2").arg(m_title.isEmpty() ? m_name : m_title, message);
+void TScenarioItem::log(const QString & message, TLogLevel logLevel) {
+    QString prefixedMessage = QString("[%1] %2").arg(m_title.isEmpty() ? m_name : m_title).arg(message);
 
-    if (QObject().thread() != thread()) {
-        // BlockingQueuedConnection would dead-lock if in same thread
-        emit asyncLog(prefixedMessage, color);
-    } else {
-        emit syncLog(prefixedMessage, color);
+    switch(logLevel) {
+        case TLogLevel::TError:
+        case TLogLevel::TWarning:
+            qWarning().noquote() << prefixedMessage;
+            break;
+        case TLogLevel::TInfo:
+        case TLogLevel::TSuccess:
+        default:
+            qInfo().noquote() << prefixedMessage;
+            break;
     }
 }
 

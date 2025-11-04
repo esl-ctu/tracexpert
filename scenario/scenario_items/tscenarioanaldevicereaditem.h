@@ -15,8 +15,9 @@
 class TScenarioAnalDeviceReadItem : public TScenarioAnalDeviceItem {
 
 public:
-    enum { TItemClass = 131 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioAnalDeviceReadItem;
+    }
 
     TScenarioAnalDeviceReadItem() : TScenarioAnalDeviceItem(tr("Analytic Device: read"), tr("This block reads from selected Analytic Device.")) {
         addDataInputPort("lengthIn", "length", tr("Number of bytes to read, as integer."));
@@ -44,7 +45,7 @@ public:
     void updateParams(bool paramValuesChanged) override {
         TScenarioAnalDeviceItem::updateParams(paramValuesChanged);
 
-        TAnalDeviceModel * deviceModel = getAnalDeviceModel();
+        TAnalDeviceModel * deviceModel = getDeviceModel();
 
         if(deviceModel && paramValuesChanged) {
             TConfigParam * streamParam = m_params.getSubParamByName("Output stream");
@@ -60,11 +61,11 @@ public:
     TAnalStreamReceiverModel * getAnalDeviceStreamReceiverModel() {
         TConfigParam * streamParam = m_params.getSubParamByName("Output stream");
 
-        if(!m_analDeviceModel) {
+        if(!m_deviceModel) {
             return nullptr;
         }
 
-        for(TAnalStreamReceiverModel * streamModel : m_analDeviceModel->receiverModels()) {
+        for(TAnalStreamReceiverModel * streamModel : m_deviceModel->receiverModels()) {
             if(streamModel->name() == streamParam->getValue()) {
                 return streamModel;
             }
@@ -80,7 +81,7 @@ public:
         outputData.insert(getItemPortByName("dataOut"), data);
 
         log(QString(tr("[%1] Read %2 bytes from %3 stream."))
-            .arg(m_analDeviceModel->name())
+            .arg(m_deviceModel->name())
             .arg(data.size())
             .arg(m_analStreamModel->name())
         );
@@ -92,7 +93,7 @@ public:
         setState(TState::TRuntimeError, tr("Read failed."));
         disconnect(m_analStreamModel, nullptr, this, nullptr);
 
-        log(QString(tr("[%1] Read failed.")).arg(m_analDeviceModel->name()));
+        log(QString(tr("[%1] Read failed.")).arg(m_deviceModel->name()));
         emit executionFinished();
     }
 
@@ -100,12 +101,12 @@ public:
         setState(TState::TRuntimeError, tr("Read failed - device busy."));
         disconnect(m_analStreamModel, nullptr, this, nullptr);
 
-        log(QString(tr("[%1] Read failed - device busy.")).arg(m_analDeviceModel->name()));
+        log(QString(tr("[%1] Read failed - device busy.")).arg(m_deviceModel->name()));
         emit executionFinished();
     }
 
     void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
-        TScenarioAnalDeviceItem::executeIndirect(inputData);
+        checkAndSetInitParamsBeforeExecution();
 
         int dataLen;
         QDataStream lengthStream(inputData.value(getItemPortByName("lengthIn")));
@@ -126,7 +127,7 @@ public:
         }
 
         log(QString(tr("[%1] Reading %2 bytes from %3 stream..."))
-            .arg(m_analDeviceModel->name())
+            .arg(m_deviceModel->name())
             .arg(dataLen)
             .arg(m_analStreamModel->name())
         );

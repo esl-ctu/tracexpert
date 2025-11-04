@@ -54,9 +54,9 @@ public slots:
     void setInsertItemMode(TScenarioGraphicalItem * insertedBlockInstance);
 
 signals:
-    void itemInserted(int itemClass);
-    void itemInsertStarted(int itemClass);
-    void itemInsertCancelled(int itemClass);
+    void itemInserted(TScenarioItem::TItemClass itemClass);
+    void itemInsertStarted(TScenarioItem::TItemClass itemClass);
+    void itemInsertCancelled(TScenarioItem::TItemClass itemClass);
     void pointerToolChanged(TScenarioPointerTool tool);
 
 protected:

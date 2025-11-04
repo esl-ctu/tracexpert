@@ -19,8 +19,9 @@
 class TScenarioOutputFileItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 90 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioOutputFileItem;
+    }
 
     TScenarioOutputFileItem() : TScenarioItem(tr("Write to: untracked file"), tr("This block writes data into files not tracked by TraceXpert.")) {
         addFlowInputPort("flowIn");

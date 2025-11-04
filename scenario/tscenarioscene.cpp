@@ -107,8 +107,8 @@ void TScenarioScene::removeItem(QGraphicsItem * item) {
     }
     else if(item->type() == TScenarioGraphicalConnection::Type) {
         TScenarioGraphicalConnection * graphicalConnection = (TScenarioGraphicalConnection *)item;
-        graphicalConnection->startItem()->removeGraphicalConnection(graphicalConnection);
-        graphicalConnection->endItem()->removeGraphicalConnection(graphicalConnection);
+        graphicalConnection->startItemPort()->removeGraphicalConnection(graphicalConnection);
+        graphicalConnection->endItemPort()->removeGraphicalConnection(graphicalConnection);
 
         m_scenario->removeConnection(graphicalConnection->getScenarioConnection(), &ok);
 

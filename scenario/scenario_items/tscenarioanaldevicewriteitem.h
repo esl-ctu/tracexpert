@@ -13,8 +13,9 @@
 class TScenarioAnalDeviceWriteItem : public TScenarioAnalDeviceItem {
 
 public:
-    enum { TItemClass = 132 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioAnalDeviceWriteItem;
+    }
 
     TScenarioAnalDeviceWriteItem() : TScenarioAnalDeviceItem(tr("Analytic Device: write"), tr("This block writes to selected Analytic Device.")) {
         addDataInputPort("dataIn", "data", tr("Byte array with data to write."));
@@ -41,7 +42,7 @@ public:
     void updateParams(bool paramValuesChanged) override {
         TScenarioAnalDeviceItem::updateParams(paramValuesChanged);
 
-        TAnalDeviceModel * deviceModel = getAnalDeviceModel();
+        TAnalDeviceModel * deviceModel = getDeviceModel();
 
         if(deviceModel && paramValuesChanged) {
             TConfigParam * streamParam = m_params.getSubParamByName("Input stream");
@@ -57,11 +58,11 @@ public:
     TAnalStreamSenderModel * getAnalDeviceStreamSenderModel() {
         TConfigParam * streamParam = m_params.getSubParamByName("Input stream");
 
-        if(!m_analDeviceModel) {
+        if(!m_deviceModel) {
             return nullptr;
         }
 
-        for(TAnalStreamSenderModel * streamModel : m_analDeviceModel->senderModels()) {
+        for(TAnalStreamSenderModel * streamModel : m_deviceModel->senderModels()) {
             if(streamModel->name() == streamParam->getValue()) {
                 return streamModel;
             }
@@ -74,7 +75,7 @@ public:
         disconnect(m_analStreamModel, nullptr, this, nullptr);
 
         log(QString(tr("[%1] Written %2 bytes to %3 stream."))
-            .arg(m_analDeviceModel->name())
+            .arg(m_deviceModel->name())
             .arg(data.size())
             .arg(m_analStreamModel->name())
         );
@@ -86,7 +87,7 @@ public:
         setState(TState::TRuntimeError, tr("Write failed."));
         disconnect(m_analStreamModel, nullptr, this, nullptr);
 
-        log(QString("[%1] Write failed.").arg(m_analDeviceModel->name()));
+        log(QString("[%1] Write failed.").arg(m_deviceModel->name()));
         emit executionFinished();
     }
 
@@ -94,12 +95,12 @@ public:
         setState(TState::TRuntimeError, tr("Write failed - device busy."));
         disconnect(m_analStreamModel, nullptr, this, nullptr);
 
-        log(QString("[%1] Write failed - device busy.").arg(m_analDeviceModel->name()));
+        log(QString("[%1] Write failed - device busy.").arg(m_deviceModel->name()));
         emit executionFinished();
     }
 
     void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
-        TScenarioAnalDeviceItem::executeIndirect(inputData);
+        checkAndSetInitParamsBeforeExecution();
 
         size_t dataLen = inputData.value(getItemPortByName("dataIn")).length();
         if(dataLen == 0) {
@@ -117,7 +118,7 @@ public:
         }
 
         log(QString(tr("[%1] Writing %2 bytes to %3 stream..."))
-            .arg(m_analDeviceModel->name())
+            .arg(m_deviceModel->name())
             .arg(dataLen)
             .arg(m_analStreamModel->name())
         );

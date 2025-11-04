@@ -7,6 +7,8 @@
 
 #include "../tscenarioitem.h"
 
+#define SCENARIO_LOG_ENTRY_SIZE_LIMIT 512
+
 /*!
  * \brief The TScenarioLogItem class represents a block that logs data input to scenario run log.
  *
@@ -16,10 +18,9 @@
 class TScenarioLogItem : public TScenarioItem {
 
 public:
-    const int SCENARIO_LOG_ENTRY_SIZE_LIMIT = 512;
-
-    enum { TItemClass = 10 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioLogItem;
+    }
 
     TScenarioLogItem() : TScenarioItem(tr("Logger"), tr("This block logs data input to scenario run log.")) {
         addFlowInputPort("flowIn");
@@ -61,7 +62,20 @@ public:
         QByteArray dataToLog = dataInputValues.value(getItemPortByName("dataIn"));
 
         if(dataToLog.size() > SCENARIO_LOG_ENTRY_SIZE_LIMIT) {
-            log(tr("Passed data is too big to be shown in the log..."), "orange");
+            if(m_params.getSubParamByName("Log format")->getValue() == "hex") {
+                log(QString("%1 ... skipping %2 bytes ... %3")
+                    .arg(dataToLog.first(5).toHex(' '))
+                    .arg(dataToLog.length() - 10)
+                    .arg(dataToLog.last(5).toHex(' '))
+                );
+            }
+            else {
+                log(QString("%1 ... skipping %2 bytes ... %3")
+                    .arg(dataToLog.first(5))
+                    .arg(dataToLog.length() - 10)
+                    .arg(dataToLog.last(5))
+                );
+            }
         }
         else if(m_params.getSubParamByName("Log format")->getValue() == "hex") {
             log(dataToLog.toHex(' '));

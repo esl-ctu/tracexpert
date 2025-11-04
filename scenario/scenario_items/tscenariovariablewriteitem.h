@@ -11,8 +11,9 @@
 class TScenarioVariableWriteItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 101 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioVariableWriteItem;
+    }
 
     TScenarioVariableWriteItem() : TScenarioItem(tr("Variable: write"), tr("This block allows writing to a variable.")) {
         addDataInputPort("dataIn");
@@ -85,7 +86,7 @@ public:
             setState(TState::TError, tr("Block configuration contains errors!"));
         }
         else {
-            setState(TState::TOk);
+            resetState();
         }
 
         return m_params;

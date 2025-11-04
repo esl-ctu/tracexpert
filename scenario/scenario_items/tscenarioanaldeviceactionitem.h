@@ -6,8 +6,9 @@
 class TScenarioAnalDeviceActionItem : public TScenarioAnalDeviceItem {
 
 public:
-    enum { TItemClass = 133 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioAnalDeviceActionItem;
+    }
 
     TScenarioAnalDeviceActionItem() : TScenarioAnalDeviceItem(tr("Analytic Device: action"), tr("This block performs action on a selected Analytic Device.")) {
         TConfigParam actionParam("Action to execute", "", TConfigParam::TType::TEnum, tr("Select the action to execute."), false);
@@ -32,7 +33,7 @@ public:
     void updateParams(bool paramValuesChanged) override {
         TScenarioAnalDeviceItem::updateParams(paramValuesChanged);
 
-        TAnalDeviceModel * deviceModel = getAnalDeviceModel();
+        TAnalDeviceModel * deviceModel = getDeviceModel();
 
         if(deviceModel && paramValuesChanged) {
             TConfigParam * actionParam = m_params.getSubParamByName("Action to execute");
@@ -48,11 +49,11 @@ public:
     TAnalActionModel * getAnalDeviceActionModel() {
         TConfigParam * actionParam = m_params.getSubParamByName("Action to execute");
 
-        if(!m_analDeviceModel) {
+        if(!m_deviceModel) {
             return nullptr;
         }
 
-        for(TAnalActionModel * actionModel : m_analDeviceModel->actionModels()) {
+        for(TAnalActionModel * actionModel : m_deviceModel->actionModels()) {
             if(actionModel->name() == actionParam->getValue()) {
                 return actionModel;
             }
@@ -62,14 +63,14 @@ public:
     }
 
     void actionStarted() {
-        log(QString("[%1] Action %2 started.").arg(m_analDeviceModel->name(), m_analActionModel->name()));
+        log(QString("[%1] Action %2 started.").arg(m_deviceModel->name(), m_analActionModel->name()));
         m_isActionRunning = true;
     }
 
     void actionFinished() {
         disconnect(m_analActionModel, nullptr, this, nullptr);
 
-        log(QString("[%1] Action %2 done.").arg(m_analDeviceModel->name(), m_analActionModel->name()));
+        log(QString("[%1] Action %2 done.").arg(m_deviceModel->name(), m_analActionModel->name()));
         m_isActionRunning = false;
 
         emit executionFinished();
@@ -81,7 +82,7 @@ public:
     }
 
     void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
-        TScenarioAnalDeviceItem::executeIndirect(inputData);
+        checkAndSetInitParamsBeforeExecution();
 
         m_analActionModel = getAnalDeviceActionModel();
 

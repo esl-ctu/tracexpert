@@ -16,8 +16,9 @@
 class TScenarioLoopItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 50 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioLoopItem;
+    }
 
     TScenarioLoopItem() : TScenarioItem(tr("Loop"), tr("This block represents a loop.")) {
         addFlowInputPort("flowIn");

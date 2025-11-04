@@ -39,8 +39,6 @@ QT_END_NAMESPACE
  * It has a toolbar with actions for running, stopping and saving the scenario and manipulating the items.
  * It has a toolbox with buttons for inserting different types of items.
  * It has a scene with a view for displaying the scenario.
- * It has a log view for displaying log messages.
- *
  */
 class TScenarioEditorWidget : public QWidget
 {
@@ -65,16 +63,13 @@ private slots:
     void bringToFront();
     void sendToBack();
 
-    void checkItemButton(int itemType);
-    void uncheckItemButton(int itemType);
+    void checkItemButton(TScenarioItem::TItemClass itemClass);
+    void uncheckItemButton(TScenarioItem::TItemClass itemClass);
 
     void scaleChangedUsingMouseWheel(qreal scale);
     void sceneScaleChangedBySelection(const QString &scale);
 
-
     void lineButtonTriggered();
-
-    void log(const QString & message, const QString & color);
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -87,18 +82,16 @@ private:
     TScenarioContainer * m_scenarioContainer;
 
     void createToolBox();
-    void createToolBoxDrawer(const QString & title, QList<int> itemClassList);
+    void createToolBoxDrawer(const QString & title, QList<TScenarioItem::TItemClass> itemClassList);
 
     void createActions();
     void createToolbars();
     
-    QWidget * createCellWidget(int itemClass);
+    QWidget * createCellWidget(TScenarioItem::TItemClass itemClass);
 
     TScenario * m_runScenario;
     TScenarioScene * m_scene;
     TScenarioGraphicsView * m_view;
-
-    QTextBrowser * m_logView;
 
     TScenarioExecutor * m_scenarioExecutor;
     bool m_stopRequested;

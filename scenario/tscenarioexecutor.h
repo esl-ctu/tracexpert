@@ -26,7 +26,6 @@ public:
 
 signals:
     void scenarioExecutionFinished();
-    void log(const QString & message, const QString & color = "black");
 
 private:    
     void setScenario(TScenario * scenario);
