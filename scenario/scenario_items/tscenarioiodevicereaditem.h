@@ -60,6 +60,7 @@ public:
 
         int dataLen;
         QDataStream lengthStream(inputData.value(getItemPortByName("lengthIn")));
+        lengthStream.setByteOrder(QDataStream::LittleEndian);
         lengthStream >> dataLen;
 
         if(dataLen == 0) {

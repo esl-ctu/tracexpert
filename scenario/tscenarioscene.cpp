@@ -48,6 +48,7 @@ void TScenarioScene::loadScenario(const TScenario * scenario) {
     for(TScenarioItem * item : m_scenario->getItems()) {
         item->setProjectModel(m_projectModel);
         item->updateParams(false);
+        item->resetState(true);
 
         TScenarioGraphicalItem * graphicalItem = TScenarioGraphicalItem::createScenarioGraphicalItem(item);
         graphicalItem->setZValue(1);
