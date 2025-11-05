@@ -63,12 +63,12 @@ void TProjectView::createActions()
     connect(m_showInfoAction, &QAction::triggered, this, &TProjectView::showInfo);
 
     m_openProtocolManagerAction = new QAction(tr("Open Protocol Manager"), this);
-    connect(m_openProtocolManagerAction, &QAction::triggered, m_mainWindow, &TMainWindow::createProtocolManagerWidget);
+    connect(m_openProtocolManagerAction, &QAction::triggered, m_mainWindow, &TMainWindow::createProtocolManagerDockWidget);
     m_editProtocolAction = new QAction(tr("Edit"), this);
     connect(m_editProtocolAction, &QAction::triggered, this, &TProjectView::editProtocol);
 
     m_openScenarioManagerAction = new QAction(tr("Open Scenario Manager"), this);
-    connect(m_openScenarioManagerAction, &QAction::triggered, m_mainWindow, &TMainWindow::createScenarioManagerWidget);
+    connect(m_openScenarioManagerAction, &QAction::triggered, m_mainWindow, &TMainWindow::createScenarioManagerDockWidget);
     m_editScenarioAction = new QAction(tr("Edit"), this);
     connect(m_editScenarioAction, &QAction::triggered, this, &TProjectView::editScenario);
 }

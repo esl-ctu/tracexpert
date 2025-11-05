@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QDir>
 
+#include "graphs/tgraph.h"
 #include "tdockmanager.h"
 #include "project/tprojectmodel.h"
 #include "project/tprojectview.h"
@@ -24,11 +25,13 @@ public slots:
     void createScopeDockWidget(TScopeModel * scope);
     void createAnalDeviceDockWidget(TAnalDeviceModel * IODevice);
 
-    void createProtocolManagerWidget();
+    void createProtocolManagerDockWidget();
     void openProtocolEditor(const QString & protocolName);
 
-    void createScenarioManagerWidget();
+    void createScenarioManagerDockWidget();
     void createScenarioEditorDockWidget(TScenarioModel * scenario);
+
+    void createGraphDockWidget(TGraph * graph);
 
 private slots:
     void showDeviceWizard();
@@ -74,6 +77,7 @@ private:
     TDockWidget * m_protocolManagerDockWidget;
     TDockWidget * m_scenarioManagerDockWidget;
     QList<TDockWidget *> m_scenarioEditorDockWidgets;
+    QList<TDockWidget *> m_graphDockWidgets;
 
     QString m_projectFileName;
     QDir m_projectDirectory;

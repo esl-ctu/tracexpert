@@ -9,6 +9,7 @@
 #include "scenario_items/tscenariobasicitems.h"
 #include "scenario_items/tscenarioconstantvalueitem.h"
 #include "scenario_items/tscenariodelayitem.h"
+#include "scenario_items/tscenariographwidgetitem.h"
 #include "scenario_items/tscenarioiodevicereaditem.h"
 #include "scenario_items/tscenarioiodevicewriteitem.h"
 #include "scenario_items/tscenariologitem.h"
@@ -146,6 +147,8 @@ TScenarioItem * TScenarioItem::createScenarioItemByClass(TScenarioItem::TItemCla
             return new TScenarioAnalDeviceWriteItem();
         case TScenarioItem::TItemClass::TScenarioAnalDeviceActionItem:
             return new TScenarioAnalDeviceActionItem();
+        case TScenarioItem::TItemClass::TScenarioGraphWidgetItem:
+            return new TScenarioCreateGraphItem();
         case TScenarioItem::TItemClass::TScenarioItem:
             return new TScenarioItem();
         default:

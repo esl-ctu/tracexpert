@@ -61,6 +61,7 @@ public:
         TScenarioAnalDeviceReadItem = 131,
         TScenarioAnalDeviceWriteItem = 132,
         TScenarioAnalDeviceActionItem = 133,
+        TScenarioGraphWidgetItem = 140
     };
 
     enum class TItemAppearance {

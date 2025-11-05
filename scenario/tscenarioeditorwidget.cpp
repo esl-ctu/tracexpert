@@ -39,7 +39,8 @@ TScenarioEditorWidget::TScenarioEditorWidget(TScenarioModel * scenarioModel, TPr
         TScenarioItem::TItemClass::TScenarioOutputFileItem,
         TScenarioItem::TItemClass::TScenarioScriptItem,
         TScenarioItem::TItemClass::TScenarioVariableReadItem,
-        TScenarioItem::TItemClass::TScenarioVariableWriteItem
+        TScenarioItem::TItemClass::TScenarioVariableWriteItem,
+        TScenarioItem::TItemClass::TScenarioGraphWidgetItem
     });
 
     createToolBoxDrawer(tr("Component blocks"), {

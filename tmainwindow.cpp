@@ -7,6 +7,8 @@
 #include <qstatusbar.h>
 
 #include "tmainwindow.h"
+#include "graphs/tgraph.h"
+#include "graphs/tgraphwidget.h"
 #include "qfiledialog.h"
 #include "tdevicewizard.h"
 #include "pluginunit/io/tiodevicewidget.h"
@@ -209,7 +211,7 @@ void TMainWindow::createAnalDeviceDockWidget(TAnalDeviceModel * analDevice)
 
 void TMainWindow::openProtocolEditor(const QString & protocolName)
 {
-    createProtocolManagerWidget();
+    createProtocolManagerDockWidget();
 
     bool ok;
     TProtocolWidget * protocolWidget = (TProtocolWidget *)m_protocolManagerDockWidget->widget();
@@ -220,7 +222,7 @@ void TMainWindow::openProtocolEditor(const QString & protocolName)
     }
 }
 
-void TMainWindow::createProtocolManagerWidget()
+void TMainWindow::createProtocolManagerDockWidget()
 {
     if(m_protocolManagerDockWidget) {
         if(!m_protocolManagerDockWidget->isClosed()) {
@@ -270,7 +272,7 @@ void TMainWindow::createScenarioEditorDockWidget(TScenarioModel * scenario)
 }
 
 
-void TMainWindow::createScenarioManagerWidget()
+void TMainWindow::createScenarioManagerDockWidget()
 {
     if(m_scenarioManagerDockWidget) {
         if(!m_scenarioManagerDockWidget->isClosed()) {
@@ -293,6 +295,30 @@ void TMainWindow::createScenarioManagerWidget()
 
     // show the widget automatically
     m_scenarioManagerDockWidget->show();
+}
+
+void TMainWindow::createGraphDockWidget(TGraph * graph)
+{
+    //create dock widget with Scenario Editor Widget
+    TGraphWidget * graphWidget = new TGraphWidget(graph, this);
+    TDockWidget * graphDockWidget = new TDockWidget(QString("%1 - %2").arg(tr("Graph"), graph->name()), this);
+    graphDockWidget->setDeleteOnClose(true);
+    graphDockWidget->setWidget(graphWidget);
+
+    connect(graphDockWidget, &TDockWidget::closed, graphDockWidget, [=](){
+        m_viewMenu->removeAction(graphDockWidget->toggleViewAction());
+        m_graphDockWidgets.removeAll(graphDockWidget);
+        m_dockManager->removeDockWidget(graphDockWidget);
+    });
+    // no need to connect &QObject::deleteLater the graphDockWidget, since it has setDeleteOnClose(true)
+
+    m_viewMenu->addAction(graphDockWidget->toggleViewAction());
+    m_dockManager->addCenterDockWidgetTab(graphDockWidget, m_welcomeDockWidget);
+
+    // show the widget automatically
+    graphDockWidget->show();
+
+    m_graphDockWidgets.append(graphDockWidget);
 }
 
 
@@ -441,6 +467,11 @@ void TMainWindow::closeProject()
     for(TDockWidget * scenarioEditorDockWidget : m_scenarioEditorDockWidgets) {
         m_viewMenu->removeAction(scenarioEditorDockWidget->toggleViewAction());
         scenarioEditorDockWidget->close();
+    }
+
+    for(TDockWidget * graphDockWidget : m_graphDockWidgets) {
+        m_viewMenu->removeAction(graphDockWidget->toggleViewAction());
+        graphDockWidget->close();
     }
 
     m_saveProjectAction->setEnabled(false);

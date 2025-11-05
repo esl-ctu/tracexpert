@@ -178,6 +178,11 @@ add_executable(${PROJECT_NAME} WIN32
     scenario/scenario_items/tscenarioanaldevicewriteitem.h
     scenario/tscenarioexecutionexceptions.h
     scenario/scenario_items/tscenariocomponentitem.h
+    scenario/scenario_items/tscenariographwidgetitem.h
+    graphs/tgraphwidget.h
+    graphs/tgraphwidget.cpp
+    graphs/tgraph.h
+    graphs/tcpagraph.h
 
 )
 
