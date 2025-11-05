@@ -12,6 +12,9 @@ public:
     explicit TSenderModel(TSender * sender, QObject * parent = nullptr);
     ~TSenderModel();
 
+    QString name();
+    QString info();
+
     bool isBusy();
 
 public slots:

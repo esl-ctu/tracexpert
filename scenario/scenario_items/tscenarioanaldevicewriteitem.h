@@ -49,20 +49,20 @@ public:
             streamParam->clearEnumValues();
             streamParam->resetState();
 
-            for(TAnalStreamSenderModel * streamModel : deviceModel->senderModels()) {
+            for(TSenderModel * streamModel : deviceModel->senderModels()) {
                 streamParam->addEnumValue(streamModel->name());
             }
         }
     }
 
-    TAnalStreamSenderModel * getAnalDeviceStreamSenderModel() {
+    TSenderModel * getAnalDeviceStreamSenderModel() {
         TConfigParam * streamParam = m_params.getSubParamByName("Input stream");
 
         if(!m_deviceModel) {
             return nullptr;
         }
 
-        for(TAnalStreamSenderModel * streamModel : m_deviceModel->senderModels()) {
+        for(TSenderModel * streamModel : m_deviceModel->senderModels()) {
             if(streamModel->name() == streamParam->getValue()) {
                 return streamModel;
             }
@@ -145,7 +145,7 @@ public:
     }
 
 protected:
-    TAnalStreamSenderModel * m_analStreamModel = nullptr;
+    TSenderModel * m_analStreamModel = nullptr;
 };
 
 #endif // TSCENARIOANALDEVICEWRITEITEM_H

@@ -17,6 +17,7 @@ set(CMAKE_SHARED_LIBRARY_PREFIX "")
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Charts Xml Concurrent)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts Xml Concurrent)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
 add_subdirectory(ads)
 
@@ -69,8 +70,6 @@ add_executable(${PROJECT_NAME} WIN32
     pluginunit/anal/tanaldevicecontainer.h
     pluginunit/anal/tanaldevicemodel.cpp
     pluginunit/anal/tanaldevicemodel.h
-    pluginunit/anal/tanaldevicewidget.cpp
-    pluginunit/anal/tanaldevicewidget.h
     pluginunit/anal/action/tanalactionaborter.cpp
     pluginunit/anal/action/tanalactionaborter.h
     pluginunit/anal/action/tanalactionmodel.cpp
@@ -79,12 +78,8 @@ add_executable(${PROJECT_NAME} WIN32
     pluginunit/anal/action/tanalactionrunner.h
     pluginunit/anal/stream/tanalstreamreceiver.cpp
     pluginunit/anal/stream/tanalstreamreceiver.h
-    pluginunit/anal/stream/tanalstreamreceivermodel.cpp
-    pluginunit/anal/stream/tanalstreamreceivermodel.h
     pluginunit/anal/stream/tanalstreamsender.cpp
     pluginunit/anal/stream/tanalstreamsender.h
-    pluginunit/anal/stream/tanalstreamsendermodel.cpp
-    pluginunit/anal/stream/tanalstreamsendermodel.h
     pluginunit/common/tdevicemodel.cpp
     pluginunit/common/tdevicemodel.h
     pluginunit/common/receiver/treceiver.cpp
@@ -95,6 +90,8 @@ add_executable(${PROJECT_NAME} WIN32
     pluginunit/common/sender/tsender.h
     pluginunit/common/sender/tsendermodel.cpp
     pluginunit/common/sender/tsendermodel.h
+    pluginunit/common/widgets/tcommunicationdevicewidget.cpp
+    pluginunit/common/widgets/tcommunicationdevicewidget.h
     pluginunit/component/tcomponentcontainer.cpp
     pluginunit/component/tcomponentcontainer.h
     pluginunit/component/tcomponentmodel.cpp
@@ -107,8 +104,6 @@ add_executable(${PROJECT_NAME} WIN32
     pluginunit/io/tiodevicereceiver.h
     pluginunit/io/tiodevicesender.cpp
     pluginunit/io/tiodevicesender.h
-    pluginunit/io/tiodevicewidget.cpp
-    pluginunit/io/tiodevicewidget.h
     pluginunit/scope/tscopecontainer.cpp
     pluginunit/scope/tscopecontainer.h
     pluginunit/scope/tscopemodel.cpp
@@ -166,9 +161,7 @@ add_executable(${PROJECT_NAME} WIN32
     scenario/scenario_items/tscenariooutputfileitem.h
     scenario/scenario_items/tscenarioprotocolencodeitem.h
     scenario/scenario_items/tscenarioscopesingleitem.h
-
     scenario/scenario_items/tscenarioscopestartitem.h
-
     scenario/scenario_items/tscenarioscopestopitem.h
     scenario/scenario_items/tscenarioscriptitem.h
     scenario/scenario_items/tscenariovariablereaditem.h
@@ -178,9 +171,10 @@ add_executable(${PROJECT_NAME} WIN32
     scenario/scenario_items/tscenarioanaldevicewriteitem.h
     scenario/tscenarioexecutionexceptions.h
     scenario/scenario_items/tscenariocomponentitem.h
-
 )
 
+
+target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_include_directories(${PROJECT_NAME} PRIVATE common)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE qt${QT_VERSION_MAJOR}advanceddocking)

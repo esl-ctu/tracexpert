@@ -13,6 +13,9 @@ public:
     explicit TReceiverModel(TReceiver * receiver, QObject * parent = nullptr);
     ~TReceiverModel();
 
+    QString name();
+    QString info();
+
     bool isBusy();
 
 public slots:

@@ -13,6 +13,9 @@ class TReceiver : public QObject
 public:
     explicit TReceiver(QObject * parent = nullptr);
 
+    virtual QString name();
+    virtual QString info();
+
     bool isBusy();
 
 public slots:

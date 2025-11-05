@@ -1,4 +1,4 @@
-#include "tanaldevicewidget.h"
+#include "tcommunicationdevicewidget.h"
 
 #include <QGroupBox>
 #include <QCheckBox>
@@ -6,22 +6,38 @@
 #include "../../tdialog.h"
 #include "widgets/tfilenameedit.h"
 
-TAnalDeviceWidget::TAnalDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolContainer * protocolContainer, QWidget * parent)
+TCommunicationDeviceWidget::TCommunicationDeviceWidget(TIODeviceModel * deviceModel, TProtocolContainer * protocolContainer, QWidget * parent)
+    : QWidget(parent), m_deviceModel(deviceModel), m_protocolContainer(protocolContainer)
+{
+    setWindowTitle(tr("IO Device - %1").arg(m_deviceModel->name()));
+
+    m_senderModels.append(deviceModel->senderModel());
+    m_receiverModels.append(deviceModel->receiverModel());
+
+    init();
+}
+
+TCommunicationDeviceWidget::TCommunicationDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolContainer * protocolContainer, QWidget * parent)
     : QWidget(parent), m_deviceModel(deviceModel), m_senderModels(deviceModel->senderModels()), m_receiverModels(deviceModel->receiverModels()), m_actionModels(deviceModel->actionModels()), m_protocolContainer(protocolContainer)
 {
     setWindowTitle(tr("Analytical Device - %1").arg(m_deviceModel->name()));
 
-    for (int i = 0; i < m_receiverModels.length(); i++) {
-        connect(m_receiverModels[i], &TReceiverModel::dataRead, this, [=](QByteArray data){ dataReceived(data, m_receiverModels[i]); });
-    }
+    init();
+}
+
+void TCommunicationDeviceWidget::init() {
+    setFocusPolicy(Qt::ClickFocus);
 
     m_communicationLogTextEdit = new QPlainTextEdit;
+    QFont f("unexistent");
+    f.setStyleHint(QFont::Monospace);
+    m_communicationLogTextEdit->setFont(f);
     m_communicationLogTextEdit->setReadOnly(true);
 
     m_paramWidget = new TConfigParamWidget(m_deviceModel->postInitParams());
 
     QPushButton * applyButton = new QPushButton(tr("Apply"));
-    connect(applyButton, &QPushButton::clicked, this, &TAnalDeviceWidget::applyPostInitParam);
+    connect(applyButton, &QPushButton::clicked, this, &TCommunicationDeviceWidget::applyPostInitParam);
 
     QVBoxLayout * paramLayout = new QVBoxLayout;
     paramLayout->addWidget(m_paramWidget);
@@ -29,35 +45,59 @@ TAnalDeviceWidget::TAnalDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolCo
 
     QHBoxLayout * textParamLayout = new QHBoxLayout;
 
-    textParamLayout->addWidget(m_communicationLogTextEdit);
+    QVBoxLayout * comLogLayout = new QVBoxLayout;
+
+    comLogLayout->addWidget(m_communicationLogTextEdit);
+
+    QHBoxLayout * comLogSettingsLayout = new QHBoxLayout;
+
+    m_logFormat = new QComboBox;
+    m_logFormat->addItem("Show only hexadecimal values");
+    m_logFormat->addItem("Show human-readable string when possible");
+    comLogSettingsLayout->addWidget(m_logFormat);
+
+    QPushButton * clearButton = new QPushButton;
+    clearButton->setText("Clear");
+    connect(clearButton, &QPushButton::clicked, m_communicationLogTextEdit, &QPlainTextEdit::clear);
+    connect(clearButton, &QPushButton::clicked, this, [=](){ for (int i = 0; i < m_receivedData.length(); i++) m_receivedData[i]->clear(); });
+    comLogSettingsLayout->addWidget(clearButton);
+
+    comLogLayout->addLayout(comLogSettingsLayout);
+
+    textParamLayout->addLayout(comLogLayout);
     textParamLayout->addLayout(paramLayout);
 
     QGroupBox * textParamBox = new QGroupBox;
     textParamBox->setLayout(textParamLayout);
 
-    QComboBox * senderComboBox = new QComboBox;
+    QComboBox * senderComboBox = nullptr;
+    if (m_senderModels.length() > 1 || !m_senderModels[0]->name().isEmpty()) {
+        senderComboBox = new QComboBox;
 
-    for (int i = 0; i < m_senderModels.length(); i++) {
-        senderComboBox->addItem(m_senderModels[i]->name());
+        for (int i = 0; i < m_senderModels.length(); i++) {
+            senderComboBox->addItem(m_senderModels[i]->name());
+            senderComboBox->setItemData(i, m_senderModels[i]->info(), Qt::ToolTipRole);
+        }
+        senderComboBox->setCurrentIndex(0);
+
+        connect(senderComboBox, &QComboBox::currentIndexChanged, this, &TCommunicationDeviceWidget::senderChanged);
     }
-    senderComboBox->setCurrentIndex(0);
     senderChanged(0);
-    connect(senderComboBox, &QComboBox::currentIndexChanged, this, &TAnalDeviceWidget::senderChanged);
 
     // Send message ComboBox
     m_sendMessageComboBox = new QComboBox;
-    connect(m_sendMessageComboBox, &QComboBox::currentIndexChanged, this, &TAnalDeviceWidget::sendMessageChanged);
+    connect(m_sendMessageComboBox, &QComboBox::currentIndexChanged, this, &TCommunicationDeviceWidget::sendMessageChanged);
 
     m_noMessagesLabel = new QLabel(tr("Protocol doesn't contain any commands."));
 
     // Raw message row
     m_rawMessageEdit = new QLineEdit();
-    connect(m_rawMessageEdit, &QLineEdit::textEdited, this, &TAnalDeviceWidget::validateRawInputValues);
+    connect(m_rawMessageEdit, &QLineEdit::textEdited, this, &TCommunicationDeviceWidget::validateRawInputValues);
 
     m_rawFormatComboBox = new QComboBox();
     m_rawFormatComboBox->addItem(tr("Hex"));
     m_rawFormatComboBox->addItem(tr("ASCII"));
-    connect(m_rawFormatComboBox, &QComboBox::currentIndexChanged, this, &TAnalDeviceWidget::validateRawInputValues);
+    connect(m_rawFormatComboBox, &QComboBox::currentIndexChanged, this, &TCommunicationDeviceWidget::validateRawInputValues);
 
     m_rawMessageEditLayout = new QHBoxLayout();
     m_rawMessageEditLayout->setContentsMargins(0, 0, 0, 0);
@@ -69,7 +109,7 @@ TAnalDeviceWidget::TAnalDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolCo
     m_sendProtocolComboBox = new QComboBox;
 
     m_sendButton = new QPushButton("Send");
-    connect(m_sendButton, &QPushButton::clicked, this, &TAnalDeviceWidget::sendBytes);
+    connect(m_sendButton, &QPushButton::clicked, this, &TCommunicationDeviceWidget::sendBytes);
 
     QGroupBox * sendFileGroupBox = new QGroupBox("Send file");
 
@@ -84,8 +124,9 @@ TAnalDeviceWidget::TAnalDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolCo
 
     sendFileGroupBox->setLayout(sendFileLayout);
 
-    m_sendFormLayout = new QFormLayout;
-    m_sendFormLayout->addRow(tr("Stream"), senderComboBox);
+    m_sendFormLayout = new QFormLayout;    
+    if (senderComboBox)
+        m_sendFormLayout->addRow(tr("Stream"), senderComboBox);
     m_sendFormLayout->addRow(tr("Protocol"), m_sendProtocolComboBox);
     m_sendFormLayout->addRow(tr("Message"), m_sendMessageComboBox);
     m_sendFormLayout->setRowVisible(m_sendMessageComboBox, false);
@@ -104,15 +145,20 @@ TAnalDeviceWidget::TAnalDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolCo
     QGroupBox * sendMessageBox = new QGroupBox("Send data");
     sendMessageBox->setLayout(sendLayout);
 
-    QComboBox * receiverComboBox = new QComboBox;
+    QComboBox * receiverComboBox = nullptr;
 
-    for (int i = 0; i < m_receiverModels.length(); i++) {
-        receiverComboBox->addItem(m_receiverModels[i]->name());
-        m_receivedData.append(new QByteArray);
+    if (m_receiverModels.length() > 1 || !m_receiverModels[0]->name().isEmpty()) {
+        receiverComboBox = new QComboBox;
+
+        for (int i = 0; i < m_receiverModels.length(); i++) {
+            receiverComboBox->addItem(m_receiverModels[i]->name());
+            receiverComboBox->setItemData(i, m_receiverModels[i]->info(), Qt::ToolTipRole);
+        }
+
+        receiverComboBox->setCurrentIndex(0);
+        connect(receiverComboBox, &QComboBox::currentIndexChanged, this, &TCommunicationDeviceWidget::receiverChanged);
     }
-    receiverComboBox->setCurrentIndex(0);
     receiverChanged(0);
-    connect(receiverComboBox, &QComboBox::currentIndexChanged, this, &TAnalDeviceWidget::receiverChanged);
 
     // Receive data side
     m_receiveBytesEdit = new QLineEdit;
@@ -122,17 +168,24 @@ TAnalDeviceWidget::TAnalDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolCo
 
     QPushButton * receiveButton = new QPushButton("Receive");
     receiveButton->setEnabled(false);
-    connect(receiveButton, &QPushButton::clicked, this, &TAnalDeviceWidget::receiveBytes);
-
+    connect(receiveButton, &QPushButton::clicked, this, &TCommunicationDeviceWidget::receiveBytes);
     connect(m_receiveBytesEdit, &QLineEdit::textChanged, this, [=](){receiveButton->setEnabled(m_receiveBytesEdit->hasAcceptableInput());});
 
     for (int i = 0; i < m_receiverModels.length(); i++) {
-        connect(m_receiverModels[i], &TReceiverModel::readBusy, this, &TAnalDeviceWidget::receiveBusy);
+        connect(m_receiverModels[i], &TReceiverModel::readBusy, this, &TCommunicationDeviceWidget::receiveBusy);
+        connect(m_receiverModels[i], &TReceiverModel::readFailed, this, &TCommunicationDeviceWidget::receiveFailed);
+        connect(m_receiverModels[i], &TReceiverModel::dataRead, this, [=](QByteArray data){ dataReceived(data, m_receiverModels[i]); });
+    }
+
+    for (int i = 0; i < m_senderModels.length(); i++) {
+        connect(m_senderModels[i], &TSenderModel::writeBusy, this, &TCommunicationDeviceWidget::sendBusy);
+        connect(m_senderModels[i], &TSenderModel::writeFailed, this, &TCommunicationDeviceWidget::sendFailed);
+        connect(m_senderModels[i], &TSenderModel::dataWritten, this, [=](QByteArray data){ dataSent(data, m_senderModels[i]); });
     }
 
     QCheckBox * autoReceiveCheckbox = new QCheckBox;
     autoReceiveCheckbox->setChecked(false);
-    connect(autoReceiveCheckbox, &QCheckBox::clicked, this, &TAnalDeviceWidget::setAutoreceive);
+    connect(autoReceiveCheckbox, &QCheckBox::clicked, this, &TCommunicationDeviceWidget::setAutoreceive);
     connect(autoReceiveCheckbox, &QCheckBox::clicked, m_receiveBytesEdit, &QLineEdit::setDisabled);
     connect(autoReceiveCheckbox, &QCheckBox::clicked, receiveButton, &QPushButton::setDisabled);
 
@@ -146,12 +199,13 @@ TAnalDeviceWidget::TAnalDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolCo
     m_receiveProtocolComboBox = new QComboBox;
 
     QFormLayout * receiveFormLayout = new QFormLayout;
-    receiveFormLayout->addRow(tr("Stream"), receiverComboBox);
+    if (receiverComboBox)
+        receiveFormLayout->addRow(tr("Stream"), receiverComboBox);
     receiveFormLayout->addRow(tr("Protocol"), m_receiveProtocolComboBox);
     receiveFormLayout->addRow(tr("Bytes"), m_receiveBytesEdit);
     receiveFormLayout->addWidget(receiveButton);
 
-    QGroupBox * receiveFileGroupBox = new QGroupBox("Save to file");
+    QGroupBox * receiveFileGroupBox = new QGroupBox("Save current stream to file (raw)");
 
     QLayout * receiveFileLayout = new QVBoxLayout();
 
@@ -179,18 +233,22 @@ TAnalDeviceWidget::TAnalDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolCo
     sendReceiveLayout->setStretch(0,1);
     sendReceiveLayout->setStretch(1,1);
 
-    QPushButton * runActionButton = new QPushButton(tr("Run"));
-    connect(runActionButton, &QPushButton::clicked, this, &TAnalDeviceWidget::runAction);
+    QVBoxLayout * layout = new QVBoxLayout;
+    layout->addWidget(textParamBox);
+    layout->addLayout(sendReceiveLayout);
 
-    QPushButton * abortActionButton = new QPushButton(tr("Abort"));
-    abortActionButton->setDisabled(true);
-    connect(abortActionButton, &QPushButton::clicked, this, &TAnalDeviceWidget::abortAction);
+    if (!m_actionModels.empty()) {        
+        QPushButton * runActionButton = new QPushButton(tr("Run"));
+        connect(runActionButton, &QPushButton::clicked, this, &TCommunicationDeviceWidget::runAction);
 
-    QLabel * actionLabel = new QLabel(tr("Action"));
+        QPushButton * abortActionButton = new QPushButton(tr("Abort"));
+        abortActionButton->setDisabled(true);
+        connect(abortActionButton, &QPushButton::clicked, this, &TCommunicationDeviceWidget::abortAction);
 
-    QComboBox * actionComboBox = new QComboBox;
+        QLabel * actionLabel = new QLabel(tr("Action"));
 
-    if (!m_actionModels.empty()) {
+        QComboBox * actionComboBox = new QComboBox;
+
         for (int i = 0; i < m_actionModels.length(); i++) {
             actionComboBox->addItem(m_actionModels[i]->name());
             connect(m_actionModels[i], &TAnalActionModel::started, actionComboBox, [=](){ actionComboBox->setDisabled(true); runActionButton->setDisabled(true); abortActionButton->setDisabled(false); });
@@ -199,44 +257,38 @@ TAnalDeviceWidget::TAnalDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolCo
 
         actionComboBox->setCurrentIndex(0);
         actionChanged(0);
-        connect(actionComboBox, &QComboBox::currentIndexChanged, this, &TAnalDeviceWidget::actionChanged);
+        connect(actionComboBox, &QComboBox::currentIndexChanged, this, &TCommunicationDeviceWidget::actionChanged);
         connect(actionComboBox, &QComboBox::currentIndexChanged, this, [=](int index){ runActionButton->setDisabled(!m_currentActionModel->isEnabled()); });
-    }
-    else {
-        runActionButton->setDisabled(true);
-    }
 
-    QHBoxLayout * actionLayout = new QHBoxLayout;
-    actionLayout->addWidget(actionLabel);
-    actionLayout->addWidget(actionComboBox);
-    actionLayout->addWidget(runActionButton);
-    actionLayout->addWidget(abortActionButton);
+        QHBoxLayout * actionLayout = new QHBoxLayout;
+        actionLayout->addWidget(actionLabel);
+        actionLayout->addWidget(actionComboBox);
+        actionLayout->addWidget(runActionButton);
+        actionLayout->addWidget(abortActionButton);
 
-    QVBoxLayout * layout = new QVBoxLayout;
-    layout->addWidget(textParamBox);
-    layout->addLayout(sendReceiveLayout);
-    layout->addLayout(actionLayout);
-
-    for (int i = 0; i < m_receiverModels.length(); i++) {
-        connect(m_receiverModels[i], &TReceiverModel::readFailed, this, &TAnalDeviceWidget::receiveFailed);
+        layout->addLayout(actionLayout);
     }
 
     updateDisplayedProtocols();
-    connect(m_sendProtocolComboBox, &QComboBox::currentIndexChanged, this, &TAnalDeviceWidget::sendProtocolChanged);
-    connect(m_protocolContainer, &TProtocolContainer::protocolsUpdated, this, &TAnalDeviceWidget::updateDisplayedProtocols);
+    connect(m_sendProtocolComboBox, &QComboBox::currentIndexChanged, this, &TCommunicationDeviceWidget::sendProtocolChanged);
+    connect(m_protocolContainer, &TProtocolContainer::protocolsUpdated, this, &TCommunicationDeviceWidget::updateDisplayedProtocols);
 
     validateRawInputValues();
 
     setLayout(layout);
+
+    for (int i = 0; i < m_receiverModels.length(); i++)
+        m_receivedData.append(new QByteArray);
 }
 
-TAnalDeviceWidget::~TAnalDeviceWidget() {
+TCommunicationDeviceWidget::~TCommunicationDeviceWidget() {
     delete m_messageFormManager;
+
     for (int i = 0; i < m_receiverModels.length(); i++)
         delete m_receivedData[i];
 }
 
-bool TAnalDeviceWidget::validateRawInputValues() {
+bool TCommunicationDeviceWidget::validateRawInputValues() {
     bool iok;
 
     bool isAscii = m_rawFormatComboBox->currentIndex();
@@ -253,7 +305,7 @@ bool TAnalDeviceWidget::validateRawInputValues() {
     return iok;
 }
 
-void TAnalDeviceWidget::updateDisplayedProtocols() {
+void TCommunicationDeviceWidget::updateDisplayedProtocols() {
     m_sendProtocolComboBox->clear();
     m_receiveProtocolComboBox->clear();
 
@@ -266,7 +318,7 @@ void TAnalDeviceWidget::updateDisplayedProtocols() {
     }
 }
 
-void TAnalDeviceWidget::sendProtocolChanged(int index)
+void TCommunicationDeviceWidget::sendProtocolChanged(int index)
 {
     m_messageFormManager->clearRows();
 
@@ -311,7 +363,7 @@ void TAnalDeviceWidget::sendProtocolChanged(int index)
     m_sendButton->setEnabled(true);
 }
 
-void TAnalDeviceWidget::sendMessageChanged(int index)
+void TCommunicationDeviceWidget::sendMessageChanged(int index)
 {
     if(index < 0)
         return;
@@ -333,45 +385,45 @@ void TAnalDeviceWidget::sendMessageChanged(int index)
     m_messageFormManager->setMessage(m_selectedMessage);
 }
 
-void TAnalDeviceWidget::senderChanged(int index)
+void TCommunicationDeviceWidget::senderChanged(int index)
 {
     m_currentSenderModel = m_senderModels[index];
 }
 
-void TAnalDeviceWidget::receiverChanged(int index)
+void TCommunicationDeviceWidget::receiverChanged(int index)
 {
     m_currentReceiverModel = m_receiverModels[index];
 }
 
-void TAnalDeviceWidget::actionChanged(int index)
+void TCommunicationDeviceWidget::actionChanged(int index)
 {
     m_currentActionModel = m_actionModels[index];
 }
 
-void TAnalDeviceWidget::runAction()
+void TCommunicationDeviceWidget::runAction()
 {
     emit m_currentActionModel->run();
 }
 
-void TAnalDeviceWidget::abortAction()
+void TCommunicationDeviceWidget::abortAction()
 {
     emit m_currentActionModel->abort();
 }
 
-bool TAnalDeviceWidget::applyPostInitParam()
+bool TCommunicationDeviceWidget::applyPostInitParam()
 {
     TConfigParam param = m_deviceModel->setPostInitParams(m_paramWidget->param());
     m_paramWidget->setParam(param);
 
     if (param.getState(true) == TConfigParam::TState::TError) {
-        qWarning("TIODevice parameters not set due to error state!");
+        qWarning("Device parameters not set due to error state!");
         return false;
     };
 
     return true;
 }
 
-void TAnalDeviceWidget::setAutoreceive(bool enabled)
+void TCommunicationDeviceWidget::setAutoreceive(bool enabled)
 {
     if (enabled) {
         m_currentReceiverModel->enableAutoRead();
@@ -381,33 +433,39 @@ void TAnalDeviceWidget::setAutoreceive(bool enabled)
     }
 }
 
-void TAnalDeviceWidget::receiveBytes()
+void TCommunicationDeviceWidget::receiveBytes()
 {
     m_currentReceiverModel->readData(m_receiveBytesEdit->text().toInt());
 }
 
-void TAnalDeviceWidget::receiveBusy()
+void TCommunicationDeviceWidget::receiveBusy()
 {
     TDialog::deviceFailedBusyMessage(this);
 }
 
-void TAnalDeviceWidget::receiveFailed()
+void TCommunicationDeviceWidget::receiveFailed()
 {
     TDialog::deviceReceiveFailedMessage(this);
 }
 
-void TAnalDeviceWidget::dataReceived(QByteArray data, TAnalStreamReceiverModel * receiverModel)
-{    
+void TCommunicationDeviceWidget::dataReceived(QByteArray data, TReceiverModel * receiverModel)
+{
     int modelIndex;
     if ((modelIndex = m_receiverModels.indexOf(receiverModel)) >= 0)
         m_receivedData[modelIndex]->append(data);
 
-    m_communicationLogTextEdit->appendHtml(QString("<b>Received: (%1)</b>").arg(receiverModel->name()));
+    QTime time = QTime::currentTime();
+    QString formattedTime = time.toString("hh:mm:ss");
+
+    QString originString;
+    if (!receiverModel->name().isEmpty())
+        originString = QString(" (%1)").arg(receiverModel->name());
 
     QString selectedProtocolName = m_receiveProtocolComboBox->currentText();
 
-    if(selectedProtocolName == "raw data") {
-        m_communicationLogTextEdit->appendHtml(byteArraytoHumanReadableString(data));
+    if(selectedProtocolName == "No protocol") {
+        m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Received " + QString::number(data.size()) + " B" + originString + "</b>"));
+        m_communicationLogTextEdit->appendHtml("<div style=\"color:red\">" + byteArraytoHumanReadableString(data) + "</div>");
         return;
     }
 
@@ -416,7 +474,8 @@ void TAnalDeviceWidget::dataReceived(QByteArray data, TAnalStreamReceiverModel *
 
     if(!protocolFound) {
         qWarning("Unknown protocol selected, could not interpret message.");
-        m_communicationLogTextEdit->appendHtml(byteArraytoHumanReadableString(data));
+        m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Received " + QString::number(data.size()) + " B" + originString + "</b>"));
+        m_communicationLogTextEdit->appendHtml("<div style=\"color:red\">" + byteArraytoHumanReadableString(data) + "</div>");
         return;
     }
 
@@ -424,57 +483,16 @@ void TAnalDeviceWidget::dataReceived(QByteArray data, TAnalStreamReceiverModel *
 
     if(matchedMessage.getName().isEmpty()) {
         qWarning("Received data could not be interpreted as any of the protocol's defined messages.");
-        m_communicationLogTextEdit->appendHtml(byteArraytoHumanReadableString(data));
+        m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Received " + QString::number(data.size()) + " B" + originString + "</b>"));
+        m_communicationLogTextEdit->appendHtml("<div style=\"color:red\">" + byteArraytoHumanReadableString(data) + "</div>");
         return;
     }
 
-    m_communicationLogTextEdit->appendHtml(matchedMessage.getPayloadSummary());
+    m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Received:" + originString + "</b>"));
+    m_communicationLogTextEdit->appendHtml("<div style=\"color:red\">" + matchedMessage.getPayloadSummary() + "</div>");
 }
 
-void TAnalDeviceWidget::sendFile(QString fileName)
-{
-    QFile file(fileName);
-
-    if (!file.exists()) {
-        qWarning("File cannot be sent because it does not exist.");
-        return;
-    }
-
-    if (!file.open(QIODevice::ReadOnly)) {
-        qWarning("File cannot be sent because it failed to open.");
-        return;
-    }
-
-    QByteArray data = file.readAll();
-    m_currentSenderModel->writeData(data);
-
-    m_communicationLogTextEdit->appendHtml(QString("<b>Sent from file: (%1)</b>").arg(m_currentSenderModel->name()));
-    m_communicationLogTextEdit->appendHtml(QString("[%1 bytes]").arg(data.length()));
-
-    file.close();
-}
-
-void TAnalDeviceWidget::receiveFile(QString fileName)
-{
-    int modelIndex;
-    if ((modelIndex = m_receiverModels.indexOf(m_currentReceiverModel)) < 0) {
-        qWarning("No receive stream selected.");
-        return;
-    }
-
-    QFile file(fileName);
-
-    if (!file.open(QIODevice::WriteOnly)) {
-        qWarning("Data cannot be saved to file because it failed to open.");
-        return;
-    }
-
-    file.write(*m_receivedData[modelIndex]);
-
-    file.close();
-}
-
-QString TAnalDeviceWidget::byteArraytoHumanReadableString(const QByteArray & byteArray)
+QString TCommunicationDeviceWidget::byteArraytoHumanReadableString(const QByteArray & byteArray)
 {
     static QRegularExpression nonAsciiRegExp("[^ -~]");
     bool isHumanReadable = !((QString)byteArray).contains(nonAsciiRegExp);
@@ -503,7 +521,7 @@ QString TAnalDeviceWidget::byteArraytoHumanReadableString(const QByteArray & byt
     }
 }
 
-void TAnalDeviceWidget::sendBytes()
+void TCommunicationDeviceWidget::sendBytes()
 {
     if(m_selectedProtocol.getName().isEmpty()) {
         sendRawBytes();
@@ -513,7 +531,7 @@ void TAnalDeviceWidget::sendBytes()
     }
 }
 
-void TAnalDeviceWidget::sendRawBytes()
+void TCommunicationDeviceWidget::sendRawBytes()
 {
     if(!validateRawInputValues()) {
         TDialog::parameterValueInvalid(this, tr("payload"));
@@ -521,6 +539,8 @@ void TAnalDeviceWidget::sendRawBytes()
     }
 
     QByteArray dataToWrite = m_rawMessageEdit->text().toUtf8();
+    dataToWrite.replace("\\n", "\n");
+    dataToWrite.replace("\\r", "\r");
 
     bool isAscii = m_rawFormatComboBox->currentIndex();
     if(!isAscii) {
@@ -528,37 +548,98 @@ void TAnalDeviceWidget::sendRawBytes()
     }
 
     m_currentSenderModel->writeData(dataToWrite);
-
-    m_communicationLogTextEdit->appendHtml(QString("<b>Sent: (%1)</b>").arg(m_currentSenderModel->name()));
-    m_communicationLogTextEdit->appendHtml(byteArraytoHumanReadableString(dataToWrite));
 }
 
-void TAnalDeviceWidget::sendProtocolBytes()
+void TCommunicationDeviceWidget::sendProtocolBytes()
 {
     if(!m_messageFormManager->assignInputValues()) {
         qWarning("Message could not be sent because user input values were not valid.");
         return;
     }
 
-    TMessage messageToBeSent = m_messageFormManager->getMessage();
-    const QByteArray & messageData = messageToBeSent.getData();
+    m_messageToBeSent = m_messageFormManager->getMessage();
+    const QByteArray & messageData = m_messageToBeSent.getData();
     if(messageData.length() == 0) {
         qWarning("Message could not be sent because data could not be formed.");
         TDialog::protocolMessageCouldNotBeFormed(this);
         return;
     }
 
-    m_communicationLogTextEdit->appendHtml(QStringLiteral("<b>Sent:</b>"));
     m_currentSenderModel->writeData(messageData);
-    m_communicationLogTextEdit->appendHtml(messageToBeSent.getPayloadSummary());
 }
 
-void TAnalDeviceWidget::sendBusy()
+void TCommunicationDeviceWidget::sendFile(QString fileName)
 {
+    QFile file(fileName);
+
+    if (!file.exists()) {
+        qWarning("File cannot be sent because it does not exist.");
+        return;
+    }
+
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning("File cannot be sent because it failed to open.");
+        return;
+    }
+
+    m_currentSenderModel->writeData(file.readAll());
+
+    file.close();
+}
+
+void TCommunicationDeviceWidget::receiveFile(QString fileName)
+{
+    int modelIndex;
+    if ((modelIndex = m_receiverModels.indexOf(m_currentReceiverModel)) < 0) {
+        qWarning("No receive stream selected.");
+        return;
+    }
+
+    QFile file(fileName);
+
+    if (!file.open(QIODevice::WriteOnly)) {
+        qWarning("Data cannot be saved to file because it failed to open.");
+        return;
+    }
+
+    file.write(*m_receivedData[modelIndex]);
+
+    file.close();
+}
+
+void TCommunicationDeviceWidget::sendBusy()
+{
+    QTime time = QTime::currentTime();
+    QString formattedTime = time.toString("hh:mm:ss");
+    m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Failed to send data: device busy</b>"));
+
     TDialog::deviceFailedBusyMessage(this);
 }
 
-void TAnalDeviceWidget::sendFailed()
+void TCommunicationDeviceWidget::sendFailed()
 {
+    QTime time = QTime::currentTime();
+    QString formattedTime = time.toString("hh:mm:ss");
+    m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Failed to send data</b>"));
+
     TDialog::deviceSendFailedMessage(this);
+}
+
+void TCommunicationDeviceWidget::dataSent(QByteArray data, TSenderModel * senderModel)
+{
+    QTime time = QTime::currentTime();
+    QString formattedTime = time.toString("hh:mm:ss");
+
+    QString originString;
+    if (!senderModel->name().isEmpty())
+        originString = QString(" (%1)").arg(senderModel->name());
+
+    m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Sent " + QString::number(data.size()) + " B" + originString + "</b>"));
+
+    if(data == m_messageToBeSent.getData()) {
+        m_communicationLogTextEdit->appendHtml("<div style=\"color:blue\">" + m_messageToBeSent.getPayloadSummary() + "</div>");
+    }
+    else {
+        m_communicationLogTextEdit->appendHtml("<div style=\"color:blue\">" + byteArraytoHumanReadableString(data) + "</div>");
+    }
 }

@@ -1,28 +1,26 @@
-#ifndef TIODEVICEWIDGET_H
-#define TIODEVICEWIDGET_H
+#ifndef TCOMMUNICATIONDEVICEWIDGET_H
+#define TCOMMUNICATIONDEVICEWIDGET_H
 
-#include <QWidget>
-#include <QLineEdit>
-#include <QPlainTextEdit>
-#include <QBoxLayout>
-#include <QComboBox>
 #include <QLabel>
+#include <QComboBox>
 #include <QPushButton>
+#include <QPlainTextEdit>
 
 #include "../../protocol/tprotocolcontainer.h"
-#include "tiodevicemodel.h"
-#include "widgets/tconfigparamwidget.h"
-#include "../../tmessageformmanager.h"
+#include "../../anal/tanaldevicemodel.h"
+#include "../../io/tiodevicemodel.h"
+#include "../../../common/widgets/tconfigparamwidget.h"
+#include "../tmessageformmanager.h"
 
 #define DISPLAY_DATA_LENGTH_LIMIT 300
 
-class TIODeviceWidget : public QWidget
+class TCommunicationDeviceWidget : public QWidget
 {
     Q_OBJECT
-
 public:
-    explicit TIODeviceWidget(TIODeviceModel * deviceModel, TProtocolContainer * protocolContainer, QWidget * parent = nullptr);
-    ~TIODeviceWidget();
+    explicit TCommunicationDeviceWidget(TAnalDeviceModel * deviceModel, TProtocolContainer * protocolContainer, QWidget * parent = nullptr);
+    explicit TCommunicationDeviceWidget(TIODeviceModel * deviceModel, TProtocolContainer * protocolContainer, QWidget * parent = nullptr);
+    ~TCommunicationDeviceWidget();
 
 public slots:
     bool applyPostInitParam();
@@ -31,7 +29,7 @@ public slots:
     void receiveBytes();
     void receiveBusy();
     void receiveFailed();
-    void dataReceived(QByteArray data);
+    void dataReceived(QByteArray data, TReceiverModel * receiverModel);
 
     void sendBytes();
     void sendRawBytes();
@@ -42,7 +40,7 @@ public slots:
 
     void sendBusy();
     void sendFailed();
-    void dataSent(QByteArray data);
+    void dataSent(QByteArray data, TSenderModel * senderModel);
     //void selectSendMessageValidator();
 
     bool validateRawInputValues();
@@ -50,15 +48,30 @@ public slots:
 private slots:
     void sendProtocolChanged(int index);
     void sendMessageChanged(int index);
+    void senderChanged(int index);
+    void receiverChanged(int index);
+    void actionChanged(int index);
+
+    void runAction();
+    void abortAction();
 
     void updateDisplayedProtocols();
 
 private:
+    void init();
+
     QString byteArraytoHumanReadableString(const QByteArray & byteArray);
 
-    TIODeviceModel * m_deviceModel;
-    TSenderModel * m_senderModel;
-    TReceiverModel * m_receiverModel;
+    TDeviceModel * m_deviceModel;
+
+    QList<TSenderModel *> m_senderModels;
+    QList<TReceiverModel *> m_receiverModels;
+    QList<TAnalActionModel *> m_actionModels;
+
+    TSenderModel * m_currentSenderModel;
+    TReceiverModel * m_currentReceiverModel;
+    TAnalActionModel * m_currentActionModel;
+
     TProtocolContainer * m_protocolContainer;
 
     TConfigParamWidget * m_paramWidget;
@@ -74,7 +87,7 @@ private:
 
     QComboBox * m_sendProtocolComboBox;
     QComboBox * m_sendMessageComboBox;
-    QLabel * m_noMessagesLabel;    
+    QLabel * m_noMessagesLabel;
     QPushButton * m_sendButton;
     QFormLayout * m_sendFormLayout;
 
@@ -85,7 +98,7 @@ private:
     QPlainTextEdit * m_communicationLogTextEdit;
     QComboBox * m_logFormat;
 
-    QByteArray m_receivedData;
+    QList<QByteArray *> m_receivedData;
 };
 
-#endif // TIODEVICEWIDGET_H
+#endif // TCOMMUNICATIONDEVICEWIDGET_H
