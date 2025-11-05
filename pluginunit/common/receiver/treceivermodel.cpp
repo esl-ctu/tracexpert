@@ -25,6 +25,14 @@ TReceiverModel::~TReceiverModel()
     m_receiverThread->quit();
 }
 
+QString TReceiverModel::name() {
+    return m_receiver->name();
+}
+
+QString TReceiverModel::info() {
+    return m_receiver->info();
+}
+
 void TReceiverModel::readData(int length)
 {
     if (!m_receiving) {

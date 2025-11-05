@@ -3,8 +3,8 @@
 
 #include "../common/tdevicemodel.h"
 #include "tanaldevice.h"
-#include "stream/tanalstreamsendermodel.h"
-#include "stream/tanalstreamreceivermodel.h"
+#include "../common/receiver/treceivermodel.h"
+#include "../common/sender/tsendermodel.h"
 #include "action/tanalactionmodel.h"
 
 class TAnalDeviceContainer;
@@ -27,8 +27,8 @@ public:
     virtual void bind(TCommon * unit) override;
     virtual void release() override;
 
-    QList<TAnalStreamSenderModel *> senderModels();
-    QList<TAnalStreamReceiverModel *> receiverModels();
+    QList<TSenderModel *> senderModels();
+    QList<TReceiverModel *> receiverModels();
     QList<TAnalActionModel *> actionModels();
 
 signals:
@@ -39,8 +39,8 @@ signals:
 
 private:
     TAnalDevice * m_analDevice;
-    QList<TAnalStreamSenderModel *> m_senderModels;
-    QList<TAnalStreamReceiverModel *> m_receiverModels;
+    QList<TSenderModel *> m_senderModels;
+    QList<TReceiverModel *> m_receiverModels;
     QList<TAnalActionModel *> m_actionModels;
 };
 

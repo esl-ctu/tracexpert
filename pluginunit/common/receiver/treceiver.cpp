@@ -9,6 +9,14 @@ TReceiver::TReceiver(QObject * parent)
 
 }
 
+QString TReceiver::name() {
+    return QString();
+}
+
+QString TReceiver::info() {
+    return QString();
+}
+
 void TReceiver::receiveData(int length)
 {
     size_t remainingBytes = (size_t)length;

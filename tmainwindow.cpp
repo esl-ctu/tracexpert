@@ -11,8 +11,7 @@
 #include "graphs/tgraphwidget.h"
 #include "qfiledialog.h"
 #include "tdevicewizard.h"
-#include "pluginunit/io/tiodevicewidget.h"
-#include "pluginunit/anal/tanaldevicewidget.h"
+#include "pluginunit/common/widgets/tcommunicationdevicewidget.h"
 #include "scenario/tscenariowidget.h"
 #include "scenario/tscenarioeditorwidget.h"
 #include "pluginunit/scope/tscopewidget.h"
@@ -168,7 +167,7 @@ void TMainWindow::createProjectDockWidget(TProjectModel * model)
 
 void TMainWindow::createIODeviceDockWidget(TIODeviceModel * IODevice)
 {
-    TIODeviceWidget * widget = new TIODeviceWidget(IODevice, m_projectModel->protocolContainer());
+    TCommunicationDeviceWidget * widget = new TCommunicationDeviceWidget(IODevice, m_projectModel->protocolContainer());
     QString title = widget->windowTitle();
     TDockWidget * dockWidget = new TDockWidget(title);
     dockWidget->setWidget(widget);
@@ -196,7 +195,7 @@ void TMainWindow::createScopeDockWidget(TScopeModel * scope)
 
 void TMainWindow::createAnalDeviceDockWidget(TAnalDeviceModel * analDevice)
 {
-    TAnalDeviceWidget * widget = new TAnalDeviceWidget(analDevice, m_projectModel->protocolContainer());
+    TCommunicationDeviceWidget * widget = new TCommunicationDeviceWidget(analDevice, m_projectModel->protocolContainer());
     QString title = widget->windowTitle();
     TDockWidget * dockWidget = new TDockWidget(title);
     dockWidget->setWidget(widget);
