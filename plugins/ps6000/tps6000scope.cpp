@@ -863,6 +863,16 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
             return 0;
         }
 
+        for (uint32_t i = 0; i < capturesR; i++) {
+            status = ps6000SetDataBufferBulk(m_handle, psChannel, NULL, psSamples, i, PS6000_RATIO_MODE_NONE);
+            if (status) {
+                qWarning("Failed to release receiving buffer");
+                *samplesPerTraceDownloaded = 0;
+                *tracesDownloaded = 0;
+                return 0;
+            }
+        }
+
     } else {
 
         PICO_STATUS status = ps6000SetDataBuffer(m_handle, psChannel, reinterpret_cast<short *>(buffer), m_preTrigSamples + m_postTrigSamples, PS6000_RATIO_MODE_NONE);
@@ -876,6 +886,14 @@ size_t TPS6000Scope::downloadSamples(int channel, uint8_t * buffer, size_t buffe
         status = ps6000GetValues(m_handle, 0, &psSamples, 1, PS6000_RATIO_MODE_NONE, 0, over.get());
         if (status || psSamples != (m_preTrigSamples + m_postTrigSamples)){
             qWarning("Failed to receive the data");
+            *samplesPerTraceDownloaded = 0;
+            *tracesDownloaded = 0;
+            return 0;
+        }
+
+        status = ps6000SetDataBuffer(m_handle, psChannel, NULL, m_preTrigSamples + m_postTrigSamples, PS6000_RATIO_MODE_NONE);
+        if (status){
+            qWarning("Failed to release receiving buffer");
             *samplesPerTraceDownloaded = 0;
             *tracesDownloaded = 0;
             return 0;
