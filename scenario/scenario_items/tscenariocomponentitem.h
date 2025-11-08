@@ -82,7 +82,7 @@ public:
         for(int i = 0; i < m_projectModel->componentContainer()->count(); i++) {
             TComponentModel * componentModel = m_projectModel->componentContainer()->at(i);
 
-            if(!isCompatibleComponent(componentModel)) {
+            if(!componentModel->isInit() || !isCompatibleComponent(componentModel)) {
                 continue;
             }
 
