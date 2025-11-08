@@ -7,7 +7,7 @@
 #include "tttestoutputstream.h"
 #include "ttest.hpp"
 
-TTTestDevice::TTTestDevice() {
+TTTestDevice::TTTestDevice(): m_traceLength(0), m_numberOfClasses(0), m_traceType("Unsigned 8 bit"), m_order(1), m_inputFormat(0), m_labelType("Unsigned 8 bit") {
     m_preInitParams = TConfigParam("Welch's t-test configuration", "", TConfigParam::TType::TDummy, "");
     TConfigParam traceLength = TConfigParam("Trace length (in samples)", "1000", TConfigParam::TType::TUInt, "The number of samples per data trace");
     m_preInitParams.addSubParam(traceLength);

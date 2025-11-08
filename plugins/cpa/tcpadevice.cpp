@@ -7,7 +7,7 @@
 #include "tcpaoutputstream.h"
 #include "cpa.hpp"
 
-TCPADevice::TCPADevice() {
+TCPADevice::TCPADevice(): m_traceLength(0), m_predictCount(0), m_traceType("Unsigned 8 bit"), m_predictType("Unsigned 8 bit"), m_order(1) {
 
     m_preInitParams = TConfigParam("CPA configuration", "", TConfigParam::TType::TDummy, "");
 
