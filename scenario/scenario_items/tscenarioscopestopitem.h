@@ -33,8 +33,11 @@ public:
         return new TScenarioScopeStopItem(*this);
     }
 
-    void updateParams(bool paramValuesChanged) override { }
+    bool supportsDirectExecution() const override {
+        return false;
+    }
 
+    void updateParams(bool paramValuesChanged) override { }
 
     TScenarioScopeItem * getConnectedItem() {
         if(!this->getItemPortByName("startConnection")->hasConnectedPort()) {
@@ -54,13 +57,13 @@ public:
     bool prepare() override {
         resetState();
 
-        TScenarioItem * startItem = getConnectedItem();
+        TScenarioScopeItem * startItem = getConnectedItem();
         if(!startItem) {
             setState(TState::TError, tr("Failed to get \"start measurement\" item, is it connected?"));
             return false;
         }
 
-        m_deviceModel = getDeviceModel();
+        m_deviceModel = startItem->getDeviceModel();
 
         return true;
     }
