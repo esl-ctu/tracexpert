@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QMessageBox>
+#include <QSplitter>
 
 #include "tgraphwidget.h"
 #include "widgets/tconfigparamwidget.h"
@@ -31,9 +32,18 @@ TGraphWidget::TGraphWidget(TGraph * graph, QWidget * parent) : QWidget(parent), 
     paramLayout->addWidget(m_paramWidget);
     paramLayout->addWidget(applyButton);
 
-    QHBoxLayout * layout = new QHBoxLayout();
-    layout->addWidget(chartView, 1);
-    layout->addLayout(paramLayout);
+    QWidget * paramWidget = new QWidget();
+    paramWidget->setLayout(paramLayout);
+
+    QSplitter * lowerSplitter = new QSplitter(Qt::Horizontal);
+    lowerSplitter->addWidget(chartView);
+    lowerSplitter->setStretchFactor(0, 1);
+    lowerSplitter->addWidget(paramWidget);
+    lowerSplitter->setStretchFactor(1, 0);
+
+    QVBoxLayout * layout = new QVBoxLayout();
+    layout->addWidget(lowerSplitter);
+    layout->setContentsMargins(0, 0, 0, 0);
 
     setLayout(layout);
 }

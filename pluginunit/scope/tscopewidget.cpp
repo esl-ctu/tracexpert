@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QMessageBox>
+#include <QSplitter>
 
 #include "tscopewidget.h"
 #include "widgets/tconfigparamwidget.h"
@@ -55,12 +56,21 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
     paramLayout->addWidget(m_paramWidget);
     paramLayout->addWidget(applyButton);
 
-    QHBoxLayout * lowerLayout = new QHBoxLayout();
-    lowerLayout->addWidget(chartView, 1);
-    lowerLayout->addLayout(paramLayout);
+    QWidget * paramWidget = new QWidget();
+    paramWidget->setLayout(paramLayout);
+
+    QSplitter * lowerSplitter = new QSplitter(Qt::Horizontal);
+    lowerSplitter->addWidget(chartView);
+    lowerSplitter->setStretchFactor(0, 1);
+    lowerSplitter->addWidget(paramWidget);
+    lowerSplitter->setStretchFactor(1, 0);
+
+    QVBoxLayout * groupBoxLayout = new QVBoxLayout();
+    groupBoxLayout->addWidget(lowerSplitter);
+    groupBoxLayout->setContentsMargins(0, 0, 0, 0);
 
     QGroupBox * lowerGroupBox = new QGroupBox();
-    lowerGroupBox->setLayout(lowerLayout);
+    lowerGroupBox->setLayout(groupBoxLayout);
 
     m_runOnceButton = new QPushButton();
     m_runOnceButton->setIcon(QIcon(":/icons/play.png"));
@@ -121,7 +131,7 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
 
     QVBoxLayout * layout = new QVBoxLayout;
     layout->addWidget(upperGroupBox);
-    layout->addWidget(lowerGroupBox);
+    layout->addWidget(lowerGroupBox, 1);
 
     m_isDataIntendedForThisWidget = false;
 
