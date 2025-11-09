@@ -161,7 +161,7 @@ void TTTestDevice::init(bool *ok) {
             for (int j = i + 1; j < m_numberOfClasses; j++) {
 
                 QString streamName = QString("%1-order t-vals %2 vs %3").arg(order).arg(i).arg(j);
-                m_analInputStreams.append(new TTTestInputStream(streamName, "Stream of t-values", [=, class1 = i, class2 = j, order0 = order](uint8_t * buffer, size_t length){ return getTValues(buffer, length, class1, class2, order0); }));
+                m_analInputStreams.append(new TTTestInputStream(streamName, "Stream of t-values", [=, class1 = i, class2 = j, order0 = order](uint8_t * buffer, size_t length){ return getTValues(buffer, length, class1, class2, order0); }, [=, class1 = i, class2 = j, order0 = order](){ return availableBytes(class1, class2, order0); }));
 
                 m_tvals.append(new SICAK::Matrix<qreal>());
                 m_position.append(0);
@@ -492,11 +492,36 @@ size_t TTTestDevice::getTValues(uint8_t * buffer, size_t length, size_t class1, 
 
                     int sent = 0;
 
-                    for (sent = 0; m_position[k] < (m_tvals[k]->cols() * sizeof(qreal)) && sent < length; sent++, m_position[k]++) {
+                    //for (sent = 0; m_position[k] < (m_tvals[k]->cols() * sizeof(qreal)) && sent < length; sent++, m_position[k]++) {
+                    for (sent = 0; m_position[k] < (m_tvals[k]->size()) && sent < length; sent++, m_position[k]++) {
                         buffer[sent] = *(reinterpret_cast<uint8_t *>(m_tvals[k]->data()) + m_position[k]);
                     }
 
                     return sent;
+
+                }
+
+                k++;
+
+            }
+        }
+    }
+
+    return 0;
+
+}
+
+size_t TTTestDevice::availableBytes(size_t class1, size_t class2, size_t order){
+
+    int k = 0;
+
+    for(int orderIdx = 1; orderIdx <= m_order; orderIdx++){
+        for (int i = 0; i < m_numberOfClasses; i++) {
+            for (int j = i + 1; j < m_numberOfClasses; j++) {
+
+                if(orderIdx == order && i == class1 && j == class2) {
+
+                    return m_tvals[k]->size() - m_position[k];
 
                 }
 

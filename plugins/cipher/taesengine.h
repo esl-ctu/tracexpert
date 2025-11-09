@@ -51,6 +51,7 @@ public:
     void loadKey();
 
     size_t getIntermediates(uint8_t * buffer, size_t length);
+    size_t availableBytes();
 
 private:
 

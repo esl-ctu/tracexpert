@@ -135,7 +135,7 @@ void TCPADevice::init(bool *ok) {
     for(int order = 1; order <= m_order; order++){
 
         QString streamName = QString("%1-order correlation matrix").arg(order);
-        m_analInputStreams.append(new TCPAInputStream(streamName, "Stream of correlation coefficients", [=, order0 = order](uint8_t * buffer, size_t length){ return getCorrelations(buffer, length, order0); }));
+        m_analInputStreams.append(new TCPAInputStream(streamName, "Stream of correlation coefficients", [=, order0 = order](uint8_t * buffer, size_t length){ return getCorrelations(buffer, length, order0); }, [=, order0 = order](){ return availableBytes(order0); }));
 
         m_correlations.append(new SICAK::Matrix<qreal>());
         m_position.append(0);
@@ -1164,4 +1164,8 @@ size_t TCPADevice::getCorrelations(uint8_t * buffer, size_t length, size_t order
 
     return sent;
 
+}
+
+size_t TCPADevice::availableBytes(size_t order){
+    return m_correlations[order-1]->size() - m_position[order-1];
 }

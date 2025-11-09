@@ -131,7 +131,7 @@ void TPRESENTEngine::init(bool *ok) {
     m_analOutputStreams.append(new TCipherOutputStream((m_operation == 0) ? "Plaintext" : "Ciphertext", "Stream of input data", [=](const uint8_t * buffer, size_t length){ return addData(buffer, length); }));
     m_analOutputStreams.append(new TCipherOutputStream("Cipher key", "Stream of input data", [=](const uint8_t * buffer, size_t length){ return addKeyData(buffer, length); }));
 
-    m_analInputStreams.append(new TCipherInputStream("Intermediate values", "Stream of output data as selected in configuration", [=](uint8_t * buffer, size_t length){ return getIntermediates(buffer, length); }));
+    m_analInputStreams.append(new TCipherInputStream("Intermediate values", "Stream of output data as selected in configuration", [=](uint8_t * buffer, size_t length){ return getIntermediates(buffer, length); }, [=](){ return availableBytes(); }));
 
 
     if (ok != nullptr) *ok = true;
@@ -326,13 +326,12 @@ size_t TPRESENTEngine::getIntermediates(uint8_t * buffer, size_t length){
         buffer[sent] = m_intermediates[m_position];
     }
 
-    /*if(m_position == m_intermediates.size()){
-        m_intermediates.clear();
-        m_position = m_intermediates.length();
-    }*/
-
     return sent;
 
+}
+
+size_t TPRESENTEngine::availableBytes(){
+    return m_intermediates.size() - m_position;
 }
 
 void TPRESENTEngine::loadKey(){

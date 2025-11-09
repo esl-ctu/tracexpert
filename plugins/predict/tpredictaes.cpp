@@ -82,7 +82,7 @@ void TPredictAES::init(bool *ok) {
     for(int byte = 0; byte < 16; byte++){
 
         QString streamName = QString("Byte %1 Leakage Predictions").arg(byte);
-        m_analInputStreams.append(new TPredictInputStream(streamName, "Stream of predictions", [=, byte0 = byte](uint8_t * buffer, size_t length){ return getPredictions(buffer, length, byte0); }));
+        m_analInputStreams.append(new TPredictInputStream(streamName, "Stream of predictions", [=, byte0 = byte](uint8_t * buffer, size_t length){ return getPredictions(buffer, length, byte0); }, [=, byte0=byte](){ return availableBytes(byte0); }));
 
         m_predictions.append(new QList<uint8_t>());
         m_position.append(0);
@@ -298,4 +298,8 @@ size_t TPredictAES::getPredictions(uint8_t * buffer, size_t length, size_t byte)
 
     return sent;
 
+}
+
+size_t TPredictAES::availableBytes(size_t byte){
+    return m_predictions[byte]->size() - m_position[byte];
 }
