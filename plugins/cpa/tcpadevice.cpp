@@ -246,6 +246,7 @@ void TCPADevice::resetContexts() {
         m_position[i] = m_correlations[i]->size();
     }
 
+    qInfo("All previously submitted or computed (unread) data have been erased.");
 }
 
 
@@ -281,7 +282,7 @@ void TCPADevice::computeCorrelations(){
         return;
     }
 
-    if(m_predicts.size() % (getTypeSize(m_predictType) * m_predictCount) != 0){ // TODO move to processing action
+    if(m_predicts.size() % (getTypeSize(m_predictType) * m_predictCount) != 0){
         qCritical("Buffer does not contain a valid amount of predictions");
         return;
     }
@@ -293,6 +294,9 @@ void TCPADevice::computeCorrelations(){
         qCritical("Number of traces and number of prediction sets does not match!");
         return;
     }
+
+    qInfo("Unread correlation matrices were erased. The submitted data will be added to all the previously submitted data (unless the Reset action was run), and the new correlations will be computed upon all of these.");
+    qInfo(QString("Now processing %1 bytes of power traces (%2 power traces, %3 samples each) and %4 bytes of leakage predictions (%2 sets, one for every trace, each consisting of %5 leakage predictions).").arg(m_traces.size()).arg(noOfTraces).arg(m_traceLength).arg(m_predicts.size()).arg(m_predictCount).toLatin1());
 
     // Add traces to the context
     // ... sorry (need explicit cast on both traces and predictions, shit happens)
@@ -1145,6 +1149,8 @@ void TCPADevice::computeCorrelations(){
         }
 
     }
+
+    qInfo(QString("Generated %1 bytes of data (%2 x %3 correlation matrices) on every stream, now available for reading.").arg(m_correlations[0]->size()).arg(m_traceLength).arg(m_predictCount).toLatin1());
 
 }
 

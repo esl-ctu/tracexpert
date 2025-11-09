@@ -278,6 +278,8 @@ void TTTestDevice::resetContexts() {
         m_position[i] = m_tvals[i]->cols()*sizeof(qreal);
     }
 
+    qInfo("All previously submitted or computed (unread) data have been erased.");
+
 }
 
 size_t TTTestDevice::addLabeledTraces(const uint8_t * buffer, size_t length){
@@ -333,6 +335,8 @@ void TTTestDevice::computeTVals(){
 
     size_t sampleSize = getTypeSize(m_traceType);
 
+    qInfo("Unread t-values were erased. The submitted data will be added to all the previously submitted data (unless the Reset action was run), and the new correlations will be computed upon all of these.");
+
     // Process nonLabeledTraces
     for(int i=0; i < m_numberOfClasses; i++){
 
@@ -342,6 +346,8 @@ void TTTestDevice::computeTVals(){
         }
 
         size_t noOfTraces = m_nonLabeledTraces[i].size() / (sampleSize * m_traceLength);
+
+        qInfo(QString("Now processing %1 bytes of data (%2 power traces) belonging to class %3.").arg(m_nonLabeledTraces[i].size()).arg(noOfTraces).arg(i).toLatin1());
 
         if(noOfTraces > 0){
 
@@ -393,9 +399,11 @@ void TTTestDevice::computeTVals(){
     if(noOfTraces != noOfLabels){
         qCritical("Mismatching number of traces and labels");
         return;
-    }
+    }        
 
     if(noOfTraces > 0) {
+
+        qInfo(QString("Now processing %1 bytes of data (%2 labeled power traces).").arg(m_traces.size()).arg(noOfTraces).toLatin1());
 
         for(int i = 0; i < noOfTraces; i++){
 
@@ -469,6 +477,7 @@ void TTTestDevice::computeTVals(){
         }
     }
 
+    qInfo(QString("Generated %1 bytes of data (%2 t-values and %2 d.o.f.) on every stream, now available for reading.").arg(m_tvals[0]->size()).arg(m_traceLength).toLatin1());
 }
 
 size_t TTTestDevice::getTValues(uint8_t * buffer, size_t length, size_t class1, size_t class2, size_t order){
