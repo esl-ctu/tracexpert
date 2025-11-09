@@ -93,7 +93,7 @@ public:
         else {
             log(
                 "Response/trace data from scope received before block execution; "
-                "is your sampling period long enough?",
+                "is the scope set up to measure for long enough?",
                 TLogLevel::TWarning
             );
             m_deviceSignalReceived = true;
