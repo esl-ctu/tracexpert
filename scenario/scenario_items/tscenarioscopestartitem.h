@@ -80,11 +80,10 @@ public:
     QHash<TScenarioItemPort *, QByteArray> executeDirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
         checkAndSetInitParamsBeforeExecution();
 
-        connect(m_deviceModel, &TScopeModel::runFailed, this, &TScenarioScopeItem::runFailed);
-
         m_stopItem->clearOutputData();
 
         // the following events are connected to the connected block instance
+        connect(m_deviceModel, &TScopeModel::runFailed, m_stopItem, &TScenarioScopeItem::runFailed);
         connect(m_deviceModel, &TScopeModel::stopFailed, m_stopItem, &TScenarioScopeItem::stopFailed);
         connect(m_deviceModel, &TScopeModel::downloadFailed, m_stopItem, &TScenarioScopeItem::downloadFailed);
 
