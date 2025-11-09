@@ -335,7 +335,7 @@ void TTTestDevice::computeTVals(){
 
     size_t sampleSize = getTypeSize(m_traceType);
 
-    qInfo("Unread t-values were erased. The submitted data will be added to all the previously submitted data (unless the Reset action was run), and the new correlations will be computed upon all of these.");
+    qInfo("Unread t-values were erased. The submitted data will be added to all the previously submitted data (unless the Reset action was run), and the new t-values will be computed upon all of these.");
 
     // Process nonLabeledTraces
     for(int i=0; i < m_numberOfClasses; i++){
