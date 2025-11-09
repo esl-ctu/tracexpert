@@ -202,6 +202,12 @@ public:
         return true;
     }
 
+    bool cleanup() override {
+        // make sure no signals are received after scenario stops
+        disconnect(m_deviceModel, nullptr, this, nullptr);
+        return true;
+    }
+
     void checkAndSetInitParamsBeforeExecution() {
         TConfigParam * preInitParamConf = m_params.getSubParamByName("Set pre-init params");
         if(preInitParamConf->getValue() == "Each time this block is executed" ||

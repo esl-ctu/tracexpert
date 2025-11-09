@@ -47,6 +47,31 @@ public:
         m_deviceModel->runSingle();
         log(QString(tr("[%1] Measurement started")).arg(m_deviceModel->name()));
     }
+
+    void runFailed() override {
+        TScenarioScopeItem::runFailed();
+        emit executionFinished();
+    }
+
+    void stopFailed() override {
+        TScenarioScopeItem::stopFailed();
+        emit executionFinished();
+    }
+
+    void downloadFailed() override {
+        TScenarioScopeItem::downloadFailed();
+        emit executionFinished();
+    }
+
+    void tracesEmpty() override {
+        TScenarioScopeItem::tracesEmpty();
+        emit executionFinished();
+    }
+
+    void stopped() override {
+        TScenarioScopeItem::stopped();
+        emit executionFinished(m_outputData);
+    }
 };
 
 #endif // TSCENARIOSCOPESINGLEITEM_H

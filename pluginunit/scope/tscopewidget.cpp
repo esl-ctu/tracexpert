@@ -249,7 +249,6 @@ void TScopeWidget::tracesEmpty() {
 }
 
 void TScopeWidget::stopped() {
-    qDebug("Download stopped!");
     setGUItoReady();
 }
 

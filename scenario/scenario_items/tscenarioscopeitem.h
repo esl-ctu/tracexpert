@@ -89,6 +89,7 @@ public:
     }
 
     bool cleanup() override {
+        TScenarioComponentItem::cleanup();
         m_outputData.clear();
         return true;
     }
@@ -144,44 +145,39 @@ public:
         m_outputData.clear();
     }
 
-    void runFailed() {
+    virtual void runFailed() {
         disconnect(m_deviceModel, nullptr, this, nullptr);
 
         log(QString(tr("[%1] Read failed - run failed")).arg(m_deviceModel->name()));
         m_preferredOutputFlowPortName = "flowOutError";
-        emit executionFinished();
     }
 
-    void stopFailed() {
+    virtual void stopFailed() {
         disconnect(m_deviceModel, nullptr, this, nullptr);
 
         log(QString(tr("[%1] Read failed - stop failed")).arg(m_deviceModel->name()));
         m_preferredOutputFlowPortName = "flowOutError";
-        emit executionFinished();
     }
 
-    void downloadFailed() {
+    virtual void downloadFailed() {
         disconnect(m_deviceModel, nullptr, this, nullptr);
 
         log(QString(tr("[%1] Read failed - download failed")).arg(m_deviceModel->name()));
         m_preferredOutputFlowPortName  = "flowOutError";
-        emit executionFinished();
     }
 
-    void tracesEmpty() {
+    virtual void tracesEmpty() {
         disconnect(m_deviceModel, nullptr, this, nullptr);
 
         log(QString(tr("[%1] Read failed - traces empty")).arg(m_deviceModel->name()));
         m_preferredOutputFlowPortName = "flowOutError";
-        emit executionFinished();
     }
 
-    void stopped() {
+    virtual void stopped() {
         disconnect(m_deviceModel, nullptr, this, nullptr);
 
         log(QString(tr("[%1] Measurement stopped")).arg(m_deviceModel->name()));
         m_preferredOutputFlowPortName = "flowOut";
-        emit executionFinished(m_outputData);
     }
 
 
