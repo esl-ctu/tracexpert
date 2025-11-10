@@ -588,7 +588,7 @@ void TnewaeScope::deInit(bool *ok/* = nullptr*/){
 
 //This whole method is ugly. I'm sorry
 TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write /*= false*/) const {
-    bool ook, ook2, ook3;
+    bool ook;
     TConfigParam * topPrm = paramsIn.getSubParamByName("NewAE", &ook);
     if (!ook) {
         paramsIn.setState(TConfigParam::TState::TError, "Error getting scope params!");

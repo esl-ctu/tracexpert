@@ -168,7 +168,7 @@ void TNewae::handlePythonError(QProcess::ProcessError error){
 
 bool TNewae::setUpSHM(uint8_t cwId){
     char cwIdShmKey[4];
-    sprintf(cwIdShmKey, "%03d", cwId);
+    std::snprintf(cwIdShmKey, sizeof(cwIdShmKey), "%03d", cwId);
 
     QSharedMemory * cwSHM = new QSharedMemory();
     QSharedMemory * targetSHM = new QSharedMemory();
@@ -460,7 +460,7 @@ void TNewae::init(bool *ok) {
         }
 
         //Append available devices to m_scopes/m_devices
-        for(size_t i = 0; i < devices.size(); ++i) {
+        for(qsizetype i = 0; i < devices.size(); ++i) {
             //if this is not a standalone target, add the scope
             if (!(devices.at(i).first.contains("cw305", Qt::CaseInsensitive)) &&
                 !(devices.at(i).first.contains("cw310", Qt::CaseInsensitive))){
@@ -599,7 +599,6 @@ TScope * TNewae::addScope(QString name, QString info, bool *ok) {
 
 uint8_t TNewae::addDummyScope() {
     if (numDevices + 1 != NO_CW_ID) {
-        TnewaeScope * sc;
         pythonReady[numDevices] = true;
         pythonError[numDevices] = false;
         pythonTargetError[numDevices] = false;
@@ -766,7 +765,6 @@ bool TNewae::runPythonFunctionWithBinaryDataAsOneArgumentAndGetStringOutput(int8
 
 bool TNewae::runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out, bool asTarget /*= false*/){
     QString toSend;
-    bool succ;
 
     packagePythonFunction(cwId, functionName, numParams, params, toSend, asTarget);
     return runPythonFunctionAndGetStringOutputHelper(cwId, toSend.toLocal8Bit().constData(), toSend.size(), dataLen, out, asTarget);
@@ -1230,7 +1228,7 @@ bool TNewae::getDataFromShm(size_t &size, QString &data, uint8_t cwId, bool asTa
     data = "";
     try {
         data.reserve(size + 1);
-    } catch (const std::bad_alloc& e) {
+    } catch (const std::bad_alloc&) {
         qCritical("Unable to reserve enough memory to read from SHM. Wanted to reserve: %zu", size);
         return false;
     }
