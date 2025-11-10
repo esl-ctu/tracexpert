@@ -18,27 +18,28 @@ TraceXpert 1.0 supports both Windows and Linux platforms and is distributed as o
 
 ## Index
 
-* Getting Started
-* Component architecture
-* I/O Devices
-    - File
-    - Random number generator
-    - Serial port
-    - Smart card
-* [Protocols](protocols.md)    
-* Oscilloscopes
-    - NewAE (ChipWhisperer)
-    - Picoscope 6000 A/B/C/D/E series
-* Analytical devices
-    - Correlation power analysis
-    - [Ciphers](ciphers.md)
-    - [Leakage predictions](predictions.md)
-    - Welch's t-test
-* [Scenarios](scenarios.md)
-* Example use-case
-    - Correlation power analysis
-    - Non-specific t-test
-    - Specific t-test
+* 1 Getting Started
+* 2 Component architecture
+* 3 User interface
+* 4 I/O Devices
+    - 4.1 File
+    - 4.2 Random number generator
+    - 4.3 Serial port
+    - 4.4 Smart card
+* 5 [Protocols](protocols.md)    
+* 6 Oscilloscopes
+    - 6.1 NewAE (ChipWhisperer)
+    - 6.2 Picoscope 6000 A/B/C/D/E series
+* 7 Analytical devices
+    - 7.1 [Ciphers](ciphers.md)
+    - 7.2 [Leakage predictions](predictions.md)
+    - 7.3 [Correlation power analysis](cpa.md)
+    - 7.4 [Welch's t-test leakage assessment](ttest.md)
+* 8 [Scenarios](scenarios.md)
+* 9 Example use-case
+    - 9.1 Correlation power analysis
+    - 9.2 Non-specific t-test
+    - 9.3 Specific t-test
 * Build instructions
 
 ## Acknowledgment

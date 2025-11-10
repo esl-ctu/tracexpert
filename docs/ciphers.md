@@ -31,7 +31,7 @@ The **Output** parameter can be one of the follows:
 
 1. **Whole block** - The analytical device returns the whole cipher context (size of the block).
 2. **Mth byte** -- The analytical device returns only the selected byte (leftmost byte is 0).
-3. **Mth bit** -- The analytical device returns only the selected bit, as a byte-sized value, i.e. 0x00 or 0x01 (rightmost byte is 0).
+3. **Mth bit** -- The analytical device returns only the selected bit, as a byte-sized value, i.e. 0x00 or 0x01 (rightmost bit is 0).
 
 ### Input
 

@@ -15,8 +15,9 @@
 class TScenarioConstantValueItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 40 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioConstantValueItem;
+    }
 
     TScenarioConstantValueItem() : TScenarioItem(tr("Constant"), tr("This block represents a constant value.")) {
         setType(TItemAppearance::TEmbeddedSubtitle);
@@ -89,7 +90,7 @@ public:
         m_params.addSubParam(TConfigParam("Value", oldValue, newType, tr("Value of constant."), false));
     }
 
-    bool validateParamsStructure(TConfigParam params) {
+    bool validateParamsStructure(TConfigParam params) override {
         bool iok = false;
 
         params.getSubParamByName("Block name", &iok);
@@ -110,15 +111,12 @@ public:
             return params;
         }
 
+        bool shouldUpdate = shouldUpdateParams(params);
         m_params = params;
-        m_params.resetState(true);
-
-        if(m_title != params.getSubParamByName("Block name")->getValue()) {
-            m_title = params.getSubParamByName("Block name")->getValue();
-            emit appearanceChanged();
-        }
+        updateParams(shouldUpdate);
 
         TConfigParam * valueParam = m_params.getSubParamByName("Value");
+        valueParam->resetState();
 
         bool iok;
         valueParam->setValue(valueParam->getValue(), &iok);
@@ -127,6 +125,7 @@ public:
             valueParam->setState(TConfigParam::TState::TError, tr("Invalid value."));
         }
 
+        m_title = params.getSubParamByName("Block name")->getValue();
         m_subtitle = valueParam->getValue();
 
         QString type = m_params.getSubParamByName("Data type")->getValue();
@@ -141,7 +140,6 @@ public:
         }
 
         emit appearanceChanged();
-
         return m_params;
     }
 
@@ -150,6 +148,7 @@ public:
 
         QByteArray byteValue;
         QDataStream byteStream(&byteValue, QIODevice::WriteOnly);
+        byteStream.setByteOrder(QDataStream::LittleEndian);
 
         QString type = m_params.getSubParamByName("Data type")->getValue();
         if(type == "integer") {
@@ -192,6 +191,9 @@ public:
 
         return outputData;
     }
+
+protected:
+    TConfigParam * m_currentValueParam;
 
 };
 

@@ -6,6 +6,14 @@ TSender::TSender(QObject *parent)
 
 }
 
+QString TSender::name() {
+    return QString();
+}
+
+QString TSender::info() {
+    return QString();
+}
+
 void TSender::sendData(QByteArray data)
 {
     m_isBusy = true;

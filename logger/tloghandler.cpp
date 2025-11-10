@@ -31,23 +31,20 @@ void TLogHandler::appendLogMessage(QtMsgType type, const QString &msg) {
     switch (type) {
         case QtDebugMsg:
             line = QString("[%1] DEBUG %2").arg(time, msg);
-            m_logLineWidget->setStyleSheet("QLabel { color : grey; }");
             break;
         case QtInfoMsg:
             line = QString("[%1] INFO %2").arg(time, msg);
-            m_logLineWidget->setStyleSheet("QLabel { color : blue; }");
             break;
         case QtWarningMsg:
             line = QString("[%1] WARNING %2").arg(time, msg);
-            m_logLineWidget->setStyleSheet("QLabel { color : orange; }");
             break;
         case QtCriticalMsg:
             line = QString("[%1] ERROR %2").arg(time, msg);
-            fmt.setFontWeight(QFont::Bold); break;
-            m_logLineWidget->setStyleSheet("QLabel { color : red; }");
+            fmt.setFontWeight(QFont::Bold);
+            break;
         default:
             line = QString("[%1] %2").arg(time, msg);
-            m_logLineWidget->setStyleSheet("");
+            break;
     }
 
     m_logLineWidget->setText(line);

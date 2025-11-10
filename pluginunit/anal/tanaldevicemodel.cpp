@@ -35,11 +35,11 @@ bool TAnalDeviceModel::init()
     QList<TAnalAction *> actions = m_analDevice->getActions();
 
     for (int i = 0; i < outputStreams.length(); i++) {
-        m_senderModels.append(new TAnalStreamSenderModel(new TAnalStreamSender(outputStreams[i])));
+        m_senderModels.append(new TSenderModel(new TAnalStreamSender(outputStreams[i])));
     }
 
     for (int i = 0; i < inputStreams.length(); i++) {
-        m_receiverModels.append(new TAnalStreamReceiverModel(new TAnalStreamReceiver(inputStreams[i])));
+        m_receiverModels.append(new TReceiverModel(new TAnalStreamReceiver(inputStreams[i])));
     }
 
     for (int i = 0; i < actions.length(); i++) {
@@ -100,12 +100,12 @@ void TAnalDeviceModel::release()
     TPluginUnitModel::release();
 }
 
-QList<TAnalStreamSenderModel *> TAnalDeviceModel::senderModels()
+QList<TSenderModel *> TAnalDeviceModel::senderModels()
 {
     return m_senderModels;
 }
 
-QList<TAnalStreamReceiverModel *> TAnalDeviceModel::receiverModels()
+QList<TReceiverModel *> TAnalDeviceModel::receiverModels()
 {
     return m_receiverModels;
 }

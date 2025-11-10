@@ -22,6 +22,14 @@ TSenderModel::~TSenderModel()
     m_senderThread->quit();
 }
 
+QString TSenderModel::name() {
+    return m_sender->name();
+}
+
+QString TSenderModel::info() {
+    return m_sender->info();
+}
+
 void TSenderModel::writeData(QByteArray data)
 {
     if (!m_sending) {

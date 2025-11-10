@@ -231,10 +231,10 @@ QVariant TScenarioGraphicalItem::itemChange(GraphicsItemChange change, const QVa
 
                 qreal dist;
                 if(port->portDirection() == TScenarioItemPort::TItemPortDirection::TInputPort) {
-                    dist = port->scenePos().y() - connection->startItem()->scenePos().y();
+                    dist = port->scenePos().y() - connection->startItemPort()->scenePos().y();
                 }
                 else {
-                    dist = port->scenePos().y() - connection->endItem()->scenePos().y();
+                    dist = port->scenePos().y() - connection->endItemPort()->scenePos().y();
                 }
 
                 if(abs(dist) < minDist) {

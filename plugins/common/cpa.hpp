@@ -98,17 +98,21 @@ namespace SICAK {
             sqrtPredsCS2(candidate) = sqrt(c.p2CS(2)(candidate));
         }
 
+        bool zerodiv = false;
+
         for (size_t candidate = 0; candidate < noOfCandidates; candidate++) {
 
             for (size_t sample = 0; sample < samplesPerTrace; sample++) {
 
-                if (sqrtTracesCS2(sample) == 0 || sqrtPredsCS2(candidate) == 0) qCritical("Division by zero");
+                if (sqrtTracesCS2(sample) == 0 || sqrtPredsCS2(candidate) == 0) zerodiv = true;
 
                 correlations(sample, candidate) = c.p12ACS(1)(sample, candidate) / (sqrtTracesCS2(sample) * sqrtPredsCS2(candidate));
 
             }
 
         }
+
+        if(zerodiv) qCritical("Division by zero");
 
     }
 
@@ -366,17 +370,21 @@ namespace SICAK {
 
         }
 
+        bool zerodiv = false;
+
         for (size_t candidate = 0; candidate < noOfCandidates; candidate++) {
 
             for (size_t sample = 0; sample < samplesPerTrace; sample++) {
 
-                if (sqrtTracesCS(sample) == 0 || sqrtPredsCS(candidate) == 0) qCritical("Division by zero");
+                if (sqrtTracesCS(sample) == 0 || sqrtPredsCS(candidate) == 0) zerodiv = true;
 
                 correlations(sample, candidate) = (divN * c.p12ACS(attackOrder)(sample, candidate)) / (sqrtTracesCS(sample) * sqrtPredsCS(candidate));
 
             }
 
         }
+
+        if(zerodiv) qCritical("Division by zero");
 
     }
 

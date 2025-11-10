@@ -11,8 +11,9 @@
 class TScenarioVariableReadItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 100 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioVariableReadItem;
+    }
 
     TScenarioVariableReadItem() : TScenarioItem(tr("Variable: read"), tr("This block allows reading of a variable.")) {
         addDataOutputPort("dataOut");
@@ -85,7 +86,7 @@ public:
             setState(TState::TError, tr("Block configuration contains errors!"));
         }
         else {
-            setState(TState::TOk);
+            resetState();
         }
 
         return m_params;

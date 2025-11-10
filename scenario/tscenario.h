@@ -130,7 +130,7 @@ public:
             qsizetype itemCount;
             in >> itemCount;
             for(qsizetype i = 0; i < itemCount; i++) {
-                int itemClass;
+                TScenarioItem::TItemClass itemClass;
                 in >> itemClass;
 
                 TScenarioItem * item = TScenarioItem::createScenarioItemByClass(itemClass);

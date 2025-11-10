@@ -15,8 +15,9 @@
 class TScenarioIODeviceReadItem : public TScenarioIODeviceItem {
 
 public:
-    enum { TItemClass = 31 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioIODeviceReadItem;
+    }
 
     TScenarioIODeviceReadItem() : TScenarioIODeviceItem(tr("IO Device: read"), tr("This block reads from selected IO Device.")) {
         addDataInputPort("lengthIn", "length", tr("Number of bytes to read, as integer."));
@@ -28,37 +29,38 @@ public:
     }
 
     void dataRead(QByteArray data) {
-        disconnect(m_IODeviceModel->receiverModel(), nullptr, this, nullptr);
+        disconnect(m_deviceModel->receiverModel(), nullptr, this, nullptr);
 
         QHash<TScenarioItemPort *, QByteArray> outputData;
         outputData.insert(getItemPortByName("dataOut"), data);
 
-        log(QString(tr("[%1] Read %2 bytes.")).arg(m_IODeviceModel->name()).arg(data.size()));
+        log(QString(tr("[%1] Read %2 bytes.")).arg(m_deviceModel->name()).arg(data.size()));
 
         emit executionFinished(outputData);
     }
 
     void readFailed() {
         setState(TState::TRuntimeError, tr("Read failed."));
-        disconnect(m_IODeviceModel->receiverModel(), nullptr, this, nullptr);
+        disconnect(m_deviceModel->receiverModel(), nullptr, this, nullptr);
 
-        log(QString(tr("[%1] Read failed.")).arg(m_IODeviceModel->name()));
+        log(QString(tr("[%1] Read failed.")).arg(m_deviceModel->name()));
         emit executionFinished();
     }
 
     void readBusy() {
         setState(TState::TRuntimeError, tr("Read failed - device busy."));
-        disconnect(m_IODeviceModel->receiverModel(), nullptr, this, nullptr);
+        disconnect(m_deviceModel->receiverModel(), nullptr, this, nullptr);
 
-        log(QString(tr("[%1] Read failed - device busy.")).arg(m_IODeviceModel->name()));
+        log(QString(tr("[%1] Read failed - device busy.")).arg(m_deviceModel->name()));
         emit executionFinished();
     }
 
     void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
-        TScenarioIODeviceItem::executeIndirect(inputData);
+        checkAndSetInitParamsBeforeExecution();
 
         int dataLen;
         QDataStream lengthStream(inputData.value(getItemPortByName("lengthIn")));
+        lengthStream.setByteOrder(QDataStream::LittleEndian);
         lengthStream >> dataLen;
 
         if(dataLen == 0) {
@@ -67,19 +69,19 @@ public:
             return;
         }       
 
-        if(!m_IODeviceModel || !m_IODeviceModel->receiverModel()) {
+        if(!m_deviceModel || !m_deviceModel->receiverModel()) {
             setState(TState::TRuntimeError, tr("The target device is not initialized or was not found."));
             emit executionFinished();
             return;
         }
 
-        log(QString(tr("[%1] Reading %2 bytes...")).arg(m_IODeviceModel->name()).arg(dataLen));
+        log(QString(tr("[%1] Reading %2 bytes...")).arg(m_deviceModel->name()).arg(dataLen));
 
-        connect(m_IODeviceModel->receiverModel(), &TReceiverModel::dataRead, this, &TScenarioIODeviceReadItem::dataRead);
-        connect(m_IODeviceModel->receiverModel(), &TReceiverModel::readFailed, this, &TScenarioIODeviceReadItem::readFailed);
-        connect(m_IODeviceModel->receiverModel(), &TReceiverModel::readBusy, this, &TScenarioIODeviceReadItem::readBusy);
+        connect(m_deviceModel->receiverModel(), &TReceiverModel::dataRead, this, &TScenarioIODeviceReadItem::dataRead);
+        connect(m_deviceModel->receiverModel(), &TReceiverModel::readFailed, this, &TScenarioIODeviceReadItem::readFailed);
+        connect(m_deviceModel->receiverModel(), &TReceiverModel::readBusy, this, &TScenarioIODeviceReadItem::readBusy);
 
-        m_IODeviceModel->receiverModel()->readData(dataLen);
+        m_deviceModel->receiverModel()->readData(dataLen);
     }
 
     TConfigParam setParams(TConfigParam params) override {

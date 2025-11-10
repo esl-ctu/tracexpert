@@ -10,12 +10,8 @@ TPredictAES::TPredictAES(): m_operation(0) {
 
     m_preInitParams = TConfigParam("AES configuration", "", TConfigParam::TType::TDummy, "");
 
-    /*TConfigParam traceLength = TConfigParam("Trace length (in samples)", "1000", TConfigParam::TType::TUInt, "The number of samples per trace");
-    m_preInitParams.addSubParam(traceLength);*/
     TConfigParam keyType = TConfigParam("Key length", "128 bit", TConfigParam::TType::TEnum, "Size of the AES key");
     keyType.addEnumValue("128 bit");
-    /*keyType.addEnumValue("192 bit");
-    keyType.addEnumValue("256 bit");*/
     m_preInitParams.addSubParam(keyType);
 
     TConfigParam operationType = TConfigParam("Operation", "Encryption, first round, Hamming weight", TConfigParam::TType::TEnum, "AES operation");
@@ -24,41 +20,6 @@ TPredictAES::TPredictAES(): m_operation(0) {
     operationType.addEnumValue("Encryption, last round, Hamming distance");
     operationType.addEnumValue("Encryption, last round, Identity");
     m_preInitParams.addSubParam(operationType);
-
-    /*TConfigParam cipherMode = TConfigParam("Mode", "ECB", TConfigParam::TType::TEnum, "Cipher mode", true);
-    cipherMode.addEnumValue("ECB");
-    cipherMode.addEnumValue("CFB");
-    cipherMode.addEnumValue("CBC");
-    cipherMode.addEnumValue("OFB");
-    cipherMode.addEnumValue("PCBC");
-    cipherMode.addEnumValue("CTR");
-    m_preInitParams.addSubParam(cipherMode);*/
-
-    /*TConfigParam leakageModel = TConfigParam("Leakage model", "Hamming weight", TConfigParam::TType::TEnum, "Leakage model", true);
-    leakageModel.addEnumValue("Hamming weight");
-    leakageModel.addEnumValue("Hamming distance");
-    leakageModel.addEnumValue("Identity");
-    m_preInitParams.addSubParam(leakageModel);*/
-
-    // TODO to post-init param => number of bytes depends on key length
-    /*TConfigParam byteNumber = TConfigParam("Key byte", "0", TConfigParam::TType::TEnum, "Key byte to predict", true);
-    byteNumber.addEnumValue("0");
-    byteNumber.addEnumValue("1");
-    byteNumber.addEnumValue("2");
-    byteNumber.addEnumValue("3");
-    byteNumber.addEnumValue("4");
-    byteNumber.addEnumValue("5");
-    byteNumber.addEnumValue("6");
-    byteNumber.addEnumValue("7");
-    byteNumber.addEnumValue("8");
-    byteNumber.addEnumValue("9");
-    byteNumber.addEnumValue("10");
-    byteNumber.addEnumValue("11");
-    byteNumber.addEnumValue("12");
-    byteNumber.addEnumValue("13");
-    byteNumber.addEnumValue("14");
-    byteNumber.addEnumValue("15");
-    m_preInitParams.addSubParam(byteNumber);*/
 
 }
 
@@ -121,16 +82,12 @@ void TPredictAES::init(bool *ok) {
     for(int byte = 0; byte < 16; byte++){
 
         QString streamName = QString("Byte %1 Leakage Predictions").arg(byte);
-        m_analInputStreams.append(new TPredictInputStream(streamName, "Stream of predictions", [=, byte0 = byte](uint8_t * buffer, size_t length){ return getPredictions(buffer, length, byte0); }));
+        m_analInputStreams.append(new TPredictInputStream(streamName, "Stream of predictions", [=, byte0 = byte](uint8_t * buffer, size_t length){ return getPredictions(buffer, length, byte0); }, [=, byte0=byte](){ return availableBytes(byte0); }));
 
         m_predictions.append(new QList<uint8_t>());
         m_position.append(0);
 
     }
-
-
-    //m_analInputStreams.append(new TPredictInputStream("Byte 0 Leakage Predictions", "Stream of leakage predictions", [=](uint8_t * buffer, size_t length){ return getPredictions(buffer, length); }));
-    //m_position = 0;
 
     if (ok != nullptr) *ok = true;
 
@@ -214,6 +171,8 @@ void TPredictAES::resetContexts() {
         m_position[i] = m_predictions[i]->length();
     }
 
+    qInfo("All previously submitted or computed (unread) data have been erased.");
+
 }
 
 const uint8_t sBox[256] = {
@@ -261,13 +220,15 @@ void TPredictAES::computePredictions(){
         return;
     }
 
-    size_t blockCount = m_data.size() / 16;
+    size_t blockCount = m_data.size() / 16;        
 
     // flush buffers
     for (int i = 0; i < m_predictions.length(); i++) {
         m_predictions[i]->clear();
         m_position[i] = m_predictions[i]->length();
     }
+
+    qInfo(QString("Unread previously generated data were erased. Now processing %1 bytes of data (%2 cipher blocks).").arg(m_data.length()).arg(blockCount).toLatin1());
 
     for(size_t byte = 0; byte < 16; byte++){
 
@@ -276,8 +237,6 @@ void TPredictAES::computePredictions(){
             for (size_t key = 0; key < 256; key++) {
 
                 uint8_t intermediate = 0;
-
-                // data(byte, block) == m_data[byte + block*16]
 
                 if(m_operation < 2) { // front
 
@@ -309,7 +268,6 @@ void TPredictAES::computePredictions(){
                     m_predictions[byte]->append(intermediate);
 
                 }
-                //powerPredictions(key, block) = hamming_weight;
 
             }
 
@@ -326,6 +284,8 @@ void TPredictAES::computePredictions(){
         m_position[i] = 0;
     }
 
+    qInfo(QString("Generated %1 bytes of data (%2 sets of leakage predictions, each set consisting of 256 predictions for different key hypotheses) on each of 16 streams (one stream for every key byte), now available for reading.").arg(m_predictions[0]->length()).arg(blockCount).toLatin1());
+
 }
 
 size_t TPredictAES::getPredictions(uint8_t * buffer, size_t length, size_t byte){
@@ -338,4 +298,8 @@ size_t TPredictAES::getPredictions(uint8_t * buffer, size_t length, size_t byte)
 
     return sent;
 
+}
+
+size_t TPredictAES::availableBytes(size_t byte){
+    return m_predictions[byte]->size() - m_position[byte];
 }

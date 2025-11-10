@@ -200,9 +200,10 @@ void TScopeCollector::collectData(size_t bufferSize)
             bool overloadSingle;
 
             buffer.resize(bufferSize);
-            m_scope->downloadSamples(status[i].getIndex(), (uint8_t *)buffer.data(), bufferSize, &type, &samplesPerTrace, &traces, &overloadSingle);
+            qsizetype actualSize = m_scope->downloadSamples(status[i].getIndex(), (uint8_t *)buffer.data(), bufferSize, &type, &samplesPerTrace, &traces, &overloadSingle);
 
-            // shrink the internal array
+            // resize and shrink the internal array
+            buffer.resize(actualSize);
             buffer.squeeze();
 
             if (!traces) {

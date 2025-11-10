@@ -51,6 +51,18 @@ QPainterPath TScenarioGraphicalConnection::shape() const {
     return path;
 }
 
+TScenarioGraphicalItemPort * TScenarioGraphicalConnection::otherItemPort(TScenarioGraphicalItemPort * itemPort) const {
+    if(itemPort == m_startItemPort) {
+        return m_endItemPort;
+    }
+    else if(itemPort == m_endItemPort) {
+        return m_startItemPort;
+    }
+    else {
+        return nullptr;
+    }
+}
+
 void TScenarioGraphicalConnection::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
     if(line().p1().x() > line().p2().x()) {
         setPreferredLineBreakYCoord(event->scenePos().y());

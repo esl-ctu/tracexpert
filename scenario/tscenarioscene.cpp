@@ -48,6 +48,7 @@ void TScenarioScene::loadScenario(const TScenario * scenario) {
     for(TScenarioItem * item : m_scenario->getItems()) {
         item->setProjectModel(m_projectModel);
         item->updateParams(false);
+        item->resetState(true);
 
         TScenarioGraphicalItem * graphicalItem = TScenarioGraphicalItem::createScenarioGraphicalItem(item);
         graphicalItem->setZValue(1);
@@ -107,8 +108,8 @@ void TScenarioScene::removeItem(QGraphicsItem * item) {
     }
     else if(item->type() == TScenarioGraphicalConnection::Type) {
         TScenarioGraphicalConnection * graphicalConnection = (TScenarioGraphicalConnection *)item;
-        graphicalConnection->startItem()->removeGraphicalConnection(graphicalConnection);
-        graphicalConnection->endItem()->removeGraphicalConnection(graphicalConnection);
+        graphicalConnection->startItemPort()->removeGraphicalConnection(graphicalConnection);
+        graphicalConnection->endItemPort()->removeGraphicalConnection(graphicalConnection);
 
         m_scenario->removeConnection(graphicalConnection->getScenarioConnection(), &ok);
 

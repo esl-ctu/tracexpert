@@ -46,6 +46,8 @@ public:
 
     size_t addTraces(const uint8_t * buffer, size_t length, size_t classNo);
     size_t getTValues(uint8_t * buffer, size_t length, size_t class1, size_t class2, size_t order);
+    size_t availableBytes(size_t class1, size_t class2, size_t order);
+
     void resetContexts();
     void computeTVals();
 

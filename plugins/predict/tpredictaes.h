@@ -50,6 +50,7 @@ public:
     void computePredictions();
 
     size_t getPredictions(uint8_t * buffer, size_t length, size_t byte);
+    size_t availableBytes(size_t byte);
 
 private:
 

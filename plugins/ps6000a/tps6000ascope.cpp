@@ -1149,6 +1149,19 @@ size_t TPS6000aScope::downloadSamples(int channel, uint8_t * buffer, size_t buff
             return 0;
         }
 
+        psAction = PICO_CLEAR_ALL;
+
+        for (uint64_t i = 0; i < capturesR; i++) {
+            status = ps6000aSetDataBuffer(m_handle, psChannel, NULL, psSamples, PICO_INT16_T, i, PICO_RATIO_MODE_RAW, psAction);
+            if (status) {
+                qWarning("Failed to release receiving buffer");
+                *samplesPerTraceDownloaded = 0;
+                *tracesDownloaded = 0;
+                return 0;
+            }
+            psAction = PICO_CLEAR_ALL;
+        }
+
     } else {
 
         PICO_ACTION psAction = (PICO_ACTION) (PICO_CLEAR_ALL | PICO_ADD);
@@ -1164,6 +1177,16 @@ size_t TPS6000aScope::downloadSamples(int channel, uint8_t * buffer, size_t buff
         status = ps6000aGetValues(m_handle, 0, &psSamples, 1, PICO_RATIO_MODE_RAW, 0, over.get());
         if (status || psSamples != (m_preTrigSamples + m_postTrigSamples)){
             qWarning("Failed to receive the data");
+            *samplesPerTraceDownloaded = 0;
+            *tracesDownloaded = 0;
+            return 0;
+        }
+
+        psAction = PICO_CLEAR_ALL;
+
+        status = ps6000aSetDataBuffer(m_handle, psChannel, NULL, m_preTrigSamples + m_postTrigSamples, PICO_INT16_T, 0, PICO_RATIO_MODE_RAW, psAction);
+        if (status){
+            qWarning("Failed to release receiving buffer");
             *samplesPerTraceDownloaded = 0;
             *tracesDownloaded = 0;
             return 0;

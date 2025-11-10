@@ -7,7 +7,7 @@
 #include "tttestoutputstream.h"
 #include "ttest.hpp"
 
-TTTestDevice::TTTestDevice() {
+TTTestDevice::TTTestDevice(): m_traceLength(0), m_numberOfClasses(0), m_traceType("Unsigned 8 bit"), m_order(1), m_inputFormat(0), m_labelType("Unsigned 8 bit") {
     m_preInitParams = TConfigParam("Welch's t-test configuration", "", TConfigParam::TType::TDummy, "");
     TConfigParam traceLength = TConfigParam("Trace length (in samples)", "1000", TConfigParam::TType::TUInt, "The number of samples per data trace");
     m_preInitParams.addSubParam(traceLength);
@@ -161,7 +161,7 @@ void TTTestDevice::init(bool *ok) {
             for (int j = i + 1; j < m_numberOfClasses; j++) {
 
                 QString streamName = QString("%1-order t-vals %2 vs %3").arg(order).arg(i).arg(j);
-                m_analInputStreams.append(new TTTestInputStream(streamName, "Stream of t-values", [=, class1 = i, class2 = j, order0 = order](uint8_t * buffer, size_t length){ return getTValues(buffer, length, class1, class2, order0); }));
+                m_analInputStreams.append(new TTTestInputStream(streamName, "Stream of t-values", [=, class1 = i, class2 = j, order0 = order](uint8_t * buffer, size_t length){ return getTValues(buffer, length, class1, class2, order0); }, [=, class1 = i, class2 = j, order0 = order](){ return availableBytes(class1, class2, order0); }));
 
                 m_tvals.append(new SICAK::Matrix<qreal>());
                 m_position.append(0);
@@ -278,6 +278,8 @@ void TTTestDevice::resetContexts() {
         m_position[i] = m_tvals[i]->cols()*sizeof(qreal);
     }
 
+    qInfo("All previously submitted or computed (unread) data have been erased.");
+
 }
 
 size_t TTTestDevice::addLabeledTraces(const uint8_t * buffer, size_t length){
@@ -333,6 +335,8 @@ void TTTestDevice::computeTVals(){
 
     size_t sampleSize = getTypeSize(m_traceType);
 
+    qInfo("Unread t-values were erased. The submitted data will be added to all the previously submitted data (unless the Reset action was run), and the new t-values will be computed upon all of these.");
+
     // Process nonLabeledTraces
     for(int i=0; i < m_numberOfClasses; i++){
 
@@ -342,6 +346,8 @@ void TTTestDevice::computeTVals(){
         }
 
         size_t noOfTraces = m_nonLabeledTraces[i].size() / (sampleSize * m_traceLength);
+
+        qInfo(QString("Now processing %1 bytes of data (%2 power traces) belonging to class %3.").arg(m_nonLabeledTraces[i].size()).arg(noOfTraces).arg(i).toLatin1());
 
         if(noOfTraces > 0){
 
@@ -393,9 +399,11 @@ void TTTestDevice::computeTVals(){
     if(noOfTraces != noOfLabels){
         qCritical("Mismatching number of traces and labels");
         return;
-    }
+    }        
 
     if(noOfTraces > 0) {
+
+        qInfo(QString("Now processing %1 bytes of data (%2 labeled power traces).").arg(m_traces.size()).arg(noOfTraces).toLatin1());
 
         for(int i = 0; i < noOfTraces; i++){
 
@@ -469,6 +477,7 @@ void TTTestDevice::computeTVals(){
         }
     }
 
+    qInfo(QString("Generated %1 bytes of data (%2 t-values and %2 d.o.f.) on every stream, now available for reading.").arg(m_tvals[0]->size()).arg(m_traceLength).toLatin1());
 }
 
 size_t TTTestDevice::getTValues(uint8_t * buffer, size_t length, size_t class1, size_t class2, size_t order){
@@ -483,11 +492,36 @@ size_t TTTestDevice::getTValues(uint8_t * buffer, size_t length, size_t class1, 
 
                     int sent = 0;
 
-                    for (sent = 0; m_position[k] < (m_tvals[k]->cols() * sizeof(qreal)) && sent < length; sent++, m_position[k]++) {
+                    //for (sent = 0; m_position[k] < (m_tvals[k]->cols() * sizeof(qreal)) && sent < length; sent++, m_position[k]++) {
+                    for (sent = 0; m_position[k] < (m_tvals[k]->size()) && sent < length; sent++, m_position[k]++) {
                         buffer[sent] = *(reinterpret_cast<uint8_t *>(m_tvals[k]->data()) + m_position[k]);
                     }
 
                     return sent;
+
+                }
+
+                k++;
+
+            }
+        }
+    }
+
+    return 0;
+
+}
+
+size_t TTTestDevice::availableBytes(size_t class1, size_t class2, size_t order){
+
+    int k = 0;
+
+    for(int orderIdx = 1; orderIdx <= m_order; orderIdx++){
+        for (int i = 0; i < m_numberOfClasses; i++) {
+            for (int j = i + 1; j < m_numberOfClasses; j++) {
+
+                if(orderIdx == order && i == class1 && j == class2) {
+
+                    return m_tvals[k]->size() - m_position[k];
 
                 }
 

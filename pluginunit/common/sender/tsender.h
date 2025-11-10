@@ -10,6 +10,9 @@ class TSender : public QObject
 public:
     explicit TSender(QObject * parent = nullptr);
 
+    virtual QString name();
+    virtual QString info();
+
     bool isBusy();
 
 public slots:
