@@ -63,17 +63,19 @@ public:
 
         if(dataToLog.size() > SCENARIO_LOG_ENTRY_SIZE_LIMIT) {
             if(m_params.getSubParamByName("Log format")->getValue() == "hex") {
-                log(QString("%1 ... skipping %2 bytes ... %3")
+                log(QString("%1 ... skipping %2 bytes ... %3 (total length %4 bytes)")
                     .arg(dataToLog.first(5).toHex(' '))
                     .arg(dataToLog.length() - 10)
                     .arg(dataToLog.last(5).toHex(' '))
+                    .arg(dataToLog.length())
                 );
             }
             else {
-                log(QString("%1 ... skipping %2 bytes ... %3")
+                log(QString("%1 ... skipping %2 bytes ... %3 (total length %4 bytes)")
                     .arg(dataToLog.first(5))
                     .arg(dataToLog.length() - 10)
                     .arg(dataToLog.last(5))
+                    .arg(dataToLog.length())
                 );
             }
         }
