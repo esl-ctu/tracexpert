@@ -463,7 +463,7 @@ void TCommunicationDeviceWidget::dataReceived(QByteArray data, TReceiverModel * 
 
     QString selectedProtocolName = m_receiveProtocolComboBox->currentText();
 
-    if(selectedProtocolName == "No protocol") {
+    if(selectedProtocolName == "raw data") {
         m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Received " + QString::number(data.size()) + " B" + originString + "</b>"));
         m_communicationLogTextEdit->appendHtml("<div style=\"color:red\">" + byteArraytoHumanReadableString(data) + "</div>");
         return;
