@@ -152,7 +152,6 @@ TScenarioItem * TScenarioItem::createScenarioItemByClass(TScenarioItem::TItemCla
         case TScenarioItem::TItemClass::TScenarioItem:
             return new TScenarioItem();
         default:
-            qWarning("Failed to instantiate scenario item: unknown item class");
             return nullptr;
     }
 }
