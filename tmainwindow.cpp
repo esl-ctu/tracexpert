@@ -18,7 +18,7 @@
 #include "project/tprojectview.h"
 #include "project/tprojectmodel.h"
 #include "protocol/tprotocolwidget.h"
-
+#include "tdialog.h"
 
 TMainWindow::TMainWindow(TLogHandler * logHandler, QWidget * parent)
     : QMainWindow(parent)
@@ -368,6 +368,8 @@ void TMainWindow::openProject()
     openDialog.setDirectory(m_projectDirectory);
     if (!openDialog.exec()) return;
 
+    TLoadingDialog * loadingDialog = TLoadingDialog::showDialog(this, "Loading project...");
+
     if (m_projectModel)
         closeProject();
 
@@ -401,10 +403,12 @@ void TMainWindow::openProject()
             m_projectModel = nullptr;
         }
 
+        loadingDialog->closeAndDeleteLater();
         return;
     }
 
     createProjectDockWidget(m_projectModel);
+    loadingDialog->closeAndDeleteLater();
 }
 
 void TMainWindow::saveProject(bool saveAs)

@@ -2,6 +2,7 @@
 #define TDIALOG_H
 
 #include <QDialog>
+#include <QLabel>
 
 #include "widgets/tconfigparamwidget.h"
 #include "pluginunit/component/tcomponentmodel.h"
@@ -117,6 +118,19 @@ class TPluginUnitInfoDialog : public QDialog
 {
 public:
     explicit TPluginUnitInfoDialog(TPluginUnitModel * unit, QWidget * parent = nullptr);
+};
+
+class TLoadingDialog : public QDialog
+{
+    Q_OBJECT
+public:
+    explicit TLoadingDialog(QWidget *parent = nullptr);
+
+    static TLoadingDialog* showDialog(QWidget *parent, const QString &text = "Please wait...");
+
+    void closeAndDeleteLater();
+private:
+    QLabel * m_label;
 };
 
 #endif // TDIALOG_H
