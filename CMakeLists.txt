@@ -92,6 +92,8 @@ add_executable(${PROJECT_NAME} WIN32
     pluginunit/common/sender/tsendermodel.h
     pluginunit/common/widgets/tcommunicationdevicewidget.cpp
     pluginunit/common/widgets/tcommunicationdevicewidget.h
+    pluginunit/common/widgets/tcommunicationlogwidget.cpp
+    pluginunit/common/widgets/tcommunicationlogwidget.h
     pluginunit/component/tcomponentcontainer.cpp
     pluginunit/component/tcomponentcontainer.h
     pluginunit/component/tcomponentmodel.cpp

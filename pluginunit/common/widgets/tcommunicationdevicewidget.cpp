@@ -28,12 +28,6 @@ TCommunicationDeviceWidget::TCommunicationDeviceWidget(TAnalDeviceModel * device
 void TCommunicationDeviceWidget::init() {
     setFocusPolicy(Qt::ClickFocus);
 
-    m_communicationLogTextEdit = new QPlainTextEdit;
-    QFont f("unexistent");
-    f.setStyleHint(QFont::Monospace);
-    m_communicationLogTextEdit->setFont(f);
-    m_communicationLogTextEdit->setReadOnly(true);
-
     m_paramWidget = new TConfigParamWidget(m_deviceModel->postInitParams());
 
     QPushButton * applyButton = new QPushButton(tr("Apply"));
@@ -45,26 +39,9 @@ void TCommunicationDeviceWidget::init() {
 
     QHBoxLayout * textParamLayout = new QHBoxLayout;
 
-    QVBoxLayout * comLogLayout = new QVBoxLayout;
+    m_logWidget = new TCommunicationLogWidget(m_senderModels, m_receiverModels, m_selectedProtocol, m_messageToBeSent, this);
 
-    comLogLayout->addWidget(m_communicationLogTextEdit);
-
-    QHBoxLayout * comLogSettingsLayout = new QHBoxLayout;
-
-    m_logFormat = new QComboBox;
-    m_logFormat->addItem("Show only hexadecimal values");
-    m_logFormat->addItem("Show human-readable string when possible");
-    comLogSettingsLayout->addWidget(m_logFormat);
-
-    QPushButton * clearButton = new QPushButton;
-    clearButton->setText("Clear");
-    connect(clearButton, &QPushButton::clicked, m_communicationLogTextEdit, &QPlainTextEdit::clear);
-    connect(clearButton, &QPushButton::clicked, this, [=](){ for (int i = 0; i < m_receivedData.length(); i++) m_receivedData[i]->clear(); });
-    comLogSettingsLayout->addWidget(clearButton);
-
-    comLogLayout->addLayout(comLogSettingsLayout);
-
-    textParamLayout->addLayout(comLogLayout);
+    textParamLayout->addWidget(m_logWidget);
     textParamLayout->addLayout(paramLayout);
 
     QGroupBox * textParamBox = new QGroupBox;
@@ -171,18 +148,6 @@ void TCommunicationDeviceWidget::init() {
     connect(receiveButton, &QPushButton::clicked, this, &TCommunicationDeviceWidget::receiveBytes);
     connect(m_receiveBytesEdit, &QLineEdit::textChanged, this, [=](){receiveButton->setEnabled(m_receiveBytesEdit->hasAcceptableInput());});
 
-    for (int i = 0; i < m_receiverModels.length(); i++) {
-        connect(m_receiverModels[i], &TReceiverModel::readBusy, this, &TCommunicationDeviceWidget::receiveBusy);
-        connect(m_receiverModels[i], &TReceiverModel::readFailed, this, &TCommunicationDeviceWidget::receiveFailed);
-        connect(m_receiverModels[i], &TReceiverModel::dataRead, this, [=](QByteArray data){ dataReceived(data, m_receiverModels[i]); });
-    }
-
-    for (int i = 0; i < m_senderModels.length(); i++) {
-        connect(m_senderModels[i], &TSenderModel::writeBusy, this, &TCommunicationDeviceWidget::sendBusy);
-        connect(m_senderModels[i], &TSenderModel::writeFailed, this, &TCommunicationDeviceWidget::sendFailed);
-        connect(m_senderModels[i], &TSenderModel::dataWritten, this, [=](QByteArray data){ dataSent(data, m_senderModels[i]); });
-    }
-
     QCheckBox * autoReceiveCheckbox = new QCheckBox;
     autoReceiveCheckbox->setChecked(false);
     connect(autoReceiveCheckbox, &QCheckBox::clicked, this, &TCommunicationDeviceWidget::setAutoreceive);
@@ -276,16 +241,10 @@ void TCommunicationDeviceWidget::init() {
     validateRawInputValues();
 
     setLayout(layout);
-
-    for (int i = 0; i < m_receiverModels.length(); i++)
-        m_receivedData.append(new QByteArray);
 }
 
 TCommunicationDeviceWidget::~TCommunicationDeviceWidget() {
     delete m_messageFormManager;
-
-    for (int i = 0; i < m_receiverModels.length(); i++)
-        delete m_receivedData[i];
 }
 
 bool TCommunicationDeviceWidget::validateRawInputValues() {
@@ -438,89 +397,6 @@ void TCommunicationDeviceWidget::receiveBytes()
     m_currentReceiverModel->readData(m_receiveBytesEdit->text().toInt());
 }
 
-void TCommunicationDeviceWidget::receiveBusy()
-{
-    TDialog::deviceFailedBusyMessage(this);
-}
-
-void TCommunicationDeviceWidget::receiveFailed()
-{
-    TDialog::deviceReceiveFailedMessage(this);
-}
-
-void TCommunicationDeviceWidget::dataReceived(QByteArray data, TReceiverModel * receiverModel)
-{
-    int modelIndex;
-    if ((modelIndex = m_receiverModels.indexOf(receiverModel)) >= 0)
-        m_receivedData[modelIndex]->append(data);
-
-    QTime time = QTime::currentTime();
-    QString formattedTime = time.toString("hh:mm:ss");
-
-    QString originString;
-    if (!receiverModel->name().isEmpty())
-        originString = QString(" (%1)").arg(receiverModel->name());
-
-    QString selectedProtocolName = m_receiveProtocolComboBox->currentText();
-
-    if(selectedProtocolName == "raw data") {
-        m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Received " + QString::number(data.size()) + " B" + originString + "</b>"));
-        m_communicationLogTextEdit->appendHtml("<div style=\"color:red\">" + byteArraytoHumanReadableString(data) + "</div>");
-        return;
-    }
-
-    bool protocolFound;
-    TProtocol selectedReceiveProtocol = m_protocolContainer->getByName(selectedProtocolName, &protocolFound);
-
-    if(!protocolFound) {
-        qWarning("Unknown protocol selected, could not interpret message.");
-        m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Received " + QString::number(data.size()) + " B" + originString + "</b>"));
-        m_communicationLogTextEdit->appendHtml("<div style=\"color:red\">" + byteArraytoHumanReadableString(data) + "</div>");
-        return;
-    }
-
-    TMessage matchedMessage = selectedReceiveProtocol.tryMatchResponse(data);
-
-    if(matchedMessage.getName().isEmpty()) {
-        qWarning("Received data could not be interpreted as any of the protocol's defined messages.");
-        m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Received " + QString::number(data.size()) + " B" + originString + "</b>"));
-        m_communicationLogTextEdit->appendHtml("<div style=\"color:red\">" + byteArraytoHumanReadableString(data) + "</div>");
-        return;
-    }
-
-    m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Received:" + originString + "</b>"));
-    m_communicationLogTextEdit->appendHtml("<div style=\"color:red\">" + matchedMessage.getPayloadSummary() + "</div>");
-}
-
-QString TCommunicationDeviceWidget::byteArraytoHumanReadableString(const QByteArray & byteArray)
-{
-    static QRegularExpression nonAsciiRegExp("[^ -~]");
-    bool isHumanReadable = !((QString)byteArray).contains(nonAsciiRegExp);
-
-    if(byteArray.size() <= DISPLAY_DATA_LENGTH_LIMIT) {
-        if(!isHumanReadable) {
-            return byteArray.toHex(' ');
-        }
-        else {
-            return "<i>\"" + QString(byteArray).toHtmlEscaped() + "\"</i>";
-        }
-    }
-    else {
-        if(!isHumanReadable) {
-            return QString("%1 ... <i>skipping %2 bytes</i> ... %3")
-            .arg(byteArray.first(5).toHex(' '))
-                .arg(byteArray.length() - 10)
-                .arg(byteArray.last(5).toHex(' '));
-        }
-        else {
-            return QString("<i>\"%1\" ... skipping %2 bytes ... \"%3\"</i>")
-            .arg(QString(byteArray.first(5)).toHtmlEscaped())
-                .arg(byteArray.length() - 10)
-                .arg(QString(byteArray.last(5)).toHtmlEscaped());
-        }
-    }
-}
-
 void TCommunicationDeviceWidget::sendBytes()
 {
     if(m_selectedProtocol.getName().isEmpty()) {
@@ -589,8 +465,7 @@ void TCommunicationDeviceWidget::sendFile(QString fileName)
 
 void TCommunicationDeviceWidget::receiveFile(QString fileName)
 {
-    int modelIndex;
-    if ((modelIndex = m_receiverModels.indexOf(m_currentReceiverModel)) < 0) {
+    if (!m_receiverModels.contains(m_currentReceiverModel)) {
         qWarning("No receive stream selected.");
         return;
     }
@@ -602,44 +477,7 @@ void TCommunicationDeviceWidget::receiveFile(QString fileName)
         return;
     }
 
-    file.write(*m_receivedData[modelIndex]);
+    file.write(m_logWidget->receivedData(m_currentReceiverModel));
 
     file.close();
-}
-
-void TCommunicationDeviceWidget::sendBusy()
-{
-    QTime time = QTime::currentTime();
-    QString formattedTime = time.toString("hh:mm:ss");
-    m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Failed to send data: device busy</b>"));
-
-    TDialog::deviceFailedBusyMessage(this);
-}
-
-void TCommunicationDeviceWidget::sendFailed()
-{
-    QTime time = QTime::currentTime();
-    QString formattedTime = time.toString("hh:mm:ss");
-    m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Failed to send data</b>"));
-
-    TDialog::deviceSendFailedMessage(this);
-}
-
-void TCommunicationDeviceWidget::dataSent(QByteArray data, TSenderModel * senderModel)
-{
-    QTime time = QTime::currentTime();
-    QString formattedTime = time.toString("hh:mm:ss");
-
-    QString originString;
-    if (!senderModel->name().isEmpty())
-        originString = QString(" (%1)").arg(senderModel->name());
-
-    m_communicationLogTextEdit->appendHtml(formattedTime + QString(" <b>Sent " + QString::number(data.size()) + " B" + originString + "</b>"));
-
-    if(data == m_messageToBeSent.getData()) {
-        m_communicationLogTextEdit->appendHtml("<div style=\"color:blue\">" + m_messageToBeSent.getPayloadSummary() + "</div>");
-    }
-    else {
-        m_communicationLogTextEdit->appendHtml("<div style=\"color:blue\">" + byteArraytoHumanReadableString(data) + "</div>");
-    }
 }

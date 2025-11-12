@@ -4,15 +4,13 @@
 #include <QLabel>
 #include <QComboBox>
 #include <QPushButton>
-#include <QPlainTextEdit>
 
 #include "../../protocol/tprotocolcontainer.h"
 #include "../../anal/tanaldevicemodel.h"
 #include "../../io/tiodevicemodel.h"
 #include "../../../common/widgets/tconfigparamwidget.h"
 #include "../tmessageformmanager.h"
-
-#define DISPLAY_DATA_LENGTH_LIMIT 300
+#include "tcommunicationlogwidget.h"
 
 class TCommunicationDeviceWidget : public QWidget
 {
@@ -27,9 +25,6 @@ public slots:
 
     void setAutoreceive(bool enabled);
     void receiveBytes();
-    void receiveBusy();
-    void receiveFailed();
-    void dataReceived(QByteArray data, TReceiverModel * receiverModel);
 
     void sendBytes();
     void sendRawBytes();
@@ -37,11 +32,6 @@ public slots:
 
     void sendFile(QString fileName);
     void receiveFile(QString fileName);
-
-    void sendBusy();
-    void sendFailed();
-    void dataSent(QByteArray data, TSenderModel * senderModel);
-    //void selectSendMessageValidator();
 
     bool validateRawInputValues();
 
@@ -59,8 +49,6 @@ private slots:
 
 private:
     void init();
-
-    QString byteArraytoHumanReadableString(const QByteArray & byteArray);
 
     TDeviceModel * m_deviceModel;
 
@@ -82,6 +70,8 @@ private:
     TMessageFormManager * m_messageFormManager;
     TMessage m_messageToBeSent;
 
+    TCommunicationLogWidget * m_logWidget;
+
     QLineEdit * m_receiveBytesEdit;
     QComboBox * m_receiveProtocolComboBox;
 
@@ -94,11 +84,6 @@ private:
     QLineEdit * m_rawMessageEdit;
     QComboBox * m_rawFormatComboBox;
     QHBoxLayout * m_rawMessageEditLayout;
-
-    QPlainTextEdit * m_communicationLogTextEdit;
-    QComboBox * m_logFormat;
-
-    QList<QByteArray *> m_receivedData;
 };
 
 #endif // TCOMMUNICATIONDEVICEWIDGET_H
