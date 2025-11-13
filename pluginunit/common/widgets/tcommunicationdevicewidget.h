@@ -17,12 +17,6 @@ public:
 public slots:
     bool applyPostInitParam();
 
-private slots:
-    void actionChanged(int index);
-
-    void runAction();
-    void abortAction();
-
 private:
     void init(TProtocolContainer * protocolContainer);
 
@@ -31,8 +25,6 @@ private:
     QList<TSenderModel *> m_senderModels;
     QList<TReceiverModel *> m_receiverModels;
     QList<TAnalActionModel *> m_actionModels;
-
-    TAnalActionModel * m_currentActionModel;
 
     TConfigParamWidget * m_paramWidget;
 };

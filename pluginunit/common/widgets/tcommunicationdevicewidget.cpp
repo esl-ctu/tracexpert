@@ -6,6 +6,7 @@
 #include "ttabgroupwidget.h"
 #include "tsenderwidget.h"
 #include "treceiverwidget.h"
+#include "tactionwidget.h"
 #include "tcommunicationlogwidget.h"
 
 TCommunicationDeviceWidget::TCommunicationDeviceWidget(TIODeviceModel * deviceModel, TProtocolContainer * protocolContainer, QWidget * parent)
@@ -73,54 +74,20 @@ void TCommunicationDeviceWidget::init(TProtocolContainer * protocolContainer) {
     layout->addWidget(textParamBox);
     layout->addLayout(sendReceiveLayout);
 
-    if (!m_actionModels.empty()) {        
-        QPushButton * runActionButton = new QPushButton(tr("Run"));
-        connect(runActionButton, &QPushButton::clicked, this, &TCommunicationDeviceWidget::runAction);
-
-        QPushButton * abortActionButton = new QPushButton(tr("Abort"));
-        abortActionButton->setDisabled(true);
-        connect(abortActionButton, &QPushButton::clicked, this, &TCommunicationDeviceWidget::abortAction);
-
-        QLabel * actionLabel = new QLabel(tr("Action"));
-
-        QComboBox * actionComboBox = new QComboBox;
-
+    if (!m_actionModels.isEmpty()) {
+        TTabGroupWidget * actionsBox = new TTabGroupWidget("Actions", false);
         for (int i = 0; i < m_actionModels.length(); i++) {
-            actionComboBox->addItem(m_actionModels[i]->name());
-            connect(m_actionModels[i], &TAnalActionModel::started, actionComboBox, [=](){ actionComboBox->setDisabled(true); runActionButton->setDisabled(true); abortActionButton->setDisabled(false); });
-            connect(m_actionModels[i], &TAnalActionModel::finished, actionComboBox, [=](){ actionComboBox->setDisabled(false); runActionButton->setDisabled(!m_currentActionModel->isEnabled()); abortActionButton->setDisabled(true); });
+            TActionWidget * actionWidget = new TActionWidget(m_actionModels[i]);
+            actionsBox->addWidget(actionWidget, m_actionModels[i]->name(), m_actionModels[i]->info());
+            for (int j = 0; j < m_actionModels.length(); j++) {
+                connect(m_actionModels[j], &TAnalActionModel::started, actionWidget, [=](){ actionWidget->actionStarted(m_actionModels[j]); });
+                connect(m_actionModels[j], &TAnalActionModel::finished, actionWidget, &TActionWidget::actionFinished);
+            }
         }
-
-        actionComboBox->setCurrentIndex(0);
-        actionChanged(0);
-        connect(actionComboBox, &QComboBox::currentIndexChanged, this, &TCommunicationDeviceWidget::actionChanged);
-        connect(actionComboBox, &QComboBox::currentIndexChanged, this, [=](int index){ runActionButton->setDisabled(!m_currentActionModel->isEnabled()); });
-
-        QHBoxLayout * actionLayout = new QHBoxLayout;
-        actionLayout->addWidget(actionLabel);
-        actionLayout->addWidget(actionComboBox);
-        actionLayout->addWidget(runActionButton);
-        actionLayout->addWidget(abortActionButton);
-
-        layout->addLayout(actionLayout);
+        layout->addWidget(actionsBox);
     }
 
     setLayout(layout);
-}
-
-void TCommunicationDeviceWidget::actionChanged(int index)
-{
-    m_currentActionModel = m_actionModels[index];
-}
-
-void TCommunicationDeviceWidget::runAction()
-{
-    emit m_currentActionModel->run();
-}
-
-void TCommunicationDeviceWidget::abortAction()
-{
-    emit m_currentActionModel->abort();
 }
 
 bool TCommunicationDeviceWidget::applyPostInitParam()

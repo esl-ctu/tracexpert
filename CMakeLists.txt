@@ -21,6 +21,7 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
 add_subdirectory(ads)
 
@@ -184,9 +185,11 @@ add_executable(${PROJECT_NAME} WIN32
     pluginunit/common/widgets/ttabgroupwidget.h pluginunit/common/widgets/ttabgroupwidget.cpp
     pluginunit/common/widgets/treceiverwidget.h pluginunit/common/widgets/treceiverwidget.cpp
     pluginunit/common/widgets/tsenderwidget.h pluginunit/common/widgets/tsenderwidget.cpp
+    pluginunit/common/widgets/tactionwidget.h pluginunit/common/widgets/tactionwidget.cpp
 )
 
 
+target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
