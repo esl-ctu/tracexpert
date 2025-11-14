@@ -776,7 +776,7 @@ bool TNewae::readFromTarget(uint8_t cwId, size_t * size, void * out, size_t buff
     QList<QString> params;
     if (func == "read") {
         params.append(QString::number(bufferSize));
-        params.append(QString::number(5));
+        params.append(QString::number(25));
         packagePythonFunction(cwId, func, 2, params , toSend, true);
     } else if (func == "readOutput") {
         packagePythonFunction(cwId, func, 0, params , toSend, true);
@@ -1000,16 +1000,19 @@ bool TNewae::writeBinaryToPython(uint8_t cwId, const char * data, size_t len, bo
     QByteArray b64 = raw.toBase64();
     b64.append('\n');
 
+    pythonProcessMutex.lock();
     int succ;
     succ = pythonProcess->write(b64);
 
     if (succ == -1){
+        pythonProcessMutex.unlock();
         return false;
     }
 
     if (wait){
         succ = pythonProcess->waitForBytesWritten();
     }
+    pythonProcessMutex.unlock();
 
     if (succ == -1){
         return false;
@@ -1027,17 +1030,19 @@ bool TNewae::writeBinaryToPython(uint8_t cwId, const char * data, size_t len, bo
 }
 
 void TNewae::callbackPythonError() {
+    pythonProcessMutex.lock();
     QString data = pythonProcess->readAllStandardError();
+    pythonProcessMutex.unlock();
     qWarning("%s", (("NewAE python component returned the following error (this might or might not be recoverable): " + data)).toLocal8Bit().constData());
 }
 
 void TNewae::checkForPythonState(){
     QString buff;
 
-    pythonProcessStdOutMutex.lock();
+    pythonProcessMutex.lock();
     //pythonProcessStdOutData = pythonProcessStdOutData + pythonProcess->readAllStandardOutput();
     buff = pythonProcess->readAllStandardOutput();
-    pythonProcessStdOutMutex.unlock();
+    pythonProcessMutex.unlock();
 
     //najít DONE/STARTED/NOTCN/ERROR
     //vyzobat to z toho pro všechny dostupný CW
@@ -1128,29 +1133,37 @@ void TNewae::checkForPythonState(){
 
 
 bool TNewae::waitForPythonDone(uint8_t cwId, int timeout/* = 30000*/){
+    pythonProcessMutex.lock();
     if (timeout < 50)
         pythonProcess->waitForReadyRead(timeout);
+    pythonProcessMutex.unlock();
 
     for (int i = 0; i < timeout/50; ++i) {
         if (pythonReady[cwId]){
 
             break;
         }
+        pythonProcessMutex.lock();
         pythonProcess->waitForReadyRead(50);
+        pythonProcessMutex.unlock();
     }
 
     return pythonReady[cwId];
 }
 
 bool TNewae::waitForPythonTargetDone(uint8_t cwId, int timeout/* = 30000*/){
+    pythonProcessMutex.lock();
     if (timeout < 50)
         pythonProcess->waitForReadyRead(timeout);
+    pythonProcessMutex.unlock();
 
     for (int i = 0; i < timeout/50; ++i) {
         if (pythonTargetReady[cwId]){
             break;
         }
+        pythonProcessMutex.lock();
         pythonProcess->waitForReadyRead(50);
+        pythonProcessMutex.unlock();
     }
 
     return pythonTargetReady[cwId];

@@ -172,7 +172,7 @@ protected:
     size_t shmSize;
     size_t targetShmSize;
 
-    QMutex pythonProcessStdOutMutex;
+    QMutex pythonProcessMutex;
     //QString pythonProcessStdOutData;
 };
 

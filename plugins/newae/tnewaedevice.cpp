@@ -586,8 +586,6 @@ size_t TnewaeDevice::writeData(const uint8_t * buffer, size_t len){
 }
 
 void TnewaeDevice::performHardwareRead() {
-    QMutexLocker locker(&m_readMutex);
-
     QByteArray tmp;
     tmp.resize(4096); // read in chunks of up to 4 KiB per call
 
@@ -614,6 +612,8 @@ void TnewaeDevice::performHardwareRead() {
 }
 
 size_t TnewaeDevice::readData(uint8_t * buffer, size_t len){
+    QMutexLocker locker(&m_readMutex);
+
     if (!m_lastReadTimer.isValid())
         m_lastReadTimer.start();
 
@@ -621,8 +621,6 @@ size_t TnewaeDevice::readData(uint8_t * buffer, size_t len){
         m_lastReadTimer.restart();
         performHardwareRead();
     }
-
-    QMutexLocker locker(&m_readMutex);
 
     const size_t toCopy = std::min<size_t>(len, m_readBuffer.size());
     if (toCopy == 0)
