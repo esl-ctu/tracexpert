@@ -24,6 +24,10 @@ public:
         return new TScenarioScopeSingleItem(*this);
     }
 
+    bool supportsDirectExecution() const override {
+        return false;
+    }
+
     TConfigParam setParams(TConfigParam params) override {
         TConfigParam paramsToReturn = TScenarioScopeItem::setParams(params);
 
@@ -35,6 +39,8 @@ public:
 
     void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
         checkAndSetInitParamsBeforeExecution();
+
+        clearOutputData();
 
         connect(m_deviceModel, &TScopeModel::runFailed, this, &TScenarioScopeItem::runFailed);
         connect(m_deviceModel, &TScopeModel::stopFailed, this, &TScenarioScopeItem::stopFailed);

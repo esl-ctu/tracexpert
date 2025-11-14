@@ -63,6 +63,7 @@ void TReceiverModel::disableAutoRead()
 
 void TReceiverModel::dataReceived(QByteArray data)
 {
+    m_receivedData.append(data);
     emit dataRead(data);
     m_receiving = m_autoReceive;
 }
@@ -76,4 +77,14 @@ void TReceiverModel::receiveFailed()
 bool TReceiverModel::isBusy()
 {
     return m_receiver->isBusy();
+}
+
+QByteArray TReceiverModel::receivedData() const
+{
+    return m_receivedData;
+}
+
+void TReceiverModel::clearReceivedData()
+{
+    m_receivedData.clear();
 }

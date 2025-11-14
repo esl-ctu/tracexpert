@@ -18,11 +18,15 @@ public:
 
     bool isBusy();
 
+    QByteArray receivedData() const;
+
 public slots:
     void readData(int length);
 
     void enableAutoRead();
     void disableAutoRead();
+
+    void clearReceivedData();
 
 signals:
     void dataRead(QByteArray data);
@@ -38,6 +42,8 @@ private:
     QThread * m_receiverThread;
     bool m_receiving;
     bool m_autoReceive;
+
+    QByteArray m_receivedData;
 
 signals:
     void receiveData(int length);

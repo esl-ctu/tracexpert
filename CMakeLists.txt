@@ -18,6 +18,10 @@ set(CMAKE_SHARED_LIBRARY_PREFIX "")
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Charts Xml Concurrent)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts Xml Concurrent)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
 add_subdirectory(ads)
 
@@ -92,6 +96,8 @@ add_executable(${PROJECT_NAME} WIN32
     pluginunit/common/sender/tsendermodel.h
     pluginunit/common/widgets/tcommunicationdevicewidget.cpp
     pluginunit/common/widgets/tcommunicationdevicewidget.h
+    pluginunit/common/widgets/tcommunicationlogwidget.cpp
+    pluginunit/common/widgets/tcommunicationlogwidget.h
     pluginunit/component/tcomponentcontainer.cpp
     pluginunit/component/tcomponentcontainer.h
     pluginunit/component/tcomponentmodel.cpp
@@ -176,9 +182,17 @@ add_executable(${PROJECT_NAME} WIN32
     graphs/tgraphwidget.cpp
     graphs/tgraph.h
     graphs/tcpagraph.h
+    pluginunit/common/widgets/ttabgroupwidget.h pluginunit/common/widgets/ttabgroupwidget.cpp
+    pluginunit/common/widgets/treceiverwidget.h pluginunit/common/widgets/treceiverwidget.cpp
+    pluginunit/common/widgets/tsenderwidget.h pluginunit/common/widgets/tsenderwidget.cpp
+    pluginunit/common/widgets/tactionwidget.h pluginunit/common/widgets/tactionwidget.cpp
 )
 
 
+target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_include_directories(${PROJECT_NAME} PRIVATE common)
 
