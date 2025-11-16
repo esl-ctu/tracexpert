@@ -42,7 +42,7 @@ After the **Compute t-values (+ flush streams)** action finishes, the t-values a
 1. **1-order t-vals 0 vs 1** contains results for t-test between classes 0 and 1
 2. ...
 
-Each output stream contains N t-values followed by N degrees of freedom, where N is the number of samples in a trace.  
+Each output stream contains N t-values followed by N degrees of freedom, where N is the number of samples in a trace. Both the t-values and the degrees of freedom are a 8 bytes long real numbers (double).
 
 ### Example usage
 
