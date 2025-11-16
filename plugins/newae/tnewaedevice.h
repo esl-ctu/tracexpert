@@ -42,6 +42,8 @@ public:
     uint8_t getId();
     QString getDeviceSn();
 
+    bool m_initialized;
+
 protected:
     //void _openPort(bool *ok = nullptr);
     TConfigParam _createPostInitParams();
@@ -64,7 +66,7 @@ protected:
     TConfigParam m_postInitParams;
     qint32 m_readTimeout;
     qint32 m_writeTimeout;
-    bool m_initialized;
+
     const QString READ_ONLY_STRING = "alwaysRunFunc";
     const QString WRITE_ONLY_STRING = "writeOnlyFunc";
 

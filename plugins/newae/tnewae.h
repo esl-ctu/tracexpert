@@ -96,6 +96,8 @@ public:
 
     TnewaeScope * getCWScopeObjectById(uint8_t id);
 
+    bool setUpAndTestSHM(uint8_t cwId);
+
     //In this block, cwId is only used for identification if the correct CW is being accessed
     bool writeToPython(uint8_t cwId, const QString &data, bool asTarget = false, bool responseExpected = true, bool wait = true);
     bool writeBinaryToPython(uint8_t cwId, const char * data, size_t len, bool asTarget = false, bool responseExpected = true, bool wait = true);
@@ -105,6 +107,8 @@ public:
 
     //In this block, CW is super important
     void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
+    void packageErrorProcessed(uint8_t cwId, QString &out, bool asTarget = false);
+    bool sendPythonErrorProcessed(int8_t cwId, bool asTarget = false);
     bool runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out, bool asTarget = false);
     bool runPythonFunctionWithBinaryDataAsOneArgumentAndGetStringOutput(int8_t cwId, QString functionName, char * data, size_t lenIn, size_t &dataLen, QString &out, bool asTarget = false);
     bool runPythonFunctionOnAnObjectAndGetStringOutput(int8_t cwId, QString ObjectName, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out, bool asTarget = false);
@@ -133,7 +137,6 @@ protected:
     bool setUpPythonProcess();
     bool testSHM(uint8_t cwId);
     bool autodetectDevices(QList<std::pair<QString, QString>> & devices);
-    bool setUpAndTestSHM(uint8_t cwId);
 
     bool getDataFromShm(size_t &size, QString &data, uint8_t cwId, bool asTarget = false);
     bool getDataFromShm(size_t * size, void * data, uint8_t cwId, size_t bufferSize, bool asTarget = false);

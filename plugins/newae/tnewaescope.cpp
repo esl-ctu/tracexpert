@@ -328,6 +328,14 @@ TScope::TTriggerStatus TnewaeScope::getTriggerStatus() {
 
 void TnewaeScope::notConnectedError() {
     qWarning("%s", (QString("NewAE device with serial number ") + QString(sn) + QString(" was disconnected. Please de-init and re-init the scope and device.")).toLocal8Bit().constData());
+    m_initialized = false;
+    auto ios = plugin->getIODevices();
+    for (auto it = ios.begin(); it != ios.end(); ++it) {
+        TnewaeDevice * tmp =  (TnewaeDevice *) *it;
+        if (tmp->getId() == cwId) {
+            tmp->m_initialized = false;
+        }
+    }
 }
 
 bool TnewaeScope::isInitialized(){
@@ -535,6 +543,8 @@ void TnewaeScope::init(bool *ok/* = nullptr*/){
     }
     sn = tmpSn->getValue();
 
+    succ = plugin->setUpAndTestSHM(cwId);
+
     QString toSend;
     QList<QString> params;
     params.append(sn);
@@ -568,13 +578,13 @@ void TnewaeScope::deInit(bool *ok/* = nullptr*/){
     m_initialized = false;
 
     //TODO!!!
-    /*auto ios = plugin->getIODevices();
+    auto ios = plugin->getIODevices();
     for (auto it = ios.begin(); it != ios.end(); ++it) {
         TnewaeDevice * tmp =  (TnewaeDevice *) *it;
         if (tmp->getId() == cwId) {
             tmp->deInit();
         }
-    }*/
+    }
 
     QString toSend;
     QList<QString> params;
