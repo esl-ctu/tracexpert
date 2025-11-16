@@ -26,6 +26,9 @@ void logMessageHandler(QtMsgType type, const QMessageLogContext &context, const 
 
 int main(int argc, char * argv[])
 {
+
+    qputenv("QT_QPA_PLATFORM", "windows:darkmode=0"); // disable dark mode on Windows until the wrong color palette is resolved
+
     QApplication a(argc, argv);
 
     gLogHandler = new TLogHandler;
