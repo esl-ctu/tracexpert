@@ -638,7 +638,10 @@ def callCwFunc(line, shm, dct):
             pass
 
     if functionName == "read" or functionName == "fpga_read" or functionName == "readOutput":
-        ret = tmp.encode('latin1')
+        try:
+            ret = tmp.encode('latin1')
+        except:
+            printToStdout("ERROR", asTarget, cwID) 
     else:
         ret = cwToStr(tmp) 
 
@@ -833,7 +836,7 @@ def consumerCw(queue, cwShmDict, cwDict):
             tmpline = line
             try:
                 callCwFunc(line.lower(), cwShmDict[cwID], cwDict)
-            except(USBError):
+            except:
                 sendCWNotConnected(tmpline)
 
         ## Call a method on an object from the CW package
@@ -842,7 +845,7 @@ def consumerCw(queue, cwShmDict, cwDict):
             tmpline = line
             try:
                 callCwFuncOnAnObject(line.lower(), cwShmDict[cwID], cwDict)
-            except(USBError):
+            except:
                 sendCWNotConnected(tmpline)
 
         ## Set or read a scope parameter
@@ -851,7 +854,7 @@ def consumerCw(queue, cwShmDict, cwDict):
             tmpline = line
             try:
                 cwParam(line.lower(), cwShmDict[cwID], cwDict)
-            except(USBError):
+            except:
                 sendCWNotConnected(tmpline)
 
         ## Set or read a scope subparameter 
@@ -860,7 +863,7 @@ def consumerCw(queue, cwShmDict, cwDict):
             tmpline = line
             try:
                 cwSubParam(line.lower(), cwShmDict[cwID], cwDict)
-            except(USBError):
+            except:
                 sendCWNotConnected(tmpline)
 
 def consumerTarget(queue, targetShmDict, targetDict):
@@ -886,7 +889,7 @@ def consumerTarget(queue, targetShmDict, targetDict):
                 else:
                     lineToForward = line[:11].lower() + line[11:]
                 callCwFunc(lineToForward, targetShmDict[cwID], targetDict)
-            except(USBError):
+            except:
                 sendCWNotConnected(tmpline)
 
         ## Call a method from the CW package on an object
@@ -895,7 +898,7 @@ def consumerTarget(queue, targetShmDict, targetDict):
             tmpline = line
             try:
                 callCwFuncOnAnObject(line[:11].lower() + line[11:], targetShmDict[cwID], targetDict)
-            except(USBError):
+            except:
                 sendCWNotConnected(tmpline)
 
         ## Set or read a target parameter
@@ -904,7 +907,7 @@ def consumerTarget(queue, targetShmDict, targetDict):
             tmpline = line
             try:
                 cwParam(line[:11].lower() + line[11:], targetShmDict[cwID], targetDict)
-            except(USBError):
+            except:
                 sendCWNotConnected(tmpline)
         
 
@@ -914,7 +917,7 @@ def consumerTarget(queue, targetShmDict, targetDict):
             tmpline = line
             try:
                 cwSubParam(line[:11].lower() + line[11:], targetShmDict[cwID], targetDict)
-            except(USBError):
+            except:
                 sendCWNotConnected(tmpline)
 
 def periodicRecovery(cwDict, cwQueueDict, targetDict, targetQueueDict, cwLastErrProcessedDict, targetLastErrProcessedDict):

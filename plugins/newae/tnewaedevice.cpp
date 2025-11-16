@@ -562,6 +562,9 @@ TConfigParam TnewaeDevice::setPostInitParams(TConfigParam params){
 }
 
 size_t TnewaeDevice::writeData(const uint8_t * buffer, size_t len){
+    if (!m_initialized)
+        return 0;
+
     if (len == 0)
         return 0;
 
@@ -612,6 +615,8 @@ void TnewaeDevice::performHardwareRead() {
 }
 
 size_t TnewaeDevice::readData(uint8_t * buffer, size_t len){
+    if (!m_initialized)
+        return 0;
     QMutexLocker locker(&m_readMutex);
 
     if (!m_lastReadTimer.isValid())
