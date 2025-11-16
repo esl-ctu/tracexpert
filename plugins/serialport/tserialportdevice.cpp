@@ -11,7 +11,7 @@ TSerialPortDevice::TSerialPortDevice(QString & name, QString & info):
 }
 
 TSerialPortDevice::TSerialPortDevice(const QSerialPortInfo &portInfo):
-    m_createdManually(false), m_portInfo(portInfo), m_name(portInfo.portName()), m_info(portInfo.description() + " " + portInfo.manufacturer() + " " + portInfo.serialNumber()), m_readTimeout(5000), m_writeTimeout(5000), m_initialized(false), m_osHandle()
+    m_createdManually(false), m_portInfo(portInfo), m_name(portInfo.portName()), m_info(portInfo.description() + " " + portInfo.manufacturer() + " " + portInfo.serialNumber()), m_readTimeout(5000), m_writeTimeout(5000), m_initialized(false), m_osHandle(0)
 {
 
     // Pre-init parameters are all read-only for automatically detected devices
