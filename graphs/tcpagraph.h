@@ -3,38 +3,56 @@
 
 #include <QValueAxis>
 #include <QScatterSeries>
+#include <QChart>
+#include <QChartView>
+#include <QLayout>
 
 #include "tgraph.h"
+
+#define ORD(n) (QString::number(n) + ((n%100>=11 && n%100<=13) ? "th" : QStringList({"th","st","nd","rd","th","th","th","th","th","th"}).at(n%10)))
 
 class TCPAGraph : public TGraph
 {
     Q_OBJECT
 
 public:
-    TCPAGraph() : TGraph("CPA"), m_hypothesisCount(256), m_sampleCount(1000) {
-        initParams();
+    TCPAGraph() :
+        TGraph("CPA"),
+        m_hypothesisCount(256),
+        m_sampleCount(1000),
+        m_highlightBy(THighlightBy::TProbabilityRank),
+        m_highlightByValue(1)
+    {
+        initGraphParams();
+        initInterpretationParams();
+
+        m_chart = new QChart();
+
+        QChartView * chartView = new QChartView(m_chart);
+        chartView->setRenderHint(QPainter::Antialiasing, false);
+
+        QLayout * layout = new QVBoxLayout();
+        layout->addWidget(chartView);
+
+        setLayout(layout);
     };
 
-    TCPAGraph(const QByteArray & matrix) : TGraph("CPA"), m_hypothesisCount(256), m_sampleCount(1000), m_matrix(matrix) {
-        initParams();
-        drawGraph();
-    }
-
-    TConfigParam setParams(TConfigParam params) override {
+    TConfigParam setGraphParams(TConfigParam params) override {
         if(!validateParamsStructure(params)) {
             params.setState(TConfigParam::TState::TError, tr("Wrong structure of the params."));
             return params;
         }
 
-        m_params = params;
+        m_graphParams = params;
 
-        TConfigParam * hypothesisCountParam = m_params.getSubParamByName("Number of key hypotheses");
-        TConfigParam * sampleCountParam = m_params.getSubParamByName("Number of samples");
+        // validate dimension params
+        TConfigParam * hypothesisCountParam = m_graphParams.getSubParamByName("Number of key hypotheses");
+        TConfigParam * sampleCountParam = m_graphParams.getSubParamByName("Number of samples");
 
         m_hypothesisCount = hypothesisCountParam->getValue().toInt();
         m_sampleCount = sampleCountParam->getValue().toInt();
 
-        if(!m_matrix.isEmpty() && !validateMatrixDimensions()) {
+        if(!m_data.isEmpty() && !validateMatrixDimensions()) {
             sampleCountParam->setState(TConfigParam::TState::TError, tr("Entered dimensions do not match data."));
             hypothesisCountParam->setState(TConfigParam::TState::TError, tr("Entered dimensions do not match data."));
         }
@@ -43,11 +61,61 @@ public:
             hypothesisCountParam->resetState();
         }
 
-        drawGraph();
-        return m_params;
+        // validate highlighted series
+        TConfigParam * highlightedSeriesParam = m_graphParams.getSubParamByName("Highlighted series");
+        TConfigParam * rankOrValueParam = highlightedSeriesParam->getSubParamByName("Highlight by");
+        TConfigParam * valueParam = highlightedSeriesParam->getSubParamByName("Value");
+
+        m_highlightBy = rankOrValueParam->getValue() == "Probability rank" ? THighlightBy::TProbabilityRank : THighlightBy::TValue;
+        m_highlightByValue = valueParam->getValue().toInt();
+
+        if(!validateHighlightByValue()) {
+            if(m_highlightBy == THighlightBy::TProbabilityRank) {
+                valueParam->setState(TConfigParam::TState::TError, tr("Value must be in the {1; hypothesis count} range."));
+            }
+            else if(m_highlightBy == THighlightBy::TValue) {
+                valueParam->setState(TConfigParam::TState::TError, tr("Value must be in the {0; hypothesis count-1} range."));
+            }
+        }
+        else {
+            valueParam->resetState();
+        }
+
+        return m_graphParams;
     }
 
-private:
+    void drawGraph() override {
+        initInterpretationParams();
+
+        if(!validateMatrixDimensions()) {
+            qWarning("CPA graph cannot be displayed, configured matrix dimensions do not match data.");
+            return;
+        }
+
+        if(!validateHighlightByValue()) {
+            qWarning("CPA graph cannot be displayed, highlighted series configuration invalid.");
+            return;
+        }
+
+        resetAxes();        
+        m_chart->removeAllSeries();
+
+        QList<quint32> hypothesesByCorrelation;
+        QList<double> absMaxCorrelationByHypothesis;
+        createSortedHypothesisList(hypothesesByCorrelation, absMaxCorrelationByHypothesis);
+
+        drawSeries(hypothesesByCorrelation);
+
+        // set interpretation results
+        createInterpretation(hypothesesByCorrelation, absMaxCorrelationByHypothesis);
+    }
+
+protected:
+    enum class THighlightBy {
+        TProbabilityRank = 0,
+        TValue = 1
+    };
+
     bool validateParamsStructure(TConfigParam params) {
         bool iok = false;
 
@@ -57,33 +125,65 @@ private:
         params.getSubParamByName("Number of samples", &iok);
         if(!iok) return false;
 
+        TConfigParam * highlightedSeriesParam = params.getSubParamByName("Highlighted series", &iok);
+        if(!iok) return false;
+
+        highlightedSeriesParam->getSubParamByName("Highlight by", &iok);
+        if(!iok) return false;
+
+        highlightedSeriesParam->getSubParamByName("Value", &iok);
+        if(!iok) return false;
+
         return true;
     }
 
-    void initParams() {
-        m_params = TConfigParam("Graph configuration and interpretation", "", TConfigParam::TType::TDummy, "");
-        m_params.addSubParam(TConfigParam("Number of key hypotheses", QString("%1").arg(m_hypothesisCount), TConfigParam::TType::TUInt, tr("Number of key hypotheses.")));
-        m_params.addSubParam(TConfigParam("Number of samples", QString("%1").arg(m_sampleCount), TConfigParam::TType::TUInt, tr("Number of samples.")));
+    void initGraphParams() {
+        m_graphParams = TConfigParam("Graph configuration", "", TConfigParam::TType::TDummy, "");
+        m_graphParams.addSubParam(TConfigParam("Number of key hypotheses", QString("%1").arg(m_hypothesisCount), TConfigParam::TType::TUInt, tr("Number of key hypotheses.")));
+        m_graphParams.addSubParam(TConfigParam("Number of samples", QString("%1").arg(m_sampleCount), TConfigParam::TType::TUInt, tr("Number of samples.")));
+
+        TConfigParam highlightedSeriesParam("Highlighted series", "", TConfigParam::TType::TDummy, tr("Select which series to highlight."));
+
+        TConfigParam rankOrValueParam("Highlight by", "Probability rank", TConfigParam::TType::TEnum, tr("Select if the value below represents probability rank or the key value."));
+        rankOrValueParam.addEnumValue("Probability rank");
+        rankOrValueParam.addEnumValue("Key value");
+        highlightedSeriesParam.addSubParam(rankOrValueParam);
+
+        TConfigParam valueParam("Value", "1", TConfigParam::TType::TUInt, tr("Probability rank/key value of series to highlight."));
+        highlightedSeriesParam.addSubParam(valueParam);
+
+        m_graphParams.addSubParam(highlightedSeriesParam);
     }
 
-    void clearGraph() {
-        legend()->hide();
-        removeAllSeries();
+    void initInterpretationParams() {
+        m_interpretationParams = TConfigParam("Interpretation", "", TConfigParam::TType::TDummy, tr("Interpretation of the displayed data."), true);
     }
 
     bool validateMatrixDimensions() {
-        return (m_matrix.size() / sizeof(double)) == (m_hypothesisCount * m_sampleCount);
+        return (m_data.size() / sizeof(double)) == (m_hypothesisCount * m_sampleCount);
     }
 
-    void createSortedHypothesisList(QList<quint32> & hypothesesByCorrelation) {
+    bool validateHighlightByValue() {
+        if(m_highlightBy == THighlightBy::TProbabilityRank && (m_highlightByValue < 1 || m_highlightByValue > m_hypothesisCount)) {
+            return false;
+        }
+        else if(m_highlightBy == THighlightBy::TValue && m_highlightByValue >= m_hypothesisCount) {
+            return false;
+        }
+
+        return true;
+    }
+
+    void createSortedHypothesisList(QList<quint32> & hypothesesByCorrelation, QList<double> & absMaxCorrelationByHypothesis) {
         QList<QPair<quint32, double>> hypothesisCorrelationMap;
         for(quint32 hypothesis = 0; hypothesis < m_hypothesisCount; hypothesis ++) {
             double max = 0.0;
             for(quint32 sampleIdx = 0; sampleIdx < m_sampleCount; sampleIdx ++) {
-                double value = ((double*)m_matrix.data())[hypothesis * m_sampleCount + sampleIdx];
+                double value = ((double*)m_data.data())[hypothesis * m_sampleCount + sampleIdx];
                 max = value > max ? value : max;
             }
             hypothesisCorrelationMap.append(qMakePair(hypothesis, max));
+            absMaxCorrelationByHypothesis.append(max);
         }
 
         std::sort(
@@ -99,96 +199,137 @@ private:
         }
     }
 
-    void prepareSeries(QList<QScatterSeries *> & series, quint32 count) {
-        for(quint32 i = 0; i < count; i++) {
-            series.append(new QScatterSeries());
+    void createInterpretation(const QList<quint32> & hypothesesByCorrelation, const QList<double> & absMaxCorrelationByHypothesis) {
+        quint32 rank = 1;
+
+        for (auto it = hypothesesByCorrelation.crbegin(); it != hypothesesByCorrelation.crend(); ++it) {
+            quint32 hypothesis = *it;
+
+            QString paramName = QString("%1 most probable hypothesis").arg(ORD(rank));
+            QString value = QString("0x%1").arg(hypothesis, 0, 16);
+            QString correlation = QString::number(absMaxCorrelationByHypothesis[hypothesis], 'f', 4);
+
+            TConfigParam hypothesisParam(paramName, "", TConfigParam::TType::TDummy, tr(""), true);
+            hypothesisParam.addSubParam(TConfigParam("Value", value, TConfigParam::TType::TString, tr(""), true));
+            hypothesisParam.addSubParam(TConfigParam("Abs. max. correlation", correlation, TConfigParam::TType::TString, tr(""), true));
+            m_interpretationParams.addSubParam(hypothesisParam);
+
+            rank++;
         }
 
-        // this is used to control the order of appearance of the series,
-        // as they are internally sorted by pointer inside QChart...
-        std::sort(series.begin(), series.end());
+        emit interpretationChanged();
     }
 
-    void drawGraph() {
-        // clear old series
-        clearGraph();
+    void createSeriesForHypothesis(quint32 hypothesis, QList<QScatterSeries *> & preparedSeries, double & min, double & max, bool highlight) {
+        QScatterSeries * series =  preparedSeries.first();
+        preparedSeries.pop_front();
 
-        // clear old interpretation results
-        m_params.removeSubParam("Interpretation");
+        series->setUseOpenGL(true);
+        series->setMarkerSize(5);
+        series->setColor(highlight ? QColor(32, 159, 223) : QColorConstants::DarkGray);
 
-        // validate matrix dimensions
-        if(!validateMatrixDimensions()) {
-            qWarning("CPA graph cannot be displayed, configured matrix dimensions do not match data.");
-            return;
+        QVector<QPointF> pointList;
+        for(quint32 sampleIdx = 0; sampleIdx < m_sampleCount; sampleIdx ++) {
+            double value = ((double*)m_data.data())[hypothesis * m_sampleCount + sampleIdx];
+            max = value > max ? value : max;
+            min = value < min ? value : min;
+            pointList.append(QPointF(sampleIdx, value));
         }
+        series->replace(pointList);
 
+        m_chart->addSeries(series);
+        series->attachAxis(m_axisX);
+        series->attachAxis(m_axisY);
+    }
+
+    void resetAxes() {
         // create X axis
-        if(!m_axisX) {
-            m_axisX = new QValueAxis();
-            m_axisX->setTitleText("Samples");
-            m_axisX->setLabelFormat("%g");
-            m_axisX->setRange(0, m_sampleCount);
-            addAxis(m_axisX, Qt::AlignBottom);
+        if(m_axisX) {
+            m_chart->removeAxis(m_axisX);
         }
+        m_axisX = new QValueAxis();
+        m_axisX->setTitleText("Samples");
+        m_axisX->setLabelFormat("%g");
+        m_axisX->setRange(0, m_sampleCount);
+        m_chart->addAxis(m_axisX, Qt::AlignBottom);
 
         // create Y axis
-        if(!m_axisY) {
-            m_axisY = new QValueAxis();
-            m_axisY->setTitleText("Pearson correlation coefficient");
-            m_axisY->setLabelFormat("%g");
-            addAxis(m_axisY, Qt::AlignLeft);
+        if(m_axisY) {
+            m_chart->removeAxis(m_axisY);
         }
+        m_axisY = new QValueAxis();
+        m_axisY->setTitleText("Pearson correlation coefficient");
+        m_axisY->setLabelFormat("%g");
+        m_axisY->setRange(-1, 1);
+        m_chart->addAxis(m_axisY, Qt::AlignLeft);
 
-        QList<quint32> hypothesesByCorrelation;
-        createSortedHypothesisList(hypothesesByCorrelation);
+        // hide chart legend
+        m_chart->legend()->hide();
+    }
 
-        QList<QScatterSeries *> preparedSeries;
-        prepareSeries(preparedSeries, m_hypothesisCount);
-
+    void drawSeries(QList<quint32> & hypothesesByCorrelation) {
         double max = -1.0;
         double min = 1.0;
 
-        // draw series
+        QScatterSeries * highlightedSeries = new QScatterSeries();
+        QScatterSeries * backgroundSeries = new QScatterSeries();
+
+        if(highlightedSeries < backgroundSeries) {
+            std::swap(highlightedSeries, backgroundSeries);
+        }
+
+        highlightedSeries->setUseOpenGL(true);
+        highlightedSeries->setMarkerSize(5);
+        highlightedSeries->setColor(QColor(32, 159, 223));
+
+        backgroundSeries->setUseOpenGL(true);
+        backgroundSeries->setMarkerSize(5);
+        backgroundSeries->setColor(QColorConstants::DarkGray);
+
+        QVector<QPointF> highlightedSeriesPointList;
+        QVector<QPointF> backgroundSeriesPointList;
+
+        quint32 rank = m_hypothesisCount;
         for(quint32 hypothesis : hypothesesByCorrelation) {
-            QScatterSeries * series = preparedSeries.first();
-            preparedSeries.pop_front();
+            QVector<QPointF> * targetPointList = &backgroundSeriesPointList;
 
-            series->setUseOpenGL(true);
-            series->setMarkerSize(5);
-
-            if(preparedSeries.size() > 0) {
-                series->setColor(QColorConstants::DarkGray);
+            if(Q_UNLIKELY(m_highlightBy == THighlightBy::TValue && hypothesis == m_highlightByValue) ||
+                (m_highlightBy == THighlightBy::TProbabilityRank && rank == m_highlightByValue))
+            {
+                targetPointList = &highlightedSeriesPointList;
             }
 
-            QVector<QPointF> pointList;
             for(quint32 sampleIdx = 0; sampleIdx < m_sampleCount; sampleIdx ++) {
-                double value = ((double*)m_matrix.data())[hypothesis * m_sampleCount + sampleIdx];
+                double value = ((double*)m_data.data())[hypothesis * m_sampleCount + sampleIdx];
                 max = value > max ? value : max;
                 min = value < min ? value : min;
-                pointList.append(QPointF(sampleIdx, value));
+                targetPointList->append(QPointF(sampleIdx, value));
             }
-            series->replace(pointList);
 
-            addSeries(series);
-            series->attachAxis(m_axisX);
-            series->attachAxis(m_axisY);
+            rank--;
         }
+
+        highlightedSeries->replace(highlightedSeriesPointList);
+        m_chart->addSeries(highlightedSeries);
+        highlightedSeries->attachAxis(m_axisX);
+        highlightedSeries->attachAxis(m_axisY);
+
+        backgroundSeries->replace(backgroundSeriesPointList);
+        m_chart->addSeries(backgroundSeries);
+        backgroundSeries->attachAxis(m_axisX);
+        backgroundSeries->attachAxis(m_axisY);
 
         m_axisY->setRange(min, max);
         m_axisY->applyNiceNumbers();
-
-        // set interpretation results
-        TConfigParam interpretParam(TConfigParam("Interpretation", "", TConfigParam::TType::TDummy, tr("Interpretation of the displayed data."), true));
-        TConfigParam bestHypothesisValueParam("Most probable key hypothesis value", "", TConfigParam::TType::TString, tr(""), true);
-        bestHypothesisValueParam.setValue(QString("0x%1").arg(hypothesesByCorrelation[m_hypothesisCount-1], 0, 16));
-        interpretParam.addSubParam(bestHypothesisValueParam);
-        m_params.addSubParam(interpretParam);
     }
+
+    QChart * m_chart;
 
     quint32 m_hypothesisCount;
     quint32 m_sampleCount;
 
-    QByteArray m_matrix;
+    THighlightBy m_highlightBy;
+    quint32 m_highlightByValue;
 
     QValueAxis * m_axisX = nullptr;
     QValueAxis * m_axisY = nullptr;

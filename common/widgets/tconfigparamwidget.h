@@ -35,15 +35,15 @@ public slots:
 
 protected:
     bool readParam(TConfigParam & param, QTreeWidgetItem * parent);
-    void addParam(TConfigParam & param, QTreeWidgetItem * parent, int depth);
+    void addParam(TConfigParam & param, QTreeWidgetItem * parent);
     void refreshParam();
 
 private:
-    const int FIRST_COLUMN_OFFSET = 30;
+    const int FIRST_COLUMN_OFFSET = 10;
 
-    void drawLabel(const TConfigParam & param, QTreeWidgetItem * parent, int depth);
-    void drawState(const TConfigParam & param, QTreeWidgetItem * parent);
+    void drawLabel(const TConfigParam & param, QTreeWidgetItem * parent);
     void drawInput(const TConfigParam & param, QTreeWidgetItem * parent);
+    void drawState(const TConfigParam & param, QTreeWidgetItem * parent);
 
     bool checkInput(TConfigParam & param, QTreeWidgetItem * parent);
 

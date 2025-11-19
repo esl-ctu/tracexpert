@@ -58,7 +58,7 @@ public:
             TConfigParam configParam("Graph configuration", "", TConfigParam::TType::TDummy, tr("Specific configuration for the selected graph."));
 
             if(selectParam->getValue() == "CPA") {
-                configParam = TCPAGraph().params();
+                configParam = TCPAGraph().graphParams();
             }
 
             // TODO: add other graphs
@@ -111,13 +111,14 @@ public:
                 TGraph * graph = nullptr;
 
                 if (selectedGraphName == "CPA") {
-                    graph = new TCPAGraph(data);
+                    graph = new TCPAGraph();
                 }
 
                 // TODO: add other graphs
 
                 if(graph) {
-                    graph->setParams(configParam);
+                    graph->setData(data);
+                    graph->setGraphParams(configParam);
                     mainWindow->createGraphDockWidget(graph);
                 }
             },

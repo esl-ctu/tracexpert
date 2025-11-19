@@ -1,33 +1,48 @@
 #ifndef TGRAPH_H
 #define TGRAPH_H
 
-#include <QChart>
+#include <QWidget>
 #include "tconfigparam.h"
 
-class TGraph : public QChart
+class TGraph : public QWidget
 {
     Q_OBJECT
 
 public:
-    TGraph(const QString & name, QGraphicsItem * parent = nullptr) : QChart(parent), m_name(name) { }
+    TGraph(const QString & name, QWidget * parent = nullptr) : QWidget(parent), m_name(name) { }
 
     QString name() {
         return m_name;
     }
 
-    virtual TConfigParam setParams(TConfigParam params) {
-        m_params = params;
-        return m_params;
+    virtual void drawGraph() { }
+
+    virtual TConfigParam setGraphParams(TConfigParam params) {
+        m_graphParams = params;
+        return m_graphParams;
     }
 
-    TConfigParam params() {
-        return m_params;
+    TConfigParam graphParams() {
+        return m_graphParams;
     }
+
+    TConfigParam interpretationParams() {
+        return m_interpretationParams;
+    }
+
+    void setData(QByteArray data) {
+        m_data = data;
+    }
+
+signals:
+    void interpretationChanged();
 
 protected:
     QString m_name;
-    TConfigParam m_params;
+    TConfigParam m_graphParams;
+    TConfigParam m_interpretationParams;
 
+    QByteArray m_data;
 };
 
 #endif // TGRAPH_H
