@@ -253,11 +253,6 @@ void TScenarioExecutor::executeItem(TScenarioItem * item) {
         executeItemIndirectly(item);
     }
 
-    if(item->getState() == TScenarioItem::TState::TRuntimeError) {
-        qWarning("Scenario was stopped due to block runtime error!");
-        throw ScenarioExecutionException();
-    }
-
     if(item->getState() == TScenarioItem::TState::TBeingExecuted) {
         item->resetState();
     }
