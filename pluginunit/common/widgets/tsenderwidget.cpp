@@ -31,7 +31,7 @@ TSenderWidget::TSenderWidget(TSenderModel * senderModel, TProtocolContainer * pr
     m_rawMessageEditLayout->setStretch(1,1);
 
     m_protocolComboBox = new QComboBox;
-    connect(m_messageComboBox, &QComboBox::currentIndexChanged, this, &TSenderWidget::protocolChanged);
+    connect(m_protocolComboBox, &QComboBox::currentIndexChanged, this, &TSenderWidget::protocolChanged);
 
     m_sendButton = new QPushButton("Send");
     connect(m_sendButton, &QPushButton::clicked, this, &TSenderWidget::sendBytes);
