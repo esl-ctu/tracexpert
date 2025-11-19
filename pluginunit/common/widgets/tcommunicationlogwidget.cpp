@@ -50,7 +50,7 @@ TCommunicationLogWidget::TCommunicationLogWidget(QList<TSenderModel *> senderMod
 QString TCommunicationLogWidget::byteArraytoHumanReadableString(const QByteArray & byteArray)
 {
     static QRegularExpression nonAsciiRegExp("[^ -~]");
-    bool isHumanReadable = !((QString)byteArray).contains(nonAsciiRegExp);
+    bool isHumanReadable = !((QString)byteArray).contains(nonAsciiRegExp) && m_format->currentIndex() != 0;
 
     if (byteArray.size() <= DISPLAY_DATA_LENGTH_LIMIT) {
         if(!isHumanReadable) {
