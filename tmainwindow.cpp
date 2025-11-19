@@ -224,14 +224,8 @@ void TMainWindow::openProtocolEditor(const QString & protocolName)
 void TMainWindow::createProtocolManagerDockWidget()
 {
     if(m_protocolManagerDockWidget) {
-        if(!m_protocolManagerDockWidget->isClosed()) {
-            m_protocolManagerDockWidget->show();
-            return;
-        }
-        else {
-            m_viewMenu->removeAction(m_protocolManagerDockWidget->toggleViewAction());
-            delete m_protocolManagerDockWidget;
-        }
+        m_protocolManagerDockWidget->show();
+        return;
     }
 
     //create dock widget with Protocol Widget
@@ -244,6 +238,25 @@ void TMainWindow::createProtocolManagerDockWidget()
 
     // show the widget automatically
     m_protocolManagerDockWidget->show();
+}
+
+void TMainWindow::createScenarioManagerDockWidget()
+{
+    if(m_scenarioManagerDockWidget) {
+        m_scenarioManagerDockWidget->show();
+        return;
+    }
+
+    //create dock widget with Scenario Widget
+    TScenarioWidget * widget = new TScenarioWidget(m_projectModel->scenarioContainer(), this);
+    m_scenarioManagerDockWidget = new TDockWidget(tr("Scenario manager"), this);
+    m_scenarioManagerDockWidget->setWidget(widget);
+
+    m_viewMenu->addAction(m_scenarioManagerDockWidget->toggleViewAction());
+    m_dockManager->addCenterDockWidgetTab(m_scenarioManagerDockWidget, m_welcomeDockWidget);
+
+    // show the widget automatically
+    m_scenarioManagerDockWidget->show();
 }
 
 void TMainWindow::createScenarioEditorDockWidget(TScenarioModel * scenario)
@@ -270,32 +283,6 @@ void TMainWindow::createScenarioEditorDockWidget(TScenarioModel * scenario)
     m_scenarioEditorDockWidgets.append(scenarioEditorDockWidget);
 }
 
-
-void TMainWindow::createScenarioManagerDockWidget()
-{
-    if(m_scenarioManagerDockWidget) {
-        if(!m_scenarioManagerDockWidget->isClosed()) {
-            m_scenarioManagerDockWidget->show();
-            return;
-        }
-        else {
-            m_viewMenu->removeAction(m_scenarioManagerDockWidget->toggleViewAction());
-            delete m_scenarioManagerDockWidget;
-        }
-    }
-
-    //create dock widget with Scenario Widget
-    TScenarioWidget * widget = new TScenarioWidget(m_projectModel->scenarioContainer(), this);
-    m_scenarioManagerDockWidget = new TDockWidget(tr("Scenario manager"), this);
-    m_scenarioManagerDockWidget->setWidget(widget);
-
-    m_viewMenu->addAction(m_scenarioManagerDockWidget->toggleViewAction());
-    m_dockManager->addCenterDockWidgetTab(m_scenarioManagerDockWidget, m_welcomeDockWidget);
-
-    // show the widget automatically
-    m_scenarioManagerDockWidget->show();
-}
-
 void TMainWindow::createGraphDockWidget(TGraph * graph)
 {
     //create dock widget with Scenario Editor Widget
@@ -316,6 +303,7 @@ void TMainWindow::createGraphDockWidget(TGraph * graph)
 
     // show the widget automatically
     graphDockWidget->show();
+    graphWidget->drawGraph();
 
     m_graphDockWidgets.append(graphDockWidget);
 }
@@ -454,26 +442,33 @@ void TMainWindow::closeProject()
 
     if (m_projectDockWidget) {
         m_viewMenu->removeAction(m_projectDockWidget->toggleViewAction());
-        m_projectDockWidget->close();
+        m_dockManager->removeDockWidget(m_projectDockWidget);
+        delete m_projectDockWidget;
+
+        m_projectDockWidget = nullptr;
     }
 
     if (m_protocolManagerDockWidget) {
         m_viewMenu->removeAction(m_protocolManagerDockWidget->toggleViewAction());
-        m_protocolManagerDockWidget->close();
+        m_dockManager->removeDockWidget(m_protocolManagerDockWidget);
+        delete m_protocolManagerDockWidget;
+
+        m_protocolManagerDockWidget = nullptr;
     }
 
     if(m_scenarioManagerDockWidget) {
         m_viewMenu->removeAction(m_scenarioManagerDockWidget->toggleViewAction());
-        m_scenarioManagerDockWidget->close();
+        m_dockManager->removeDockWidget(m_scenarioManagerDockWidget);
+        delete m_scenarioManagerDockWidget;
+
+        m_scenarioManagerDockWidget = nullptr;
     }
 
     for(TDockWidget * scenarioEditorDockWidget : m_scenarioEditorDockWidgets) {
-        m_viewMenu->removeAction(scenarioEditorDockWidget->toggleViewAction());
         scenarioEditorDockWidget->close();
     }
 
     for(TDockWidget * graphDockWidget : m_graphDockWidgets) {
-        m_viewMenu->removeAction(graphDockWidget->toggleViewAction());
         graphDockWidget->close();
     }
 
