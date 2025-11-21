@@ -39,8 +39,6 @@ add_executable(${PROJECT_NAME} WIN32
     tdockmanager.h
     tmainwindow.cpp
     tmainwindow.h
-    tmessageformmanager.cpp
-    tmessageformmanager.h
     common/tanaldevice.h
     common/tcommon.h
     common/tconfigparam.h
@@ -94,10 +92,20 @@ add_executable(${PROJECT_NAME} WIN32
     pluginunit/common/sender/tsender.h
     pluginunit/common/sender/tsendermodel.cpp
     pluginunit/common/sender/tsendermodel.h
+    pluginunit/common/widgets/tactionwidget.cpp
+    pluginunit/common/widgets/tactionwidget.h
     pluginunit/common/widgets/tcommunicationdevicewidget.cpp
     pluginunit/common/widgets/tcommunicationdevicewidget.h
     pluginunit/common/widgets/tcommunicationlogwidget.cpp
     pluginunit/common/widgets/tcommunicationlogwidget.h
+    pluginunit/common/widgets/tmessageformmanager.cpp
+    pluginunit/common/widgets/tmessageformmanager.h
+    pluginunit/common/widgets/treceiverwidget.cpp
+    pluginunit/common/widgets/treceiverwidget.h
+    pluginunit/common/widgets/tsenderwidget.cpp
+    pluginunit/common/widgets/tsenderwidget.h
+    pluginunit/common/widgets/ttabgroupwidget.cpp
+    pluginunit/common/widgets/ttabgroupwidget.h
     pluginunit/component/tcomponentcontainer.cpp
     pluginunit/component/tcomponentcontainer.h
     pluginunit/component/tcomponentmodel.cpp
@@ -182,10 +190,6 @@ add_executable(${PROJECT_NAME} WIN32
     graphs/tgraphwidget.cpp
     graphs/tgraph.h
     graphs/tcpagraph.h
-    pluginunit/common/widgets/ttabgroupwidget.h pluginunit/common/widgets/ttabgroupwidget.cpp
-    pluginunit/common/widgets/treceiverwidget.h pluginunit/common/widgets/treceiverwidget.cpp
-    pluginunit/common/widgets/tsenderwidget.h pluginunit/common/widgets/tsenderwidget.cpp
-    pluginunit/common/widgets/tactionwidget.h pluginunit/common/widgets/tactionwidget.cpp
 )
 
 

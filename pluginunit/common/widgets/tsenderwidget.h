@@ -8,7 +8,7 @@
 #include <QFormLayout>
 
 #include "../../protocol/tprotocolcontainer.h"
-#include "../tmessageformmanager.h"
+#include "tmessageformmanager.h"
 #include "../sender/tsendermodel.h"
 
 class TSenderWidget : public QWidget
