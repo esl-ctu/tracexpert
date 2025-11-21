@@ -115,10 +115,12 @@ void TMainWindow::createActions()
 
 void TMainWindow::createWelcome() {
     m_welcomeDockWidget = new TDockWidget(tr("Welcome"));
-    QTextEdit * textedit = new QTextEdit("TODO");
-    textedit->setMinimumHeight(700);
-    textedit->setMinimumWidth(1500);
-    m_welcomeDockWidget->setWidget(textedit);
+
+    QLabel * imageLabel = new QLabel(this);
+    imageLabel->setAlignment(Qt::AlignCenter);
+    imageLabel->setPixmap(QPixmap(":/icons/tracexpert512.png"));
+
+    m_welcomeDockWidget->setWidget(imageLabel);
     m_dockManager->addCenterDockWidget(m_welcomeDockWidget);
 }
 
