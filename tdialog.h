@@ -45,7 +45,7 @@ public:
 
     static void protocolMessageCouldNotBeFormed(QWidget * parent);
 
-    static bool closeConfirmation(QWidget * parent);
+    static bool closeConfirmation(QWidget * parent, QString closedObjectName = QString());
     static bool scenarioTerminationConfirmation(QWidget * parent);
 
 protected:

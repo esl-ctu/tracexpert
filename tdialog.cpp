@@ -184,12 +184,15 @@ void TDialog::protocolMessageCouldNotBeFormed(QWidget * parent)
     criticalMessage(parent, parent->tr("Send failed"), parent->tr("Protocol message could not be formed, check console for errors!"));
 }
 
-bool TDialog::closeConfirmation(QWidget * parent)
+bool TDialog::closeConfirmation(QWidget * parent, QString closedObjectName)
 {
+    if (closedObjectName.isEmpty())
+        closedObjectName = "this window";
+
     return QMessageBox::question(
         parent,
         parent->tr("Close confirmation"),
-        parent->tr("Are you sure you want to close this window? All unsaved changes will be lost."),
+        parent->tr("Are you sure you want to close %1? All unsaved changes will be lost.").arg(closedObjectName),
         QMessageBox::Yes | QMessageBox::No,
         QMessageBox::No) == QMessageBox::Yes;
 }

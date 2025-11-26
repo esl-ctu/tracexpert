@@ -92,7 +92,7 @@ TScenarioEditorWidget::~TScenarioEditorWidget() { }
 void TScenarioEditorWidget::closeEvent(QCloseEvent *event) {
     event->ignore();
 
-    if(TDialog::closeConfirmation(this)) {
+    if(TDialog::closeConfirmation(this, "scenario")) {
         event->accept();
     }
 }

@@ -435,8 +435,23 @@ void TMainWindow::saveProjectAs()
     saveProject(true);
 }
 
-void TMainWindow::closeProject()
+bool TMainWindow::closeProject()
 {
+    for(TDockWidget * scenarioEditorDockWidget : std::as_const(m_scenarioEditorDockWidgets)) {
+        TScenarioEditorWidget * editor = dynamic_cast<TScenarioEditorWidget *>(scenarioEditorDockWidget->widget());
+
+        if (editor && !editor->close())
+            return false;
+    }
+
+    if (!TDialog::closeConfirmation(this, "project")) {
+        return false;
+    }
+
+    for(TDockWidget * graphDockWidget : std::as_const(m_graphDockWidgets)) {
+        graphDockWidget->close();
+    }
+
     if (m_projectModel) {
         delete m_projectModel;
         m_projectModel = nullptr;
@@ -466,25 +481,23 @@ void TMainWindow::closeProject()
         m_scenarioManagerDockWidget = nullptr;
     }
 
-    for(TDockWidget * scenarioEditorDockWidget : m_scenarioEditorDockWidgets) {
-        scenarioEditorDockWidget->close();
-    }
-
-    for(TDockWidget * graphDockWidget : m_graphDockWidgets) {
-        graphDockWidget->close();
-    }
-
     m_saveProjectAction->setEnabled(false);
     m_saveProjectAsAction->setEnabled(false);
     m_openDeviceAction->setEnabled(false);
 
     m_projectFileName = QString();
+
+    return true;
 }
 
 void TMainWindow::closeEvent(QCloseEvent *event)
 {
     writeSettings();
-    event->accept();
+
+    if (m_projectModel && !closeProject())
+        event->ignore();
+    else
+        event->accept();
 }
 
 void TMainWindow::writeSettings()
