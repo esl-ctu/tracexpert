@@ -17,11 +17,6 @@ set(CMAKE_SHARED_LIBRARY_PREFIX "")
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Charts Xml Concurrent)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts Xml Concurrent)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
 add_subdirectory(ads)
 
@@ -193,11 +188,6 @@ add_executable(${PROJECT_NAME} WIN32
 )
 
 
-target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_include_directories(${PROJECT_NAME} PRIVATE common)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE qt${QT_VERSION_MAJOR}advanceddocking)
