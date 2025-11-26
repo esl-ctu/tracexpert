@@ -227,6 +227,7 @@ void TSerialPortDevice::deInit(bool *ok) {
 #ifdef _WIN32
 
     CloseHandle(m_osHandle);
+    m_osHandle = nullptr;
 
 #else
 
