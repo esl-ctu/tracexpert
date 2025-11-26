@@ -17,11 +17,6 @@ set(CMAKE_SHARED_LIBRARY_PREFIX "")
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Charts Xml Concurrent)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts Xml Concurrent)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
 add_subdirectory(ads)
 
@@ -193,11 +188,6 @@ add_executable(${PROJECT_NAME} WIN32
 )
 
 
-target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_include_directories(${PROJECT_NAME} PRIVATE common)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE qt${QT_VERSION_MAJOR}advanceddocking)
@@ -214,8 +204,11 @@ function(add_plugin dir target additional_files)
   # Add the subdirectory for the plugin
   add_subdirectory(plugins/${dir})
 
+  add_custom_target(copy_${target} ALL
+      DEPENDS ${target})
+
   # Copy the library (.dll) file to the plugin directory
-  add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+  add_custom_command(TARGET copy_${target}
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
           "$<TARGET_FILE:${target}>"
           "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins")
@@ -223,7 +216,7 @@ function(add_plugin dir target additional_files)
   # Copy additional files (if provided) to the plugin directory (separate by ";")
   if(additional_files)
     foreach(file IN LISTS additional_files)
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        add_custom_command(TARGET copy_${target}
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 "${CMAKE_SOURCE_DIR}/plugins/${dir}/${file}"
                 "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/${file}")
