@@ -452,11 +452,6 @@ bool TMainWindow::closeProject()
         graphDockWidget->close();
     }
 
-    if (m_projectModel) {
-        delete m_projectModel;
-        m_projectModel = nullptr;
-    }
-
     if (m_projectDockWidget) {
         m_viewMenu->removeAction(m_projectDockWidget->toggleViewAction());
         m_dockManager->removeDockWidget(m_projectDockWidget);
@@ -479,6 +474,11 @@ bool TMainWindow::closeProject()
         delete m_scenarioManagerDockWidget;
 
         m_scenarioManagerDockWidget = nullptr;
+    }
+
+    if (m_projectModel) {
+        delete m_projectModel;
+        m_projectModel = nullptr;
     }
 
     m_saveProjectAction->setEnabled(false);
