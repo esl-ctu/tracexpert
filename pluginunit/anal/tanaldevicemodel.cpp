@@ -53,6 +53,10 @@ bool TAnalDeviceModel::init()
 
 bool TAnalDeviceModel::deInit()
 {
+    for (int i = 0; i < m_receiverModels.length(); i++) {
+        m_receiverModels[i]->disableAutoRead();
+    }
+
     if (!isInit() || !TPluginUnitModel::deInit()) {
         return false;
     }

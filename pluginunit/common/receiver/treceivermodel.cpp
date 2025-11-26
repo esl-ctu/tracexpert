@@ -13,7 +13,7 @@ TReceiverModel::TReceiverModel(TReceiver * receiver, QObject * parent)
     connect(m_receiver, &TReceiver::dataReceived, this, &TReceiverModel::dataReceived, Qt::ConnectionType::QueuedConnection);
     connect(m_receiver, &TReceiver::receiveFailed, this, &TReceiverModel::receiveFailed, Qt::ConnectionType::QueuedConnection);
     connect(this, &TReceiverModel::startReceiving, m_receiver, &TReceiver::startReceiving, Qt::ConnectionType::QueuedConnection);
-    connect(this, &TReceiverModel::stopReceiving, m_receiver, &TReceiver::stopReceiving, Qt::ConnectionType::QueuedConnection);
+    connect(this, &TReceiverModel::stopReceiving, m_receiver, &TReceiver::stopReceiving, Qt::ConnectionType::DirectConnection);
     connect(m_receiverThread, &QThread::finished, m_receiver, &QObject::deleteLater);
     connect(m_receiverThread, &QThread::finished, m_receiverThread, &QObject::deleteLater);
 
