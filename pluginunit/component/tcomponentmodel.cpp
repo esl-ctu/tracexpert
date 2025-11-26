@@ -384,6 +384,9 @@ void TComponentModel::load(QDomElement * element)
 {
     TPluginUnitModel::load(element);
 
+    if (m_unit && !m_preInitParam.isEmpty())
+        m_unit->setPreInitParams(m_preInitParam);
+
     QDomNodeList children = element->childNodes();
 
     for (int i = 0; i < children.count(); i++) {

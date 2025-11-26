@@ -5,7 +5,7 @@
 #include <QComboBox>
 #include <QObjectCleanupHandler>
 
-#include "tdialog.h"
+#include "../../tdialog.h"
 
 
 TMessageFormManager::TMessageFormManager(QFormLayout * formLayout, int insertOffset) {

@@ -219,13 +219,9 @@ const QString & TScenarioItem::getStateMessage() const {
 }
 
 void TScenarioItem::setState(TState state){
-
     if(state >= m_state) {
         m_state = state;
         emit stateChanged();
-    }
-    else {
-        qDebug() << "Block " << m_name << " ignoring setState to " << (int)state << ", current state " << (int)m_state << ".";
     }
 }
 
@@ -234,9 +230,6 @@ void TScenarioItem::setState(TState state, const QString &message){
         m_state = state;
         m_stateMessage = message;
         emit stateChanged();
-    }
-    else {
-        qDebug() << "Block " << m_name << " ignoring setState to " << (int)state << ", message " << message << ", current state " << (int)m_state << ".";
     }
 }
 

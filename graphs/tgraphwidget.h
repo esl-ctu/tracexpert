@@ -17,13 +17,17 @@ class TGraphWidget : public QWidget
 public:
     explicit TGraphWidget(TGraph * graph, QWidget * parent = nullptr);
 
+    void drawGraph();
+
 private slots:
     bool applyParams();
+    void interpretationChanged();
 
 private:
     TGraph * m_graph;
 
-    TConfigParamWidget * m_paramWidget;
+    TConfigParamWidget * m_graphParamWidget;
+    TConfigParamWidget * m_interpretationParamWidget;
 };
 
 #endif // TGRAPHWIDGET_H

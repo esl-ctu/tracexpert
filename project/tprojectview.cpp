@@ -155,6 +155,24 @@ void TProjectView::showContextMenu(const QPoint &point)
 
         defaultAction = chooseDefaultAction(m_analDevice);
     }
+    else if (dynamic_cast<TIODeviceContainer *>(item) && (m_component = dynamic_cast<TComponentModel *>(item->parent()))) {
+        m_addIODeviceAction->setDisabled(m_component->status() != TProjectItem::Initialized || !m_component->canAddIODevice());
+        contextMenu->addAction(m_addIODeviceAction);
+
+        defaultAction = m_addIODeviceAction;
+    }
+    else if (dynamic_cast<TScopeContainer *>(item) && (m_component = dynamic_cast<TComponentModel *>(item->parent()))) {
+        m_addScopeAction->setDisabled(m_component->status() != TProjectItem::Initialized || !m_component->canAddScope());
+        contextMenu->addAction(m_addScopeAction);
+
+        defaultAction = m_addScopeAction;
+    }
+    else if (dynamic_cast<TAnalDeviceContainer *>(item) && (m_component = dynamic_cast<TComponentModel *>(item->parent()))) {
+        m_addAnalDeviceAction->setDisabled(m_component->status() != TProjectItem::Initialized || !m_component->canAddAnalDevice());
+        contextMenu->addAction(m_addAnalDeviceAction);
+
+        defaultAction = m_addAnalDeviceAction;
+    }
     else if ((dynamic_cast<TProtocolContainer *>(item))) {
         m_openProtocolManagerAction->setEnabled(true);
         contextMenu->addAction(m_openProtocolManagerAction);

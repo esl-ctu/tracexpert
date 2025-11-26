@@ -80,6 +80,8 @@ void TScenarioModel::load(QDomElement * element) {
     if(name.isEmpty())
         throw tr("Protocol name is empty");
 
+    QString description = element->attribute("description");
+
     QString dataArray = element->attribute("data");
     QDataStream stream(QByteArray::fromBase64(dataArray.toUtf8()));
 
@@ -87,4 +89,9 @@ void TScenarioModel::load(QDomElement * element) {
 
     m_scenario = new TScenario();
     stream >> *m_scenario;
+
+    // set name and description to reflect the respective attributes
+    // rather than the data attribute
+    m_scenario->setName(name);
+    m_scenario->setDescription(description);
 }

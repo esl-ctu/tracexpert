@@ -18,7 +18,7 @@
 #include "project/tprojectview.h"
 #include "project/tprojectmodel.h"
 #include "protocol/tprotocolwidget.h"
-
+#include "tdialog.h"
 
 TMainWindow::TMainWindow(TLogHandler * logHandler, QWidget * parent)
     : QMainWindow(parent)
@@ -115,10 +115,12 @@ void TMainWindow::createActions()
 
 void TMainWindow::createWelcome() {
     m_welcomeDockWidget = new TDockWidget(tr("Welcome"));
-    QTextEdit * textedit = new QTextEdit("TODO");
-    textedit->setMinimumHeight(700);
-    textedit->setMinimumWidth(1500);
-    m_welcomeDockWidget->setWidget(textedit);
+
+    QLabel * imageLabel = new QLabel(this);
+    imageLabel->setAlignment(Qt::AlignCenter);
+    imageLabel->setPixmap(QPixmap(":/icons/tracexpert512.png"));
+
+    m_welcomeDockWidget->setWidget(imageLabel);
     m_dockManager->addCenterDockWidget(m_welcomeDockWidget);
 }
 
@@ -224,14 +226,8 @@ void TMainWindow::openProtocolEditor(const QString & protocolName)
 void TMainWindow::createProtocolManagerDockWidget()
 {
     if(m_protocolManagerDockWidget) {
-        if(!m_protocolManagerDockWidget->isClosed()) {
-            m_protocolManagerDockWidget->show();
-            return;
-        }
-        else {
-            m_viewMenu->removeAction(m_protocolManagerDockWidget->toggleViewAction());
-            delete m_protocolManagerDockWidget;
-        }
+        m_protocolManagerDockWidget->show();
+        return;
     }
 
     //create dock widget with Protocol Widget
@@ -244,6 +240,25 @@ void TMainWindow::createProtocolManagerDockWidget()
 
     // show the widget automatically
     m_protocolManagerDockWidget->show();
+}
+
+void TMainWindow::createScenarioManagerDockWidget()
+{
+    if(m_scenarioManagerDockWidget) {
+        m_scenarioManagerDockWidget->show();
+        return;
+    }
+
+    //create dock widget with Scenario Widget
+    TScenarioWidget * widget = new TScenarioWidget(m_projectModel->scenarioContainer(), this);
+    m_scenarioManagerDockWidget = new TDockWidget(tr("Scenario manager"), this);
+    m_scenarioManagerDockWidget->setWidget(widget);
+
+    m_viewMenu->addAction(m_scenarioManagerDockWidget->toggleViewAction());
+    m_dockManager->addCenterDockWidgetTab(m_scenarioManagerDockWidget, m_welcomeDockWidget);
+
+    // show the widget automatically
+    m_scenarioManagerDockWidget->show();
 }
 
 void TMainWindow::createScenarioEditorDockWidget(TScenarioModel * scenario)
@@ -270,32 +285,6 @@ void TMainWindow::createScenarioEditorDockWidget(TScenarioModel * scenario)
     m_scenarioEditorDockWidgets.append(scenarioEditorDockWidget);
 }
 
-
-void TMainWindow::createScenarioManagerDockWidget()
-{
-    if(m_scenarioManagerDockWidget) {
-        if(!m_scenarioManagerDockWidget->isClosed()) {
-            m_scenarioManagerDockWidget->show();
-            return;
-        }
-        else {
-            m_viewMenu->removeAction(m_scenarioManagerDockWidget->toggleViewAction());
-            delete m_scenarioManagerDockWidget;
-        }
-    }
-
-    //create dock widget with Scenario Widget
-    TScenarioWidget * widget = new TScenarioWidget(m_projectModel->scenarioContainer(), this);
-    m_scenarioManagerDockWidget = new TDockWidget(tr("Scenario manager"), this);
-    m_scenarioManagerDockWidget->setWidget(widget);
-
-    m_viewMenu->addAction(m_scenarioManagerDockWidget->toggleViewAction());
-    m_dockManager->addCenterDockWidgetTab(m_scenarioManagerDockWidget, m_welcomeDockWidget);
-
-    // show the widget automatically
-    m_scenarioManagerDockWidget->show();
-}
-
 void TMainWindow::createGraphDockWidget(TGraph * graph)
 {
     //create dock widget with Scenario Editor Widget
@@ -316,6 +305,7 @@ void TMainWindow::createGraphDockWidget(TGraph * graph)
 
     // show the widget automatically
     graphDockWidget->show();
+    graphWidget->drawGraph();
 
     m_graphDockWidgets.append(graphDockWidget);
 }
@@ -368,6 +358,8 @@ void TMainWindow::openProject()
     openDialog.setDirectory(m_projectDirectory);
     if (!openDialog.exec()) return;
 
+    TLoadingDialog * loadingDialog = TLoadingDialog::showDialog(this, "Loading project...");
+
     if (m_projectModel)
         closeProject();
 
@@ -401,10 +393,12 @@ void TMainWindow::openProject()
             m_projectModel = nullptr;
         }
 
+        loadingDialog->closeAndDeleteLater();
         return;
     }
 
     createProjectDockWidget(m_projectModel);
+    loadingDialog->closeAndDeleteLater();
 }
 
 void TMainWindow::saveProject(bool saveAs)
@@ -441,8 +435,23 @@ void TMainWindow::saveProjectAs()
     saveProject(true);
 }
 
-void TMainWindow::closeProject()
+bool TMainWindow::closeProject()
 {
+    for(TDockWidget * scenarioEditorDockWidget : std::as_const(m_scenarioEditorDockWidgets)) {
+        TScenarioEditorWidget * editor = dynamic_cast<TScenarioEditorWidget *>(scenarioEditorDockWidget->widget());
+
+        if (editor && !editor->close())
+            return false;
+    }
+
+    if (!TDialog::closeConfirmation(this, "project")) {
+        return false;
+    }
+
+    for(TDockWidget * graphDockWidget : std::as_const(m_graphDockWidgets)) {
+        graphDockWidget->close();
+    }
+
     if (m_projectModel) {
         delete m_projectModel;
         m_projectModel = nullptr;
@@ -450,27 +459,26 @@ void TMainWindow::closeProject()
 
     if (m_projectDockWidget) {
         m_viewMenu->removeAction(m_projectDockWidget->toggleViewAction());
-        m_projectDockWidget->close();
+        m_dockManager->removeDockWidget(m_projectDockWidget);
+        delete m_projectDockWidget;
+
+        m_projectDockWidget = nullptr;
     }
 
     if (m_protocolManagerDockWidget) {
         m_viewMenu->removeAction(m_protocolManagerDockWidget->toggleViewAction());
-        m_protocolManagerDockWidget->close();
+        m_dockManager->removeDockWidget(m_protocolManagerDockWidget);
+        delete m_protocolManagerDockWidget;
+
+        m_protocolManagerDockWidget = nullptr;
     }
 
     if(m_scenarioManagerDockWidget) {
         m_viewMenu->removeAction(m_scenarioManagerDockWidget->toggleViewAction());
-        m_scenarioManagerDockWidget->close();
-    }
+        m_dockManager->removeDockWidget(m_scenarioManagerDockWidget);
+        delete m_scenarioManagerDockWidget;
 
-    for(TDockWidget * scenarioEditorDockWidget : m_scenarioEditorDockWidgets) {
-        m_viewMenu->removeAction(scenarioEditorDockWidget->toggleViewAction());
-        scenarioEditorDockWidget->close();
-    }
-
-    for(TDockWidget * graphDockWidget : m_graphDockWidgets) {
-        m_viewMenu->removeAction(graphDockWidget->toggleViewAction());
-        graphDockWidget->close();
+        m_scenarioManagerDockWidget = nullptr;
     }
 
     m_saveProjectAction->setEnabled(false);
@@ -478,12 +486,18 @@ void TMainWindow::closeProject()
     m_openDeviceAction->setEnabled(false);
 
     m_projectFileName = QString();
+
+    return true;
 }
 
 void TMainWindow::closeEvent(QCloseEvent *event)
 {
     writeSettings();
-    event->accept();
+
+    if (m_projectModel && !closeProject())
+        event->ignore();
+    else
+        event->accept();
 }
 
 void TMainWindow::writeSettings()

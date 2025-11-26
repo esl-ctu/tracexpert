@@ -74,6 +74,8 @@ bool TPluginUnitModel::deInit()
         m_wasInit = true;
     }
 
+    m_initWhenAvailable = false;
+
     return ok;
 }
 

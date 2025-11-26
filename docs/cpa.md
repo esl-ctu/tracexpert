@@ -39,7 +39,7 @@ After the **Compute correlation matrix (+ flush streams)** action finishes, the 
 1. 1-order correlation matrix
 2. ...
 
-Each output stream contains a correlation matrix N x M, where N is the number of samples in a trace, and M is the number of key hypotheses.  
+Each output stream contains a correlation matrix N x M, where N is the number of samples in a trace, and M is the number of key hypotheses. The correlation coefficient is a 8 bytes long real number (double).
 
 ### Example usage
 

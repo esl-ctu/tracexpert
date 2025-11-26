@@ -1,6 +1,10 @@
 #include "tdockmanager.h"
 #include <qevent.h>
 
+#ifdef USE_ADS
+#include "DockAreaWidget.h"
+#endif
+
 TDockWidget::TDockWidget(const QString & title, QWidget * parent)
     : TDockWidgetBase(title, parent)
 {
@@ -123,7 +127,9 @@ void TDockManager::addCenterDockWidget(TDockWidget * dockWidget) {
     dockWidget->setFeature(ads::CDockWidget::DockWidgetMovable, false);
     dockWidget->setFeature(ads::CDockWidget::DockWidgetFloatable, false);
     dockWidget->setFeature(ads::CDockWidget::DockWidgetClosable, false);
+    dockWidget->setFeature(ads::CDockWidget::NoTab, true);
     addDockWidget(TDockArea::CenterDockWidgetArea, dockWidget);
+    dockWidget->dockAreaWidget()->setDockAreaFlag(ads::CDockAreaWidget::HideSingleWidgetTitleBar, true);
 #else
     m_mainWindow->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
 #endif

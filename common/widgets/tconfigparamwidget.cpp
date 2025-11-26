@@ -42,27 +42,25 @@ void TConfigParamWidget::setParam(const TConfigParam & param)
 
 void TConfigParamWidget::refreshParam()
 {
+    // prevent GUI from repainting any intermediate changes
+    blockSignals(true);
+
     delete takeTopLevelItem(0);
 
     setColumnCount(3);
 
     QTreeWidgetItem * topItem = new QTreeWidgetItem(this);
+    topItem->setExpanded(true);
 
-    addParam(m_param, topItem, 0);
+    addParam(m_param, topItem);
 
     addTopLevelItem(topItem);
 
     setAlternatingRowColors(true);
 
-    expandAll();
-
     headerItem()->setText(0, tr("Parameter"));
     headerItem()->setText(1, tr("Value"));
     headerItem()->setText(2, "");
-
-    resizeColumnToContents(0);
-    resizeColumnToContents(1);
-    resizeColumnToContents(2);
 
     header()->setSectionResizeMode(0, QHeaderView::Interactive);
     header()->setSectionResizeMode(1, QHeaderView::Stretch);
@@ -70,6 +68,13 @@ void TConfigParamWidget::refreshParam()
     header()->setStretchLastSection(false);
 
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    resizeColumnToContents(0);
+    resizeColumnToContents(1);
+    resizeColumnToContents(2);
+
+    // allow GUI to repaint again
+    blockSignals(false);
 }
 
 bool TConfigParamWidget::readParam(TConfigParam & param, QTreeWidgetItem * parent)
@@ -89,9 +94,9 @@ bool TConfigParamWidget::readParam(TConfigParam & param, QTreeWidgetItem * paren
     return ok;
 }
 
-void TConfigParamWidget::addParam(TConfigParam & param, QTreeWidgetItem * parent, int depth)
+void TConfigParamWidget::addParam(TConfigParam & param, QTreeWidgetItem * parent)
 {
-    drawLabel(param, parent, depth);
+    drawLabel(param, parent);
 
     drawState(param, parent);
 
@@ -101,18 +106,18 @@ void TConfigParamWidget::addParam(TConfigParam & param, QTreeWidgetItem * parent
 
     for (int i = 0; i < subParams.size(); i++) {
         QTreeWidgetItem * item = new QTreeWidgetItem(parent);
+        item->setExpanded(true);
+
         TConfigParam & subParam = subParams[i];
-        addParam(subParam, item, depth+1);
+        addParam(subParam, item);
         parent->addChild(item);
     }
 }
 
-void TConfigParamWidget::drawLabel(const TConfigParam & param, QTreeWidgetItem *parent, int depth)
+void TConfigParamWidget::drawLabel(const TConfigParam & param, QTreeWidgetItem *parent)
 {
-    QLabel * label = new QLabel(param.getName(), this);
-    label->setMinimumWidth(label->minimumSizeHint().width() + (depth + indentation()) + FIRST_COLUMN_OFFSET);
-    label->setToolTip(param.getHint());
-    setItemWidget(parent, 0, label);
+    parent->setText(0, param.getName());
+    parent->setToolTip(0, param.getHint());
 }
 
 void TConfigParamWidget::drawState(const TConfigParam & param, QTreeWidgetItem * parent)
@@ -139,7 +144,26 @@ void TConfigParamWidget::drawInput(const TConfigParam & param, QTreeWidgetItem *
     };
 
     TConfigParam::TType type = param.getType();
-    if (type == TConfigParam::TType::TBool || type == TConfigParam::TType::TEnum || type == TConfigParam::TType::TTime || type == TConfigParam::TType::TDirectoryName || type == TConfigParam::TType::TFileName || type == TConfigParam::TType::TString || type == TConfigParam::TType::TReal || type == TConfigParam::TType::TInt || type == TConfigParam::TType::TLongLong || type == TConfigParam::TType::TShort || type == TConfigParam::TType::TUInt || type == TConfigParam::TType::TULongLong || type == TConfigParam::TType::TUShort|| type == TConfigParam::TType::TCode) {
+    if(param.isReadonly() || m_readOnly) {
+        // plain text to optimize performance
+        parent->setText(1, param.getValue());
+    }
+    else if (
+        type == TConfigParam::TType::TBool ||
+        type == TConfigParam::TType::TEnum ||
+        type == TConfigParam::TType::TTime ||
+        type == TConfigParam::TType::TDirectoryName ||
+        type == TConfigParam::TType::TFileName ||
+        type == TConfigParam::TType::TString ||
+        type == TConfigParam::TType::TReal ||
+        type == TConfigParam::TType::TInt ||
+        type == TConfigParam::TType::TLongLong ||
+        type == TConfigParam::TType::TShort ||
+        type == TConfigParam::TType::TUInt ||
+        type == TConfigParam::TType::TULongLong ||
+        type == TConfigParam::TType::TUShort||
+        type == TConfigParam::TType::TCode
+    ) {
         QWidget * input;
         if (type == TConfigParam::TType::TBool || type == TConfigParam::TType::TEnum) {
             QComboBox * comboBox = new TComboBox(this);

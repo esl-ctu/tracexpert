@@ -7,6 +7,7 @@
 #include <QDialogButtonBox>
 #include <QPushButton>
 #include <QMessageBox>
+#include <QCoreApplication>
 
 bool TDialog::addDeviceDialog(QWidget * parent, QString &name, QString &info)
 {
@@ -183,12 +184,15 @@ void TDialog::protocolMessageCouldNotBeFormed(QWidget * parent)
     criticalMessage(parent, parent->tr("Send failed"), parent->tr("Protocol message could not be formed, check console for errors!"));
 }
 
-bool TDialog::closeConfirmation(QWidget * parent)
+bool TDialog::closeConfirmation(QWidget * parent, QString closedObjectName)
 {
+    if (closedObjectName.isEmpty())
+        closedObjectName = "this window";
+
     return QMessageBox::question(
         parent,
         parent->tr("Close confirmation"),
-        parent->tr("Are you sure you want to close this window? All unsaved changes will be lost."),
+        parent->tr("Are you sure you want to close %1? All unsaved changes will be lost.").arg(closedObjectName),
         QMessageBox::Yes | QMessageBox::No,
         QMessageBox::No) == QMessageBox::Yes;
 }
@@ -393,4 +397,50 @@ TPluginUnitInfoDialog::TPluginUnitInfoDialog(TPluginUnitModel * unit, QWidget * 
     dialogLayout->addWidget(buttonBox);
 
     setLayout(dialogLayout);
+}
+
+TLoadingDialog::TLoadingDialog(QWidget *parent)
+    : QDialog(parent)
+{
+    setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+    setModal(true);
+    setAttribute(Qt::WA_DeleteOnClose, false);
+
+    QVBoxLayout * layout = new QVBoxLayout(this);
+    layout->setAlignment(Qt::AlignCenter);
+
+    QLabel * imageLabel = new QLabel(this);
+    QPixmap pixmap(":/icons/tracexpert64.png");
+    imageLabel->setPixmap(pixmap);
+    imageLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(imageLabel);
+
+    m_label = new QLabel("Please wait...", this);
+    layout->addWidget(m_label);
+
+    resize(250, 80);
+}
+
+TLoadingDialog* TLoadingDialog::showDialog(QWidget *parent, const QString &text)
+{
+    auto *dialog = new TLoadingDialog(parent);
+
+    if (dialog->m_label)
+        dialog->m_label->setText(text);
+
+    if(parent) {
+        QRect geom = parent->window()->geometry();
+        dialog->move(geom.center() - QPoint(dialog->width()/2, dialog->height()/2));
+    }
+
+    dialog->show();
+    QCoreApplication::processEvents();
+
+    return dialog;
+}
+
+void TLoadingDialog::closeAndDeleteLater()
+{
+    hide();
+    deleteLater();
 }

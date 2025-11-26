@@ -22,5 +22,10 @@
         <file>icons/log.png</file>
         <file>icons/message.png</file>
         <file>icons/analytic.png</file>
+        <file>icons/tracexpert.ico</file>
+        <file>icons/tracexpert64.png</file>
+        <file>icons/tracexpert128.png</file>
+        <file>icons/tracexpert256.png</file>
+        <file>icons/tracexpert512.png</file>
     </qresource>
 </RCC>

@@ -40,7 +40,7 @@ private slots:
     void openProject();
     void saveProject(bool saveAs = false);
     void saveProjectAs();
-    void closeProject();
+    bool closeProject();
 
 private:
     void createMenus();
