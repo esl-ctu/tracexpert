@@ -224,6 +224,8 @@ bool TSerialPortDevice::_validatePostInitParamsStructure(TConfigParam & params) 
 
 void TSerialPortDevice::deInit(bool *ok) {
 
+    if(m_initialized == true){
+
 #ifdef _WIN32
 
     CloseHandle(m_osHandle);
@@ -235,6 +237,8 @@ void TSerialPortDevice::deInit(bool *ok) {
     close(m_osHandle);
 
 #endif
+
+    }
 
     m_initialized = false;
     if(ok != nullptr) *ok = true;
