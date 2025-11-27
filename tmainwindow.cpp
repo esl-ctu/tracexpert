@@ -4,6 +4,10 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QOpenGLWidget>
+#include <QHelpEngine>
+#include <QHelpContentWidget>
+#include <QHelpIndexWidget>
+#include <QHelpLink>
 #include <qstatusbar.h>
 
 #include "tmainwindow.h"
@@ -19,6 +23,7 @@
 #include "project/tprojectmodel.h"
 #include "protocol/tprotocolwidget.h"
 #include "tdialog.h"
+#include "thelpbrowser.h"
 
 TMainWindow::TMainWindow(TLogHandler * logHandler, QWidget * parent)
     : QMainWindow(parent)
@@ -69,6 +74,15 @@ void TMainWindow::createMenus()
     QMenu * devicesMenu = new QMenu(tr("Devices"), this);
     devicesMenu->addAction(m_openDeviceAction);
     menuBar()->addMenu(devicesMenu);
+
+    QMenu * helpMenu = new QMenu(tr("Help"), this);
+
+    QString helpPath = QApplication::applicationDirPath() + "/docs/docs.qhc";
+    if (QFile::exists(helpPath))
+        helpMenu->addAction(m_helpAction);
+
+    helpMenu->addAction(m_aboutAction);
+    menuBar()->addMenu(helpMenu);
 }
 
 void TMainWindow::createActions()
@@ -111,6 +125,14 @@ void TMainWindow::createActions()
     m_openDeviceAction->setStatusTip(tr("Open a device using device wizard"));
     m_openDeviceAction->setEnabled(false);
     connect(m_openDeviceAction, SIGNAL(triggered()), this, SLOT(showDeviceWizard()));
+
+    m_helpAction = new QAction(tr("Help"), this);
+    m_helpAction->setStatusTip(tr("Show help"));
+    connect(m_helpAction, SIGNAL(triggered()), this, SLOT(showHelp()));
+
+    m_aboutAction = new QAction(tr("About"), this);
+    m_aboutAction->setStatusTip(tr("Show information about this program"));
+    connect(m_aboutAction, SIGNAL(triggered()), this, SLOT(showAbout()));
 }
 
 void TMainWindow::createWelcome() {
@@ -488,6 +510,53 @@ bool TMainWindow::closeProject()
     m_projectFileName = QString();
 
     return true;
+}
+
+void TMainWindow::showHelp()
+{
+    QWidget * helpWindow = new QWidget(this, Qt::Window);
+
+    helpWindow->setWindowTitle(tr("Help"));
+    helpWindow->setAttribute(Qt::WA_DeleteOnClose);
+
+    QHelpEngine * helpEngine = new QHelpEngine(QApplication::applicationDirPath() + "/docs/docs.qhc");
+
+    QTabWidget * helpTabWidget = new QTabWidget;
+    helpTabWidget->setMaximumWidth(200);
+    helpTabWidget->addTab(helpEngine->contentWidget(), "Contents");
+    helpTabWidget->addTab(helpEngine->indexWidget(), "Index");
+
+    THelpBrowser * helpBrowser = new THelpBrowser(helpEngine);
+    helpBrowser->setSource(QUrl("qthelp://org.example.docs/docs/README.html"));
+    connect(helpEngine->contentWidget(), &QHelpContentWidget::linkActivated, helpBrowser, [=](const QUrl & source) { helpBrowser->setSource(source); });
+    connect(helpEngine->indexWidget(), &QHelpIndexWidget::documentActivated, helpBrowser, [=](const QHelpLink & document) { helpBrowser->setSource(document.url); });
+
+    QHBoxLayout * layout = new QHBoxLayout;
+    layout->addWidget(helpTabWidget);
+    layout->addWidget(helpBrowser);
+
+    helpWindow->setLayout(layout);
+
+    TDockWidget * helpWindowDockWidget = new TDockWidget(helpWindow->windowTitle(), this);
+    helpWindowDockWidget->setWidget(helpWindow);
+
+    m_dockManager->addCenterDockWidgetTab(helpWindowDockWidget, m_welcomeDockWidget);
+
+    // show the widget automatically
+    helpWindowDockWidget->show();
+}
+
+void TMainWindow::showAbout()
+{
+    QMessageBox about(this);
+
+    about.setWindowTitle(tr("About TraceXpert"));
+    about.setText(tr("TraceXpert\nVersion: 0.1\n© 2025 Embedded Security Lab\nFaculty of Information Technology\nCzech Technical University in Prague"));
+    about.setStandardButtons(QMessageBox::Ok);
+    about.setIconPixmap(QPixmap(":/icons/tracexpert512.png").scaled(50,50, Qt::KeepAspectRatio, Qt::SmoothTransformation));   // here is the error
+    about.setDefaultButton(QMessageBox::Ok);
+    about.show();
+    about.exec();
 }
 
 void TMainWindow::closeEvent(QCloseEvent *event)

@@ -1,4 +1,4 @@
-![Hamming distance diagram](../icons/tracexpert256.png)
+![](images/tracexpert256.png)
 
 # TraceXpert 1.0
 

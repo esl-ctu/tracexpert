@@ -16,7 +16,7 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Charts Xml Concurrent)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts Xml Concurrent)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts Xml Concurrent Help)
 
 add_subdirectory(ads)
 
@@ -185,6 +185,7 @@ add_executable(${PROJECT_NAME} WIN32
     graphs/tgraphwidget.cpp
     graphs/tgraph.h
     graphs/tcpagraph.h
+    thelpbrowser.h thelpbrowser.cpp
 )
 
 
@@ -199,6 +200,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Charts)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Xml)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Concurrent)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Help)
 
 function(add_plugin dir target additional_files)
   # Add the subdirectory for the plugin
@@ -237,3 +240,9 @@ add_plugin(serialport TSerialPort "")
 add_plugin(smartcard TSmartCard "")
 add_plugin(newae Tnewae executable.py)
 add_plugin(ttest TTTestPlugin "")
+
+option(BUILD_HELP "Enable building help collection" ON)
+
+if (BUILD_HELP)
+    add_subdirectory(docs)
+endif()

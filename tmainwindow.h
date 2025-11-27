@@ -42,6 +42,9 @@ private slots:
     void saveProjectAs();
     bool closeProject();
 
+    void showHelp();
+    void showAbout();
+
 private:
     void createMenus();
     void createActions();
@@ -62,6 +65,9 @@ private:
     QAction * m_closeProjectAction;
 
     QAction * m_openDeviceAction;
+
+    QAction * m_helpAction;
+    QAction * m_aboutAction;
 
     QMenu * m_viewMenu;
     
