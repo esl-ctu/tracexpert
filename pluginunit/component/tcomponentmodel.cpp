@@ -279,8 +279,18 @@ bool TComponentModel::removeIODevice(TIODeviceModel * IODevice)
     if (!IODevice->isManual() && IODevice->isAvailable())
         return false;
 
+    bool hideContainer = false;
+
+    if (m_IOdevices->count() == 1) {
+        hideContainer = true;
+        beginRemoveChild(0);
+    }
+
     if (!m_IOdevices->remove(IODevice))
         return false;
+
+    if (hideContainer)
+        endRemoveChild();
 
     delete IODevice;
     return true;
@@ -294,8 +304,18 @@ bool TComponentModel::removeScope(TScopeModel * scope)
     if (!scope->isManual() && scope->isAvailable())
         return false;
 
+    bool hideContainer = false;
+
+    if (m_scopes->count() == 1) {
+        hideContainer = true;
+        beginRemoveChild(m_IOdevices->count() > 0);
+    }
+
     if (!m_scopes->remove(scope))
         return false;
+
+    if (hideContainer)
+        endRemoveChild();
 
     delete scope;
     return true;
@@ -309,8 +329,18 @@ bool TComponentModel::removeAnalDevice(TAnalDeviceModel * analDevice)
     if (!analDevice->isManual() && analDevice->isAvailable())
         return false;
 
+    bool hideContainer = false;
+
+    if (m_analDevices->count() == 1) {
+        hideContainer = true;
+        beginRemoveChild((m_IOdevices->count() > 0) + (m_scopes->count() > 0));
+    }
+
     if (!m_analDevices->remove(analDevice))
         return false;
+
+    if (hideContainer)
+        endRemoveChild();
 
     delete analDevice;
     return true;
@@ -335,13 +365,13 @@ int TComponentModel::childrenCount() const
 {
     int count = 0;
 
-    if (m_IOdevices) {
+    if (m_IOdevices && m_IOdevices->count()) {
         count++;
     }
-    if (m_scopes) {
+    if (m_scopes && m_scopes->count()) {
         count++;
     }
-    if (m_analDevices) {
+    if (m_analDevices && m_analDevices->count()) {
         count++;
     }
 
@@ -350,7 +380,7 @@ int TComponentModel::childrenCount() const
 
 TProjectItem * TComponentModel::child(int row) const
 {
-    if (m_IOdevices) {
+    if (m_IOdevices && m_IOdevices->count()) {
         if (row == 0) {
             return m_IOdevices;
         }
@@ -359,7 +389,7 @@ TProjectItem * TComponentModel::child(int row) const
         }
     }
 
-    if (m_scopes) {
+    if (m_scopes && m_scopes->count()) {
         if (row == 0) {
             return m_scopes;
         }
@@ -368,7 +398,7 @@ TProjectItem * TComponentModel::child(int row) const
         }
     }
 
-    if (m_analDevices) {
+    if (m_analDevices && m_analDevices->count()) {
         if (row == 0) {
             return m_analDevices;
         }
@@ -414,7 +444,17 @@ void TComponentModel::appendIODevice(TIODevice * IODevice, bool manual, QDomElem
     if (element)
         IODeviceModel->load(element);
 
+    bool showContainer = false;
+
+    if (!m_IOdevices->count()) {
+        showContainer = true;
+        beginInsertChild(0);
+    }
+
     m_IOdevices->add(IODeviceModel);
+
+    if (showContainer)
+        endInsertChild();
 }
 
 void TComponentModel::appendScope(TScope * scope, bool manual, QDomElement * element)
@@ -426,7 +466,17 @@ void TComponentModel::appendScope(TScope * scope, bool manual, QDomElement * ele
     if (element)
         scopeModel->load(element);
 
+    bool showContainer = false;
+
+    if (!m_scopes->count()) {
+        showContainer = true;
+        beginInsertChild(m_IOdevices->count() > 0);
+    }
+
     m_scopes->add(scopeModel);
+
+    if (showContainer)
+        endInsertChild();
 }
 
 void TComponentModel::appendAnalDevice(TAnalDevice * analDevice, bool manual, QDomElement * element)
@@ -438,7 +488,17 @@ void TComponentModel::appendAnalDevice(TAnalDevice * analDevice, bool manual, QD
     if (element)
         analDeviceModel->load(element);
 
+    bool showContainer = false;
+
+    if (!m_analDevices->count()) {
+        showContainer = true;
+        beginInsertChild((m_IOdevices->count() > 0) + (m_scopes->count() > 0));
+    }
+
     m_analDevices->add(analDeviceModel);
+
+    if (showContainer)
+        endInsertChild();
 }
 
 void TComponentModel::loadIODevices(QDomElement * element)
