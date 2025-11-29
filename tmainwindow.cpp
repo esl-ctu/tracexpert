@@ -8,7 +8,8 @@
 #include <QHelpContentWidget>
 #include <QHelpIndexWidget>
 #include <QHelpLink>
-#include <qstatusbar.h>
+#include <QStatusBar>
+#include <QToolBar>
 
 #include "tmainwindow.h"
 #include "graphs/tgraph.h"
@@ -170,16 +171,36 @@ void TMainWindow::createStatusBar(TLogLineWidget * logLineWidget) {
 }
 
 void TMainWindow::createProjectDockWidget(TProjectModel * model)
-{
-    m_projectDockWidget = new TDockWidget(tr("Project"), this);
-    m_projectView = new TProjectView(this);
+{    
+    QToolBar * projectToolbar = new QToolBar(this);
+
+    projectToolbar->setFixedHeight(32);
+    projectToolbar->setMovable(false);
+    projectToolbar->setFloatable(false);
+    projectToolbar->setOrientation(Qt::Horizontal);
+
+    // Set toolbar style
+    //projectToolbar->setStyleSheet("QToolBar { border: 0; background: red; padding: 0; margin: 0 }");
+
+    m_projectView = new TProjectView(projectToolbar, this);
     m_projectView->setMinimumWidth(450);
     m_projectModel = model;
     m_projectDirectory = QDir::current();
     m_projectView->setModel(m_projectModel);
     m_projectView->expandToDepth(1);
     m_projectView->resizeColumnToContents(0);
-    m_projectDockWidget->setWidget(m_projectView);
+
+    QWidget * projectWidget = new QWidget;
+
+    QLayout * layout = new QVBoxLayout;
+    layout->addWidget(projectToolbar);
+    layout->addWidget(m_projectView);
+    layout->setContentsMargins(0,0,0,0);
+    layout->setSpacing(0);
+    projectWidget->setLayout(layout);
+
+    m_projectDockWidget = new TDockWidget(tr("Project"), this);
+    m_projectDockWidget->setWidget(projectWidget);
     m_dockManager->addDockWidget(TDockArea::LeftDockWidgetArea, m_projectDockWidget);
     m_viewMenu->insertAction(m_viewMenu->actions().isEmpty() ? nullptr : m_viewMenu->actions().constFirst(), m_projectDockWidget->toggleViewAction());
 

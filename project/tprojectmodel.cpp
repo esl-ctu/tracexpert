@@ -117,7 +117,7 @@ int TProjectModel::columnCount(const QModelIndex & parent) const
     return 2;
 }
 
-void TProjectModel::emitDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
+void TProjectModel::emitDataChanged(const QModelIndex & topLeft, const QModelIndex & bottomRight)
 {
     emit dataChanged(topLeft, bottomRight);
 }
@@ -223,6 +223,9 @@ void TProjectModel::unloadComponents()
 {
     for (int i = 0; i < m_componentContainer->count(); i++) {
         m_componentContainer->at(i)->deInit();
+    }
+
+    for (int i = 0; i < m_componentContainer->count(); i++) {
         delete m_componentContainer->at(i);
     }
 }

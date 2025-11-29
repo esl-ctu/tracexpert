@@ -103,6 +103,8 @@ bool TComponentModel::init()
         appendAnalDevice(analDevices[i]);
     }
 
+    itemDataChanged();
+
     return true;
 }
 
@@ -113,7 +115,7 @@ bool TComponentModel::deInit()
     }
 
     QList<TIODeviceModel *> removedIODevices;
-    
+
     for (int i = 0; i < m_IOdevices->count(); i++) {
         TIODeviceModel * IODevice = m_IOdevices->at(i);
 
@@ -133,7 +135,7 @@ bool TComponentModel::deInit()
     }
 
     QList<TScopeModel *> removedScopes;
-    
+
     for (int i = 0; i < m_scopes->count(); i++) {
         TScopeModel * scope = m_scopes->at(i);
 
@@ -177,6 +179,8 @@ bool TComponentModel::deInit()
     }
 
     m_isInit = false;
+
+    itemDataChanged();
 
     return true;
 }

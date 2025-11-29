@@ -47,6 +47,7 @@ bool TAnalDeviceModel::init()
     }
 
     emit initialized(this);
+    itemDataChanged();
 
     return true;
 }
@@ -79,6 +80,7 @@ bool TAnalDeviceModel::deInit()
     m_actionModels.clear();
 
     emit deinitialized(this);
+    itemDataChanged();
 
     return true;
 }
