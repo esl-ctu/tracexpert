@@ -65,12 +65,9 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
     lowerSplitter->addWidget(paramWidget);
     lowerSplitter->setStretchFactor(1, 0);
 
-    QVBoxLayout * groupBoxLayout = new QVBoxLayout();
-    groupBoxLayout->addWidget(lowerSplitter);
-    groupBoxLayout->setContentsMargins(0, 0, 0, 0);
-
-    QGroupBox * lowerGroupBox = new QGroupBox();
-    lowerGroupBox->setLayout(groupBoxLayout);
+    QVBoxLayout * lowerLayout = new QVBoxLayout();
+    lowerLayout->addWidget(lowerSplitter);
+    lowerLayout->setContentsMargins(0, 0, 0, 0);
 
     m_runOnceButton = new QPushButton();
     m_runOnceButton->setIcon(QIcon(":/icons/play.png"));
@@ -126,12 +123,9 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
     toolbarLayout->addWidget(m_traceIndexLineEdit);
     toolbarLayout->addWidget(m_nextTraceButton);
 
-    QGroupBox * upperGroupBox = new QGroupBox;
-    upperGroupBox->setLayout(toolbarLayout);
-
     QVBoxLayout * layout = new QVBoxLayout;
-    layout->addWidget(upperGroupBox);
-    layout->addWidget(lowerGroupBox, 1);
+    layout->addLayout(toolbarLayout);
+    layout->addLayout(lowerLayout, 1);
 
     m_isDataIntendedForThisWidget = false;
 
@@ -224,7 +218,7 @@ void TScopeWidget::updateChannelStatus() {
     displayTrace(m_currentTraceNumber-1);
 }
 
-void TScopeWidget::runFailed() {    
+void TScopeWidget::runFailed() {
     QMessageBox::critical(this, "Error", "Failed to start sampling");
     setGUItoReady();
 }
