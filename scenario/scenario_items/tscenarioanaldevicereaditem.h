@@ -25,6 +25,9 @@ public:
 
         TConfigParam streamParam("Output stream", "", TConfigParam::TType::TEnum, tr("Select the stream to read from."), false);
         m_params.addSubParam(streamParam);
+
+        TConfigParam readAllParam("Read all available bytes", "false", TConfigParam::TType::TBool, tr("Select true to always read all available bytes from the selected stream."), false);
+        m_params.addSubParam(readAllParam);
     }
 
     TScenarioItem * copy() const override {
@@ -37,9 +40,13 @@ public:
         }
 
         bool iok;
-        params.getSubParamByName("Output stream", &iok);
+        params.getSubParamByName("Output stream", &iok);        
+        if(!iok) return false;
 
-        return iok;
+        params.getSubParamByName("Read all available bytes", &iok);
+        if(!iok) return false;
+
+        return true;
     }
 
     void updateParams(bool paramValuesChanged) override {
@@ -108,21 +115,28 @@ public:
     void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
         checkAndSetInitParamsBeforeExecution();
 
-        int dataLen;
-        QDataStream lengthStream(inputData.value(getItemPortByName("lengthIn")));
-        lengthStream.setByteOrder(QDataStream::LittleEndian);
-        lengthStream >> dataLen;
-
-        if(dataLen == 0) {
-            setState(TState::TRuntimeWarning, tr("Requested to read 0 bytes."));
-            emit executionFinished();
-            return;
-        }
-
         m_analStreamModel = getAnalDeviceStreamReceiverModel();
 
         if(!m_analStreamModel) {
             setState(TState::TRuntimeError, tr("The output stream was not found."));
+            emit executionFinished();
+            return;
+        }
+
+        size_t dataLen = 0;
+
+        TConfigParam * readAllParam = m_params.getSubParamByName("Read all available bytes");
+        if(readAllParam->getValue() == "true") {
+            dataLen = m_analStreamModel->availableBytes();
+        }
+        else {
+            QDataStream lengthStream(inputData.value(getItemPortByName("lengthIn")));
+            lengthStream.setByteOrder(QDataStream::LittleEndian);
+            lengthStream >> dataLen;
+        }
+
+        if(dataLen == 0) {
+            setState(TState::TRuntimeWarning, tr("Requested to read 0 bytes."));
             emit executionFinished();
             return;
         }
@@ -142,6 +156,14 @@ public:
 
     TConfigParam setParams(TConfigParam params) override {
         TConfigParam paramsToReturn = TScenarioAnalDeviceItem::setParams(params);
+
+        TConfigParam * readAllParam = params.getSubParamByName("Read all available bytes");
+        if(readAllParam->getValue() == "true") {
+            removePort("lengthIn");
+        }
+        else {
+            addDataInputPort("lengthIn", "length", tr("Number of bytes to read, as integer."));
+        }
 
         m_title = "";
         m_subtitle = tr("no Analytic Device selected");

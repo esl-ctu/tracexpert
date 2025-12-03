@@ -18,6 +18,8 @@ public:
 
     bool isBusy();
 
+    size_t availableBytes();
+
     QByteArray receivedData() const;
 
 public slots:

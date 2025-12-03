@@ -79,6 +79,11 @@ bool TReceiverModel::isBusy()
     return m_receiver->isBusy();
 }
 
+size_t TReceiverModel::availableBytes()
+{
+    return m_receiver->availableBytes();
+}
+
 QByteArray TReceiverModel::receivedData() const
 {
     return m_receivedData;
