@@ -9,6 +9,10 @@
 #include <QPushButton>
 #include <QMessageBox>
 #include <QSplitter>
+#include <QFileDialog>
+#include <QToolBar>
+#include <QSvgGenerator>
+#include <QApplication>
 
 #include "tgraphwidget.h"
 #include "widgets/tconfigparamwidget.h"
@@ -34,20 +38,38 @@ TGraphWidget::TGraphWidget(TGraph * graph, QWidget * parent) : QWidget(parent), 
     QVBoxLayout * paramLayout = new QVBoxLayout();
     paramLayout->addWidget(m_graphParamWidget);
     paramLayout->addWidget(applyButton);
-    paramLayout->addWidget(m_interpretationParamWidget);
+    paramLayout->setContentsMargins(0, 0, 0, 0);
 
     QWidget * paramWidget = new QWidget();
     paramWidget->setLayout(paramLayout);
 
-    QSplitter * lowerSplitter = new QSplitter(Qt::Horizontal);
-    lowerSplitter->addWidget(m_graph);
-    lowerSplitter->setStretchFactor(0, 1);
-    lowerSplitter->addWidget(paramWidget);
-    lowerSplitter->setStretchFactor(1, 0);
+    QSplitter * verticalSplitter = new QSplitter(Qt::Vertical);
+    verticalSplitter->addWidget(paramWidget);
+    verticalSplitter->addWidget(m_interpretationParamWidget);
+
+    QSplitter * horizontalSplitter = new QSplitter(Qt::Horizontal);
+    horizontalSplitter->addWidget(m_graph);
+    horizontalSplitter->setStretchFactor(0, 1);
+    horizontalSplitter->addWidget(verticalSplitter);
+    horizontalSplitter->setStretchFactor(1, 0);
+
+    QAction * saveAction = new QAction(QIcon(":/icons/save.png"), tr("&Save graph to file"), this);
+    saveAction->setShortcut(tr("Ctrl+S"));
+    saveAction->setStatusTip(tr("Save graph to file"));
+    connect(saveAction, &QAction::triggered, this, &TGraphWidget::saveGraph);
+
+    QToolBar * toolBar = new QToolBar();
+    toolBar->addAction(saveAction);
+
+    QHBoxLayout * toolbarLayout = new QHBoxLayout;
+    toolbarLayout->addWidget(toolBar);
+
+    QVBoxLayout * lowerLayout = new QVBoxLayout();
+    lowerLayout->addWidget(horizontalSplitter);
 
     QVBoxLayout * layout = new QVBoxLayout();
-    layout->addWidget(lowerSplitter);
-    layout->setContentsMargins(0, 0, 0, 0);
+    layout->addLayout(toolbarLayout);
+    layout->addLayout(lowerLayout, 1);
 
     setLayout(layout);
 }
@@ -74,4 +96,58 @@ bool TGraphWidget::applyParams() {
 
 void TGraphWidget::interpretationChanged() {
     m_interpretationParamWidget->setParam(m_graph->interpretationParams());
+}
+
+void TGraphWidget::saveGraph() {
+    uint width = 800;
+    uint height = 600;
+
+    if(!TDialog::exportImageDimensionsDialog(this, width, height)) {
+        return;
+    }
+
+    QStringList filters;
+    filters << "SVG file (*.svg)"
+            << "PNG file (*.png)"
+            << "JPEG file (*.jpeg)"
+            << "Any files (*)";
+
+    QFileDialog saveDialog;
+    saveDialog.setNameFilters(filters);
+    saveDialog.setAcceptMode(QFileDialog::AcceptSave);
+    saveDialog.setFileMode(QFileDialog::AnyFile);
+
+    // TODO: open specific directory?
+    // openDialog.setDirectory(m_projectDirectory);
+
+    saveDialog.selectFile(m_graph->name());
+    if (!saveDialog.exec()) return;
+
+    QString selectedFilePath = saveDialog.selectedFiles().constFirst();
+
+    if(selectedFilePath.endsWith(".svg")) {
+        QSvgGenerator generator;
+        generator.setFileName(selectedFilePath);
+        generator.setSize(QSize(width, height));
+        generator.setViewBox(QRect(0, 0, width, height));
+        generator.setTitle(m_graph->name());
+
+        renderGraph(&generator, width, height);
+    } else {
+        QPixmap pixmap(QSize(width, height));
+        renderGraph(&pixmap, width, height);
+
+        if(!pixmap.save(selectedFilePath)) {
+            QMessageBox::warning(this, tr("Image save failed"), tr("Image save failed!"));
+        }
+    }
+}
+
+void TGraphWidget::renderGraph(QPaintDevice * paintDevice, uint width, uint height) {
+    QPainter painter(paintDevice);
+    double sx = double(width) / m_graph->width();
+    double sy = double(height) / m_graph->height();
+    painter.scale(sx, sy);
+    m_graph->render(&painter);
+    painter.end();
 }

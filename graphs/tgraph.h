@@ -11,6 +11,13 @@ class TGraph : public QWidget
 public:
     TGraph(const QString & name, QWidget * parent = nullptr) : QWidget(parent), m_name(name) { }
 
+    virtual TGraph * copy() const {
+        TGraph * copy = new TGraph(m_name);
+        copy->setGraphParams(m_graphParams);
+        copy->setData(m_data);
+        return copy;
+    }
+
     QString name() {
         return m_name;
     }

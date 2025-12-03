@@ -6,6 +6,7 @@
 #include <QChart>
 #include <QChartView>
 #include <QLayout>
+#include <QGraphicsLayout>
 
 #include "tgraph.h"
 
@@ -27,15 +28,23 @@ public:
         initInterpretationParams();
 
         m_chart = new QChart();
+        m_chart->layout()->setContentsMargins(0, 0, 0, 0);
+        m_chart->setBackgroundRoundness(0);
 
         QChartView * chartView = new QChartView(m_chart);
         chartView->setRenderHint(QPainter::Antialiasing, false);
+        chartView->setContentsMargins(0, 0, 0, 0);
 
         QLayout * layout = new QVBoxLayout();
         layout->addWidget(chartView);
+        layout->setContentsMargins(0, 0, 0, 0);
 
         setLayout(layout);
     };
+
+    TCPAGraph * copy() const override {
+        return (TCPAGraph*)TGraph::copy();
+    }
 
     TConfigParam setGraphParams(TConfigParam params) override {
         if(!validateParamsStructure(params)) {
