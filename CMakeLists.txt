@@ -32,6 +32,8 @@ add_executable(${PROJECT_NAME} WIN32
     tdialog.h
     tdockmanager.cpp
     tdockmanager.h
+    thelpbrowser.cpp
+    thelpbrowser.h
     tmainwindow.cpp
     tmainwindow.h
     common/tanaldevice.h
@@ -185,7 +187,6 @@ add_executable(${PROJECT_NAME} WIN32
     graphs/tgraphwidget.cpp
     graphs/tgraph.h
     graphs/tcpagraph.h
-    thelpbrowser.h thelpbrowser.cpp
 )
 
 
@@ -234,6 +235,7 @@ add_plugin(cipher TCipherPlugin "")
 add_plugin(predict TPredictPlugin "")
 add_plugin(cpa TCPAPlugin "")
 add_plugin(dummyscope TDummyScopePlugin "")
+add_plugin(filescope TFileScopePlugin "")
 add_plugin(file TFile "")
 add_plugin(ps6000 TPS6000 "")
 add_plugin(ps6000a TPS6000a "")
