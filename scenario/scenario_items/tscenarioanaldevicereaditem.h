@@ -112,6 +112,15 @@ public:
         emit executionFinished();
     }
 
+    bool cleanup() override {
+        TScenarioComponentItem::cleanup();
+        if(m_analStreamModel) {
+            disconnect(m_analStreamModel, nullptr, this, nullptr);
+            m_analStreamModel = nullptr;
+        }
+        return true;
+    }
+
     void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
         checkAndSetInitParamsBeforeExecution();
 

@@ -204,7 +204,10 @@ public:
 
     bool cleanup() override {
         // make sure no signals are received after scenario stops
-        disconnect(m_deviceModel, nullptr, this, nullptr);
+        if(m_deviceModel) {
+            disconnect(m_deviceModel, nullptr, this, nullptr);
+            m_deviceModel = nullptr;
+        }
         return true;
     }
 

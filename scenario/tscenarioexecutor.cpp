@@ -364,7 +364,10 @@ TScenarioItem * TScenarioExecutor::findNextFlowItem(TScenarioItem * item) {
 
     TScenarioItemPort * nextItemFlowInputPort = m_flowConnectionMap.value(currentItemFlowOutputPort);
     if(!nextItemFlowInputPort) {
-        item->setState(TScenarioItem::TState::TRuntimeError, "Execution stopped here: unconnected output flow port!");
+        item->setState(
+            TScenarioItem::TState::TRuntimeError,
+            QString("Execution stopped here: unconnected output flow port (%1)!").arg(currentItemFlowOutputPort->getDisplayName())
+        );
         qWarning("Failed to execute the scenario - nowhere to go after executed block.");
 
         throw ScenarioExecutionException();
