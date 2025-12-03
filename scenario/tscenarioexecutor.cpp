@@ -350,6 +350,7 @@ void TScenarioExecutor::executeFlowItems() {
             break;
         }
 
+        currentItem->resetState(true);
         executeItem(currentItem);
         currentItem = findNextFlowItem(currentItem);
     }
