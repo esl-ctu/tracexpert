@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 project(MD2HTML)
 
 find_program(PANDOC_EXEC pandoc REQUIRED)
+find_program(QHELPGENERATOR_EXEC qhelpgenerator REQUIRED)
 
 # List of MD files
 file(GLOB MD_FILES "${CMAKE_CURRENT_SOURCE_DIR}/*.md")
