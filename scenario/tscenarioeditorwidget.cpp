@@ -87,7 +87,9 @@ TScenarioEditorWidget::TScenarioEditorWidget(TScenarioModel * scenarioModel, TPr
     connect(m_scenarioExecutor, &TScenarioExecutor::scenarioExecutionFinished, this, &TScenarioEditorWidget::scenarioStopped);
 }
 
-TScenarioEditorWidget::~TScenarioEditorWidget() { }
+TScenarioEditorWidget::~TScenarioEditorWidget() {
+    m_scenarioExecutor->terminate();
+}
 
 void TScenarioEditorWidget::closeEvent(QCloseEvent *event) {
     event->ignore();
