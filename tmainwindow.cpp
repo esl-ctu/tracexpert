@@ -485,6 +485,8 @@ bool TMainWindow::closeProject()
 
         if (editor && !editor->close())
             return false;
+
+        scenarioEditorDockWidget->close();
     }
 
     if (!TDialog::closeConfirmation(this, "project")) {
