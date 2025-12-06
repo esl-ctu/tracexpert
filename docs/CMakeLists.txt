@@ -29,8 +29,11 @@ foreach(MD_FILE ${MD_FILES})
         OUTPUT ${HTML_FILE}
         COMMAND "${PANDOC_EXEC}"
                 "-s"
+                "-f"
+                "markdown-implicit_figures"
                 "${MD_FILE}"
                 "--lua-filter=${LUA_FILTER_PATH_ESCAPED}"
+                "--css=img.css"
                 "-o"
                 "${HTML_FILE}"
         DEPENDS ${MD_FILE} "${LUA_FILTER_PATH}"
