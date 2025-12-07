@@ -1,3 +1,5 @@
+[Back to the top (index)](README.md)
+
 # Protocols
 
 TraceXpert allows you to define *protocols*, 
@@ -5,10 +7,12 @@ which can be used with IO Devices for communication
 and data processing.
 
 A protocol in TraceXpert consists of:
+
  - *protocol messages* – individual commands or responses within the protocol
  - *protocol message parts* – the components that make up each protocol message 
 
 Typical use cases include:
+
 - communicating with external devices (often via serial ports), using:
     - known protocols (e.g., NewAE SimpleSerial)
     - custom user-defined protocols 
@@ -79,6 +83,7 @@ To begin, click **Add**.
 Fill out the **name**, **description**, and select a **data type** for the message part.
 
 **Data types** include:
+
 - **Fixed length**: character, short, integer, long, etc.
 - **Variable length**: string, byte array
 
@@ -87,6 +92,7 @@ Payloads represent variable values that are filled in at runtime,
 such as when sending commands or receiving data from a device.
 
 For variable-length payloads:
+
 - You can define a **static length**, or
 - Specify that the length is determined by another message part (of an appropriate data type).
 
@@ -97,6 +103,7 @@ For **multi-byte** values, you can also set the **endianness** (byte order).
 ![Adding a Message Part](images/protocols_new_part.png)
 
 Once all message parts are defined, click **Finish** to return to the message list. From there, you can:
+
 - Add additional messages, or
 - Click **Finish** again to complete the protocol definition.
 
@@ -105,6 +112,7 @@ Once all message parts are defined, click **Finish** to return to the message li
 Let’s walk through an example. Suppose we have a simple custom protocol command used to **set a parameter** to a given value.
 
 The command:
+
 - Starts with a fixed byte `0xA9`
 - Includes a 4-byte **integer** identifying the parameter
 - Includes a **length byte** indicating the size of the following string
@@ -112,6 +120,7 @@ The command:
 - Terminates with a newline (`\n`)
 
 ### Structure of the Command:
+
 1. **Byte**: `0xA9` – indicates command type
 2. **4-byte integer** (variable): parameter ID
 3. **Byte**: length of the string that follows
@@ -132,6 +141,7 @@ To build this in the wizard, create the following message parts in order:
    ![Step 4](images/protocols_example_message_step4.png)
 
 The result should look as follows:
+
 ![Example Message Overview](images/protocols_example_message.png)
 
 By following this process, you can define custom communication protocols tailored to your application’s needs, whether it’s interfacing with hardware or working with structured file formats.

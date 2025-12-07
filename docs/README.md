@@ -1,6 +1,4 @@
-![](images/tracexpert256.png)
-
-# TraceXpert 1.0
+# TraceXpert 1.0 User Guide
 
 **An integrated environment for side-channel data acquisition and analysis**
 
@@ -19,30 +17,61 @@ TraceXpert 1.0 supports both Windows and Linux platforms and is distributed as o
 ## Index
 
 * 1 Getting Started
-* 2 Component architecture
-* 3 User interface
-* 4 I/O Devices
-    - 4.1 File
-    - 4.2 Random number generator
-    - 4.3 Serial port
-    - 4.4 Smart card
-* 5 [Protocols](protocols.md)    
-* 6 Oscilloscopes
-    - 6.1 NewAE (ChipWhisperer)
-    - 6.2 Picoscope 6000 A/B/C/D/E series
-* 7 Analytical devices
-    - 7.1 [Ciphers](ciphers.md)
-    - 7.2 [Leakage predictions](predictions.md)
-    - 7.3 [Correlation power analysis](cpa.md)
-    - 7.4 [Welch's t-test leakage assessment](ttest.md)
-* 8 [Scenarios](scenarios.md)
-* 9 Example use-case
+* 2 Project Manager and Components
+* 3 [I/O Devices](iodevices.md)
+    - 3.1 [File](file.md)
+    - 3.2 [Random number generator](rng.md)
+    - 3.3 [Serial port](serialport.md)
+    - 3.4 [Smart card](smartcard.md)
+* 4 [Protocols](protocols.md)
+* 5 [Oscilloscopes](oscilloscopes.md)
+    - 5.1 NewAE (ChipWhisperer)
+    - 5.2 [Picoscope 6000 A/B/C/D/E series](picoscope6000.md)
+* 6 [Analytical Devices](analytical.md)
+    - 6.1 [Ciphers](ciphers.md)
+    - 6.2 [Leakage predictions](predictions.md)
+    - 6.3 [Correlation power analysis](cpa.md)
+    - 6.4 [Welch's t-test leakage assessment](ttest.md)
+* 7 [Scenarios](scenarios.md)
+* 8 Example use-case
     - 9.1 Correlation power analysis
     - 9.2 Non-specific t-test
     - 9.3 Specific t-test
 * Build instructions
 
+## Contributors (alphabetically)
+
+Embedded Security Lab, CTU in Prague, https://crypto.fit.cvut.cz/
+
+* Vojtech Miškovský
+* Martin Novotný
+* David Pokorný
+* Tomáš Preucil
+* Petr Socha
+* Adam Švehla
+
 ## Acknowledgment
 
 This work is supported by Ministry of the Interior of the Czech Republic under Grant VJ02010010 (2022-2025).
+
+## License
+
+TraceXpert
+
+Copyright (C) 2022-present Embedded Security Lab, CTU in Prague, and contributors.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+![TraceXpert logo](images/tracexpert256.png)
 

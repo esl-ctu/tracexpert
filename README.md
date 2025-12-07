@@ -1,12 +1,12 @@
-![Hamming distance diagram](icons/tracexpert256.png)
+![TraceXpert logo](icons/tracexpert256.png)
 
 # TraceXpert
 
 **An integrated environment for side-channel data acquisition and analysis**
 
-## User Manual
+## User Guide and Contributors
 
-[Can be found in docs/.](docs/README.md)
+[User Guide and Contributors can be found in docs/.](docs/README.md)
 
 ## Compilation
 
@@ -16,18 +16,28 @@ Some plug-ins have their requirements (e.g., third-party libraries) to compile p
 
 On Windows, MSVC C++ compiler is used. 
 
-## Contributors (alphabetically)
-
-Czech Technical University in Prague, Embedded Security Lab, https://crypto.fit.cvut.cz/
-
-* Vojtěch Miškovský
-* Martin Novotný
-* David Pokorný
-* Tomáš Přeučil
-* Petr Socha
-* Adam Švehla
+The User Manual compilation requires Pandoc.
 
 ## Acknowledgment
 
 This work is supported by Ministry of the Interior of the Czech Republic under Grant VJ02010010 (2022-2025).
+
+## License
+
+TraceXpert
+
+Copyright (C) 2022-present Embedded Security Lab, CTU in Prague, and contributors.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
