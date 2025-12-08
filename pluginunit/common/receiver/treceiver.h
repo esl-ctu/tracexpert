@@ -18,7 +18,7 @@ public:
 
     bool isBusy();
 
-    virtual size_t availableBytes();
+    virtual std::optional<size_t> availableBytes();
 
 public slots:
     void receiveData(int length);

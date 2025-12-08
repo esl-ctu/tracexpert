@@ -21,7 +21,7 @@ size_t TCipherInputStream::readData(uint8_t * buffer, size_t len)
     return m_readData(buffer, len);
 }
 
-size_t TCipherInputStream::availableBytes()
+std::optional<size_t> TCipherInputStream::availableBytes()
 {
     return m_availableBytes();
 }
