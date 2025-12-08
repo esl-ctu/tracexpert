@@ -44,6 +44,7 @@ private slots:
 
     void showHelp();
     void showLicense();
+    void showContributors();
     void showAbout();
 
 private:
@@ -69,6 +70,7 @@ private:
 
     QAction * m_helpAction;
     QAction * m_licenseAction;
+    QAction * m_contributorsAction;
     QAction * m_aboutAction;
 
     QMenu * m_viewMenu;

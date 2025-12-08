@@ -9,6 +9,14 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Generate build info
+string(TIMESTAMP BUILD_TIMESTAMP "%Y-%m-%d %H:%M:%S")
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/buildinfo.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/buildinfo.h
+    @ONLY
+)
+
 # Remove the 'lib' prefix for all libraries
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
@@ -190,7 +198,10 @@ add_executable(${PROJECT_NAME} WIN32
 )
 
 
-target_include_directories(${PROJECT_NAME} PRIVATE common)
+target_include_directories(${PROJECT_NAME} PRIVATE 
+    common
+    ${CMAKE_CURRENT_BINARY_DIR}
+)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE qt${QT_VERSION_MAJOR}advanceddocking)
 

@@ -25,6 +25,7 @@
 #include "protocol/tprotocolwidget.h"
 #include "tdialog.h"
 #include "thelpbrowser.h"
+#include "buildinfo.h"
 
 TMainWindow::TMainWindow(TLogHandler * logHandler, QWidget * parent)
     : QMainWindow(parent)
@@ -83,6 +84,7 @@ void TMainWindow::createMenus()
         helpMenu->addAction(m_helpAction);
 
     helpMenu->addAction(m_licenseAction);
+    helpMenu->addAction(m_contributorsAction);
     helpMenu->addAction(m_aboutAction);
     menuBar()->addMenu(helpMenu);
 }
@@ -128,13 +130,17 @@ void TMainWindow::createActions()
     m_openDeviceAction->setEnabled(false);
     connect(m_openDeviceAction, SIGNAL(triggered()), this, SLOT(showDeviceWizard()));
 
-    m_helpAction = new QAction(tr("Help"), this);
+    m_helpAction = new QAction(tr("User Guide"), this);
     m_helpAction->setStatusTip(tr("Show help"));
     connect(m_helpAction, SIGNAL(triggered()), this, SLOT(showHelp()));
 
     m_licenseAction = new QAction(tr("License"), this);
     m_licenseAction->setStatusTip(tr("Show license"));
     connect(m_licenseAction, SIGNAL(triggered()), this, SLOT(showLicense()));
+
+    m_contributorsAction = new QAction(tr("Contributors and Acknowledgment"), this);
+    m_contributorsAction->setStatusTip(tr("Show contributors"));
+    connect(m_contributorsAction, SIGNAL(triggered()), this, SLOT(showContributors()));
 
     m_aboutAction = new QAction(tr("About"), this);
     m_aboutAction->setStatusTip(tr("Show information about this program"));
@@ -544,7 +550,7 @@ void TMainWindow::showHelp()
 {
     QWidget * helpWindow = new QWidget(this, Qt::Window);
 
-    helpWindow->setWindowTitle(tr("Help"));
+    helpWindow->setWindowTitle(tr("User Guide"));
     helpWindow->setAttribute(Qt::WA_DeleteOnClose);
 
     QHelpEngine * helpEngine = new QHelpEngine(QApplication::applicationDirPath() + "/docs/docs.qhc");
@@ -552,7 +558,7 @@ void TMainWindow::showHelp()
     QTabWidget * helpTabWidget = new QTabWidget;
     helpTabWidget->setMaximumWidth(200);
     helpTabWidget->addTab(helpEngine->contentWidget(), "Contents");
-    helpTabWidget->addTab(helpEngine->indexWidget(), "Index");
+    //helpTabWidget->addTab(helpEngine->indexWidget(), "Index");
 
     THelpBrowser * helpBrowser = new THelpBrowser(helpEngine);
     helpBrowser->setSource(QUrl("qthelp://org.example.docs/docs/README.html"));
@@ -616,12 +622,52 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.";
     dlg.exec();
 }
 
+void TMainWindow::showContributors()
+{
+    QDialog dlg(this);
+    dlg.setWindowTitle("Contributors");
+
+    QVBoxLayout *layout = new QVBoxLayout(&dlg);
+
+    QString licenseText;
+    QFile file(":/CONTRIBUTORS");
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)){
+        licenseText = QString::fromUtf8(file.readAll());
+    } else {
+        licenseText = "CONTRIBUTORS file not found!";
+    }
+
+    QTextBrowser *browser = new QTextBrowser(&dlg);
+    browser->setText(licenseText);
+    browser->setReadOnly(true);
+    browser->setMinimumSize(500, 400);
+
+    layout->addWidget(browser);
+
+    QDialogButtonBox *buttons =
+        new QDialogButtonBox(QDialogButtonBox::Ok, &dlg);
+
+    QObject::connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    layout->addWidget(buttons);
+
+    dlg.exec();
+}
+
 void TMainWindow::showAbout()
 {
     QMessageBox about(this);
 
-    about.setWindowTitle(tr("About TraceXpert"));
-    about.setText(tr("TraceXpert\nVersion: 0.1\n© 2025 Embedded Security Lab\nFaculty of Information Technology\nCzech Technical University in Prague"));
+    QString aboutText = tr("TraceXpert\n\
+Version: 1.0\n\
+Build: %1\n\n\
+© 2022-present Embedded Security Lab and contributors\n\
+Faculty of Information Technology\n\
+Czech Technical University in Prague\n\n\
+Licensed under the GNU General Public License v3.0.\n\
+See Help > License.");
+
+    about.setWindowTitle(tr("About TraceXpert"));    
+    about.setText(aboutText.arg(BUILD_TIMESTAMP));
     about.setStandardButtons(QMessageBox::Ok);
     about.setIconPixmap(QPixmap(":/icons/tracexpert512.png").scaled(50,50, Qt::KeepAspectRatio, Qt::SmoothTransformation));   // here is the error
     about.setDefaultButton(QMessageBox::Ok);
