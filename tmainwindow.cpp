@@ -82,6 +82,7 @@ void TMainWindow::createMenus()
     if (QFile::exists(helpPath))
         helpMenu->addAction(m_helpAction);
 
+    helpMenu->addAction(m_licenseAction);
     helpMenu->addAction(m_aboutAction);
     menuBar()->addMenu(helpMenu);
 }
@@ -130,6 +131,10 @@ void TMainWindow::createActions()
     m_helpAction = new QAction(tr("Help"), this);
     m_helpAction->setStatusTip(tr("Show help"));
     connect(m_helpAction, SIGNAL(triggered()), this, SLOT(showHelp()));
+
+    m_licenseAction = new QAction(tr("License"), this);
+    m_licenseAction->setStatusTip(tr("Show license"));
+    connect(m_licenseAction, SIGNAL(triggered()), this, SLOT(showLicense()));
 
     m_aboutAction = new QAction(tr("About"), this);
     m_aboutAction->setStatusTip(tr("Show information about this program"));
@@ -567,6 +572,48 @@ void TMainWindow::showHelp()
 
     // show the widget automatically
     helpWindowDockWidget->show();
+}
+
+void TMainWindow::showLicense()
+{
+    QDialog dlg(this);
+    dlg.setWindowTitle("License");
+
+    QVBoxLayout *layout = new QVBoxLayout(&dlg);
+
+    QString licenseText;
+    QFile file(":/LICENSE");
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)){
+        licenseText = QString::fromUtf8(file.readAll());
+    } else {
+        licenseText = "This program is free software: you can redistribute it and/or modify\
+it under the terms of the GNU General Public License as published by\
+the Free Software Foundation, either version 3 of the License, or\
+(at your option) any later version.\
+\
+This program is distributed in the hope that it will be useful,\
+but WITHOUT ANY WARRANTY; without even the implied warranty of\
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\
+GNU General Public License for more details.\
+\
+You should have received a copy of the GNU General Public License\
+along with this program.  If not, see <https://www.gnu.org/licenses/>.";
+    }
+
+    QTextBrowser *browser = new QTextBrowser(&dlg);
+    browser->setText(licenseText);
+    browser->setReadOnly(true);
+    browser->setMinimumSize(500, 400);
+
+    layout->addWidget(browser);
+
+    QDialogButtonBox *buttons =
+        new QDialogButtonBox(QDialogButtonBox::Ok, &dlg);
+
+    QObject::connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    layout->addWidget(buttons);
+
+    dlg.exec();
 }
 
 void TMainWindow::showAbout()

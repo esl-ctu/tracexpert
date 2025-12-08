@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
+        <file>LICENSE</file>
         <file>icons/play.png</file>
         <file>icons/repeat.png</file>
         <file>icons/stop.png</file>

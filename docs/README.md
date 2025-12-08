@@ -43,12 +43,12 @@ TraceXpert 1.0 supports both Windows and Linux platforms and is distributed as o
 
 Embedded Security Lab, CTU in Prague, https://crypto.fit.cvut.cz/
 
-* Vojtech Miškovskı
-* Martin Novotnı
-* David Pokornı
-* Tomáš Preucil
+* VojtÄ›ch MiÅ¡kovskÃ½
+* Martin NovotnÃ½
+* David PokornÃ½
+* TomÃ¡Å¡ PÅ™euÄil
 * Petr Socha
-* Adam Švehla
+* Adam Å vehla
 
 ## Acknowledgment
 
