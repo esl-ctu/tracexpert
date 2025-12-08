@@ -307,3 +307,7 @@ size_t TFileDevice::readData(uint8_t * buffer, size_t len) {
     return readLen < 0 ? 0 : readLen;
 
 }
+
+std::optional<size_t> TFileDevice::availableBytes(){
+    return m_file.size() - m_file.pos();
+}

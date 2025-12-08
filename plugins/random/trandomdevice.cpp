@@ -542,3 +542,7 @@ size_t TRandomDevice::readData(uint8_t * buffer, size_t len) {
 
     return len;
 }
+
+std::optional<size_t> TRandomDevice::availableBytes(){
+    return std::nullopt;
+}

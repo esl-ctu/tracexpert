@@ -450,3 +450,16 @@ size_t TSmartCardDevice::readData(uint8_t * buffer, size_t len) {
     return readLen;
 
 }
+
+std::optional<size_t> TSmartCardDevice::availableBytes(){
+
+    qsizetype totalBytes = 0;
+
+    for (const QByteArray &chunk : m_recQueue) {
+        totalBytes += chunk.size();
+    }
+
+    return totalBytes;
+
+}
+

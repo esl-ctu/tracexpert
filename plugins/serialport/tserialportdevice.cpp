@@ -657,3 +657,8 @@ size_t TSerialPortDevice::readData(uint8_t * buffer, size_t len) {
 #endif
 
 }
+
+std::optional<size_t> TSerialPortDevice::availableBytes(){
+    return std::nullopt;
+}
+
