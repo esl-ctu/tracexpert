@@ -16,28 +16,30 @@ TraceXpert 1.0 supports both Windows and Linux platforms and is distributed as o
 
 ## Index
 
-* 1 Getting Started
-* 2 Project Manager and Components
-* 3 [I/O Devices](iodevices.md)
-    - 3.1 [File](file.md)
-    - 3.2 [Random number generator](rng.md)
-    - 3.3 [Serial port](serialport.md)
-    - 3.4 [Smart card](smartcard.md)
-* 4 [Protocols](protocols.md)
-* 5 [Oscilloscopes](oscilloscopes.md)
-    - 5.1 NewAE (ChipWhisperer)
-    - 5.2 [Picoscope 6000 A/B/C/D/E series](picoscope6000.md)
-* 6 [Analytical Devices](analytical.md)
-    - 6.1 [Ciphers](ciphers.md)
-    - 6.2 [Leakage predictions](predictions.md)
-    - 6.3 [Correlation power analysis](cpa.md)
-    - 6.4 [Welch's t-test leakage assessment](ttest.md)
-* 7 [Scenarios](scenarios.md)
-* 8 Example use-case
-    - 9.1 Correlation power analysis
-    - 9.2 Non-specific t-test
-    - 9.3 Specific t-test
-* Build instructions
+- [Title Page, Index](README.md)
+- 1 [Getting Started](gettingstarted.md)
+- 2 [Project Manager](projects.md)
+- 3 [Components and Devices](components-devices.md)
+- 4 [I/O Devices](iodevices.md)
+    - 4.1 [File](file.md)
+    - 4.2 [Random number generator](rng.md)
+    - 4.3 [Serial port](serialport.md)
+    - 4.4 [Smart card](smartcard.md)
+- 5 [Protocols](protocols.md)
+- 6 [Oscilloscopes](oscilloscopes.md)
+    - 6.1 [NewAE (ChipWhisperer)](newae.md)
+    - 6.2 [Picoscope 6000 A/B/C/D/E series](picoscope6000.md)
+- 7 [Analytical Devices](analytical.md)
+    - 7.1 [Ciphers](ciphers.md)
+    - 7.2 [Leakage predictions](predictions.md)
+    - 7.3 [Correlation power analysis](cpa.md)
+    - 7.4 [Welch's t-test leakage assessment](ttest.md)
+- 8 [Scenarios](scenarios.md)
+- 9 [Example use-case](examples.md)
+    - 9.1 [Correlation power analysis](example-cpa.md)
+    - 9.2 [Non-specific t-test](example-nsttest.md)
+    - 9.3 [Specific t-test](example-sttest.md)
+- [Build instructions](build.md)
 
 ## Contributors (alphabetically)
 
