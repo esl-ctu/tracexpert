@@ -660,7 +660,7 @@ void TMainWindow::showAbout()
     QString aboutText = tr("<h1>TraceXpert %1</h1>\
 \
 Based on Qt %2 (%3, %4)<br>\
-Build on %5<br>\
+Built on %5<br>\
 Revision %6<br><br>\
 \
 © %7 Embedded Security Lab (see <i>Help > Contributors</i>)<br>\

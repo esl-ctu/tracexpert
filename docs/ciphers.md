@@ -56,6 +56,8 @@ The action fails when an invalid amount of data was previously submitted to the 
 
 After the **Encrypt input data (+ flush streams)** action finishes, the requested intermediate values are available for reading from the **Intermediate values** stream.
 
+![User interface with a widget](images/cipherdevice.png)
+
 ### Example usage 1
 
 The analyst has 10 plaintext that she wishes to examine. She wants to know the AES-128 cipher state after the 2nd MixColumns operation.

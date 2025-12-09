@@ -217,6 +217,7 @@ add_executable(${PROJECT_NAME} WIN32
     graphs/tgraphwidget.cpp
     graphs/tgraph.h
     graphs/tcpagraph.h
+    buildinfo.h.in
 )
 
 
