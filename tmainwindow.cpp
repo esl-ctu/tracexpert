@@ -603,7 +603,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\
 GNU General Public License for more details.\
 \
 You should have received a copy of the GNU General Public License\
-along with this program.  If not, see <https://www.gnu.org/licenses/>.";
+along with this program. If not, see <https://www.gnu.org/licenses/>.";
     }
 
     QTextBrowser *browser = new QTextBrowser(&dlg);
@@ -657,17 +657,37 @@ void TMainWindow::showAbout()
 {
     QMessageBox about(this);
 
-    QString aboutText = tr("TraceXpert\n\
-Version: 1.0\n\
-Build: %1\n\n\
-© 2022-present Embedded Security Lab and contributors\n\
-Faculty of Information Technology\n\
-Czech Technical University in Prague\n\n\
-Licensed under the GNU General Public License v3.0.\n\
-See Help > License.");
+    QString aboutText = tr("<h1>TraceXpert %1</h1>\
+\
+Based on Qt %2 (%3, %4)<br>\
+Build on %5<br>\
+Revision %6<br><br>\
+\
+© %7 Embedded Security Lab (see <i>Help > Contributors</i>)<br>\
+Faculty of Information Technology<br>\
+Czech Technical University in Prague<br><br>\
+\
+This program is distributed in the hope that it will be useful,<br>\
+but WITHOUT ANY WARRANTY; without even the implied warranty of<br>\
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.<br>\
+See the GNU General Public License v3.0 (<i>Help > License</i>) for more details.");
 
-    about.setWindowTitle(tr("About TraceXpert"));    
-    about.setText(aboutText.arg(BUILD_TIMESTAMP));
+    QString compiler;
+
+    #if defined(__clang__)
+        compiler = QString("Clang %1.%2").arg(__clang_major__).arg(__clang_minor__);
+    #elif defined(__GNUC__)
+        compiler = QString("GCC %1.%2.%3")
+                       .arg(__GNUC__).arg(__GNUC_MINOR__).arg(__GNUC_PATCHLEVEL__);
+    #elif defined(_MSC_VER)
+        compiler = QString("MSVC %1").arg(_MSC_VER);
+    #else
+        compiler = "Unknown compiler";
+    #endif
+
+    about.setWindowTitle(tr("About TraceXpert"));
+    about.setTextFormat(Qt::RichText);
+    about.setText(aboutText.arg(TRACEXPERT_VERSION).arg(QT_VERSION_STR).arg(compiler).arg(QSysInfo::buildAbi()).arg(BUILD_TIMESTAMP).arg(BUILD_GIT_REVISION).arg(COPYRIGHT_YEAR));
     about.setStandardButtons(QMessageBox::Ok);
     about.setIconPixmap(QPixmap(":/icons/tracexpert512.png").scaled(50,50, Qt::KeepAspectRatio, Qt::SmoothTransformation));   // here is the error
     about.setDefaultButton(QMessageBox::Ok);

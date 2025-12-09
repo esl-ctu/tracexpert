@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(TraceXpert VERSION 0.1 LANGUAGES CXX)
+project(TraceXpert VERSION 1.0 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -11,6 +11,28 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Generate build info
 string(TIMESTAMP BUILD_TIMESTAMP "%Y-%m-%d %H:%M:%S")
+find_package(Git QUIET)
+
+if(GIT_FOUND)
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_REVISION
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+else()
+    set(GIT_REVISION "unknown")
+endif()
+
+set(COPYRIGHT_BASE_YEAR 2025)
+string(TIMESTAMP CURRENT_YEAR "%Y")
+if (CURRENT_YEAR STRGREATER COPYRIGHT_BASE_YEAR)
+    set(COPYRIGHT_YEAR "${COPYRIGHT_BASE_YEAR}-${CURRENT_YEAR}")
+else()
+    set(COPYRIGHT_YEAR "${COPYRIGHT_BASE_YEAR}")
+endif()
+set(COPYRIGHT_YEAR "${COPYRIGHT_YEAR}")
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/buildinfo.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/buildinfo.h
