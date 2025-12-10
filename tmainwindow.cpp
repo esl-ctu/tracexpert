@@ -70,14 +70,16 @@ void TMainWindow::createMenus()
     fileMenu->addAction(m_closeProjectAction);
     menuBar()->addMenu(fileMenu);
 
-    m_viewMenu = new QMenu(tr("View"), this);
+    m_viewMenu = new QMenu(tr("&View"), this);
     menuBar()->addMenu(m_viewMenu);
 
-    QMenu * devicesMenu = new QMenu(tr("Devices"), this);
-    devicesMenu->addAction(m_openDeviceAction);
-    menuBar()->addMenu(devicesMenu);
+    QMenu * toolsMenu = new QMenu(tr("&Tools"), this);
+    toolsMenu->addAction(m_openDeviceAction);
+    toolsMenu->addAction(m_openProtocolsAction);
+    toolsMenu->addAction(m_openScenariosAction);
+    menuBar()->addMenu(toolsMenu);
 
-    QMenu * helpMenu = new QMenu(tr("Help"), this);
+    QMenu * helpMenu = new QMenu(tr("&Help"), this);
 
     QString helpPath = QApplication::applicationDirPath() + "/docs/docs.qhc";
     if (QFile::exists(helpPath))
@@ -94,51 +96,65 @@ void TMainWindow::createActions()
     m_newProjectAction = new QAction(tr("&New project"), this);
     m_newProjectAction->setShortcuts(QKeySequence::New);
     m_newProjectAction->setStatusTip(tr("Create a new project"));
-    m_newProjectAction->setIcon(QIcon::fromTheme("document-new"));
+    m_newProjectAction->setIcon(QPixmap(":/icons/new-project.png"));
     m_newProjectAction->setIconVisibleInMenu(true);
     connect(m_newProjectAction, SIGNAL(triggered()), this, SLOT(newProject()));
 
     m_openProjectAction = new QAction(tr("&Open project"), this);
     m_openProjectAction->setShortcuts(QKeySequence::Open);
     m_openProjectAction->setStatusTip(tr("Open an existing project"));
-    m_openProjectAction->setIcon(QIcon::fromTheme("document-open"));
+    m_openProjectAction->setIcon(QPixmap(":/icons/open-project.png"));
     connect(m_openProjectAction, SIGNAL(triggered()), this, SLOT(openProject()));
 
     m_saveProjectAction = new QAction(tr("&Save project"), this);
     m_saveProjectAction->setShortcuts(QKeySequence::Save);
-    m_saveProjectAction->setIcon(QIcon::fromTheme("document-save"));
+    m_saveProjectAction->setIcon(QPixmap(":/icons/save.png"));
     m_saveProjectAction->setStatusTip(tr("Save the currect project"));
     m_saveProjectAction->setEnabled(false);
     connect(m_saveProjectAction, SIGNAL(triggered()), this, SLOT(saveProject()));
 
     m_saveProjectAsAction = new QAction(tr("&Save project as"), this);
     m_saveProjectAsAction->setShortcuts(QKeySequence::SaveAs);
-    m_saveProjectAsAction->setIcon(QIcon::fromTheme("document-save-as"));
+    m_saveProjectAsAction->setIcon(QPixmap(":/icons/save-as.png"));
     m_saveProjectAsAction->setStatusTip(tr("Select path and save the current project"));
     m_saveProjectAsAction->setEnabled(false);
     connect(m_saveProjectAsAction, SIGNAL(triggered()), this, SLOT(saveProjectAs()));
 
     m_closeProjectAction = new QAction(tr("&Close project"), this);
     m_closeProjectAction->setShortcuts(QKeySequence::Close);
-    m_closeProjectAction->setIcon(QIcon::fromTheme("document-close"));
+    m_closeProjectAction->setIcon(QPixmap(":/icons/close-project.png"));
     m_closeProjectAction->setStatusTip(tr("Close the current project"));
     m_closeProjectAction->setEnabled(false);
     connect(m_closeProjectAction, SIGNAL(triggered()), this, SLOT(closeProject()));
 
-    m_openDeviceAction = new QAction(tr("Open device"), this);
+    m_openDeviceAction = new QAction(tr("Add/open device"), this);
     m_openDeviceAction->setStatusTip(tr("Open a device using device wizard"));
+    m_openDeviceAction->setIcon(QPixmap(":/icons/add-open-device.png"));
     m_openDeviceAction->setEnabled(false);
     connect(m_openDeviceAction, SIGNAL(triggered()), this, SLOT(showDeviceWizard()));
 
+    m_openProtocolsAction = new QAction(tr("Protocol manager"), this);
+    m_openProtocolsAction->setStatusTip(tr("Open a protocol manager"));
+    m_openProtocolsAction->setIcon(QPixmap(":/icons/protocol-manager.png"));
+    m_openProtocolsAction->setEnabled(false);
+    connect(m_openProtocolsAction, SIGNAL(triggered()), this, SLOT(createProtocolManagerDockWidget()));
+
+    m_openScenariosAction = new QAction(tr("Scenario manager"), this);
+    m_openScenariosAction->setStatusTip(tr("Open a scenario manager"));
+    m_openScenariosAction->setIcon(QPixmap(":/icons/scenario-manager.png"));
+    m_openScenariosAction->setEnabled(false);
+    connect(m_openScenariosAction, SIGNAL(triggered()), this, SLOT(createScenarioManagerDockWidget()));
+
     m_helpAction = new QAction(tr("User Guide"), this);
     m_helpAction->setStatusTip(tr("Show help"));
+    m_helpAction->setShortcut(QKeySequence(Qt::Key_F1));
     connect(m_helpAction, SIGNAL(triggered()), this, SLOT(showHelp()));
 
     m_licenseAction = new QAction(tr("License"), this);
     m_licenseAction->setStatusTip(tr("Show license"));
     connect(m_licenseAction, SIGNAL(triggered()), this, SLOT(showLicense()));
 
-    m_contributorsAction = new QAction(tr("Contributors and Acknowledgment"), this);
+    m_contributorsAction = new QAction(tr("Contributors"), this);
     m_contributorsAction->setStatusTip(tr("Show contributors"));
     connect(m_contributorsAction, SIGNAL(triggered()), this, SLOT(showContributors()));
 
@@ -219,6 +235,8 @@ void TMainWindow::createProjectDockWidget(TProjectModel * model)
     m_saveProjectAsAction->setEnabled(true);
     m_closeProjectAction->setEnabled(true);
     m_openDeviceAction->setEnabled(true);
+    m_openScenariosAction->setEnabled(true);
+    m_openProtocolsAction->setEnabled(true);
 }
 
 void TMainWindow::createIODeviceDockWidget(TIODeviceModel * IODevice)
@@ -540,6 +558,8 @@ bool TMainWindow::closeProject()
     m_saveProjectAction->setEnabled(false);
     m_saveProjectAsAction->setEnabled(false);
     m_openDeviceAction->setEnabled(false);
+    m_openProtocolsAction->setEnabled(false);
+    m_openScenariosAction->setEnabled(false);
 
     m_projectFileName = QString();
 
