@@ -9,9 +9,54 @@
 #include <QPushButton>
 #include <QMessageBox>
 #include <QSplitter>
+#include <QFileDialog>
 
 #include "tscopewidget.h"
 #include "widgets/tconfigparamwidget.h"
+
+TDynamicRadioDialog::TDynamicRadioDialog(const QStringList &options,
+                                       QWidget *parent)
+    : QDialog(parent)
+{
+    setWindowTitle(tr("Channel selection"));
+
+    auto *layout = new QVBoxLayout(this);
+
+    layout->addWidget(new QLabel(tr("Please select the channel to save:")));
+
+    // Create radio buttons dynamically
+    bool first = true;
+    for (const QString &opt : options)
+    {
+        QRadioButton *rb = new QRadioButton(opt, this);
+        layout->addWidget(rb);
+
+        if (first) {
+            rb->setChecked(true);
+            first = false;
+        }
+
+        m_radioButtons.append(rb);
+    }
+
+    // OK / Cancel buttons
+    auto *btnBox = new QDialogButtonBox(
+        QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+
+    connect(btnBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
+    connect(btnBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+    layout->addWidget(btnBox);
+}
+
+QString TDynamicRadioDialog::selectedOption() const
+{
+    for (QRadioButton *rb : m_radioButtons)
+        if (rb->isChecked())
+            return rb->text();
+
+    return QString();
+}
 
 TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(parent), m_scopeModel(scope) {
     setWindowTitle(tr("Oscilloscope - %1").arg(m_scopeModel->name()));
@@ -92,7 +137,15 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
     m_clearDataButton->setIcon(QIcon(":/icons/delete.png"));
     m_clearDataButton->setIconSize(QSize(22, 22));
     m_clearDataButton->setToolTip("Clear trace data");
+    m_clearDataButton->setEnabled(false);
     connect(m_clearDataButton, &QPushButton::clicked, this, &TScopeWidget::clearTraceData);
+
+    m_saveDataButton = new QPushButton();
+    m_saveDataButton->setIcon(QIcon(":/icons/save.png"));
+    m_saveDataButton->setIconSize(QSize(22, 22));
+    m_saveDataButton->setToolTip("Save trace data to file");
+    m_saveDataButton->setEnabled(false);
+    connect(m_saveDataButton, &QPushButton::clicked, this, &TScopeWidget::saveTraceData);
 
     m_prevTraceButton = new QPushButton();
     m_prevTraceButton->setIcon(QIcon(":/icons/prev.png"));
@@ -103,9 +156,22 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
     m_currentTraceNumber = 0;
     m_totalTraceCount = 0;
 
-    m_traceIndexLineEdit = new QLineEdit("0 of 0");
-    m_traceIndexLineEdit->setEnabled(false);
-    m_traceIndexLineEdit->setAlignment(Qt::AlignCenter);
+    m_traceIndexSpinBox = new QSpinBox(this);
+    m_traceIndexSpinBox->setRange(0, 0);
+    m_traceIndexSpinBox->setButtonSymbols(QAbstractSpinBox::NoButtons); // hide up/down arrows
+    m_traceIndexSpinBox->setFixedWidth(80);
+    m_traceIndexSpinBox->setAlignment(Qt::AlignCenter);
+    connect(m_traceIndexSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, [=](int newTrace) {
+        if(newTrace < 1 || newTrace > m_totalTraceCount)
+            return;
+        m_currentTraceNumber = newTrace;
+        updateTraceIndexView();
+        displayTrace(m_currentTraceNumber-1);
+    });
+
+    m_traceTotalLabel = new QLabel(" of 0", this);
+    m_traceTotalLabel->setFixedWidth(80);
+    m_traceTotalLabel->setAlignment(Qt::AlignCenter);
 
     m_nextTraceButton = new QPushButton();
     m_nextTraceButton->setIcon(QIcon(":/icons/next.png"));
@@ -118,9 +184,11 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
     toolbarLayout->addWidget(m_runButton);
     toolbarLayout->addWidget(m_stopButton);
     toolbarLayout->addWidget(m_clearDataButton);
+    toolbarLayout->addWidget(m_saveDataButton);
     toolbarLayout->addStretch();
     toolbarLayout->addWidget(m_prevTraceButton);
-    toolbarLayout->addWidget(m_traceIndexLineEdit);
+    toolbarLayout->addWidget(m_traceIndexSpinBox);
+    toolbarLayout->addWidget(m_traceTotalLabel);
     toolbarLayout->addWidget(m_nextTraceButton);
 
     QVBoxLayout * layout = new QVBoxLayout;
@@ -133,6 +201,21 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
 }
 
 bool TScopeWidget::applyPostInitParam() {
+
+    if(m_totalTraceCount > 0){
+        QMessageBox::StandardButton reply =
+            QMessageBox::question(
+                this,
+                tr("Confirm deleting"),
+                tr("Applying parameters will delete all measured data. Continue?"),
+                QMessageBox::Yes | QMessageBox::No,
+                QMessageBox::No
+                );
+
+        if (reply != QMessageBox::Yes)
+            return false;
+    }
+
     TConfigParam param = m_scopeModel->setPostInitParams(m_paramWidget->param());
     m_paramWidget->setParam(param);
 
@@ -141,10 +224,26 @@ bool TScopeWidget::applyPostInitParam() {
         return false;
     }
 
+    clearTraceData(true);
+
     return true;
 }
 
-void TScopeWidget::clearTraceData() {
+void TScopeWidget::clearTraceData(bool force) {
+
+    if(!force){
+        QMessageBox::StandardButton reply =
+            QMessageBox::question(
+                this,
+                tr("Confirm deleting"),
+                tr("Are you sure you want to delete all measured traces?"),
+                QMessageBox::Yes | QMessageBox::No,
+                QMessageBox::No
+                );
+
+        if (reply != QMessageBox::Yes)
+            return;
+    }
 
     m_traceDataList.clear();
 
@@ -153,6 +252,103 @@ void TScopeWidget::clearTraceData() {
     updateTraceIndexView();
 
     m_chart->removeAllSeries();
+
+    m_clearDataButton->setEnabled(false);
+    m_saveDataButton->setEnabled(false);
+}
+
+void TScopeWidget::saveTraceData() {
+
+    QStringList options;
+    for(TScope::TChannelStatus channel : m_scopeModel->channelsStatus()) {
+        if(channel.isEnabled())
+            options << channel.getAlias();
+    }
+
+    TDynamicRadioDialog dlg(options, this);
+
+    if (dlg.exec() != QDialog::Accepted)
+        return;
+
+    QString chosenChannel = dlg.selectedOption();
+
+    QString fileName = QFileDialog::getSaveFileName(
+        this,
+        tr("Save traces"),
+        QString(),                          // default path
+        tr("Binary (*.dat);;All Files (*.*)")
+        );
+
+    if (fileName.isEmpty())
+        return;
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::WriteOnly)) {
+        QMessageBox::warning(this, tr("Error"), tr("Cannot open file for writing."));
+        qCritical("Cannot open file for writing.");
+        return;
+    }
+
+
+    for(size_t traceIndex = 0; traceIndex < m_totalTraceCount; traceIndex++){
+        bool found = false;
+        size_t traceDataListIndex = 0;
+        while(traceDataListIndex < (size_t)m_traceDataList.size()) {
+            if(m_traceDataList[traceDataListIndex].firstTraceIndex + m_traceDataList[traceDataListIndex].traces > traceIndex) {
+                found = true;
+                break;
+            }
+
+            traceDataListIndex++;
+        }
+
+        if(!found) {
+            qWarning("Trying to save a trace with valid index, but data is missing!");
+            return;
+        }
+
+        const TScopeTraceData traceData = m_traceDataList[traceDataListIndex];
+        size_t traceBufferIndex = traceIndex - m_traceDataList[traceDataListIndex].firstTraceIndex;
+
+
+        size_t channelIndex = 0;
+        for(TScope::TChannelStatus channel : m_scopeModel->channelsStatus()) {
+
+            if(!channel.isEnabled() || traceData.buffers[channelIndex] == nullptr || channel.getAlias() != chosenChannel) {
+                channelIndex++;
+                continue;
+            }
+
+            switch(traceData.type) {
+            case TScope::TSampleType::TUInt8:
+            case TScope::TSampleType::TInt8:
+                file.write(reinterpret_cast<const char *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples)), traceData.samples * sizeof(uint8_t));
+                break;
+
+            case TScope::TSampleType::TUInt16:
+            case TScope::TSampleType::TInt16:
+                file.write(reinterpret_cast<const char *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples)), traceData.samples * sizeof(uint16_t));
+                break;
+
+            case TScope::TSampleType::TUInt32:
+            case TScope::TSampleType::TInt32:
+                file.write(reinterpret_cast<const char *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples)), traceData.samples * sizeof(uint32_t));
+                break;
+
+            case TScope::TSampleType::TReal32:
+                file.write(reinterpret_cast<const char *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples)), traceData.samples * sizeof(float));
+                break;
+
+            case TScope::TSampleType::TReal64:
+                file.write(reinterpret_cast<const char *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples)), traceData.samples * sizeof(double));
+                break;
+            }
+
+            channelIndex++;
+        }
+
+    }
+
 }
 
 void TScopeWidget::setGUItoRunning() {
@@ -160,8 +356,9 @@ void TScopeWidget::setGUItoRunning() {
     m_runButton->setEnabled(false);
     m_stopButton->setEnabled(true);
     m_clearDataButton->setEnabled(false);
+    m_saveDataButton->setEnabled(false);
 
-    clearTraceData();
+    //clearTraceData();
 
     m_isDataIntendedForThisWidget = true;
 }
@@ -170,7 +367,16 @@ void TScopeWidget::setGUItoReady() {
     m_runOnceButton->setEnabled(true);
     m_runButton->setEnabled(true);
     m_stopButton->setEnabled(false);
-    m_clearDataButton->setEnabled(true);
+    m_clearDataButton->setEnabled(m_totalTraceCount ? true : false);
+    m_saveDataButton->setEnabled(m_totalTraceCount ? true : false);
+
+    if(m_totalTraceCount){
+        m_traceIndexSpinBox->setMinimum(1);
+        m_traceIndexSpinBox->setMaximum((int)m_totalTraceCount);
+    } else {
+        m_traceIndexSpinBox->setMinimum(0);
+        m_traceIndexSpinBox->setMaximum(0);
+    }
 
     m_isDataIntendedForThisWidget = false;
 }
@@ -190,6 +396,7 @@ void TScopeWidget::stopButtonClicked() {
     m_runButton->setEnabled(false);
     m_stopButton->setEnabled(false);
     m_clearDataButton->setEnabled(false);
+    m_saveDataButton->setEnabled(false);
 
     m_scopeModel->stop();
 }
@@ -228,6 +435,7 @@ void TScopeWidget::stopFailed() {
     m_runButton->setEnabled(false);
     m_stopButton->setEnabled(true);
     m_clearDataButton->setEnabled(false);
+    m_saveDataButton->setEnabled(false);
 
     QMessageBox::critical(this, "Error", "Failed to stop sampling");
 }
@@ -250,7 +458,10 @@ void TScopeWidget::updateTraceIndexView() {
     m_prevTraceButton->setEnabled(m_currentTraceNumber > 1);
     m_nextTraceButton->setEnabled(m_currentTraceNumber < m_totalTraceCount);
 
-    m_traceIndexLineEdit->setText(QString("%1 of %2").arg(m_currentTraceNumber).arg(m_totalTraceCount));
+    m_traceIndexSpinBox->setMinimum(1);
+    m_traceIndexSpinBox->setMaximum((int)m_totalTraceCount);
+    m_traceIndexSpinBox->setValue((int)m_currentTraceNumber);
+    m_traceTotalLabel->setText(QString(" of %2").arg(m_totalTraceCount));
 }
 
 void TScopeWidget::receiveTraces(size_t traces, size_t samples, TScope::TSampleType type, QList<QByteArray> buffers, bool overvoltage) {
@@ -266,6 +477,7 @@ void TScopeWidget::receiveTraces(size_t traces, size_t samples, TScope::TSampleT
     m_totalTraceCount += traces;
     m_currentTraceNumber = m_totalTraceCount;
     updateTraceIndexView();
+    m_saveDataButton->setEnabled(true);
 
     // show latest trace on chart
     displayTrace(m_currentTraceNumber-1);

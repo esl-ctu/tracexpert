@@ -6,9 +6,27 @@
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QValueAxis>
 #include <QtCharts/QCategoryAxis>
+#include <QDialog>
+#include <QStringList>
+#include <QRadioButton>
+#include <QSpinBox>
+#include <QLabel>
 
 #include "tscopemodel.h"
 #include "widgets/tconfigparamwidget.h"
+
+class TDynamicRadioDialog : public QDialog
+{
+    Q_OBJECT
+public:
+    explicit TDynamicRadioDialog(const QStringList &options,
+                                 QWidget *parent = nullptr);
+
+    QString selectedOption() const;
+
+private:
+    QList<QRadioButton*> m_radioButtons;
+};
 
 struct TScopeTraceData {
     size_t firstTraceIndex;
@@ -46,7 +64,8 @@ private slots:
     void runButtonClicked();
     void stopButtonClicked();
 
-    void clearTraceData();
+    void clearTraceData(bool force = false);
+    void saveTraceData();
 
     void showPrevTrace();
     void showNextTrace();
@@ -87,8 +106,10 @@ private:
     QPushButton * m_runButton;
     QPushButton * m_stopButton;
     QPushButton * m_clearDataButton;
+    QPushButton * m_saveDataButton;
 
-    QLineEdit * m_traceIndexLineEdit;
+    QSpinBox * m_traceIndexSpinBox;
+    QLabel * m_traceTotalLabel;
     void updateTraceIndexView();
 
     QPushButton * m_nextTraceButton;
