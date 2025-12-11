@@ -4,10 +4,6 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QOpenGLWidget>
-#include <QHelpEngine>
-#include <QHelpContentWidget>
-#include <QHelpIndexWidget>
-#include <QHelpLink>
 #include <QStatusBar>
 #include <QToolBar>
 
@@ -24,14 +20,14 @@
 #include "project/tprojectmodel.h"
 #include "protocol/tprotocolwidget.h"
 #include "tdialog.h"
-#include "thelpbrowser.h"
+#include "help/thelpwidget.h"
 
 TMainWindow::TMainWindow(TLogHandler * logHandler, QWidget * parent)
     : QMainWindow(parent)
 {
     // Workaround to prevent window reopening when oscilloscope widget is loaded for the first time
-    QOpenGLWidget w;
-    setCentralWidget(&w);
+    QOpenGLWidget dummyOpenGLWidget;
+    setCentralWidget(&dummyOpenGLWidget);
 
     setCentralWidget(nullptr);
 
@@ -535,36 +531,16 @@ bool TMainWindow::closeProject()
 
 void TMainWindow::showHelp()
 {
-    QWidget * helpWindow = new QWidget(this, Qt::Window);
+    THelpWidget * helpWidget = new THelpWidget;
+    helpWidget->setAttribute(Qt::WA_DeleteOnClose);
 
-    helpWindow->setWindowTitle(tr("Help"));
-    helpWindow->setAttribute(Qt::WA_DeleteOnClose);
+    TDockWidget * helpDockWidget = new TDockWidget(helpWidget->windowTitle(), this);
+    helpDockWidget->setWidget(helpWidget);
 
-    QHelpEngine * helpEngine = new QHelpEngine(QApplication::applicationDirPath() + "/docs/docs.qhc");
-
-    QTabWidget * helpTabWidget = new QTabWidget;
-    helpTabWidget->setMaximumWidth(200);
-    helpTabWidget->addTab(helpEngine->contentWidget(), "Contents");
-    helpTabWidget->addTab(helpEngine->indexWidget(), "Index");
-
-    THelpBrowser * helpBrowser = new THelpBrowser(helpEngine);
-    helpBrowser->setSource(QUrl("qthelp://org.example.docs/docs/README.html"));
-    connect(helpEngine->contentWidget(), &QHelpContentWidget::linkActivated, helpBrowser, [=](const QUrl & source) { helpBrowser->setSource(source); });
-    connect(helpEngine->indexWidget(), &QHelpIndexWidget::documentActivated, helpBrowser, [=](const QHelpLink & document) { helpBrowser->setSource(document.url); });
-
-    QHBoxLayout * layout = new QHBoxLayout;
-    layout->addWidget(helpTabWidget);
-    layout->addWidget(helpBrowser);
-
-    helpWindow->setLayout(layout);
-
-    TDockWidget * helpWindowDockWidget = new TDockWidget(helpWindow->windowTitle(), this);
-    helpWindowDockWidget->setWidget(helpWindow);
-
-    m_dockManager->addCenterDockWidgetTab(helpWindowDockWidget, m_welcomeDockWidget);
+    m_dockManager->addCenterDockWidgetTab(helpDockWidget, m_welcomeDockWidget);
 
     // show the widget automatically
-    helpWindowDockWidget->show();
+    helpDockWidget->show();
 }
 
 void TMainWindow::showAbout()

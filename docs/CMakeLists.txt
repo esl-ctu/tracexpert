@@ -4,7 +4,7 @@ project(MD2HTML)
 find_program(PANDOC_EXEC pandoc REQUIRED)
 
 # List of MD files
-file(GLOB MD_FILES "${CMAKE_CURRENT_SOURCE_DIR}/*.md")
+file(GLOB MD_FILES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.md")
 
 # Path for lua filer with escaped version
 file(TO_CMAKE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/md2html-links.lua" LUA_FILTER_PATH)
@@ -45,11 +45,13 @@ set(IMAGES_DST "${CMAKE_CURRENT_BINARY_DIR}/images")
 file(GLOB IMAGE_FILES CONFIGURE_DEPENDS "${IMAGES_SRC}/*.*")
 
 set(COPIED_IMAGE_FILES "")
+set(IMAGE_FILES_XML "")
 
 # Copy (changed and non-existing) images
 foreach(IMG ${IMAGE_FILES})
     get_filename_component(IMG_NAME ${IMG} NAME)
     set(DEST_IMAGE "${CMAKE_CURRENT_BINARY_DIR}/images/${IMG_NAME}")
+    set(IMAGE_FILES_XML "${IMAGE_FILES_XML}      <file>images/${IMG_NAME}</file>\n")
 
     add_custom_command(
         OUTPUT ${DEST_IMAGE}
@@ -59,20 +61,6 @@ foreach(IMG ${IMAGE_FILES})
     )
 
     list(APPEND COPIED_IMAGE_FILES ${DEST_IMAGE})
-endforeach()
-
-#Generate HTML files XML
-set(HTML_FILES_XML "")
-foreach(HTML_FILE ${HTML_FILES})
-    get_filename_component(FILENAME ${HTML_FILE} NAME)
-    set(HTML_FILES_XML "${HTML_FILES_XML}      <file>${FILENAME}</file>\n")
-endforeach()
-
-#Generate images XML
-set(IMAGE_FILES_XML "")
-foreach(IMAGE_FILE ${IMAGE_FILES})
-    get_filename_component(IMG_NAME ${IMAGE_FILE} NAME)
-    set(IMAGE_FILES_XML "${IMAGE_FILES_XML}      <file>images/${IMG_NAME}</file>\n")
 endforeach()
 
 # Combine HTML and images XMLs
@@ -107,7 +95,7 @@ set(QCH_FILE "${CMAKE_CURRENT_BINARY_DIR}/docs.qch")
 add_custom_command(
     OUTPUT ${QCH_FILE}
     COMMAND ${QHELPGENERATOR_EXEC} ${CMAKE_CURRENT_BINARY_DIR}/docs.qhp -o ${QCH_FILE}
-    DEPENDS helpFiles copy_images ${CMAKE_CURRENT_BINARY_DIR}/docs.qhp
+    DEPENDS ${HTML_FILES} ${COPIED_IMAGE_FILES} ${CMAKE_CURRENT_BINARY_DIR}/docs.qhp
     COMMENT "Generating Qt Help (.qch)"
 )
 

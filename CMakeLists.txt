@@ -32,8 +32,6 @@ add_executable(${PROJECT_NAME} WIN32
     tdialog.h
     tdockmanager.cpp
     tdockmanager.h
-    thelpbrowser.cpp
-    thelpbrowser.h
     tmainwindow.cpp
     tmainwindow.h
     common/tanaldevice.h
@@ -55,6 +53,10 @@ add_executable(${PROJECT_NAME} WIN32
     common/widgets/tfilenameedit.h
     common/widgets/ttimeedit.cpp
     common/widgets/ttimeedit.h
+    help/thelpbrowser.cpp
+    help/thelpbrowser.h
+    help/thelpwidget.cpp
+    help/thelpwidget.h
     logger/tloghandler.cpp
     logger/tloghandler.h
     logger/tloglinewidget.cpp
