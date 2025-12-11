@@ -65,6 +65,7 @@ private:
     QAction * m_saveProjectAction;
     QAction * m_saveProjectAsAction;
     QAction * m_closeProjectAction;
+    QAction * m_exitAction;
 
     QAction * m_openDeviceAction;
     QAction * m_openProtocolsAction;

@@ -220,6 +220,8 @@ add_executable(${PROJECT_NAME} WIN32
     graphs/tgraph.h
     graphs/tcpagraph.h
     buildinfo.h.in
+    twelcomescreen.h
+    twelcomescreen.cpp
 )
 
 

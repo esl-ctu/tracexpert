@@ -22,6 +22,7 @@
 #include "tdialog.h"
 #include "help/thelpwidget.h"
 #include "buildinfo.h"
+#include "twelcomescreen.h"
 
 TMainWindow::TMainWindow(TLogHandler * logHandler, QWidget * parent)
     : QMainWindow(parent)
@@ -63,7 +64,10 @@ void TMainWindow::createMenus()
     fileMenu->addAction(m_openProjectAction);
     fileMenu->addAction(m_saveProjectAction);
     fileMenu->addAction(m_saveProjectAsAction);
+    fileMenu->addSeparator();
     fileMenu->addAction(m_closeProjectAction);
+    fileMenu->addSeparator();
+    fileMenu->addAction(m_exitAction);
     menuBar()->addMenu(fileMenu);
 
     m_viewMenu = new QMenu(tr("&View"), this);
@@ -123,6 +127,12 @@ void TMainWindow::createActions()
     m_closeProjectAction->setEnabled(false);
     connect(m_closeProjectAction, SIGNAL(triggered()), this, SLOT(closeProject()));
 
+    m_exitAction = new QAction(tr("Exit"), this);
+    m_exitAction->setShortcut(QKeySequence::Quit);
+    m_exitAction->setStatusTip(tr("Exit the application"));
+    m_exitAction->setEnabled(true);
+    connect(m_exitAction, &QAction::triggered, this, &QWidget::close);
+
     m_openDeviceAction = new QAction(tr("Add/open device"), this);
     m_openDeviceAction->setStatusTip(tr("Open a device using device wizard"));
     m_openDeviceAction->setIcon(QPixmap(":/icons/add-open-device.png"));
@@ -161,12 +171,16 @@ void TMainWindow::createActions()
 
 void TMainWindow::createWelcome() {
     m_welcomeDockWidget = new TDockWidget(tr("Welcome"));
-
+/*
     QLabel * imageLabel = new QLabel(this);
     imageLabel->setAlignment(Qt::AlignCenter);
-    imageLabel->setPixmap(QPixmap(":/icons/tracexpert512.png"));
+    imageLabel->setPixmap(QPixmap(":/icons/tracexpert512.png"));*/
 
-    m_welcomeDockWidget->setWidget(imageLabel);
+    TWelcomeScreen * welcomeScreen = new TWelcomeScreen(this);
+    welcomeScreen->setActions(m_newProjectAction, m_openProjectAction, m_saveProjectAction, m_closeProjectAction, m_openDeviceAction, m_openProtocolsAction, m_openScenariosAction);
+
+    m_welcomeDockWidget->setWidget(welcomeScreen);
+
     m_dockManager->addCenterDockWidget(m_welcomeDockWidget);
 }
 
@@ -553,6 +567,7 @@ bool TMainWindow::closeProject()
 
     m_saveProjectAction->setEnabled(false);
     m_saveProjectAsAction->setEnabled(false);
+    m_closeProjectAction->setEnabled(false);
     m_openDeviceAction->setEnabled(false);
     m_openProtocolsAction->setEnabled(false);
     m_openScenariosAction->setEnabled(false);
@@ -572,7 +587,6 @@ void TMainWindow::showHelp()
 
     m_dockManager->addCenterDockWidgetTab(helpDockWidget, m_welcomeDockWidget);
 
-    // show the widget automatically
     helpDockWidget->show();
 }
 
