@@ -21,6 +21,7 @@
 #include "protocol/tprotocolwidget.h"
 #include "tdialog.h"
 #include "help/thelpwidget.h"
+#include "buildinfo.h"
 
 TMainWindow::TMainWindow(TLogHandler * logHandler, QWidget * parent)
     : QMainWindow(parent)
@@ -65,19 +66,23 @@ void TMainWindow::createMenus()
     fileMenu->addAction(m_closeProjectAction);
     menuBar()->addMenu(fileMenu);
 
-    m_viewMenu = new QMenu(tr("View"), this);
+    m_viewMenu = new QMenu(tr("&View"), this);
     menuBar()->addMenu(m_viewMenu);
 
-    QMenu * devicesMenu = new QMenu(tr("Devices"), this);
-    devicesMenu->addAction(m_openDeviceAction);
-    menuBar()->addMenu(devicesMenu);
+    QMenu * toolsMenu = new QMenu(tr("&Tools"), this);
+    toolsMenu->addAction(m_openDeviceAction);
+    toolsMenu->addAction(m_openProtocolsAction);
+    toolsMenu->addAction(m_openScenariosAction);
+    menuBar()->addMenu(toolsMenu);
 
-    QMenu * helpMenu = new QMenu(tr("Help"), this);
+    QMenu * helpMenu = new QMenu(tr("&Help"), this);
 
     QString helpPath = QApplication::applicationDirPath() + "/docs/docs.qhc";
     if (QFile::exists(helpPath))
         helpMenu->addAction(m_helpAction);
 
+    helpMenu->addAction(m_licenseAction);
+    helpMenu->addAction(m_contributorsAction);
     helpMenu->addAction(m_aboutAction);
     menuBar()->addMenu(helpMenu);
 }
@@ -87,45 +92,67 @@ void TMainWindow::createActions()
     m_newProjectAction = new QAction(tr("&New project"), this);
     m_newProjectAction->setShortcuts(QKeySequence::New);
     m_newProjectAction->setStatusTip(tr("Create a new project"));
-    m_newProjectAction->setIcon(QIcon::fromTheme("document-new"));
+    m_newProjectAction->setIcon(QPixmap(":/icons/new-project.png"));
     m_newProjectAction->setIconVisibleInMenu(true);
     connect(m_newProjectAction, SIGNAL(triggered()), this, SLOT(newProject()));
 
     m_openProjectAction = new QAction(tr("&Open project"), this);
     m_openProjectAction->setShortcuts(QKeySequence::Open);
     m_openProjectAction->setStatusTip(tr("Open an existing project"));
-    m_openProjectAction->setIcon(QIcon::fromTheme("document-open"));
+    m_openProjectAction->setIcon(QPixmap(":/icons/open-project.png"));
     connect(m_openProjectAction, SIGNAL(triggered()), this, SLOT(openProject()));
 
     m_saveProjectAction = new QAction(tr("&Save project"), this);
     m_saveProjectAction->setShortcuts(QKeySequence::Save);
-    m_saveProjectAction->setIcon(QIcon::fromTheme("document-save"));
+    m_saveProjectAction->setIcon(QPixmap(":/icons/save.png"));
     m_saveProjectAction->setStatusTip(tr("Save the currect project"));
     m_saveProjectAction->setEnabled(false);
     connect(m_saveProjectAction, SIGNAL(triggered()), this, SLOT(saveProject()));
 
     m_saveProjectAsAction = new QAction(tr("&Save project as"), this);
     m_saveProjectAsAction->setShortcuts(QKeySequence::SaveAs);
-    m_saveProjectAsAction->setIcon(QIcon::fromTheme("document-save-as"));
+    m_saveProjectAsAction->setIcon(QPixmap(":/icons/save-as.png"));
     m_saveProjectAsAction->setStatusTip(tr("Select path and save the current project"));
     m_saveProjectAsAction->setEnabled(false);
     connect(m_saveProjectAsAction, SIGNAL(triggered()), this, SLOT(saveProjectAs()));
 
     m_closeProjectAction = new QAction(tr("&Close project"), this);
     m_closeProjectAction->setShortcuts(QKeySequence::Close);
-    m_closeProjectAction->setIcon(QIcon::fromTheme("document-close"));
+    m_closeProjectAction->setIcon(QPixmap(":/icons/close-project.png"));
     m_closeProjectAction->setStatusTip(tr("Close the current project"));
     m_closeProjectAction->setEnabled(false);
     connect(m_closeProjectAction, SIGNAL(triggered()), this, SLOT(closeProject()));
 
-    m_openDeviceAction = new QAction(tr("Open device"), this);
+    m_openDeviceAction = new QAction(tr("Add/open device"), this);
     m_openDeviceAction->setStatusTip(tr("Open a device using device wizard"));
+    m_openDeviceAction->setIcon(QPixmap(":/icons/add-open-device.png"));
     m_openDeviceAction->setEnabled(false);
     connect(m_openDeviceAction, SIGNAL(triggered()), this, SLOT(showDeviceWizard()));
 
-    m_helpAction = new QAction(tr("Help"), this);
+    m_openProtocolsAction = new QAction(tr("Protocol manager"), this);
+    m_openProtocolsAction->setStatusTip(tr("Open a protocol manager"));
+    m_openProtocolsAction->setIcon(QPixmap(":/icons/protocol-manager.png"));
+    m_openProtocolsAction->setEnabled(false);
+    connect(m_openProtocolsAction, SIGNAL(triggered()), this, SLOT(createProtocolManagerDockWidget()));
+
+    m_openScenariosAction = new QAction(tr("Scenario manager"), this);
+    m_openScenariosAction->setStatusTip(tr("Open a scenario manager"));
+    m_openScenariosAction->setIcon(QPixmap(":/icons/scenario-manager.png"));
+    m_openScenariosAction->setEnabled(false);
+    connect(m_openScenariosAction, SIGNAL(triggered()), this, SLOT(createScenarioManagerDockWidget()));
+
+    m_helpAction = new QAction(tr("User Guide"), this);
     m_helpAction->setStatusTip(tr("Show help"));
+    m_helpAction->setShortcut(QKeySequence(Qt::Key_F1));
     connect(m_helpAction, SIGNAL(triggered()), this, SLOT(showHelp()));
+
+    m_licenseAction = new QAction(tr("License"), this);
+    m_licenseAction->setStatusTip(tr("Show license"));
+    connect(m_licenseAction, SIGNAL(triggered()), this, SLOT(showLicense()));
+
+    m_contributorsAction = new QAction(tr("Contributors"), this);
+    m_contributorsAction->setStatusTip(tr("Show contributors"));
+    connect(m_contributorsAction, SIGNAL(triggered()), this, SLOT(showContributors()));
 
     m_aboutAction = new QAction(tr("About"), this);
     m_aboutAction->setStatusTip(tr("Show information about this program"));
@@ -204,6 +231,8 @@ void TMainWindow::createProjectDockWidget(TProjectModel * model)
     m_saveProjectAsAction->setEnabled(true);
     m_closeProjectAction->setEnabled(true);
     m_openDeviceAction->setEnabled(true);
+    m_openScenariosAction->setEnabled(true);
+    m_openProtocolsAction->setEnabled(true);
 }
 
 void TMainWindow::createIODeviceDockWidget(TIODeviceModel * IODevice)
@@ -481,6 +510,8 @@ bool TMainWindow::closeProject()
 
         if (editor && !editor->close())
             return false;
+
+        scenarioEditorDockWidget->close();
     }
 
     if (!TDialog::closeConfirmation(this, "project")) {
@@ -523,6 +554,8 @@ bool TMainWindow::closeProject()
     m_saveProjectAction->setEnabled(false);
     m_saveProjectAsAction->setEnabled(false);
     m_openDeviceAction->setEnabled(false);
+    m_openProtocolsAction->setEnabled(false);
+    m_openScenariosAction->setEnabled(false);
 
     m_projectFileName = QString();
 
@@ -543,12 +576,114 @@ void TMainWindow::showHelp()
     helpDockWidget->show();
 }
 
+void TMainWindow::showLicense()
+{
+    QDialog dlg(this);
+    dlg.setWindowTitle("License");
+
+    QVBoxLayout *layout = new QVBoxLayout(&dlg);
+
+    QString licenseText;
+    QFile file(":/LICENSE");
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)){
+        licenseText = QString::fromUtf8(file.readAll());
+    } else {
+        licenseText = "This program is free software: you can redistribute it and/or modify\
+it under the terms of the GNU General Public License as published by\
+the Free Software Foundation, either version 3 of the License, or\
+(at your option) any later version.\
+\
+This program is distributed in the hope that it will be useful,\
+but WITHOUT ANY WARRANTY; without even the implied warranty of\
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\
+GNU General Public License for more details.\
+\
+You should have received a copy of the GNU General Public License\
+along with this program. If not, see <https://www.gnu.org/licenses/>.";
+    }
+
+    QTextBrowser *browser = new QTextBrowser(&dlg);
+    browser->setText(licenseText);
+    browser->setReadOnly(true);
+    browser->setMinimumSize(500, 400);
+
+    layout->addWidget(browser);
+
+    QDialogButtonBox *buttons =
+        new QDialogButtonBox(QDialogButtonBox::Ok, &dlg);
+
+    QObject::connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    layout->addWidget(buttons);
+
+    dlg.exec();
+}
+
+void TMainWindow::showContributors()
+{
+    QDialog dlg(this);
+    dlg.setWindowTitle("Contributors");
+
+    QVBoxLayout *layout = new QVBoxLayout(&dlg);
+
+    QString licenseText;
+    QFile file(":/CONTRIBUTORS");
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)){
+        licenseText = QString::fromUtf8(file.readAll());
+    } else {
+        licenseText = "CONTRIBUTORS file not found!";
+    }
+
+    QTextBrowser *browser = new QTextBrowser(&dlg);
+    browser->setText(licenseText);
+    browser->setReadOnly(true);
+    browser->setMinimumSize(500, 400);
+
+    layout->addWidget(browser);
+
+    QDialogButtonBox *buttons =
+        new QDialogButtonBox(QDialogButtonBox::Ok, &dlg);
+
+    QObject::connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    layout->addWidget(buttons);
+
+    dlg.exec();
+}
+
 void TMainWindow::showAbout()
 {
     QMessageBox about(this);
 
+    QString aboutText = tr("<h1>TraceXpert %1</h1>\
+\
+Based on Qt %2 (%3, %4)<br>\
+Built on %5<br>\
+Revision %6<br><br>\
+\
+© %7 Embedded Security Lab (see <i>Help > Contributors</i>)<br>\
+Faculty of Information Technology<br>\
+Czech Technical University in Prague<br><br>\
+\
+This program is distributed in the hope that it will be useful,<br>\
+but WITHOUT ANY WARRANTY; without even the implied warranty of<br>\
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.<br>\
+See the GNU General Public License v3.0 (<i>Help > License</i>) for more details.");
+
+    QString compiler;
+
+    #if defined(__clang__)
+        compiler = QString("Clang %1.%2").arg(__clang_major__).arg(__clang_minor__);
+    #elif defined(__GNUC__)
+        compiler = QString("GCC %1.%2.%3")
+                       .arg(__GNUC__).arg(__GNUC_MINOR__).arg(__GNUC_PATCHLEVEL__);
+    #elif defined(_MSC_VER)
+        compiler = QString("MSVC %1").arg(_MSC_VER);
+    #else
+        compiler = "Unknown compiler";
+    #endif
+
     about.setWindowTitle(tr("About TraceXpert"));
-    about.setText(tr("TraceXpert\nVersion: 0.1\n© 2025 Embedded Security Lab\nFaculty of Information Technology\nCzech Technical University in Prague"));
+    about.setTextFormat(Qt::RichText);
+    about.setText(aboutText.arg(TRACEXPERT_VERSION).arg(QT_VERSION_STR).arg(compiler).arg(QSysInfo::buildAbi()).arg(BUILD_TIMESTAMP).arg(BUILD_GIT_REVISION).arg(COPYRIGHT_YEAR));
     about.setStandardButtons(QMessageBox::Ok);
     about.setIconPixmap(QPixmap(":/icons/tracexpert512.png").scaled(50,50, Qt::KeepAspectRatio, Qt::SmoothTransformation));   // here is the error
     about.setDefaultButton(QMessageBox::Ok);

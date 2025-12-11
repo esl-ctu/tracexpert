@@ -136,7 +136,15 @@ public:
 
         TConfigParam * readAllParam = m_params.getSubParamByName("Read all available bytes");
         if(readAllParam->getValue() == "true") {
-            dataLen = m_analStreamModel->availableBytes();
+            auto availableBytes = m_analStreamModel->availableBytes();
+            if(availableBytes){
+                dataLen = *availableBytes;
+            } else {
+                // Available bytes not supported
+                qCritical("availableBytes method not available!");  // TODO: vyresit jinak a lepe
+                dataLen = 0;
+            }
+
         }
         else {
             QDataStream lengthStream(inputData.value(getItemPortByName("lengthIn")));

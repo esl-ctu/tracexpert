@@ -43,6 +43,8 @@ private slots:
     bool closeProject();
 
     void showHelp();
+    void showLicense();
+    void showContributors();
     void showAbout();
 
 private:
@@ -65,8 +67,12 @@ private:
     QAction * m_closeProjectAction;
 
     QAction * m_openDeviceAction;
+    QAction * m_openProtocolsAction;
+    QAction * m_openScenariosAction;
 
     QAction * m_helpAction;
+    QAction * m_licenseAction;
+    QAction * m_contributorsAction;
     QAction * m_aboutAction;
 
     QMenu * m_viewMenu;

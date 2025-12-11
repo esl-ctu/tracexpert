@@ -21,7 +21,7 @@ size_t TTTestInputStream::readData(uint8_t * buffer, size_t len)
     return m_readData(buffer, len);
 }
 
-size_t TTTestInputStream::availableBytes()
+std::optional<size_t> TTTestInputStream::availableBytes()
 {
     return m_availableBytes();
 }

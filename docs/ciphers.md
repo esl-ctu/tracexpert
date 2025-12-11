@@ -1,3 +1,5 @@
+[Back to the top (index)](README.md)
+
 # Ciphers
 
 TraceExpert component *Ciphers* generates intermediate values during encryption/decryption.
@@ -53,6 +55,8 @@ The action fails when an invalid amount of data was previously submitted to the 
 ### Output
 
 After the **Encrypt input data (+ flush streams)** action finishes, the requested intermediate values are available for reading from the **Intermediate values** stream.
+
+![User interface with a widget](images/cipherdevice.png)
 
 ### Example usage 1
 

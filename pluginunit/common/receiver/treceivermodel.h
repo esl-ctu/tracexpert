@@ -18,7 +18,7 @@ public:
 
     bool isBusy();
 
-    size_t availableBytes();
+    std::optional<size_t> availableBytes();
 
     QByteArray receivedData() const;
 

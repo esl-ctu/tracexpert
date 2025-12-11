@@ -1,3 +1,5 @@
+[Back to the top (index)](README.md)
+
 # Welch's t-test leakage assessment
 
 TraceExpert component *Welch's t-test leakage assessment* provides a t-value computation for the leakage assessment using Welch's t-test.
@@ -49,6 +51,7 @@ Each output stream contains N t-values followed by N degrees of freedom, where N
 Attacker has captured 100,000 power traces, each with 1500 signed 16-bit samples, while encrypting either random or fixed plaintexts in an randomly interleaved fashion. She has 100,000 power traces and 100,000 byte-size labels (0x00 and 0x01).   
 
 She wishes to compute a 1st order non-specific t-test. She configures:
+
 * **Trace length (in samples)**: 1500
 * **Number of classes**: 2
 * **Sample data type**: Signed 16 bit
@@ -56,7 +59,7 @@ She wishes to compute a 1st order non-specific t-test. She configures:
 * **Input format**: Label + traces streams    
     - **Label data type**: Unsigned 8 bit
 
-She then submits the power traces to the *Traces* stream, and the labels to the *Labels* stream.
+She then submits the power traces to the *Traces* stream, and the labels to the *Labels* stream. Then she runs the *Compute t-values (+ flush streams)* action.
 
 After that she reads the 1500 t-values from the *1-order t-vals 0 vs 1* stream. If she wishes, she furthermore reads 1500 degrees of freedom.
 

@@ -36,6 +36,9 @@ public:
     /// Receives the specified amount of data into the buffer
     virtual size_t readData(uint8_t * buffer, size_t len) = 0;
 
+    /// Returns number of bytes available for reading, when supported
+    virtual std::optional<size_t> availableBytes() = 0;
+
 };
 
 #endif // TIODEVICE_H

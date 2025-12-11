@@ -14,7 +14,7 @@ public:
     QString getInfo() const override;
 
     size_t readData(uint8_t * buffer, size_t len) override;
-    size_t availableBytes() override;
+    std::optional<size_t> availableBytes() override;
 
 private:
     QString m_name;

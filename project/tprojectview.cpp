@@ -33,20 +33,20 @@ void TProjectView::createActions()
     m_deinitComponentAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_DialogNoButton));
     connect(m_deinitComponentAction, &QAction::triggered, this, &TProjectView::deinitComponent);
     m_showComponentSettingsAction = new QAction(tr("Settings"), this);
-    m_showComponentSettingsAction->setIcon(QPixmap(":/icons/editable.png"));
+    m_showComponentSettingsAction->setIcon(QPixmap(":/icons/settings.png"));
     connect(m_showComponentSettingsAction, &QAction::triggered, this, &TProjectView::showComponentSettings);
     m_openDeviceAction = new QAction(tr("Open device"), this);
-    m_openDeviceAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_ComputerIcon));
+    m_openDeviceAction->setIcon(QPixmap(":/icons/add-open-device.png"));
     connect(m_openDeviceAction, &QAction::triggered, this, &TProjectView::openDevice);
 
     m_addIODeviceAction = new QAction(tr("Add IO device"), this);
-    m_addIODeviceAction->setIcon(QPixmap(":/icons/file.png"));
+    m_addIODeviceAction->setIcon(QPixmap(":/icons/add-iodevice.png"));
     connect(m_addIODeviceAction, &QAction::triggered, this, &TProjectView::addIODevice);
     m_addScopeAction = new QAction(tr("Add oscilloscope"), this);
-    m_addScopeAction->setIcon(QPixmap(":/icons/oscilloscope.png"));
+    m_addScopeAction->setIcon(QPixmap(":/icons/add-oscilloscope.png"));
     connect(m_addScopeAction, &QAction::triggered, this, &TProjectView::addScope);
     m_addAnalDeviceAction = new QAction(tr("Add analytical device"), this);
-    m_addAnalDeviceAction->setIcon(QPixmap(":/icons/analytic.png"));
+    m_addAnalDeviceAction->setIcon(QPixmap(":/icons/add-analytical.png"));
     connect(m_addAnalDeviceAction, &QAction::triggered, this, &TProjectView::addAnalDevice);
 
     m_initIODeviceAction = new QAction(tr("Initialize"), this);
@@ -56,10 +56,10 @@ void TProjectView::createActions()
     m_deinitIODeviceAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_DialogNoButton));
     connect(m_deinitIODeviceAction, &QAction::triggered, this, &TProjectView::deinitIODevice);
     m_showIODeviceAction = new QAction(tr("Show"), this);
-    m_showIODeviceAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_FileDialogContentsView));
+    m_showIODeviceAction->setIcon(QPixmap(":/icons/show.png"));
     connect(m_showIODeviceAction, &QAction::triggered, this, &TProjectView::showIODevice);
     m_removeIODeviceAction = new QAction(tr("Remove"), this);
-    m_removeIODeviceAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_BrowserStop));
+    m_removeIODeviceAction->setIcon(QPixmap(":/icons/delete.png"));;
     connect(m_removeIODeviceAction, &QAction::triggered, this, &TProjectView::removeIODevice);
 
     m_initScopeAction = new QAction(tr("Initialize"), this);
@@ -69,10 +69,10 @@ void TProjectView::createActions()
     m_deinitScopeAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_DialogNoButton));
     connect(m_deinitScopeAction, &QAction::triggered, this, &TProjectView::deinitScope);
     m_showScopeAction = new QAction(tr("Show"), this);
-    m_showScopeAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_FileDialogContentsView));
+    m_showScopeAction->setIcon(QPixmap(":/icons/show.png"));
     connect(m_showScopeAction, &QAction::triggered, this, &TProjectView::showScope);
     m_removeScopeAction = new QAction(tr("Remove"), this);
-    m_removeScopeAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_BrowserStop));
+    m_removeScopeAction->setIcon(QPixmap(":/icons/delete.png"));
     connect(m_removeScopeAction, &QAction::triggered, this, &TProjectView::removeScope);
 
     m_initAnalDeviceAction = new QAction(tr("Initialize"), this);
@@ -82,28 +82,28 @@ void TProjectView::createActions()
     m_deinitAnalDeviceAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_DialogNoButton));
     connect(m_deinitAnalDeviceAction, &QAction::triggered, this, &TProjectView::deinitAnalDevice);
     m_showAnalDeviceAction = new QAction(tr("Show"), this);
-    m_showAnalDeviceAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_FileDialogContentsView));
+    m_showAnalDeviceAction->setIcon(QPixmap(":/icons/show.png"));
     connect(m_showAnalDeviceAction, &QAction::triggered, this, &TProjectView::showAnalDevice);
     m_removeAnalDeviceAction = new QAction(tr("Remove"), this);
-    m_removeAnalDeviceAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_BrowserStop));
+    m_removeAnalDeviceAction->setIcon(QPixmap(":/icons/delete.png"));
     connect(m_removeAnalDeviceAction, &QAction::triggered, this, &TProjectView::removeAnalDevice);
 
     m_showInfoAction = new QAction(tr("Info"), this);
-    m_showInfoAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_FileDialogInfoView));
+    m_showInfoAction->setIcon(QPixmap(":/icons/info.png"));
     connect(m_showInfoAction, &QAction::triggered, this, &TProjectView::showInfo);
 
     m_openProtocolManagerAction = new QAction(tr("Open Protocol Manager"), this);
-    m_openProtocolManagerAction->setIcon(QPixmap(":/icons/message.png"));
+    m_openProtocolManagerAction->setIcon(QPixmap(":/icons/protocol-manager.png"));
     connect(m_openProtocolManagerAction, &QAction::triggered, m_mainWindow, &TMainWindow::createProtocolManagerDockWidget);
     m_editProtocolAction = new QAction(tr("Edit"), this);
-    m_editProtocolAction->setIcon(QPixmap(":/icons/message.png"));
+    m_editProtocolAction->setIcon(QPixmap(":/icons/show.png"));
     connect(m_editProtocolAction, &QAction::triggered, this, &TProjectView::editProtocol);
 
     m_openScenarioManagerAction = new QAction(tr("Open Scenario Manager"), this);
-    m_openScenarioManagerAction->setIcon(QPixmap(":/icons/next.png"));
+    m_openScenarioManagerAction->setIcon(QPixmap(":/icons/scenario-manager.png"));
     connect(m_openScenarioManagerAction, &QAction::triggered, m_mainWindow, &TMainWindow::createScenarioManagerDockWidget);
     m_editScenarioAction = new QAction(tr("Edit"), this);
-    m_editScenarioAction->setIcon(QPixmap(":/icons/next.png"));
+    m_editScenarioAction->setIcon(QPixmap(":/icons/show.png"));
     connect(m_editScenarioAction, &QAction::triggered, this, &TProjectView::editScenario);
 }
 
@@ -126,6 +126,8 @@ void TProjectView::refreshActionsForItem(TProjectItem * item)
     m_scope = nullptr;
     m_analDevice = nullptr;
     m_unit = nullptr;
+    m_protocol = nullptr;
+    m_scenario = nullptr;
 
     if ((m_component = dynamic_cast<TComponentModel *>(item))) {
         m_unit = m_component;
@@ -188,6 +190,14 @@ void TProjectView::refreshActionsForItem(TProjectItem * item)
 
         m_currentDefaultAction = chooseDefaultAction(m_analDevice);
     }
+    else if ((m_protocol = dynamic_cast<TProtocolModel *>(item))) {
+        m_currentActions.append(m_editProtocolAction);
+        m_currentDefaultAction = m_editProtocolAction;
+    }
+    else if ((m_scenario = dynamic_cast<TScenarioModel *>(item))) {
+        m_currentActions.append(m_editScenarioAction);
+        m_currentDefaultAction = m_editScenarioAction;
+    }
     else if (dynamic_cast<TIODeviceContainer *>(item) && (m_component = dynamic_cast<TComponentModel *>(item->parent()))) {
         m_addIODeviceAction->setDisabled(m_component->status() != TProjectItem::Initialized || !m_component->canAddIODevice());
         m_currentActions.append(m_addIODeviceAction);
@@ -218,8 +228,15 @@ void TProjectView::refreshActionsForItem(TProjectItem * item)
 
         m_currentDefaultAction = nullptr;
     }
+    else if ((dynamic_cast<TComponentContainer *>(item))){
+        m_currentActions.append(m_openDeviceAction);
+
+        m_currentDefaultAction = nullptr;
+    }
     else {
         m_currentActions.append(m_openDeviceAction);
+        m_currentActions.append(m_openProtocolManagerAction);
+        m_currentActions.append(m_openScenarioManagerAction);
     }
 
     if (m_unit) {

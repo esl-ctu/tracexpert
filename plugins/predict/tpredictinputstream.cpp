@@ -21,7 +21,7 @@ size_t TPredictInputStream::readData(uint8_t * buffer, size_t len)
     return m_readData(buffer, len);
 }
 
-size_t TPredictInputStream::availableBytes()
+std::optional<size_t> TPredictInputStream::availableBytes()
 {
     return m_availableBytes();
 }

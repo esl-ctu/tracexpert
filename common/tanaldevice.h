@@ -21,7 +21,7 @@ public:
 
     /// Receives the specified amount of data into the buffer
     virtual size_t readData(uint8_t * buffer, size_t len) = 0;
-    virtual size_t availableBytes() = 0;
+    virtual std::optional<size_t> availableBytes() = 0;
 };
 
 class TAnalOutputStream : public TAnalStream {

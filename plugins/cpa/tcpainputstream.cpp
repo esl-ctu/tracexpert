@@ -21,7 +21,7 @@ size_t TCPAInputStream::readData(uint8_t * buffer, size_t len)
     return m_readData(buffer, len);
 }
 
-size_t TCPAInputStream::availableBytes()
+std::optional<size_t> TCPAInputStream::availableBytes()
 {
     return m_availableBytes();
 }

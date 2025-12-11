@@ -79,7 +79,7 @@ bool TReceiverModel::isBusy()
     return m_receiver->isBusy();
 }
 
-size_t TReceiverModel::availableBytes()
+std::optional<size_t> TReceiverModel::availableBytes()
 {
     return m_receiver->availableBytes();
 }
