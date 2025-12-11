@@ -247,3 +247,8 @@ void TWelcomeScreen::setActions(QAction *newProject,
         m_btnScenarioManager->setDefaultAction(scenarioManager);
 
 }
+
+QSize TWelcomeScreen::sizeHint() const
+{
+    return QSize(800, 500);
+}

@@ -34,6 +34,8 @@ public:
                     QAction *protocolManager,
                     QAction *scenarioManager);
 
+    QSize sizeHint() const override;
+
 private:
     QFrame      *m_card;
 

@@ -44,12 +44,12 @@ TMainWindow::TMainWindow(TLogHandler * logHandler, QWidget * parent)
 
     createActions();
     createMenus();
-
-    readSettings();
-
     createWelcome();
+
     createLog(logHandler->logWidget());
     createStatusBar(logHandler->logLineWidget());
+
+    readSettings();
 }
 
 TMainWindow::~TMainWindow()
@@ -734,7 +734,12 @@ void TMainWindow::readSettings()
 
     settings.beginGroup("MainWindow");
     restoreState(settings.value("windowState").toByteArray());
-    restoreGeometry(settings.value("geometry").toByteArray());
+    QByteArray geometry = settings.value("geometry").toByteArray();
+    if (!geometry.isEmpty()) {
+        restoreGeometry(geometry);
+    } else {
+        resize(QSize(1360, 800)); // assure minimum size on first launch
+    }
     m_projectDirectory = QDir(settings.value("projectDirectory").toString());
     settings.endGroup();
 }
