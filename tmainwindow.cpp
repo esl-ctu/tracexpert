@@ -415,8 +415,8 @@ void TMainWindow::showDeviceWizard()
 
 void TMainWindow::newProject()
 {
-    if (m_projectModel)
-        closeProject();
+    if (m_projectModel && !closeProject())
+        return;
 
     m_projectModel = new TProjectModel(this);
 
@@ -438,12 +438,13 @@ void TMainWindow::openProject()
     openDialog.setAcceptMode(QFileDialog::AcceptOpen);
     openDialog.setFileMode(QFileDialog::ExistingFile);
     openDialog.setDirectory(m_projectDirectory);
+
     if (!openDialog.exec()) return;
 
-    TLoadingDialog * loadingDialog = TLoadingDialog::showDialog(this, "Loading project...");
+    if (m_projectModel && !closeProject())
+        return;
 
-    if (m_projectModel)
-        closeProject();
+    TLoadingDialog * loadingDialog = TLoadingDialog::showDialog(this, "Loading project...");
 
     m_projectFileName = openDialog.selectedFiles().constFirst();
     m_projectDirectory = openDialog.directory();
