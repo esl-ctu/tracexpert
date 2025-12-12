@@ -290,7 +290,7 @@ void TConfigParamDialog::accept()
 {
     TConfigParam param = m_preInit ? m_unit->setPreInitParams(m_paramWidget->param()) : m_unit->setPostInitParams(m_paramWidget->param());
 
-    TConfigParam::TState state = param.getState();
+    TConfigParam::TState state = param.getState(true);
 
     if (state == TConfigParam::TState::TWarning) {
         if (!TDialog::paramWarningQuestion(this)) {
