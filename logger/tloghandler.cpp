@@ -2,26 +2,47 @@
 
 TLogHandler::TLogHandler()
 {
-    m_logLineWidget = new TLogLineWidget();
-    m_logTextEdit = new QPlainTextEdit();
+
 }
 
 TLogHandler::~TLogHandler()
 {
-    delete m_logLineWidget;
-    delete m_logTextEdit;
+
 }
 
-TLogLineWidget * TLogHandler::logLineWidget() {
+TLogLineWidget * TLogHandler::logLineWidget()
+{
+    if (!m_logLineWidget)
+        m_logLineWidget = new TLogLineWidget;
+
     return m_logLineWidget;
 }
 
-TLogWidget * TLogHandler::logWidget() {
+TLogWidget * TLogHandler::logWidget()
+{
+    if (!m_logTextEdit)
+        m_logTextEdit = new TLogWidget;
+
     return m_logTextEdit;
 }
 
-void TLogHandler::appendLogMessage(QtMsgType type, const QString &msg) {
+void TLogHandler::messageHandler(QtMsgType type, const QMessageLogContext &, const QString & msg)
+{
+    QMutexLocker locker(&m_logMutex);
 
+    if (!m_instance)
+        m_instance = new TLogHandler;
+
+    QMetaObject::invokeMethod(
+        m_instance,
+        "appendLogMessage",
+        Qt::QueuedConnection,
+        Q_ARG(QtMsgType, type),
+        Q_ARG(QString, msg));
+}
+
+void TLogHandler::appendLogMessage(QtMsgType type, const QString &msg)
+{
     if(msg.startsWith("QWindowsWindow")) return; // ugly workaround, TODO: message filtering system
 
     QString time = QDateTime::currentDateTime().toString("hh:mm:ss.zzz");
@@ -47,11 +68,11 @@ void TLogHandler::appendLogMessage(QtMsgType type, const QString &msg) {
             break;
     }
 
-    m_logLineWidget->setText(line);
+    logLineWidget()->setText(line);
 
-    QTextCursor c = m_logTextEdit->textCursor();
+    QTextCursor c = logWidget()->textCursor();
     c.movePosition(QTextCursor::End);
     c.insertText(line + '\n', fmt);
-    m_logTextEdit->moveCursor(QTextCursor::End);
-    m_logTextEdit->ensureCursorVisible();
+    logWidget()->moveCursor(QTextCursor::End);
+    logWidget()->ensureCursorVisible();
 }

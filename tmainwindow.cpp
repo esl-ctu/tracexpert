@@ -24,7 +24,7 @@
 #include "buildinfo.h"
 #include "twelcomescreen.h"
 
-TMainWindow::TMainWindow(TLogHandler * logHandler, QWidget * parent)
+TMainWindow::TMainWindow(QWidget * parent)
     : QMainWindow(parent)
 {
     // Workaround to prevent window reopening when oscilloscope widget is loaded for the first time
@@ -46,8 +46,8 @@ TMainWindow::TMainWindow(TLogHandler * logHandler, QWidget * parent)
     createMenus();
     createWelcome();
 
-    createLog(logHandler->logWidget());
-    createStatusBar(logHandler->logLineWidget());
+    createLog(TLogHandler::logWidget());
+    createStatusBar(TLogHandler::logLineWidget());
 
     readSettings();
 }

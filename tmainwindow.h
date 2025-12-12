@@ -15,7 +15,7 @@ class TMainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit TMainWindow(TLogHandler * logHandler, QWidget * parent = nullptr);
+    explicit TMainWindow(QWidget * parent = nullptr);
     ~TMainWindow();
 
 public slots:
