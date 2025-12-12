@@ -24,6 +24,7 @@ public:
     static bool componentReinitQuestion(QWidget * parent);
     static bool componentDeinitQuestion(QWidget * parent);
     static bool deviceReinitQuestion(QWidget * parent);
+    static bool deviceOpenQuestion(QWidget * parent);
 
     static void componentInitFailedGeneralMessage(QWidget * parent);
     static void componentDeinitFailedGeneralMessage(QWidget * parent);

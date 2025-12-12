@@ -157,6 +157,11 @@ bool TDialog::deviceReinitQuestion(QWidget * parent)
     return question(parent, parent->tr("Device Initialized"), parent->tr("The selected device is already initialized. Do you want to reinitialize it?"));
 }
 
+bool TDialog::deviceOpenQuestion(QWidget * parent)
+{
+    return question(parent, parent->tr("Device Initialized"), parent->tr("The selected device is already initialized. Do you want to open the device?"));
+}
+
 void TDialog::componentInitFailedGeneralMessage(QWidget * parent)
 {
     criticalMessage(parent, parent->tr("Component init failed"), parent->tr("Unable to initialize selected component!"));
