@@ -2,7 +2,8 @@
 
 TLogHandler::TLogHandler()
 {
-
+    m_logLineWidget = new TLogLineWidget;
+    m_logTextEdit = new TLogWidget;
 }
 
 TLogHandler::~TLogHandler()
@@ -10,28 +11,42 @@ TLogHandler::~TLogHandler()
 
 }
 
+void TLogHandler::installLogger()
+{
+    if (!m_instance)
+        m_instance = new TLogHandler;
+
+    qInstallMessageHandler(TLogHandler::messageHandler);
+}
+
 TLogLineWidget * TLogHandler::logLineWidget()
 {
-    if (!m_logLineWidget)
-        m_logLineWidget = new TLogLineWidget;
+    if (!m_instance) {
+        qWarning("Logger not installed!");
+        return nullptr;
+    }
 
-    return m_logLineWidget;
+    return m_instance->m_logLineWidget;
 }
 
 TLogWidget * TLogHandler::logWidget()
 {
-    if (!m_logTextEdit)
-        m_logTextEdit = new TLogWidget;
+    if (!m_instance) {
+        qWarning("Logger not installed!");
+        return nullptr;
+    }
 
-    return m_logTextEdit;
+    return m_instance->m_logTextEdit;
 }
 
 void TLogHandler::messageHandler(QtMsgType type, const QMessageLogContext &, const QString & msg)
 {
     QMutexLocker locker(&m_logMutex);
 
-    if (!m_instance)
-        m_instance = new TLogHandler;
+    if (!m_instance) {
+        qWarning("Logger not installed!");
+        return;
+    }
 
     QMetaObject::invokeMethod(
         m_instance,
@@ -68,11 +83,11 @@ void TLogHandler::appendLogMessage(QtMsgType type, const QString &msg)
             break;
     }
 
-    logLineWidget()->setText(line);
+    m_logLineWidget->setText(line);
 
-    QTextCursor c = logWidget()->textCursor();
+    QTextCursor c = m_logTextEdit->textCursor();
     c.movePosition(QTextCursor::End);
     c.insertText(line + '\n', fmt);
-    logWidget()->moveCursor(QTextCursor::End);
-    logWidget()->ensureCursorVisible();
+    m_logTextEdit->moveCursor(QTextCursor::End);
+    m_logTextEdit->ensureCursorVisible();
 }

@@ -18,13 +18,15 @@ class TLogHandler : public QObject {
 public:
     ~TLogHandler();
 
+    static void installLogger();
+
     static TLogLineWidget * logLineWidget();
     static TLogWidget * logWidget();
 
     static void messageHandler(QtMsgType type, const QMessageLogContext & context, const QString & msg);
 
 public slots:
-    static void appendLogMessage(QtMsgType type, const QString &msg);
+    void appendLogMessage(QtMsgType type, const QString &msg);
 
 private:
     TLogHandler();
@@ -33,8 +35,8 @@ private:
 
     static inline QMutex m_logMutex;
 
-    static inline TLogLineWidget * m_logLineWidget = nullptr;
-    static inline TLogWidget * m_logTextEdit = nullptr;
+    TLogLineWidget * m_logLineWidget;
+    TLogWidget * m_logTextEdit;
 };
 
 

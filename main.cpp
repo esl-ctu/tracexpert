@@ -9,7 +9,7 @@ int main(int argc, char * argv[])
 
     QApplication a(argc, argv);
 
-    qInstallMessageHandler(TLogHandler::messageHandler);
+    TLogHandler::installLogger();
 
     TMainWindow w;
     w.show();
