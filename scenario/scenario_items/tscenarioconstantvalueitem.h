@@ -59,35 +59,56 @@ public:
         QString oldValue = m_params.getSubParamByName("Value")->getValue();
         m_params.removeSubParam("Value");
 
+        QString defaultValue;
         TConfigParam::TType newType = TConfigParam::TType::TString;
         QString type = m_params.getSubParamByName("Data type")->getValue();
 
+        if(type == "byte array") {
+            newType = TConfigParam::TType::TByteArray;
+            defaultValue = "deadbeef";
+        }
         if(type == "integer") {
             newType = TConfigParam::TType::TInt;
+            defaultValue = "0";
         }
         else if(type == "unsigned integer") {
             newType = TConfigParam::TType::TUInt;
+            defaultValue = "0";
         }
         else if(type == "short") {
             newType = TConfigParam::TType::TShort;
+            defaultValue = "0";
         }
         else if(type == "unsigned short") {
             newType = TConfigParam::TType::TUShort;
+            defaultValue = "0";
         }
         else if(type == "long long") {
             newType = TConfigParam::TType::TLongLong;
+            defaultValue = "0";
         }
         else if(type == "unsigned long long") {
             newType = TConfigParam::TType::TULongLong;
+            defaultValue = "0";
         }
         else if(type == "real") {
             newType = TConfigParam::TType::TReal;
+            defaultValue = "0";
         }
         else if(type == "bool") {
             newType = TConfigParam::TType::TBool;
+            defaultValue = "true";
         }
 
-        m_params.addSubParam(TConfigParam("Value", oldValue, newType, tr("Value of constant."), false));
+        TConfigParam newValueParam("Value", "", newType, tr("Value of constant."), false);
+
+        bool iok;
+        newValueParam.setValue(oldValue, &iok);
+        if(!iok) {
+            newValueParam.setValue(defaultValue);
+        }
+
+        m_params.addSubParam(newValueParam);
     }
 
     bool validateParamsStructure(TConfigParam params) override {
@@ -130,13 +151,7 @@ public:
 
         QString type = m_params.getSubParamByName("Data type")->getValue();
         if(type == "byte array") {
-            QString value = valueParam->getValue();
-
-            if(value.contains(QRegularExpression(QStringLiteral("[^A-Za-z0-9]")))) {
-                valueParam->setState(TConfigParam::TState::TError, tr("Invalid value: non-hex characters present."));
-            }
-
-            m_subtitle = "0x" + m_subtitle;
+             m_subtitle = "0x" + m_subtitle;
         }
 
         emit appearanceChanged();

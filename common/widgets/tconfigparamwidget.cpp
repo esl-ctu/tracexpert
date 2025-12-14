@@ -155,6 +155,7 @@ void TConfigParamWidget::drawInput(const TConfigParam & param, QTreeWidgetItem *
         type == TConfigParam::TType::TDirectoryName ||
         type == TConfigParam::TType::TFileName ||
         type == TConfigParam::TType::TString ||
+        type == TConfigParam::TType::TByteArray ||
         type == TConfigParam::TType::TReal ||
         type == TConfigParam::TType::TInt ||
         type == TConfigParam::TType::TLongLong ||
@@ -263,7 +264,23 @@ bool TConfigParamWidget::checkInput(TConfigParam & param, QTreeWidgetItem * pare
     bool ok = true;
 
     TConfigParam::TType type = param.getType();
-    if (type == TConfigParam::TType::TBool || type == TConfigParam::TType::TEnum || type == TConfigParam::TType::TTime || type == TConfigParam::TType::TFileName || type == TConfigParam::TType::TDirectoryName || type == TConfigParam::TType::TString || type == TConfigParam::TType::TReal || type == TConfigParam::TType::TInt || type == TConfigParam::TType::TLongLong || type == TConfigParam::TType::TShort || type == TConfigParam::TType::TUInt || type == TConfigParam::TType::TULongLong ||type == TConfigParam::TType::TUShort || type == TConfigParam::TType::TCode) {
+    if (
+        type == TConfigParam::TType::TBool ||
+        type == TConfigParam::TType::TEnum ||
+        type == TConfigParam::TType::TTime ||
+        type == TConfigParam::TType::TFileName ||
+        type == TConfigParam::TType::TDirectoryName ||
+        type == TConfigParam::TType::TString ||
+        type == TConfigParam::TType::TByteArray ||
+        type == TConfigParam::TType::TReal ||
+        type == TConfigParam::TType::TInt ||
+        type == TConfigParam::TType::TLongLong ||
+        type == TConfigParam::TType::TShort ||
+        type == TConfigParam::TType::TUInt ||
+        type == TConfigParam::TType::TULongLong ||
+        type == TConfigParam::TType::TUShort ||
+        type == TConfigParam::TType::TCode
+    ) {
         QWidget * input = itemWidget(parent, 1);
         QString message;
         if (type == TConfigParam::TType::TBool || type == TConfigParam::TType::TEnum) {
