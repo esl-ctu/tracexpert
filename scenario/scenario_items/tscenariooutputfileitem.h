@@ -25,7 +25,7 @@ public:
 
     TScenarioOutputFileItem() : TScenarioItem(tr("Write to: untracked file"), tr("This block writes data into files not tracked by TraceXpert.")) {
         addFlowInputPort("flowIn");
-        addDataInputPort("dataIn");
+        addDataInputPort("dataIn", "", "", "[any]");
         addFlowOutputPort("flowOut", "done", tr("Flow continues through this port on success."));
         addFlowOutputPort("flowOutError", "error", tr("Flow continues through this port on error."));
 

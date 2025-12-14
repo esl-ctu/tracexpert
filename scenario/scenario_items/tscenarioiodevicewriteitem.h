@@ -18,7 +18,7 @@ public:
     }
 
     TScenarioIODeviceWriteItem() : TScenarioIODeviceItem(tr("IO Device: write"), tr("This block writes to selected IO Device.")) {
-        addDataInputPort("dataIn", "data", tr("Byte array with data to write."));
+        addDataInputPort("dataIn", "data", tr("Byte array with data to write."), "[byte array]");
     }
 
     TScenarioItem * copy() const override {

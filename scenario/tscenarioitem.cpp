@@ -295,7 +295,7 @@ int TScenarioItem::getItemPortSideOrderByName(const QString & name) {
 }
 
 
-void TScenarioItem::addFlowInputPort(const QString & name, const QString & displayName, const QString & description) {
+void TScenarioItem::addFlowInputPort(const QString & name, const QString & labelText, const QString & description) {
     if(!verifyPortNameUnique(name)) {
         return;
     }
@@ -304,12 +304,12 @@ void TScenarioItem::addFlowInputPort(const QString & name, const QString & displ
         new TScenarioItemPort(name,
                               TScenarioItemPort::TItemPortType::TFlowPort,
                               TScenarioItemPort::TItemPortDirection::TInputPort,
-                              this, displayName, description)
+                              this, labelText, description)
         );
     sortItemPorts();
 }
 
-void TScenarioItem::addFlowOutputPort(const QString & name, const QString & displayName, const QString & description) {
+void TScenarioItem::addFlowOutputPort(const QString & name, const QString & labelText, const QString & description) {
     if(!verifyPortNameUnique(name)) {
         return;
     }
@@ -318,12 +318,12 @@ void TScenarioItem::addFlowOutputPort(const QString & name, const QString & disp
         new TScenarioItemPort(name,
                               TScenarioItemPort::TItemPortType::TFlowPort,
                               TScenarioItemPort::TItemPortDirection::TOutputPort,
-                              this, displayName, description)
+                              this, labelText, description)
         );
     sortItemPorts();
 }
 
-void TScenarioItem::addDataInputPort(const QString & name, const QString & displayName, const QString & description) {
+void TScenarioItem::addDataInputPort(const QString & name, const QString & labelText, const QString & description, const QString & dataTypeHint) {
     if(!verifyPortNameUnique(name)) {
         return;
     }
@@ -332,12 +332,12 @@ void TScenarioItem::addDataInputPort(const QString & name, const QString & displ
         new TScenarioItemPort(name,
                               TScenarioItemPort::TItemPortType::TDataPort,
                               TScenarioItemPort::TItemPortDirection::TInputPort,
-                              this, displayName, description)
+                              this, labelText, description, dataTypeHint)
         );
     sortItemPorts();
 }
 
-void TScenarioItem::addDataOutputPort(const QString & name, const QString & displayName, const QString & description) {
+void TScenarioItem::addDataOutputPort(const QString & name, const QString & labelText, const QString & description, const QString & dataTypeHint) {
     if(!verifyPortNameUnique(name)) {
         return;
     }
@@ -346,12 +346,12 @@ void TScenarioItem::addDataOutputPort(const QString & name, const QString & disp
         new TScenarioItemPort(name,
                               TScenarioItemPort::TItemPortType::TDataPort,
                               TScenarioItemPort::TItemPortDirection::TOutputPort,
-                              this, displayName, description)
+                              this, labelText, description, dataTypeHint)
         );
     sortItemPorts();
 }
 
-void TScenarioItem::addConnectionInputPort(const QString & name, const QString & displayName, const QString & description) {
+void TScenarioItem::addConnectionInputPort(const QString & name, const QString & labelText, const QString & description) {
     if(!verifyPortNameUnique(name)) {
         return;
     }
@@ -360,12 +360,12 @@ void TScenarioItem::addConnectionInputPort(const QString & name, const QString &
         new TScenarioItemPort(name,
                               TScenarioItemPort::TItemPortType::TConnectionPort,
                               TScenarioItemPort::TItemPortDirection::TInputPort,
-                              this, displayName, description)
+                              this, labelText, description)
         );
     sortItemPorts();
 }
 
-void TScenarioItem::addConnectionOutputPort(const QString & name, const QString & displayName, const QString & description) {
+void TScenarioItem::addConnectionOutputPort(const QString & name, const QString & labelText, const QString & description) {
     if(!verifyPortNameUnique(name)) {
         return;
     }
@@ -374,21 +374,18 @@ void TScenarioItem::addConnectionOutputPort(const QString & name, const QString 
         new TScenarioItemPort(name,
                               TScenarioItemPort::TItemPortType::TConnectionPort,
                               TScenarioItemPort::TItemPortDirection::TOutputPort,
-                              this, displayName, description)
+                              this, labelText, description)
         );
     sortItemPorts();
 }
 
 void TScenarioItem::removePort(const QString & name) {
-    QList<TScenarioItemPort *>::iterator it = m_itemPorts.begin();
-    while (it != m_itemPorts.end()) {
-        if ((*it)->getName() == name) {
-            const TScenarioItemPort * port = *it;
-            it = m_itemPorts.erase(it);
+    QMutableListIterator<TScenarioItemPort *> it(m_itemPorts);
+    while (it.hasNext()) {
+        TScenarioItemPort *port = it.next();
+        if (port->getName() == name) {
+            it.remove();
             delete port;
-        }
-        else {
-            ++it;
         }
     }
 

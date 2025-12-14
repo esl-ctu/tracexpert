@@ -21,7 +21,7 @@ public:
 
     TScenarioCreateGraphItem() : TScenarioItem(tr("Create graph"), tr("This block creates a graph widget.")) {
         addFlowInputPort("flowIn");
-        addDataInputPort("dataIn", "", tr("Data pased through this port will be passed to the graph widget."));
+        addDataInputPort("dataIn", "", tr("Data pased through this port will be passed to the graph widget."), "[byte array]");
         addFlowOutputPort("flowOut");
 
         m_params = TConfigParam(m_name + " configuration", "", TConfigParam::TType::TDummy, "");

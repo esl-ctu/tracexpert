@@ -20,8 +20,8 @@ public:
     }
 
     TScenarioIODeviceReadItem() : TScenarioIODeviceItem(tr("IO Device: read"), tr("This block reads from selected IO Device.")) {
-        addDataInputPort("lengthIn", "length", tr("Number of bytes to read, as integer."));
-        addDataOutputPort("dataOut", "data", tr("Byte array with read data."));
+        addDataInputPort("lengthIn", "length", tr("Number of bytes to read, as integer."), "[unsigned long long]");
+        addDataOutputPort("dataOut", "data", tr("Byte array with read data."), "[byte array]");
     }
 
     TScenarioItem * copy() const override {

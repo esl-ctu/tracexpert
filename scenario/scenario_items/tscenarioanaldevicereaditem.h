@@ -20,7 +20,7 @@ public:
     }
 
     TScenarioAnalDeviceReadItem() : TScenarioAnalDeviceItem(tr("Analytic Device: read"), tr("This block reads from selected Analytic Device.")) {
-        addDataOutputPort("dataOut", "data", tr("Byte array with read data."));
+        addDataOutputPort("dataOut", "data", tr("Byte array with read data."), "[byte array]");
 
         TConfigParam streamParam("Output stream", "", TConfigParam::TType::TEnum, tr("Select the stream to read from."), false);
         m_params.addSubParam(streamParam);
@@ -178,7 +178,7 @@ public:
             removePort("lengthIn");
         }
         else {
-            addDataInputPort("lengthIn", "length", tr("Number of bytes to read, as integer."));
+            addDataInputPort("lengthIn", "length", tr("Number of bytes to read, as integer."), "[unsigned long long]");
         }
 
         m_title = "";

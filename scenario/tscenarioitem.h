@@ -145,7 +145,8 @@ public:
             in >> x->m_configWindowSize;
 
         } else {
-            qCritical("Failed deserializing TScenarioItem: Wrong version or wrong data.");
+            qCritical("Failed deserializing scenario item: Wrong version or wrong data.");
+            throw tr("Failed deserializing scenario item: Wrong version or wrong data.");
         }
         return in;
     }
@@ -220,8 +221,8 @@ protected:
 
     void addFlowInputPort       (const QString & name, const QString & displayName = QString(), const QString & description = QString());
     void addFlowOutputPort      (const QString & name, const QString & displayName = QString(), const QString & description = QString());
-    void addDataInputPort       (const QString & name, const QString & displayName = QString(), const QString & description = QString());
-    void addDataOutputPort      (const QString & name, const QString & displayName = QString(), const QString & description = QString());
+    void addDataInputPort       (const QString & name, const QString & displayName = QString(), const QString & description = QString(), const QString & dataTypeHint = QString());
+    void addDataOutputPort      (const QString & name, const QString & displayName = QString(), const QString & description = QString(), const QString & dataTypeHint = QString());
     void addConnectionInputPort (const QString & name, const QString & displayName = QString(), const QString & description = QString());
     void addConnectionOutputPort(const QString & name, const QString & displayName = QString(), const QString & description = QString());
 

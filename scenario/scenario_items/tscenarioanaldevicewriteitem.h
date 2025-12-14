@@ -18,7 +18,7 @@ public:
     }
 
     TScenarioAnalDeviceWriteItem() : TScenarioAnalDeviceItem(tr("Analytic Device: write"), tr("This block writes to selected Analytic Device.")) {
-        addDataInputPort("dataIn", "data", tr("Byte array with data to write."));
+        addDataInputPort("dataIn", "data", tr("Byte array with data to write."), "[byte array]");
 
         TConfigParam streamParam("Input stream", "", TConfigParam::TType::TEnum, tr("Select the stream to write to."), false);
         m_params.addSubParam(streamParam);

@@ -367,7 +367,7 @@ TScenarioItem * TScenarioExecutor::findNextFlowItem(TScenarioItem * item) {
     if(!nextItemFlowInputPort) {
         item->setState(
             TScenarioItem::TState::TRuntimeError,
-            QString("Execution stopped here: unconnected output flow port (%1)!").arg(currentItemFlowOutputPort->getDisplayName())
+            QString("Execution stopped here: unconnected output flow port (%1)!").arg(currentItemFlowOutputPort->getLabelText())
         );
         qWarning("Failed to execute the scenario - nowhere to go after executed block.");
 
@@ -389,7 +389,7 @@ void TScenarioExecutor::saveOutputData(QHash<TScenarioItemPort *, QByteArray> ou
     // figure out where to send the data output values
     for (auto [sourceItemPort, value] : outputData.asKeyValueRange()) {
         if(!m_dataConnectionMap.contains(sourceItemPort)) {
-            QString portName = sourceItemPort->getDisplayName().isEmpty() ? sourceItemPort->getName() : sourceItemPort->getDisplayName();
+            QString portName = sourceItemPort->getLabelText().isEmpty() ? sourceItemPort->getName() : sourceItemPort->getLabelText();
             qInfo() << "Output data could not be passed to next block: "
                     << "unconnected output data port (" << portName << ") in block " << sourceItemPort->getParentItem()->getName() << ".";
             sourceItemPort->getParentItem()->setState(

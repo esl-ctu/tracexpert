@@ -16,7 +16,7 @@ public:
     }
 
     TScenarioVariableReadItem() : TScenarioItem(tr("Variable: read"), tr("This block allows reading of a variable.")) {
-        addDataOutputPort("dataOut");
+        addDataOutputPort("dataOut", "", "", "[original data type]");
 
         m_params = TConfigParam(m_name + " configuration", "", TConfigParam::TType::TDummy, "");
         m_params.addSubParam(TConfigParam("Block name", "Variable: read", TConfigParam::TType::TString, tr("Display name of the block."), false));

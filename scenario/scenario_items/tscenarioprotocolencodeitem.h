@@ -16,7 +16,7 @@ public:
         addFlowInputPort("flowIn");
         addFlowOutputPort("flowOut", "done", tr("Flow continues through this port on success."));
         addFlowOutputPort("flowOutError", "error", tr("Flow continues through this port on error."));
-        addDataOutputPort("dataOut", "message", tr("Byte array containing the formatted message."));
+        addDataOutputPort("dataOut", "message", tr("Byte array containing the formatted message."), "[byte array]");
 
         m_params = TConfigParam("Block configuration", "", TConfigParam::TType::TDummy, "");
         m_params.addSubParam(TConfigParam("Protocol", "", TConfigParam::TType::TEnum, tr("Send message defined in this protocol."), false));

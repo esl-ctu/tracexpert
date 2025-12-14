@@ -21,7 +21,7 @@ public:
 
     TScenarioConstantValueItem() : TScenarioItem(tr("Constant"), tr("This block represents a constant value.")) {
         setType(TItemAppearance::TEmbeddedSubtitle);
-        addDataOutputPort("dataOut");
+        addDataOutputPort("dataOut", "", "", "[selected data type]");
 
         TConfigParam typeParam("Data type", "string", TConfigParam::TType::TEnum, tr("Data type of constant value."), false);
         typeParam.addEnumValue("string");
@@ -99,6 +99,9 @@ public:
             newType = TConfigParam::TType::TBool;
             defaultValue = "true";
         }
+
+        // TODO: create a connection to be able to update the type hint and show it in the UI
+        // getItemPortByName("dataOut")->setDataTypeHint(QString("[%1]").arg(type));
 
         TConfigParam newValueParam("Value", "", newType, tr("Value of constant."), false);
 
