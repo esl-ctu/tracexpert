@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QFormLayout>
 
+#include "../../protocol/tprotocol.h"
 #include "../../protocol/tprotocolcontainer.h"
 #include "tmessageformmanager.h"
 #include "../sender/tsendermodel.h"

@@ -5,10 +5,9 @@
 
 #include "../tdialog.h"
 #include "../tdevicewizard.h"
-#include "../tmainwindow.h"
 
 TProjectView::TProjectView(QToolBar * toolbar, QWidget * parent)
-    : QTreeView(parent), m_mainWindow((TMainWindow *) parent), m_toolbar(toolbar)
+    : QTreeView(parent), m_toolbar(toolbar)
 {
     createActions();
 
@@ -94,17 +93,17 @@ void TProjectView::createActions()
 
     m_openProtocolManagerAction = new QAction(tr("Open Protocol Manager"), this);
     m_openProtocolManagerAction->setIcon(QPixmap(":/icons/protocol-manager.png"));
-    connect(m_openProtocolManagerAction, &QAction::triggered, m_mainWindow, &TMainWindow::createProtocolManagerDockWidget);
+    connect(m_openProtocolManagerAction, &QAction::triggered, this, &TProjectView::showProtocolManager);
     m_editProtocolAction = new QAction(tr("Edit"), this);
     m_editProtocolAction->setIcon(QPixmap(":/icons/show.png"));
-    connect(m_editProtocolAction, &QAction::triggered, this, &TProjectView::editProtocol);
+    connect(m_editProtocolAction, &QAction::triggered, this, &TProjectView::openProtocolEditor);
 
     m_openScenarioManagerAction = new QAction(tr("Open Scenario Manager"), this);
     m_openScenarioManagerAction->setIcon(QPixmap(":/icons/scenario-manager.png"));
-    connect(m_openScenarioManagerAction, &QAction::triggered, m_mainWindow, &TMainWindow::createScenarioManagerDockWidget);
+    connect(m_openScenarioManagerAction, &QAction::triggered, this, &TProjectView::showScenarioManager);
     m_editScenarioAction = new QAction(tr("Edit"), this);
     m_editScenarioAction->setIcon(QPixmap(":/icons/show.png"));
-    connect(m_editScenarioAction, &QAction::triggered, this, &TProjectView::editScenario);
+    connect(m_editScenarioAction, &QAction::triggered, this, &TProjectView::openScenarioEditor);
 }
 
 void TProjectView::refreshActions()
@@ -628,21 +627,31 @@ void TProjectView::showInfo()
     dialog.exec();
 }
 
-void TProjectView::editProtocol()
+void TProjectView::showProtocolManager()
+{
+    ((TProjectModel *)model())->protocolContainer()->showManager();
+}
+
+void TProjectView::showScenarioManager()
+{
+    ((TProjectModel *)model())->scenarioContainer()->showManager();
+}
+
+void TProjectView::openProtocolEditor()
 {
     if (!m_protocol) {
         return;
     }
 
-    m_mainWindow->openProtocolEditor(m_protocol->name());
+    m_protocol->openEditor();
 }
 
-void TProjectView::editScenario()
+void TProjectView::openScenarioEditor()
 {
     if (!m_scenario) {
         return;
     }
 
-    m_mainWindow->createScenarioEditorDockWidget(m_scenario);
+    m_scenario->openEditor();
 }
 

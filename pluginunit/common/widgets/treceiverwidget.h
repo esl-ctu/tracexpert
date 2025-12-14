@@ -4,6 +4,7 @@
 #include <QLineEdit>
 #include <QComboBox>
 
+#include "../../protocol/tprotocol.h"
 #include "../../protocol/tprotocolcontainer.h"
 #include "../receiver/treceivermodel.h"
 

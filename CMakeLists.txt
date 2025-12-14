@@ -70,8 +70,7 @@ add_executable(${PROJECT_NAME} WIN32
     common/tiodevice.h
     common/tmessage.h
     common/tmessagepart.h
-    common/tplugin.h
-    common/tprotocol.h
+    common/tplugin.h    
     common/tscope.h
     common/widgets/tcodeedit.cpp
     common/widgets/tcodeedit.h
@@ -159,20 +158,29 @@ add_executable(${PROJECT_NAME} WIN32
     project/tprojectmodel.h
     project/tprojectview.cpp
     project/tprojectview.h
+    projectunit/tprojectunitcontainer.cpp
+    projectunit/tprojectunitcontainer.h
+    projectunit/tprojectunitmodel.h
+    projectunit/tprojectunitmodel.cpp
+    projectunit/tprojectunit.h
+    projectunit/tprojectunit.cpp
+    projectunit/tprojectunittableview.h
+    projectunit/tprojectunitwidget.cpp
+    projectunit/tprojectunitwidget.h
     protocol/tabstracttablemodel.h
     protocol/tmessageeditor.cpp
     protocol/tmessageeditor.h
     protocol/tmessageparteditor.cpp
     protocol/tmessageparteditor.h
-    protocol/tmessagepartsimplecontainer.h
-    protocol/tmessagesimplecontainer.h
+    protocol/tmessagepartcontainer.h
+    protocol/tmessagecontainer.h
+    protocol/tprotocol.h
     protocol/tprotocolcontainer.cpp
     protocol/tprotocolcontainer.h
     protocol/tprotocoleditor.cpp
     protocol/tprotocoleditor.h
     protocol/tprotocolmodel.cpp
     protocol/tprotocolmodel.h
-    protocol/tprotocoltableview.h
     protocol/tprotocolwidget.cpp
     protocol/tprotocolwidget.h
     scenario/tscenarioconnection.h

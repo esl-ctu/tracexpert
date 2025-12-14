@@ -5,6 +5,9 @@
 #include <QList>
 #include <QDataStream>
 #include <QHash>
+#include <QCoreApplication>
+
+#include "../projectunit/tprojectunit.h"
 
 #include "tscenarioitem.h"
 #include "tscenarioconnection.h"
@@ -21,7 +24,8 @@
  * It includes simple scenario validation method and keeps state of the scenario.
  *
  */
-class TScenario {
+class TScenario : public TProjectUnit {
+    Q_DECLARE_TR_FUNCTIONS(TScenario)
 
 public:
 
@@ -104,11 +108,11 @@ public:
             out << *e;
         }
 
-
         out << x.m_connections.size();
         for(TScenarioConnection * e : x.m_connections) {
             out << *e;
         }
+
         return out;
     }
 
@@ -136,8 +140,8 @@ public:
                 TScenarioItem * item = TScenarioItem::createScenarioItemByClass(itemClass);
 
                 if(!item) {
-                    qCritical("Failed deserializing TScenario: Cannot instantiate correct scenario item class.");
-                    return in;
+                    qCritical("Failed deserializing scenario: Cannot instantiate correct scenario item class.");
+                    throw tr("Failed deserializing scenario: Cannot instantiate correct scenario item class.");
                 }
 
                 in >> item;
@@ -170,9 +174,22 @@ public:
                 x.m_connections.append(connection);
             }
         } else {
-            qCritical("Failed deserializing TScenario: Wrong version or wrong data.");
+            qCritical("Failed deserializing scenario: Wrong version or wrong data.");
+            throw tr("Failed deserializing scenario: Wrong version or wrong data.");
         }
         return in;
+    }
+
+    TProjectUnit * copy() const override {
+        return new TScenario(*this);
+    }
+
+    void serialize(QDataStream &out) const override {
+        out << *this;
+    }
+
+    void deserialize(QDataStream &in) override {
+        in >> *this;
     }
 
     bool hasItem(TScenarioItem * param) {
@@ -241,11 +258,11 @@ public:
         return true;
     }
 
-    const QString & getName() const {
+    const QString & name() const override {
         return m_name;
     }
 
-    const QString & getDescription() const {
+    const QString & description() const override {
         return m_description;
     }
 
@@ -257,11 +274,11 @@ public:
         return m_connections;
     }
 
-    void setName(const QString & value) {
+    void setName(const QString & value) override {
         m_name = value;
     }
 
-    void setDescription(const QString & value) {
+    void setDescription(const QString & value) override {
         m_description = value;
     }
 

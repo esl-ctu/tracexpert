@@ -62,12 +62,13 @@ private slots:
 
     void showInfo();
 
-    void editProtocol();
-    void editScenario();
+    void showProtocolManager();
+    void showScenarioManager();
+
+    void openProtocolEditor();
+    void openScenarioEditor();
 
 private:
-    TMainWindow * m_mainWindow;
-
     QToolBar * m_toolbar;
 
     TComponentModel * m_component;

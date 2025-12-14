@@ -95,12 +95,12 @@ public:
     }
 
     void tracesDownloaded(size_t traces, size_t samples, TScope::TSampleType type, QList<QByteArray> buffers, bool overvoltage) {
-        log(QString(tr("[%1] Trace data downloaded")).arg(m_deviceModel->name()));
+        log(tr("[%1] Trace data downloaded").arg(m_deviceModel->name()));
 
         QList<TScope::TChannelStatus> status = m_deviceModel->channelsStatus();
 
         if(buffers.count() != status.count()) {
-            log(QString(tr("[%1] Incorrect number of data buffers received")).arg(m_deviceModel->name()), TLogLevel::TError);
+            log(tr("[%1] Incorrect number of data buffers received").arg(m_deviceModel->name()), TLogLevel::TError);
             return;
         }
 
@@ -126,7 +126,7 @@ public:
             TScenarioItemPort * channelPort = getItemPortByName(QString("channel%1").arg(i+1));
 
             if(!channelPort) {
-                log(QString(tr("[%1] Channel %2 port unavailable.")).arg(m_deviceModel->name()).arg(i+1), TLogLevel::TError);
+                log(tr("[%1] Channel %2 port unavailable.").arg(m_deviceModel->name()).arg(i+1), TLogLevel::TError);
                 return;
             }
 
@@ -148,35 +148,35 @@ public:
     virtual void runFailed() {
         disconnect(m_deviceModel, nullptr, this, nullptr);
 
-        log(QString(tr("[%1] Read failed - run failed")).arg(m_deviceModel->name()));
+        log(tr("[%1] Read failed - run failed").arg(m_deviceModel->name()));
         m_preferredOutputFlowPortName = "flowOutError";
     }
 
     virtual void stopFailed() {
         disconnect(m_deviceModel, nullptr, this, nullptr);
 
-        log(QString(tr("[%1] Read failed - stop failed")).arg(m_deviceModel->name()));
+        log(tr("[%1] Read failed - stop failed").arg(m_deviceModel->name()));
         m_preferredOutputFlowPortName = "flowOutError";
     }
 
     virtual void downloadFailed() {
         disconnect(m_deviceModel, nullptr, this, nullptr);
 
-        log(QString(tr("[%1] Read failed - download failed")).arg(m_deviceModel->name()));
+        log(tr("[%1] Read failed - download failed").arg(m_deviceModel->name()));
         m_preferredOutputFlowPortName  = "flowOutError";
     }
 
     virtual void tracesEmpty() {
         disconnect(m_deviceModel, nullptr, this, nullptr);
 
-        log(QString(tr("[%1] Read failed - traces empty")).arg(m_deviceModel->name()));
+        log(tr("[%1] Read failed - traces empty").arg(m_deviceModel->name()));
         m_preferredOutputFlowPortName = "flowOutError";
     }
 
     virtual void stopped() {
         disconnect(m_deviceModel, nullptr, this, nullptr);
 
-        log(QString(tr("[%1] Measurement stopped")).arg(m_deviceModel->name()));
+        log(tr("[%1] Measurement stopped").arg(m_deviceModel->name()));
         m_preferredOutputFlowPortName = "flowOut";
     }
 

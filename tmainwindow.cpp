@@ -1,3 +1,4 @@
+#include <QApplication>
 #include <QMenu>
 #include <QMenuBar>
 #include <QFile>
@@ -6,10 +7,14 @@
 #include <QOpenGLWidget>
 #include <QStatusBar>
 #include <QToolBar>
+#include <QDialogButtonBox>
+#include <QTextBrowser>
+#include <QVBoxLayout>
 
 #include "tmainwindow.h"
 #include "graphs/tgraph.h"
 #include "graphs/tgraphwidget.h"
+#include "protocol/tprotocoleditor.h"
 #include "qfiledialog.h"
 #include "tdevicewizard.h"
 #include "pluginunit/common/widgets/tcommunicationdevicewidget.h"
@@ -292,17 +297,11 @@ void TMainWindow::createAnalDeviceDockWidget(TAnalDeviceModel * analDevice)
 }
 
 
-void TMainWindow::openProtocolEditor(const QString & protocolName)
+void TMainWindow::createProtocolEditor(TProtocolModel * protocolModel)
 {
-    createProtocolManagerDockWidget();
-
-    bool ok;
-    TProtocolWidget * protocolWidget = (TProtocolWidget *)m_protocolManagerDockWidget->widget();
-    protocolWidget->openEditor(protocolName, &ok);
-
-    if(!ok) {
-        qWarning("Protocol not found, editor widget could not be opened.");
-    }
+    TProtocolEditorWizard * wizard = new TProtocolEditorWizard(protocolModel, m_projectModel->protocolContainer(), this);
+    wizard->setAttribute(Qt::WidgetAttribute::WA_DeleteOnClose);
+    wizard->exec();
 }
 
 void TMainWindow::createProtocolManagerDockWidget()
@@ -347,49 +346,49 @@ void TMainWindow::createScenarioEditorDockWidget(TScenarioModel * scenario)
 {
     //create dock widget with Scenario Editor Widget
     TScenarioEditorWidget * scenarioEditorWidget = new TScenarioEditorWidget(scenario, m_projectModel, this);
-    TDockWidget * scenarioEditorDockWidget = new TDockWidget(QString("%1 - %2").arg(tr("Scenario"), scenario->name()), this);
-    scenarioEditorDockWidget->setDeleteOnClose(true);
-    scenarioEditorDockWidget->setWidget(scenarioEditorWidget);
+    TDockWidget * dockWidget = new TDockWidget(QString("%1 - %2").arg(tr("Scenario"), scenario->name()), this);
+    dockWidget->setDeleteOnClose(true);
+    dockWidget->setWidget(scenarioEditorWidget);
 
-    connect(scenarioEditorDockWidget, &TDockWidget::closed, scenarioEditorDockWidget, [=](){
-        m_viewMenu->removeAction(scenarioEditorDockWidget->toggleViewAction());
-        m_scenarioEditorDockWidgets.removeAll(scenarioEditorDockWidget);
-        m_dockManager->removeDockWidget(scenarioEditorDockWidget);
+    connect(dockWidget, &TDockWidget::closed, dockWidget, [=](){
+        m_viewMenu->removeAction(dockWidget->toggleViewAction());
+        m_scenarioEditorDockWidgets.removeAll(dockWidget);
+        m_dockManager->removeDockWidget(dockWidget);
     });
     // no need to connect &QObject::deleteLater the scenarioEditorDockWidget, since it has setDeleteOnClose(true)
 
-    m_viewMenu->addAction(scenarioEditorDockWidget->toggleViewAction());
-    m_dockManager->addCenterDockWidgetTab(scenarioEditorDockWidget, m_welcomeDockWidget);
+    m_viewMenu->addAction(dockWidget->toggleViewAction());
+    m_dockManager->addCenterDockWidgetTab(dockWidget, m_welcomeDockWidget);
 
     // show the widget automatically
-    scenarioEditorDockWidget->show();
+    dockWidget->show();
 
-    m_scenarioEditorDockWidgets.append(scenarioEditorDockWidget);
+    m_scenarioEditorDockWidgets.append(dockWidget);
 }
 
 void TMainWindow::createGraphDockWidget(TGraph * graph)
 {
     //create dock widget with Scenario Editor Widget
     TGraphWidget * graphWidget = new TGraphWidget(graph, this);
-    TDockWidget * graphDockWidget = new TDockWidget(QString("%1 - %2").arg(tr("Graph"), graph->name()), this);
-    graphDockWidget->setDeleteOnClose(true);
-    graphDockWidget->setWidget(graphWidget);
+    TDockWidget * dockWidget = new TDockWidget(QString("%1 - %2").arg(tr("Graph"), graph->name()), this);
+    dockWidget->setDeleteOnClose(true);
+    dockWidget->setWidget(graphWidget);
 
-    connect(graphDockWidget, &TDockWidget::closed, graphDockWidget, [=](){
-        m_viewMenu->removeAction(graphDockWidget->toggleViewAction());
-        m_graphDockWidgets.removeAll(graphDockWidget);
-        m_dockManager->removeDockWidget(graphDockWidget);
+    connect(dockWidget, &TDockWidget::closed, dockWidget, [=](){
+        m_viewMenu->removeAction(dockWidget->toggleViewAction());
+        m_graphDockWidgets.removeAll(dockWidget);
+        m_dockManager->removeDockWidget(dockWidget);
     });
     // no need to connect &QObject::deleteLater the graphDockWidget, since it has setDeleteOnClose(true)
 
-    m_viewMenu->addAction(graphDockWidget->toggleViewAction());
-    m_dockManager->addCenterDockWidgetTab(graphDockWidget, m_welcomeDockWidget);
+    m_viewMenu->addAction(dockWidget->toggleViewAction());
+    m_dockManager->addCenterDockWidgetTab(dockWidget, m_welcomeDockWidget);
 
     // show the widget automatically
-    graphDockWidget->show();
+    dockWidget->show();
     graphWidget->drawGraph();
 
-    m_graphDockWidgets.append(graphDockWidget);
+    m_graphDockWidgets.append(dockWidget);
 }
 
 
@@ -423,6 +422,12 @@ void TMainWindow::newProject()
     connect(m_projectModel, &TProjectModel::IODeviceInitialized, this, &TMainWindow::createIODeviceDockWidget);
     connect(m_projectModel, &TProjectModel::scopeInitialized, this, &TMainWindow::createScopeDockWidget);
     connect(m_projectModel, &TProjectModel::analDeviceInitialized, this, &TMainWindow::createAnalDeviceDockWidget);
+
+    connect(m_projectModel, &TProjectModel::protocolManagerRequested, this, &TMainWindow::createProtocolManagerDockWidget);
+    connect(m_projectModel, &TProjectModel::protocolEditorRequested, this, &TMainWindow::createProtocolEditor);
+
+    connect(m_projectModel, &TProjectModel::scenarioManagerRequested, this, &TMainWindow::createScenarioManagerDockWidget);
+    connect(m_projectModel, &TProjectModel::scenarioEditorRequested, this, &TMainWindow::createScenarioEditorDockWidget);
 
     createProjectDockWidget(m_projectModel);
 }
@@ -464,6 +469,12 @@ void TMainWindow::openProject()
     connect(m_projectModel, &TProjectModel::IODeviceInitialized, this, &TMainWindow::createIODeviceDockWidget);
     connect(m_projectModel, &TProjectModel::scopeInitialized, this, &TMainWindow::createScopeDockWidget);
     connect(m_projectModel, &TProjectModel::analDeviceInitialized, this, &TMainWindow::createAnalDeviceDockWidget);
+
+    connect(m_projectModel, &TProjectModel::protocolManagerRequested, this, &TMainWindow::createProtocolManagerDockWidget);
+    connect(m_projectModel, &TProjectModel::protocolEditorRequested, this, &TMainWindow::createProtocolEditor);
+
+    connect(m_projectModel, &TProjectModel::protocolEditorRequested, this, &TMainWindow::createProtocolEditor);
+    connect(m_projectModel, &TProjectModel::scenarioEditorRequested, this, &TMainWindow::createScenarioEditorDockWidget);
 
     try {
         m_projectModel->load(&projectElement);

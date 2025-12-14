@@ -7,6 +7,7 @@
 #include <QGroupBox>
 #include <QLabel>
 
+#include "../protocol/tprotocolmodel.h"
 #include "widgets/tfilenameedit.h"
 
 TReceiverWidget::TReceiverWidget(TReceiverModel * receiverModel, TProtocolContainer * protocolContainer, QWidget * parent)
@@ -65,7 +66,7 @@ TReceiverWidget::TReceiverWidget(TReceiverModel * receiverModel, TProtocolContai
     setLayout(layout);
 
     updateDisplayedProtocols();
-    connect(m_protocolContainer, &TProtocolContainer::protocolsUpdated, this, &TReceiverWidget::updateDisplayedProtocols);
+    connect(m_protocolContainer, &TProtocolContainer::itemsUpdated, this, &TReceiverWidget::updateDisplayedProtocols);
 }
 
 void TReceiverWidget::updateDisplayedProtocols() {
@@ -80,9 +81,10 @@ void TReceiverWidget::updateDisplayedProtocols() {
 
 void TReceiverWidget::protocolChanged(int index)
 {
-    TProtocol protocol = m_protocolContainer->getByName(m_protocolComboBox->currentText());
+    TProtocolModel * protocolModel = (TProtocolModel *)m_protocolContainer->getByName(m_protocolComboBox->currentText());
 
-    emit protocolSelected(protocol, m_receiverModel);
+    if(protocolModel)
+        emit protocolSelected(*protocolModel->protocol(), m_receiverModel);
 }
 
 void TReceiverWidget::setAutoreceive(bool enabled)

@@ -26,7 +26,7 @@ public slots:
     void createAnalDeviceDockWidget(TAnalDeviceModel * IODevice);
 
     void createProtocolManagerDockWidget();
-    void openProtocolEditor(const QString & protocolName);
+    void createProtocolEditor(TProtocolModel * protocol);
 
     void createScenarioManagerDockWidget();
     void createScenarioEditorDockWidget(TScenarioModel * scenario);

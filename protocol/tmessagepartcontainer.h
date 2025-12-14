@@ -1,5 +1,5 @@
-#ifndef TMESSAGEPARTMODEL_H
-#define TMESSAGEPARTMODEL_H
+#ifndef TMESSAGEPARTCONTAINER_H
+#define TMESSAGEPARTCONTAINER_H
 
 #include <QApplication>
 #include <QStyle>
@@ -7,10 +7,10 @@
 #include "tabstracttablemodel.h"
 #include "tmessagepart.h"
 
-class TMessagePartSimpleContainer : public TAbstractTableModel<TMessagePart> {
+class TMessagePartContainer : public TAbstractTableModel<TMessagePart> {
 
 public:
-    explicit TMessagePartSimpleContainer(QList<TMessagePart> initialItems, QObject *parent = nullptr) : TAbstractTableModel<TMessagePart>(initialItems, parent) { }
+    explicit TMessagePartContainer(QList<TMessagePart> initialItems, QObject *parent = nullptr) : TAbstractTableModel<TMessagePart>(initialItems, parent) { }
 
     int columnCount(const QModelIndex & parent) const {
         return 5;
@@ -123,4 +123,4 @@ public:
     }
 };
 
-#endif // TMESSAGEPARTMODEL_H
+#endif // TMESSAGEPARTCONTAINER_H

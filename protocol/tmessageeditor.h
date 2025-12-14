@@ -8,7 +8,7 @@
 #include <QComboBox>
 
 #include "tmessage.h"
-#include "tmessagepartsimplecontainer.h"
+#include "tmessagepartcontainer.h"
 #include "tmessageparteditor.h"
 
 class TMessageEditorDetailsPage : public QWizardPage {
@@ -54,7 +54,7 @@ private:
     qsizetype  m_addedItemIndex;
 
     QTableView * m_messagePartView;
-    TMessagePartSimpleContainer * m_messagePartContainer;
+    TMessagePartContainer * m_messagePartContainer;
 
     const TMessage & m_message;
 };

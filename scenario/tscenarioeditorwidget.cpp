@@ -4,6 +4,7 @@
 #include "tscenariographicsview.h"
 #include "tscenarioscene.h"
 #include "../tdialog.h"
+#include "../scenario/tscenariomodel.h"
 
 #include <QBoxLayout>
 #include <QtWidgets>

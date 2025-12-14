@@ -1,9 +1,14 @@
 #ifndef TPROTOCOL_H
 #define TPROTOCOL_H
+
 #include <QString>
 #include <QList>
 #include <QDataStream>
 #include <QtGlobal>
+#include <QCoreApplication>
+
+#include "../projectunit/tprojectunit.h"
+
 #include "tmessage.h"
 
 #define TPROTOCOLVER "cz.cvut.fit.TraceXpert.TProtocol/0.1"
@@ -15,9 +20,8 @@
  *
  * The whole class, including subparameters etc., can be serialized and deserialized through QDataStream by using \<\< and \>\> operators.
  */
-class TProtocol {
-
-    //Q_DECLARE_TR_FUNCTIONS(TProtocol)
+class TProtocol : public TProjectUnit {
+    Q_DECLARE_TR_FUNCTIONS(TProtocol)
 
 public:
 
@@ -74,9 +78,22 @@ public:
             in >> x.m_description;
             in >> x.m_messages;
         } else {
-            qCritical("Failed deserializing TProtocol: Wrong version or wrong data.");
+            qCritical("Failed deserializing protocol: Wrong version or wrong data.");
+            throw tr("Failed deserializing protocol: Wrong version or wrong data.");
         }
         return in;
+    }
+
+    TProjectUnit * copy() const override {
+        return new TProtocol(*this);
+    }
+
+    void serialize(QDataStream &out) const override {
+        out << *this;
+    }
+
+    void deserialize(QDataStream &in) override {
+        in >> *this;
     }
 
     TMessage tryMatchResponse(QByteArray receivedData) const {
@@ -121,7 +138,7 @@ public:
                     }
 
                     if(!iok) {
-                        qWarning("Failed to fill in payload while matching message!");
+                        // qWarning("Failed to fill in payload while matching message!");
                         isMatch = false;
                         break;
                     }
@@ -185,11 +202,11 @@ public:
         }
     }
 
-    const QString & getName() const {
+    const QString & name() const override {
         return m_name;
     }
 
-    const QString & getDescription() const {
+    const QString & description() const override {
         return m_description;
     }
 
@@ -201,11 +218,11 @@ public:
         return m_messages;
     }
 
-    void setName(const QString & value) {
+    void setName(const QString & value) override {
         m_name = value;
     }
 
-    void setDescription(const QString & value) {
+    void setDescription(const QString & value) override {
         m_description = value;
     }
 
