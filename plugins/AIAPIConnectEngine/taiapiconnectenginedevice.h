@@ -114,8 +114,7 @@ private:
     bool getTrainingStatus(bool & trainRunning, int & epoch, double & accuracy, double & loss, double & valAccuracy, double & valLoss) const;
     bool getTrainingParams(int & epochs, int & batchSize, int & trials) const;
     bool getListOfDatasets(QMap<QString, QMap<QString, QPair<int, int>>> & datasetMap) const;
-    bool getListOfModels(QList<QString> & modelList) const;
-
+    bool getListOfX(QList<QString> & l, QString x) const;
     bool stopTraining();
     bool train();
     bool setTrainParams(int epochs = 0, int batchSize = 0, int optimizationNumOfTrials = 0);
