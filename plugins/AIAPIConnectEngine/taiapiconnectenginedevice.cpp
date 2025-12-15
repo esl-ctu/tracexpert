@@ -26,8 +26,8 @@ bool validateParamLL(QString in, long long min, long long max){
     return false;
 }
 
-bool processNumberInputIntoJSONArray(QJsonArray & jsonArray, void * dataIn, int inputItemSize, QString type, int len) {
-    for (int i = 0; i < len; ++i)  {
+bool processNumberInputIntoJSONArray(QJsonArray & jsonArray, void * dataIn, int inputItemSize, QString type, size_t len) {
+    /*for (int i = 0; i < len; ++i)  {
         if (type == "int16_t") jsonArray.append(((int16_t *) dataIn)[i]);
         if (type == "int32_t") jsonArray.append(((int32_t *) dataIn)[i]);
         if (type == "int64_t") jsonArray.append(((int64_t *) dataIn)[i]);
@@ -52,6 +52,39 @@ bool processNumberInputIntoJSONArray(QJsonArray & jsonArray, void * dataIn, int 
     if (jsonArray.size() % inputItemSize != 0) {
         qDebug("Uneven number of samples received (3)");
         return false;
+    }
+
+    return true;*/
+
+    size_t numItems = len;
+
+    if (numItems % inputItemSize != 0) {
+        qDebug("Uneven number of samples received (numeric)");
+        return false;
+    }
+
+    size_t numTraces = numItems / inputItemSize;
+    size_t idx = 0;
+
+    for (size_t t = 0; t < numTraces; ++t) {
+        QJsonArray trace;
+
+        for (size_t i = 0; i < inputItemSize; ++i) {
+            double v = 0.0;
+
+            if (type == "int16_t")   v = ((int16_t*)dataIn)[idx];
+            if (type == "int32_t")   v = ((int32_t*)dataIn)[idx];
+            if (type == "int64_t")   v = (double)((int64_t*)dataIn)[idx];
+            if (type == "uint16_t")  v = ((uint16_t*)dataIn)[idx];
+            if (type == "uint32_t")  v = ((uint32_t*)dataIn)[idx];
+            if (type == "uint64_t")  v = (double)((uint64_t*)dataIn)[idx];
+            if (type == "Double")    v = ((double*)dataIn)[idx];
+
+            trace.append(v);
+            idx++;
+        }
+
+        jsonArray.append(trace);
     }
 
     return true;
@@ -846,7 +879,7 @@ bool TAIAPIConnectEngineDevice::uploadData() { //upload_data endpoint
         qDebug() << "Processing " << m_lengthTrain << " bytes of input\n";
     }
 
-    if (m_lengthTrain % traceSize == 0 && type != "Text") {
+    if (type != "Text" && m_lengthTrain % traceSize != 0) {
         qDebug("Uneven number of samples received (1)");
         inputDataTrainUseable = false;
         running = false;
@@ -982,7 +1015,7 @@ bool TAIAPIConnectEngineDevice::analyzeData() { //predict endpoint
         qDebug() << "Processing " << m_lengthPredict << " bytes of input\n";
     }
 
-    if (m_lengthPredict % inputItemSize == 0 && type != "Text") {
+    if (type != "Text" && m_lengthPredict % inputItemSize != 0) {
         qDebug("Uneven number of samples received (1)");
         running = false;
         inputDataPredictUseable = false;

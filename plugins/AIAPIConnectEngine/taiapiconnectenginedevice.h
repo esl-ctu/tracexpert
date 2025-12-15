@@ -121,6 +121,7 @@ private:
     bool loadDataset(QString name, int fromTime = 0, int toTime = 0);
     bool loadModel(QString name, bool opti = false);
     bool deleteDataset(QString name, int fromTime = 0, int toTime = 0);
+    bool setArchitecture(QString arch);
 };
 
 #endif // TAIAPICONNECTENGINEDEVICE_H
