@@ -15,12 +15,13 @@
 class TScenarioConstantValueItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 40 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioConstantValueItem;
+    }
 
     TScenarioConstantValueItem() : TScenarioItem(tr("Constant"), tr("This block represents a constant value.")) {
         setType(TItemAppearance::TEmbeddedSubtitle);
-        addDataOutputPort("dataOut");
+        addDataOutputPort("dataOut", "", "", "[selected data type]");
 
         TConfigParam typeParam("Data type", "string", TConfigParam::TType::TEnum, tr("Data type of constant value."), false);
         typeParam.addEnumValue("string");
@@ -58,38 +59,62 @@ public:
         QString oldValue = m_params.getSubParamByName("Value")->getValue();
         m_params.removeSubParam("Value");
 
+        QString defaultValue;
         TConfigParam::TType newType = TConfigParam::TType::TString;
         QString type = m_params.getSubParamByName("Data type")->getValue();
 
+        if(type == "byte array") {
+            newType = TConfigParam::TType::TByteArray;
+            defaultValue = "deadbeef";
+        }
         if(type == "integer") {
             newType = TConfigParam::TType::TInt;
+            defaultValue = "0";
         }
         else if(type == "unsigned integer") {
             newType = TConfigParam::TType::TUInt;
+            defaultValue = "0";
         }
         else if(type == "short") {
             newType = TConfigParam::TType::TShort;
+            defaultValue = "0";
         }
         else if(type == "unsigned short") {
             newType = TConfigParam::TType::TUShort;
+            defaultValue = "0";
         }
         else if(type == "long long") {
             newType = TConfigParam::TType::TLongLong;
+            defaultValue = "0";
         }
         else if(type == "unsigned long long") {
             newType = TConfigParam::TType::TULongLong;
+            defaultValue = "0";
         }
         else if(type == "real") {
             newType = TConfigParam::TType::TReal;
+            defaultValue = "0";
         }
         else if(type == "bool") {
             newType = TConfigParam::TType::TBool;
+            defaultValue = "true";
         }
 
-        m_params.addSubParam(TConfigParam("Value", oldValue, newType, tr("Value of constant."), false));
+        // TODO: create a connection to be able to update the type hint and show it in the UI
+        // getItemPortByName("dataOut")->setDataTypeHint(QString("[%1]").arg(type));
+
+        TConfigParam newValueParam("Value", "", newType, tr("Value of constant."), false);
+
+        bool iok;
+        newValueParam.setValue(oldValue, &iok);
+        if(!iok) {
+            newValueParam.setValue(defaultValue);
+        }
+
+        m_params.addSubParam(newValueParam);
     }
 
-    bool validateParamsStructure(TConfigParam params) {
+    bool validateParamsStructure(TConfigParam params) override {
         bool iok = false;
 
         params.getSubParamByName("Block name", &iok);
@@ -110,15 +135,12 @@ public:
             return params;
         }
 
+        bool shouldUpdate = shouldUpdateParams(params);
         m_params = params;
-        m_params.resetState(true);
-
-        if(m_title != params.getSubParamByName("Block name")->getValue()) {
-            m_title = params.getSubParamByName("Block name")->getValue();
-            emit appearanceChanged();
-        }
+        updateParams(shouldUpdate);
 
         TConfigParam * valueParam = m_params.getSubParamByName("Value");
+        valueParam->resetState();
 
         bool iok;
         valueParam->setValue(valueParam->getValue(), &iok);
@@ -127,29 +149,24 @@ public:
             valueParam->setState(TConfigParam::TState::TError, tr("Invalid value."));
         }
 
+        m_title = params.getSubParamByName("Block name")->getValue();
         m_subtitle = valueParam->getValue();
 
         QString type = m_params.getSubParamByName("Data type")->getValue();
         if(type == "byte array") {
-            QString value = valueParam->getValue();
-
-            if(value.contains(QRegularExpression(QStringLiteral("[^A-Za-z0-9]")))) {
-                valueParam->setState(TConfigParam::TState::TError, tr("Invalid value: non-hex characters present."));
-            }
-
-            m_subtitle = "0x" + m_subtitle;
+             m_subtitle = "0x" + m_subtitle;
         }
 
         emit appearanceChanged();
-
         return m_params;
     }
 
-    QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
+    QHash<TScenarioItemPort *, QByteArray> executeDirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
         QString stringValue = m_params.getSubParamByName("Value")->getValue();
 
         QByteArray byteValue;
         QDataStream byteStream(&byteValue, QIODevice::WriteOnly);
+        byteStream.setByteOrder(QDataStream::LittleEndian);
 
         QString type = m_params.getSubParamByName("Data type")->getValue();
         if(type == "integer") {
@@ -192,6 +209,9 @@ public:
 
         return outputData;
     }
+
+protected:
+    TConfigParam * m_currentValueParam;
 
 };
 

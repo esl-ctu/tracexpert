@@ -13,11 +13,12 @@
 class TScenarioIODeviceWriteItem : public TScenarioIODeviceItem {
 
 public:
-    enum { TItemClass = 32 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioIODeviceWriteItem;
+    }
 
     TScenarioIODeviceWriteItem() : TScenarioIODeviceItem(tr("IO Device: write"), tr("This block writes to selected IO Device.")) {
-        addDataInputPort("dataIn", "data", tr("Byte array with data to write."));
+        addDataInputPort("dataIn", "data", tr("Byte array with data to write."), "[byte array]");
     }
 
     TScenarioItem * copy() const override {
@@ -25,51 +26,51 @@ public:
     }
 
     void dataWritten(QByteArray data) {
-        disconnect(m_IODeviceModel->senderModel(), nullptr, this, nullptr);
+        disconnect(m_deviceModel->senderModel(), nullptr, this, nullptr);
 
-        log(QString("[%1] Written %2 bytes").arg(m_IODeviceModel->name()).arg(data.size()));
+        log(QString("[%1] Written %2 bytes.").arg(m_deviceModel->name()).arg(data.size()));
         emit executionFinished();
     }
 
     void writeFailed() {
         setState(TState::TRuntimeError, tr("Write failed."));
-        disconnect(m_IODeviceModel->senderModel(), nullptr, this, nullptr);
+        disconnect(m_deviceModel->senderModel(), nullptr, this, nullptr);
 
-        log(QString("[%1] Write failed").arg(m_IODeviceModel->name()));
+        log(QString("[%1] Write failed.").arg(m_deviceModel->name()));
         emit executionFinished();
     }
 
     void writeBusy() {
         setState(TState::TRuntimeError, tr("Write failed - device busy."));
-        disconnect(m_IODeviceModel->senderModel(), nullptr, this, nullptr);
+        disconnect(m_deviceModel->senderModel(), nullptr, this, nullptr);
 
-        log(QString("[%1] Write failed - device busy").arg(m_IODeviceModel->name()));
+        log(QString("[%1] Write failed - device busy.").arg(m_deviceModel->name()));
         emit executionFinished();
     }
 
-    void execute(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
-        TScenarioIODeviceItem::execute(inputData);
+    void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
+        checkAndSetInitParamsBeforeExecution();
 
         size_t dataLen = inputData.value(getItemPortByName("dataIn")).length();
         if(dataLen == 0) {
             setState(TState::TRuntimeWarning, "Requested to write 0 bytes.");
             emit executionFinished();
             return;
-        }
+        }        
 
-        log(QString("[%1] Writing %2 bytes...").arg(m_IODeviceModel->name()).arg(dataLen));
-
-        if(!m_IODeviceModel || !m_IODeviceModel->receiverModel()) {
+        if(!m_deviceModel || !m_deviceModel->receiverModel()) {
             setState(TState::TRuntimeError, tr("The target device is not initialized or was not found."));
             emit executionFinished();
             return;
         }
 
-        connect(m_IODeviceModel->senderModel(), &TSenderModel::dataWritten, this, &TScenarioIODeviceWriteItem::dataWritten);
-        connect(m_IODeviceModel->senderModel(), &TSenderModel::writeFailed, this, &TScenarioIODeviceWriteItem::writeFailed);
-        connect(m_IODeviceModel->senderModel(), &TSenderModel::writeBusy, this, &TScenarioIODeviceWriteItem::writeBusy);
+        log(QString("[%1] Writing %2 bytes...").arg(m_deviceModel->name()).arg(dataLen));
 
-        m_IODeviceModel->senderModel()->writeData(inputData.value(getItemPortByName("dataIn")));
+        connect(m_deviceModel->senderModel(), &TSenderModel::dataWritten, this, &TScenarioIODeviceWriteItem::dataWritten);
+        connect(m_deviceModel->senderModel(), &TSenderModel::writeFailed, this, &TScenarioIODeviceWriteItem::writeFailed);
+        connect(m_deviceModel->senderModel(), &TSenderModel::writeBusy, this, &TScenarioIODeviceWriteItem::writeBusy);
+
+        m_deviceModel->senderModel()->writeData(inputData.value(getItemPortByName("dataIn")));
     }
 
     TConfigParam setParams(TConfigParam params) override {

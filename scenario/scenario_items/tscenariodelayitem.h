@@ -11,8 +11,9 @@
 class TScenarioDelayItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 70 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioDelayItem;
+    }
 
     TScenarioDelayItem() : TScenarioItem(tr("Delay"), tr("This block represents a delay in execution.")), m_delayTimer(nullptr) {
         addFlowInputPort("flowIn");
@@ -74,17 +75,17 @@ public:
         return m_params;
     }
 
-    bool supportsImmediateExecution() const override {
+    bool supportsDirectExecution() const override {
         return false;
     }
 
-    void execute(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
+    void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
 
         bool iok;
         double delay = m_params.getSubParamByName("Length")->getValue().toDouble(&iok);
 
         if(!iok) {
-            log(tr("Failed to delay: length invalid..."), "red");
+            log(tr("Failed to delay: length invalid..."), TLogLevel::TError);
             emit executionFinished();
             return;
         }
@@ -98,7 +99,7 @@ public:
             m_delayTimer->start(delay*1000);
         }
         else {
-            log(tr("Failed to delay: could not start timer..."), "red");
+            log(tr("Failed to delay: could not start timer..."), TLogLevel::TError);
             emit executionFinished();
             return;
         }

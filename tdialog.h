@@ -2,13 +2,14 @@
 #define TDIALOG_H
 
 #include <QDialog>
+#include <QLabel>
 
-#include "tconfigparamwidget.h"
-#include "tcomponentmodel.h"
-#include "tiodevicemodel.h"
+#include "widgets/tconfigparamwidget.h"
+#include "pluginunit/component/tcomponentmodel.h"
+#include "pluginunit/io/tiodevicemodel.h"
 #include "scenario/tscenarioitem.h"
-#include "tscopemodel.h"
-#include "tanaldevicemodel.h"
+#include "pluginunit/scope/tscopemodel.h"
+#include "pluginunit/anal/tanaldevicemodel.h"
 
 class TDialog
 {
@@ -16,11 +17,14 @@ public:
     static bool addDeviceDialog(QWidget * parent, QString & name, QString & info);
     static bool renameDeviceDialog(QWidget * parent, QString & name, QString & info);
 
+    static bool exportImageDimensionsDialog(QWidget * parent, uint &width, uint &height);
+
     static bool paramErrorQuestion(QWidget * parent);
     static bool paramWarningQuestion(QWidget * parent);
     static bool componentReinitQuestion(QWidget * parent);
     static bool componentDeinitQuestion(QWidget * parent);
     static bool deviceReinitQuestion(QWidget * parent);
+    static bool deviceOpenQuestion(QWidget * parent);
 
     static void componentInitFailedGeneralMessage(QWidget * parent);
     static void componentDeinitFailedGeneralMessage(QWidget * parent);
@@ -44,7 +48,8 @@ public:
 
     static void protocolMessageCouldNotBeFormed(QWidget * parent);
 
-    static bool closeConfirmation(QWidget * parent);
+    static bool closeConfirmation(QWidget * parent, QString closedObjectName = QString());
+    static bool scenarioTerminationConfirmation(QWidget * parent);
 
 protected:
     static bool question(QWidget * parent, const QString & title, const QString & text);
@@ -116,6 +121,19 @@ class TPluginUnitInfoDialog : public QDialog
 {
 public:
     explicit TPluginUnitInfoDialog(TPluginUnitModel * unit, QWidget * parent = nullptr);
+};
+
+class TLoadingDialog : public QDialog
+{
+    Q_OBJECT
+public:
+    explicit TLoadingDialog(QWidget *parent = nullptr);
+
+    static TLoadingDialog* showDialog(QWidget *parent, const QString &text = "Please wait...");
+
+    void closeAndDeleteLater();
+private:
+    QLabel * m_label;
 };
 
 #endif // TDIALOG_H

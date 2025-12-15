@@ -1,7 +1,7 @@
 #include "tserialportdevice.h"
 
 TSerialPortDevice::TSerialPortDevice(QString & name, QString & info):
-    m_createdManually(true), m_port(), m_portInfo(), m_name(name), m_info(info), m_readTimeout(5000), m_writeTimeout(5000), m_initialized(false)
+    m_createdManually(true), m_portInfo(), m_name(name), m_info(info), m_readTimeout(5000), m_writeTimeout(5000), m_initialized(false), m_osHandle(0)
 {
 
     // Pre-init parameters with system location (pre-filled with port name)
@@ -11,7 +11,7 @@ TSerialPortDevice::TSerialPortDevice(QString & name, QString & info):
 }
 
 TSerialPortDevice::TSerialPortDevice(const QSerialPortInfo &portInfo):
-    m_createdManually(false), m_port(), m_portInfo(portInfo), m_name(portInfo.portName()), m_info(portInfo.description() + " " + portInfo.manufacturer() + " " + portInfo.serialNumber()), m_readTimeout(5000), m_writeTimeout(5000), m_initialized(false)
+    m_createdManually(false), m_portInfo(portInfo), m_name(portInfo.portName()), m_info(portInfo.description() + " " + portInfo.manufacturer() + " " + portInfo.serialNumber()), m_readTimeout(5000), m_writeTimeout(5000), m_initialized(false), m_osHandle(0)
 {
 
     // Pre-init parameters are all read-only for automatically detected devices
@@ -26,8 +26,7 @@ TSerialPortDevice::TSerialPortDevice(const QSerialPortInfo &portInfo):
 }
 
 TSerialPortDevice::~TSerialPortDevice() {
-    // QSerialPort destructor closes the serial port, if necessary, and then destroys object.
-    // Nothing to do.
+    (*this).deInit();
 }
 
 QString TSerialPortDevice::getName() const {
@@ -67,6 +66,7 @@ void TSerialPortDevice::init(bool *ok) {
     if(iok){
         m_initialized = true;
         _createPostInitParams();
+        setPostInitParams(m_postInitParams); // set default post-init params
         if(ok != nullptr) *ok = true;
     } else {
         if(ok != nullptr) *ok = false;
@@ -78,32 +78,49 @@ void TSerialPortDevice::_openPort(bool *ok) {
 
     bool iok = false;
 
-    // Select serial port
-    if(m_createdManually){
-
-        TConfigParam * locationParam = m_preInitParams.getSubParamByName("System location", &iok);
-        if(!iok){
-            qWarning("System location parameter not found in the pre-init config.");
-            if(ok != nullptr) *ok = false;
-            return;
-        }
-
-        m_port.setPortName(locationParam->getValue());
-
-    } else {
-
-        m_port.setPort(m_portInfo);
-
-    }
-
-    // Open serial port
-    iok = m_port.open(QIODeviceBase::ReadWrite);
-
-    if(!iok) {
-        qWarning((QString("Failed to open the specified serial port: ") + m_port.errorString()).toLatin1());
+    TConfigParam * locationParam = m_preInitParams.getSubParamByName("System location", &iok);
+    if(!iok){
+        qCritical("System location parameter not found in the pre-init config.");
         if(ok != nullptr) *ok = false;
         return;
     }
+
+    // Opening the port
+#ifdef _WIN32
+
+    m_osHandle = CreateFileA(qPrintable(locationParam->getValue()), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+
+    if (m_osHandle == INVALID_HANDLE_VALUE) {
+        //CloseHandle(m_osHandle);
+        qCritical("Failed to open the specified serial port");
+        if(ok != nullptr) *ok = false;
+        return;
+    }
+
+#else
+
+    m_osHandle = open(qPrintable(locationParam->getValue()), O_RDWR | O_NOCTTY | O_NDELAY | O_NONBLOCK);
+
+    if(m_osHandle < 0){
+        qCritical("Failed to open the specified serial port");
+        if(ok != nullptr) *ok = false;
+        return;
+    }
+    if(!isatty(m_osHandle)){
+        close(m_osHandle);
+        qCritical("Specified filename is not a serial port");
+        if(ok != nullptr) *ok = false;
+        return;
+    }
+
+    if(fcntl(m_osHandle, F_SETFL, 0) < 0){
+        close(m_osHandle);
+        qCritical("Could not reset the serial port flags");
+        if(ok != nullptr) *ok = false;
+        return;
+    }
+
+#endif
 
     if(ok != nullptr) *ok = true;
 
@@ -122,35 +139,46 @@ void TSerialPortDevice::_createPostInitParams(){
     baudrateParam.addEnumValue("38400");
     baudrateParam.addEnumValue("57600");
     baudrateParam.addEnumValue("115200");
+#ifdef _WIN32
+    baudrateParam.addEnumValue("128000");
+    baudrateParam.addEnumValue("256000");
     baudrateParam.addEnumValue("Custom");
+#endif
+
     m_postInitParams.addSubParam(baudrateParam);
 
+#ifdef _WIN32
     m_postInitParams.addSubParam(TConfigParam("Custom baudrate", "0", TConfigParam::TType::TUInt, "The custom baudrate must be selected in the Baudrate field. The value must be supported by the hardware."));
+#endif
 
     TConfigParam parityParam = TConfigParam("Parity", "None", TConfigParam::TType::TEnum, "Parity");
     parityParam.addEnumValue("None");
     parityParam.addEnumValue("Even");
     parityParam.addEnumValue("Odd");
-    parityParam.addEnumValue("Space");
-    parityParam.addEnumValue("Mark");
+    //parityParam.addEnumValue("Space");
+    //parityParam.addEnumValue("Mark");
     m_postInitParams.addSubParam(parityParam);
 
     TConfigParam stopParam = TConfigParam("Stop bits", "One", TConfigParam::TType::TEnum, "Stop bits");
     stopParam.addEnumValue("One");
-    stopParam.addEnumValue("One and half");
+    //stopParam.addEnumValue("One and half");
     stopParam.addEnumValue("Two");
     m_postInitParams.addSubParam(stopParam);
 
-    TConfigParam flowParam = TConfigParam("Flow control", "None", TConfigParam::TType::TEnum, "Flow control");
+    /*TConfigParam flowParam = TConfigParam("Flow control", "None", TConfigParam::TType::TEnum, "Flow control");
     flowParam.addEnumValue("None");
     flowParam.addEnumValue("Hardware (RTS/CTS)");
     flowParam.addEnumValue("Software (XON/XOFF)");
-    m_postInitParams.addSubParam(flowParam);
+    m_postInitParams.addSubParam(flowParam);*/
 
     m_postInitParams.addSubParam(TConfigParam("Data bits", "8", TConfigParam::TType::TString, "Data bits", true));
 
-    m_postInitParams.addSubParam(TConfigParam("Read timeout (ms)", "5000", TConfigParam::TType::TInt, "Timeout while waiting for data to be read from the serial port (-1 for no timeout)."));
-    m_postInitParams.addSubParam(TConfigParam("Write timeout (ms)", "5000", TConfigParam::TType::TInt, "Timeout while waiting for data to be written to the serial port (-1 for no timeout)."));
+#ifdef _WIN32
+    m_postInitParams.addSubParam(TConfigParam("Read timeout (ms)", "500", TConfigParam::TType::TInt, "Timeout while waiting for data to be read from the serial port."));
+    m_postInitParams.addSubParam(TConfigParam("Write timeout (ms)", "500", TConfigParam::TType::TInt, "Timeout while waiting for data to be written to the serial port."));
+#else
+    m_postInitParams.addSubParam(TConfigParam("Timeout (ms)", "500", TConfigParam::TType::TInt, "Timeout while waiting for data to be read from the serial port."));
+#endif
 
 }
 
@@ -162,27 +190,32 @@ bool TSerialPortDevice::_validatePostInitParamsStructure(TConfigParam & params) 
 
     params.getSubParamByName("Baudrate", &iok);
     if(!iok) return false;
-
+#ifdef _WIN32
     params.getSubParamByName("Custom baudrate", &iok);
     if(!iok) return false;
-
+#endif
     params.getSubParamByName("Parity", &iok);
     if(!iok) return false;
 
     params.getSubParamByName("Stop bits", &iok);
     if(!iok) return false;
 
-    params.getSubParamByName("Flow control", &iok);
-    if(!iok) return false;
+    /*params.getSubParamByName("Flow control", &iok);
+    if(!iok) return false;*/
 
     params.getSubParamByName("Data bits", &iok);
     if(!iok) return false;
 
+#ifdef _WIN32
     params.getSubParamByName("Read timeout (ms)", &iok);
     if(!iok) return false;
 
     params.getSubParamByName("Write timeout (ms)", &iok);
     if(!iok) return false;
+#else
+    params.getSubParamByName("Timeout (ms)", &iok);
+    if(!iok) return false;
+#endif
 
     return true;
 
@@ -191,7 +224,22 @@ bool TSerialPortDevice::_validatePostInitParamsStructure(TConfigParam & params) 
 
 void TSerialPortDevice::deInit(bool *ok) {
 
-    m_port.close();
+    if(m_initialized == true){
+
+#ifdef _WIN32
+
+    CloseHandle(m_osHandle);
+    m_osHandle = nullptr;
+
+#else
+
+    tcflush(m_osHandle, TCIOFLUSH);
+    close(m_osHandle);
+
+#endif
+
+    }
+
     m_initialized = false;
     if(ok != nullptr) *ok = true;
 
@@ -210,197 +258,17 @@ TConfigParam TSerialPortDevice::setPostInitParams(TConfigParam params) {
 
     m_postInitParams = params;
 
-    bool iok = false, iok2 = false;
+    m_postInitParams.resetState(true);
 
-    // Baudrate
-
+    // Params values
     QString baudrateParam = m_postInitParams.getSubParamByName("Baudrate")->getValue(); // getSubParamByName != nullptr, checked by _validatePostInitParamsStructure; otherwise, need a check!
+#ifdef _WIN32
     QString customBaudrateParam = m_postInitParams.getSubParamByName("Custom baudrate")->getValue();
-
-    // Set the baudrate
-    if(baudrateParam == "Custom") {
-        iok2 = m_port.setBaudRate(customBaudrateParam.toInt(&iok));
-    } else {
-        iok2 = m_port.setBaudRate(baudrateParam.toInt(&iok));
-    }
-
-    // Check the baudrate, set/reset param warnings
-    if(baudrateParam == "Custom") {
-
-        if(!iok || !iok2 || m_port.baudRate() != customBaudrateParam.toInt()){
-            QString error = "Failed to set the required custom baudrate: " + m_port.errorString();
-            qWarning(error.toLatin1());
-            m_postInitParams.getSubParamByName("Baudrate")->resetState();
-            m_postInitParams.getSubParamByName("Custom baudrate")->setState(TConfigParam::TState::TWarning, error);
-        } else {
-            m_postInitParams.getSubParamByName("Baudrate")->resetState();
-            m_postInitParams.getSubParamByName("Custom baudrate")->resetState();
-        }
-
-        m_postInitParams.getSubParamByName("Custom baudrate")->setValue(QString::number(m_port.baudRate()));
-
-    } else {
-
-        if(!iok || !iok2 || m_port.baudRate() != baudrateParam.toInt()){
-            QString error = "Failed to set the required baudrate: " + m_port.errorString();
-            qWarning(error.toLatin1());
-            m_postInitParams.getSubParamByName("Baudrate")->setState(TConfigParam::TState::TWarning, error);
-            m_postInitParams.getSubParamByName("Custom baudrate")->resetState();
-        } else {
-            m_postInitParams.getSubParamByName("Baudrate")->resetState();
-            m_postInitParams.getSubParamByName("Custom baudrate")->resetState();
-        }
-
-        if(customBaudrateParam != "0"){
-            qWarning("The custom baudrate is set but ignored, because Baudrate is not set to Custom.");
-            m_postInitParams.getSubParamByName("Custom baudrate")->setState(TConfigParam::TState::TWarning, "This value is ignored, because the Baudrate param is not set to Custom.");
-        }
-
-        m_postInitParams.getSubParamByName("Baudrate")->setValue(QString::number(m_port.baudRate()));
-
-    }
-
-    // Parity
-
+#endif
     QString parityParam = m_postInitParams.getSubParamByName("Parity")->getValue();
-
-    // Set parity
-    if(parityParam == "None"){
-        iok = m_port.setParity(QSerialPort::NoParity);
-    } else if(parityParam == "Even"){
-        iok = m_port.setParity(QSerialPort::EvenParity);
-    } else if(parityParam == "Odd"){
-        iok = m_port.setParity(QSerialPort::OddParity);
-    } else if(parityParam == "Space"){
-        iok = m_port.setParity(QSerialPort::SpaceParity);
-    } else if(parityParam == "Mark"){
-        iok = m_port.setParity(QSerialPort::MarkParity);
-    } else {
-        iok = false;
-    }
-
-    // Check the parity, set/reset warnings
-    QSerialPort::Parity actualParity = m_port.parity();
-    QString actualParityString = "";
-    switch(actualParity){
-        case QSerialPort::NoParity:
-            actualParityString = "None";
-            break;
-        case QSerialPort::EvenParity:
-            actualParityString = "Even";
-            break;
-        case QSerialPort::OddParity:
-            actualParityString = "Odd";
-            break;
-        case QSerialPort::SpaceParity:
-            actualParityString = "Space";
-            break;
-        case QSerialPort::MarkParity:
-            actualParityString = "Mark";
-            break;
-        default:
-            qCritical("Unexpected actual parity settings");
-            break;
-    }
-    if(!iok || actualParityString != parityParam){
-        QString error = "Failed to set the required parity: " + m_port.errorString();
-        qWarning(error.toLatin1());
-        m_postInitParams.getSubParamByName("Parity")->setState(TConfigParam::TState::TWarning, error);
-    } else {
-        m_postInitParams.getSubParamByName("Parity")->resetState();
-    }
-    m_postInitParams.getSubParamByName("Parity")->setValue(actualParityString);
-
-    // Stop bits
-
     QString stopbitsParam = m_postInitParams.getSubParamByName("Stop bits")->getValue();
 
-    // Set stop bits
-    if(stopbitsParam == "One") {
-        iok = m_port.setStopBits(QSerialPort::OneStop);
-    } else if(stopbitsParam == "One and half") {
-        iok = m_port.setStopBits(QSerialPort::OneAndHalfStop);
-    } else if(stopbitsParam == "Two") {
-        iok = m_port.setStopBits(QSerialPort::TwoStop);
-    } else {
-        iok = false;
-    }
-
-    // Check the stop bits, set/reset warnings
-    QSerialPort::StopBits actualStopbits = m_port.stopBits();
-    QString actualStopbitsString = "";
-    switch(actualStopbits){
-        case QSerialPort::OneStop:
-            actualStopbitsString = "One";
-            break;
-        case QSerialPort::OneAndHalfStop:
-            actualStopbitsString = "One and half";
-            break;
-        case QSerialPort::TwoStop:
-            actualStopbitsString = "Two";
-            break;
-        default:
-            qCritical("Unexpected stop bits settings");
-            break;
-    }
-    if(!iok || actualStopbitsString != stopbitsParam){
-        QString error = "Failed to set the required stop bits: " + m_port.errorString();
-        qWarning(error.toLatin1());
-        m_postInitParams.getSubParamByName("Stop bits")->setState(TConfigParam::TState::TWarning, error);
-    } else {
-        m_postInitParams.getSubParamByName("Stop bits")->resetState();
-    }
-    m_postInitParams.getSubParamByName("Stop bits")->setValue(actualStopbitsString);
-
-    // Flow control
-
-    QString flowcontrolParam = m_postInitParams.getSubParamByName("Flow control")->getValue();
-
-    // Set flow control
-    if(flowcontrolParam == "None"){
-        iok = m_port.setFlowControl(QSerialPort::NoFlowControl);
-    } else if(flowcontrolParam == "Hardware (RTS/CTS)"){
-        iok = m_port.setFlowControl(QSerialPort::HardwareControl);
-    } else if(flowcontrolParam == "Software (XON/XOFF)"){
-        iok = m_port.setFlowControl(QSerialPort::SoftwareControl);
-    } else {
-        iok = false;
-    }
-
-    // Check the flow control, set/reset warnings
-    QSerialPort::FlowControl actualFlowcontrol = m_port.flowControl();
-    QString actualFlowcontrolString = "";
-    switch(actualFlowcontrol) {
-        case QSerialPort::NoFlowControl:
-            actualFlowcontrolString = "None";
-            break;
-        case QSerialPort::HardwareControl:
-            actualFlowcontrolString = "Hardware (RTS/CTS)";
-            break;
-        case QSerialPort::SoftwareControl:
-            actualFlowcontrolString = "Software (XON/XOFF)";
-            break;
-        default:
-            qCritical("Unexpected flow control settings");
-            break;
-    }
-    if(!iok || actualFlowcontrolString != flowcontrolParam){
-        QString error = "Failed to set the required flow control: " + m_port.errorString();
-        qWarning(error.toLatin1());
-        m_postInitParams.getSubParamByName("Flow control")->setState(TConfigParam::TState::TWarning, error);
-    } else {
-        m_postInitParams.getSubParamByName("Flow control")->resetState();
-    }
-    m_postInitParams.getSubParamByName("Flow control")->setValue(actualFlowcontrolString);
-
-    // Data bits
-
-    // Read-only parameter, only 8 data bits are supported
-    if(m_port.dataBits() != QSerialPort::Data8){
-        qCritical("Unexpected data bits settings");
-    }
-
-    // Timeout
+ #ifdef _WIN32
     m_readTimeout = params.getSubParamByName("Read timeout (ms)")->getValue().toUInt();
     if(m_readTimeout < 0) m_readTimeout = -1;
     if(m_readTimeout == 0) m_readTimeout = 1;
@@ -408,6 +276,292 @@ TConfigParam TSerialPortDevice::setPostInitParams(TConfigParam params) {
     m_writeTimeout = params.getSubParamByName("Write timeout (ms)")->getValue().toUInt();
     if(m_writeTimeout < 0) m_writeTimeout = -1;
     if(m_writeTimeout == 0) m_writeTimeout = 1;
+#else
+    m_readTimeout = params.getSubParamByName("Timeout (ms)")->getValue().toUInt();
+    if(m_readTimeout < 0) m_readTimeout = -1;
+    if(m_readTimeout == 0) m_readTimeout = 1;
+
+    m_writeTimeout = params.getSubParamByName("Timeout (ms)")->getValue().toUInt();
+    if(m_writeTimeout < 0) m_writeTimeout = -1;
+    if(m_writeTimeout == 0) m_writeTimeout = 1;
+#endif
+
+
+#ifdef _WIN32
+
+    BOOL status;
+
+    DCB serialParams = { 0 };
+    serialParams.DCBlength = sizeof(serialParams);
+
+    status = GetCommState(m_osHandle, &serialParams);
+    if(!status){
+        qCritical("Could not set the serial port parameters (failed to receive the configuration structure)");
+        m_postInitParams.setState(TConfigParam::TState::TError, "Failed to set the post-init parameters");
+        return m_postInitParams;
+    }
+
+    // Baudrate
+    if(baudrateParam == "Custom"){
+        DWORD baudrateTbs = customBaudrateParam.toULong();
+        serialParams.BaudRate = baudrateTbs;
+        qWarning(qPrintable(QString("Baudrate %1 support depends on the hardware and is generally not guaranteed!").arg(baudrateTbs)));
+    } else {
+        DWORD baudrateTbs = baudrateParam.toULong();
+
+        switch (baudrateTbs) {
+
+            case 110   : serialParams.BaudRate = CBR_110;    break;
+            case 300   : serialParams.BaudRate = CBR_300;    break;
+            case 600   : serialParams.BaudRate = CBR_600;    break;
+            case 1200  : serialParams.BaudRate = CBR_1200;   break;
+            case 2400  : serialParams.BaudRate = CBR_2400;   break;
+            case 4800  : serialParams.BaudRate = CBR_4800;   break;
+            case 9600  : serialParams.BaudRate = CBR_9600;   break;
+            case 19200 : serialParams.BaudRate = CBR_19200;  break;
+            case 38400 : serialParams.BaudRate = CBR_38400;  break;
+            case 57600 : serialParams.BaudRate = CBR_57600;  break;
+            case 115200: serialParams.BaudRate = CBR_115200; break;
+            case 128000: serialParams.BaudRate = CBR_128000; break;
+            case 256000: serialParams.BaudRate = CBR_256000; break;
+            default:
+                if(baudrateTbs > 0) {
+                    serialParams.BaudRate = baudrateTbs;
+                    qWarning(qPrintable(QString("Baudrate %1 support depends on the hardware and is generally not guaranteed!").arg(baudrateTbs)));
+                } else {
+                    qCritical("Unsupported baud rate. Should never get here.");
+                }
+                break;
+
+        }
+    }
+
+    // Parity
+    if (parityParam == "None") {
+
+        serialParams.fParity = FALSE;
+        serialParams.Parity = NOPARITY;
+
+    } else {
+
+        serialParams.fParity = TRUE;
+
+        if (parityParam == "Even") {
+
+            serialParams.Parity = EVENPARITY;
+
+        } else { // ODD
+
+            serialParams.Parity = ODDPARITY;
+
+        }
+
+    }
+
+    // Stop bits
+    if (stopbitsParam == "Two") {
+
+        serialParams.StopBits = TWOSTOPBITS;
+
+    } else { // ONE
+
+        serialParams.StopBits = ONESTOPBIT;
+
+    }
+
+    // no flow control
+    serialParams.fDtrControl = DTR_CONTROL_DISABLE;
+    serialParams.fRtsControl = DTR_CONTROL_DISABLE;
+    serialParams.fOutX = FALSE;
+    serialParams.fInX = FALSE;
+    serialParams.fOutxCtsFlow = FALSE;
+    serialParams.fOutxDsrFlow = FALSE;
+    serialParams.fDsrSensitivity = FALSE;
+
+    serialParams.ByteSize = 8; // only support 8-bit word
+
+    serialParams.fBinary = TRUE; // non-binary transfers are not supported on Win anyway, according to msdn
+    serialParams.fErrorChar = FALSE; // no corrections
+    serialParams.fNull = FALSE; // dont discard null chars
+    serialParams.fAbortOnError = FALSE; // dont abort on errors
+
+    status = SetCommState(m_osHandle, &serialParams);
+    if (!status){
+        m_postInitParams.setState(TConfigParam::TState::TError, "Failed to set the post-init parameters");
+        qCritical("Failed to set the serial port parameters");
+    }
+
+#else
+
+    int status;
+
+    struct termios serialParams;
+
+    status = tcgetattr(m_osHandle, &serialParams);
+    if(status){
+        qCritical("Could not set the serial port parameters (failed to receive the configuration structure)");
+        m_postInitParams.setState(TConfigParam::TState::TError, "Failed to set the post-init parameters");
+        return m_postInitParams;
+    }
+
+    // Baudrate
+    if(baudrateParam == "Custom"){
+        qWarning(qPrintable(QString("Custom baudrate is not supported on Linux!")));
+    } else {
+        unsigned long baudrateTbs = baudrateParam.toULong();
+
+        switch (baudrateTbs) {
+            case 110   : status = cfsetispeed(&serialParams, B110);    status |= cfsetospeed(&serialParams, B110);    break;
+            case 300   : status = cfsetispeed(&serialParams, B300);    status |= cfsetospeed(&serialParams, B300);    break;
+            case 600   : status = cfsetispeed(&serialParams, B600);    status |= cfsetospeed(&serialParams, B600);    break;
+            case 1200  : status = cfsetispeed(&serialParams, B1200);   status |= cfsetospeed(&serialParams, B1200);   break;
+            case 2400  : status = cfsetispeed(&serialParams, B2400);   status |= cfsetospeed(&serialParams, B2400);   break;
+            case 4800  : status = cfsetispeed(&serialParams, B4800);   status |= cfsetospeed(&serialParams, B4800);   break;
+            case 9600  : status = cfsetispeed(&serialParams, B9600);   status |= cfsetospeed(&serialParams, B9600);   break;
+            case 19200 : status = cfsetispeed(&serialParams, B19200);  status |= cfsetospeed(&serialParams, B19200);  break;
+            case 38400 : status = cfsetispeed(&serialParams, B38400);  status |= cfsetospeed(&serialParams, B38400);  break;
+            case 57600 : status = cfsetispeed(&serialParams, B57600);  status |= cfsetospeed(&serialParams, B57600);  break;
+            case 115200: status = cfsetispeed(&serialParams, B115200); status |= cfsetospeed(&serialParams, B115200); break;
+            default:
+                m_postInitParams.getSubParamByName("Baudrate")->setState(TConfigParam::TState::TError, "Unsupported baudrate");
+                qCritical("Unsupported baud rate");
+                break;
+            }
+    }
+
+    if(status){
+        m_postInitParams.getSubParamByName("Baudrate")->setState(TConfigParam::TState::TError, "Could not set input/output baudrate");
+        qCritical("Could not set input/output baudrate");
+    }
+
+    if (parityParam == "None") {
+
+        serialParams.c_cflag &= ~PARENB;
+        serialParams.c_cflag &= ~PARODD;
+
+    } else {
+
+        serialParams.c_cflag |= PARENB;
+
+        if (parityParam == "Even") {
+
+            serialParams.c_cflag &= ~PARODD;
+
+        } else { // ODD
+
+            serialParams.c_cflag |= PARODD;
+
+        }
+
+    }
+
+    if (stopbitsParam == "Two") {
+
+        serialParams.c_cflag |= CSTOPB;
+
+    } else { // ONE
+
+        serialParams.c_cflag &= ~CSTOPB;
+
+    }
+
+    // No flow control
+    serialParams.c_cflag &= ~CRTSCTS;
+    serialParams.c_iflag &= ~(IXON | IXOFF | IXANY);
+
+    serialParams.c_cflag &= ~CSIZE;
+    serialParams.c_cflag |= CS8;    // only support 8-bit words
+    serialParams.c_cflag |= (CLOCAL | CREAD);  // enable receiver
+
+    serialParams.c_iflag |= (IGNPAR | IGNBRK); // ignore parity errors and break conditions
+    serialParams.c_iflag &= ~(BRKINT | ISTRIP | INLCR | IGNCR | ICRNL | PARMRK | INPCK); // dont process the input
+// UICLC is not in POSIX, so check first
+#ifdef IUCLC
+    serialParams.c_iflag &= ~IUCLC;
+#endif
+
+    serialParams.c_lflag &= ~(ICANON | ECHO | ECHOE | ECHOK | ECHONL | ISIG); // only raw input
+#ifdef IEXTEN
+    serialParams.c_lflag &= ~IEXTEN;
+#endif
+
+    serialParams.c_oflag &= ~(OCRNL | ONLCR | ONLRET | ONOCR | OFILL); // dont process the output
+#ifdef OLCUC
+    serialParams.c_oflag &= ~OLCUC;
+#endif
+#ifdef ONOEOT
+    serialParams.c_oflag &= ~ONOEOT;
+#endif
+#ifdef XTABS
+    serialParams.c_oflag &= ~XTABS;
+#endif
+#ifdef OXTABS
+    serialParams.c_oflag &= ~OXTABS;
+#endif
+    serialParams.c_oflag &= ~OPOST; // only raw output
+
+    status = tcflush(m_osHandle, TCIFLUSH);
+    if(status){
+        qCritical("Could not flush the serial port");
+    }
+
+    status = tcsetattr(m_osHandle, TCSANOW, &serialParams);
+    if(status){
+        qCritical("Could not set serial port parameters");
+        m_postInitParams.setState(TConfigParam::TState::TError, "Failed to set the serial port parameters");
+    }
+
+#endif
+
+    // Timeout
+
+#ifdef _WIN32
+
+    COMMTIMEOUTS serialTimeouts = { 0 }; // in milliseconds
+
+    serialTimeouts.ReadIntervalTimeout = 0; // no interval timeout
+
+    serialTimeouts.ReadTotalTimeoutConstant = (DWORD) m_readTimeout;	// set only total timeouts
+    serialTimeouts.ReadTotalTimeoutMultiplier = 0;
+
+    serialTimeouts.WriteTotalTimeoutConstant = (DWORD) m_writeTimeout;
+    serialTimeouts.WriteTotalTimeoutMultiplier = 0;
+
+    status = SetCommTimeouts(m_osHandle, &serialTimeouts);
+    if (!status){
+        qCritical("Could not set the serial port timeouts");
+        m_postInitParams.getSubParamByName("Read timeout (ms)")->setState(TConfigParam::TState::TError, "Failed to set the timeout.");
+        m_postInitParams.getSubParamByName("Write timeout (ms)")->setState(TConfigParam::TState::TError, "Failed to set the timeout.");
+    }
+
+#else
+
+    struct termios serialTimeout;
+
+    status = tcgetattr(m_osHandle, &serialTimeout);
+    if(status){
+        qCritical("Could not get serial port parameters in order to set a timeout");
+        m_postInitParams.getSubParamByName("Timeout (ms)")->setState(TConfigParam::TState::TError, "Failed to set the timeout.");
+    }
+
+    cc_t ds = m_readTimeout / 100; // POSIX timeouted read takes deciseconds
+    if( ( m_readTimeout % 100 ) >= 50 || (ds == 0 && m_readTimeout > 0) ) ds++; // round up; or set the lowest timeout possible if asking for less, unless setting no timeout at all
+
+    serialTimeout.c_cc[VTIME] = ds;
+    serialTimeout.c_cc[VMIN] = 0;
+
+    status = tcflush(m_osHandle, TCIFLUSH);
+    if(status){
+        qCritical("Could not flush the serial port while setting the timeout");
+    }
+
+    status = tcsetattr(m_osHandle, TCSANOW, &serialTimeout);
+    if(status){
+        qCritical("Could not set serial port timeout");
+        m_postInitParams.getSubParamByName("Timeout (ms)")->setState(TConfigParam::TState::TError, "Failed to set the timeout.");
+    }
+
+#endif
 
     return m_postInitParams;
 
@@ -415,61 +569,96 @@ TConfigParam TSerialPortDevice::setPostInitParams(TConfigParam params) {
 
 size_t TSerialPortDevice::writeData(const uint8_t * buffer, size_t len){
 
-    size_t writtenToBuffer;
-    bool iok;
+#ifdef _WIN32
 
-    writtenToBuffer = m_port.write((const char *) buffer, len);
+    DWORD bytesWritten = 0;
+    BOOL status;
 
-    if(writtenToBuffer != len){
-        qWarning("Failed to write all the data to the serial port buffer.");
+    status = WriteFile(m_osHandle, buffer, len, &bytesWritten, NULL);
+    if (!status){
+        qCritical("Write to the serial port failed");
+        return 0;
     }
 
-    QElapsedTimer stopwatch;
-    stopwatch.start();
-
-    iok = m_port.waitForBytesWritten(m_writeTimeout);
-
-    while((m_port.bytesToWrite() != 0) && ((m_writeTimeout > 0) ? (stopwatch.elapsed() < m_writeTimeout) : true)) {
-
-        iok &= m_port.waitForBytesWritten((m_writeTimeout > 0) ? (m_writeTimeout - stopwatch.elapsed()) : m_writeTimeout);
-
+    if(len != bytesWritten){
+        qCritical("Serial port write timeout.");
     }
 
-    if(!iok || m_port.bytesToWrite() != 0) {
-        qWarning("Failed to send the data from the serial port buffer (possibly timeout).");
+    return (size_t) bytesWritten;
+
+#else
+
+    ssize_t bytesWritten = write(m_osHandle, (const void *) buffer, len);
+    if(bytesWritten < 0){
+        qCritical("Write to the serial port failed");
+        return 0;
     }
 
-    return writtenToBuffer;
+    if(len != bytesWritten){
+        qCritical("Serial port write timeout.");
+    }
+
+    return (size_t) bytesWritten;
+
+#endif
+
 }
 
 size_t TSerialPortDevice::readData(uint8_t * buffer, size_t len) {
 
-    size_t readLen;
+#ifdef _WIN32
 
-    QElapsedTimer stopwatch;
-    stopwatch.start();
+    DWORD bytesRead = 0;
+    BOOL status;
 
-    if(m_port.bytesAvailable() > 0 || m_port.waitForReadyRead(m_readTimeout)){
+    // ReadFile returns either when all the requested bytes have been read, or the timeout expires
+    // (wont return with less data than required, unless the timeout expires)
 
-        readLen = m_port.read((char *) buffer, len);      
-
-        while((readLen < len) && ((m_readTimeout > 0) ? (stopwatch.elapsed() < m_readTimeout) : true) && (m_port.waitForReadyRead((m_readTimeout > 0) ? (m_readTimeout - stopwatch.elapsed()) : m_readTimeout))) {
-            readLen += m_port.read((char *) buffer + readLen, len - readLen);
-
-        }
-
-        if(len != readLen){
-            //qWarning("Failed to read as much data as requested from the serial port (timeout).");
-        }
-        if(m_port.bytesAvailable() > 0){
-            //qDebug("Unread data left in the serial port buffer after reading.");  // isnt this flooding the debug channel?
-        }
-
-        return readLen;
-
-    } else {
-        //qWarning("Failed to read any data from the serial port (timeout).");
+    status = ReadFile(m_osHandle, buffer, len, &bytesRead, NULL);
+    if (!status){
+        qCritical("Read from the serial port failed");
         return 0;
     }
 
+    //if(len != bytesRead) qWarning("Serial port read timeout.");
+
+    return (size_t) bytesRead;
+
+#else
+
+    size_t bytesRead = 0;
+    ssize_t readRet = 1; // set to allow the loop to start
+
+    while(bytesRead < len && readRet > 0){
+
+        // read returns either when any data is available, or when the timeout expires
+        // (read may return immediately with a single byte of data available, wont wait for the rest of the requested data; hence the loop)
+        // (actually, it might wait, it is really implementation dependent; prefer a posix compliant way)
+
+        readRet = read(m_osHandle, (void *)(buffer + bytesRead), len - bytesRead);
+
+        if(readRet < 0) {
+
+            qCritical("Read from the serial port failed");
+            return 0;
+
+        } else {
+
+            bytesRead += readRet;
+
+        }
+
+    }
+
+    //if(len != bytesRead) qWarning("Serial port read timeout.");
+
+    return bytesRead;
+
+#endif
+
 }
+
+std::optional<size_t> TSerialPortDevice::availableBytes(){
+    return std::nullopt;
+}
+

@@ -12,7 +12,7 @@
 
 #include "tmessageeditor.h"
 #include "tmessageparteditor.h"
-#include "tprotocoltableview.h"
+#include "../projectunit/tprojectunittableview.h"
 #include "../tdialog.h"
 
 TMessageEditorDetailsPage::TMessageEditorDetailsPage(const TMessage & message, const QList<TMessage> & messageList, QWidget * parent)
@@ -100,8 +100,8 @@ TMessageEditor::TMessageEditor(const TMessage & message, const QList<TMessage> &
     sideButtonsLayout->addWidget(moveDownButton);
     sideButtonsLayout->addStretch();
 
-    QTableView * messagePartView = new TProtocolTableView();
-    m_messagePartContainer = new TMessagePartSimpleContainer(message.getMessageParts());
+    QTableView * messagePartView = new TProjectUnitTableView();
+    m_messagePartContainer = new TMessagePartContainer(message.getMessageParts());
     messagePartView->setModel(m_messagePartContainer);
     messagePartView->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeMode::ResizeToContents);
     connect(messagePartView, &QTableView::doubleClicked, this, &TMessageEditor::onEditButtonClicked);

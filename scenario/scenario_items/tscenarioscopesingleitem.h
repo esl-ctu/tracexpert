@@ -7,36 +7,76 @@
 class TScenarioScopeSingleItem : public TScenarioScopeItem {
 
 public:
-    enum { TItemClass = 61 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioScopeSingleItem;
+    }
 
     TScenarioScopeSingleItem() :
         TScenarioScopeItem(
               tr("Oscilloscope: single capture"),
               tr("This block performs a single capture using the selected Oscilloscope.")
         )
-    {        
+    {
         initializeDataOutputPorts();
-        initializeConfigParams();
     }
 
     TScenarioItem * copy() const override {
         return new TScenarioScopeSingleItem(*this);
     }
 
-    void execute(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
+    bool supportsDirectExecution() const override {
+        return false;
+    }
+
+    TConfigParam setParams(TConfigParam params) override {
+        TConfigParam paramsToReturn = TScenarioScopeItem::setParams(params);
+
+        TScopeModel * scopeModel = getDeviceModel();
+        drawChannelOutputPorts(scopeModel);
+
+        return paramsToReturn;
+    }
+
+    void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
         checkAndSetInitParamsBeforeExecution();
 
-        connect(m_scopeModel, &TScopeModel::runFailed, this, &TScenarioScopeItem::runFailed);
-        connect(m_scopeModel, &TScopeModel::stopFailed, this, &TScenarioScopeItem::stopFailed);
-        connect(m_scopeModel, &TScopeModel::downloadFailed, this, &TScenarioScopeItem::downloadFailed);
+        clearOutputData();
 
-        connect(m_scopeModel, &TScopeModel::tracesDownloaded, this, &TScenarioScopeItem::tracesDownloaded);
-        connect(m_scopeModel, &TScopeModel::tracesEmpty, this, &TScenarioScopeItem::tracesEmpty);
-        connect(m_scopeModel, &TScopeModel::stopped, this, &TScenarioScopeItem::stopped);
+        connect(m_deviceModel, &TScopeModel::runFailed, this, &TScenarioScopeItem::runFailed);
+        connect(m_deviceModel, &TScopeModel::stopFailed, this, &TScenarioScopeItem::stopFailed);
+        connect(m_deviceModel, &TScopeModel::downloadFailed, this, &TScenarioScopeItem::downloadFailed);
 
-        m_scopeModel->runSingle();
-        log(QString(tr("[%1] Measurement started")).arg(m_scopeModel->name()));
+        connect(m_deviceModel, &TScopeModel::tracesDownloaded, this, &TScenarioScopeItem::tracesDownloaded);
+        connect(m_deviceModel, &TScopeModel::tracesEmpty, this, &TScenarioScopeItem::tracesEmpty);
+        connect(m_deviceModel, &TScopeModel::stopped, this, &TScenarioScopeItem::stopped);
+
+        m_deviceModel->runSingle();
+        log(QString(tr("[%1] Measurement started")).arg(m_deviceModel->name()));
+    }
+
+    void runFailed() override {
+        TScenarioScopeItem::runFailed();
+        emit executionFinished();
+    }
+
+    void stopFailed() override {
+        TScenarioScopeItem::stopFailed();
+        emit executionFinished();
+    }
+
+    void downloadFailed() override {
+        TScenarioScopeItem::downloadFailed();
+        emit executionFinished();
+    }
+
+    void tracesEmpty() override {
+        TScenarioScopeItem::tracesEmpty();
+        emit executionFinished();
+    }
+
+    void stopped() override {
+        TScenarioScopeItem::stopped();
+        emit executionFinished(m_outputData);
     }
 };
 

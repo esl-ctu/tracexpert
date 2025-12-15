@@ -1,9 +1,7 @@
 #ifndef TSCENARIOMODEL_H
 #define TSCENARIOMODEL_H
 
-#include <QObject>
-
-#include "../tprojectitem.h"
+#include "../projectunit/tprojectunitmodel.h"
 
 class TScenario;
 class TScenarioContainer;
@@ -16,32 +14,13 @@ class TScenarioContainer;
  * It is also a model for the Scenario table view in the Scenario Manager.
  *
  */
-class TScenarioModel : public QObject, public TProjectItem {
-    Q_OBJECT
+class TScenarioModel : public TProjectUnitModel {
 
 public:
     TScenarioModel(TScenarioContainer * parent);
     TScenarioModel(TScenario * scenario, TScenarioContainer * parent);
 
-    ~TScenarioModel();
-
     TScenario * scenario() const;
-    void setScenario(TScenario * scenario);
-
-    // methods for TProjectItem - to be able to show Protocols in the Project view
-    int childrenCount() const override;
-    TProjectItem * child(int row) const override;
-    QString name() const override;
-    Status status() const override;
-
-    bool toBeSaved() const override;
-    QDomElement save(QDomDocument & document) const override;
-    void load(QDomElement * element);
-
-private:
-    TScenario * m_scenario;
 };
-
-
 
 #endif // TSCENARIOMODEL_H

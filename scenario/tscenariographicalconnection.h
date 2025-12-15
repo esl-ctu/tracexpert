@@ -34,8 +34,10 @@ public:
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
 
-    TScenarioGraphicalItemPort * startItem() const { return m_startItemPort; }
-    TScenarioGraphicalItemPort * endItem() const { return m_endItemPort; }
+    TScenarioGraphicalItemPort * startItemPort() const { return m_startItemPort; }
+    TScenarioGraphicalItemPort * endItemPort() const { return m_endItemPort; }
+
+    TScenarioGraphicalItemPort * otherItemPort(TScenarioGraphicalItemPort * itemPort) const;
 
     void setPreferredLineBreakXCoord(qreal value);
     void setPreferredLineBreakYCoord(qreal value);

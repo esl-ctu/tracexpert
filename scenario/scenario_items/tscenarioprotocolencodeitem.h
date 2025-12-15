@@ -2,18 +2,21 @@
 #define TSCENARIOPROTOCOLENCODEITEM_H
 
 #include "../tscenarioitem.h"
+#include "../../protocol/tprotocolmodel.h"
+#include "../../protocol/tprotocol.h"
 
 class TScenarioProtocolEncodeItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 80 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioProtocolEncodeItem;
+    }
 
     TScenarioProtocolEncodeItem() : TScenarioItem(tr("Protocol: format message"), tr("This block formats a message from selected Protocol.")) {
         addFlowInputPort("flowIn");
         addFlowOutputPort("flowOut", "done", tr("Flow continues through this port on success."));
         addFlowOutputPort("flowOutError", "error", tr("Flow continues through this port on error."));
-        addDataOutputPort("dataOut", "message", tr("Byte array containing the formatted message."));
+        addDataOutputPort("dataOut", "message", tr("Byte array containing the formatted message."), "[byte array]");
 
         m_params = TConfigParam("Block configuration", "", TConfigParam::TType::TDummy, "");
         m_params.addSubParam(TConfigParam("Protocol", "", TConfigParam::TType::TEnum, tr("Send message defined in this protocol."), false));
@@ -64,12 +67,12 @@ public:
         int selectedMessageIndex = -1;
         if(selectedProtocolIndex > -1) {
             messageParam->resetState();
-            const TProtocol protocol = m_projectModel->protocolContainer()->at(selectedProtocolIndex)->protocol();
+            TProtocol * protocol = (TProtocol *)m_projectModel->protocolContainer()->at(selectedProtocolIndex)->unit();
 
-            int messageCount = protocol.getMessages().count();
+            int messageCount = protocol->getMessages().count();
             selectedMessageIndex = messageCount > 0 ? 0 : -1;
             for(int i = 0; i < messageCount; i++) {
-                const TMessage message = protocol.getMessages().at(i);
+                const TMessage message = protocol->getMessages().at(i);
 
                 if(message.isResponse())
                     continue;
@@ -83,7 +86,7 @@ public:
             }
 
             if(selectedMessageIndex > -1) {
-                messageParam->setValue(protocol.getMessages().at(selectedMessageIndex).getName());
+                messageParam->setValue(protocol->getMessages().at(selectedMessageIndex).getName());
             }
         }
 
@@ -93,7 +96,7 @@ public:
         }
     }
 
-    bool validateParamsStructure(TConfigParam params) {
+    bool validateParamsStructure(TConfigParam params) override {
         bool iok = false;
 
         params.getSubParamByName("Protocol", &iok);
@@ -119,7 +122,7 @@ public:
             setState(TState::TError, tr("Block configuration contains errors!"));
         }
         else {
-            setState(TState::TOk);
+            resetState();
         }
 
         for(QString & portName : m_generatedPortNames) {
@@ -159,7 +162,7 @@ public:
         return true;
     }
 
-    QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
+    QHash<TScenarioItemPort *, QByteArray> executeDirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
 
         bool iok;
         TMessage message = getMessage(&iok);
@@ -176,7 +179,7 @@ public:
             messagePart.setValue(inputData.value(getItemPortByName(messagePart.getName())), &iok);
 
             if(!iok) {
-                log(QString("Failed to set value of \"%1\" message part.").arg(messagePart.getName()), "orange");
+                log(QString("Failed to set value of \"%1\" message part.").arg(messagePart.getName()), TLogLevel::TWarning);
                 setState(TState::TRuntimeWarning, tr("Failed to set one or more message part values!"));
             }
         }
@@ -194,15 +197,15 @@ public:
         bool iok;
 
         TConfigParam * protocolParam = m_params.getSubParamByName("Protocol");
-        TProtocol protocol = m_projectModel->protocolContainer()->getByName(protocolParam->getValue(), &iok);
+        TProtocolModel * protocolModel = (TProtocolModel *)m_projectModel->protocolContainer()->getByName(protocolParam->getValue());
 
-        if(!iok) {
+        if(!protocolModel) {
             if(ok != nullptr) *ok = false;
             return TMessage();
         }
 
         TConfigParam * messageParam = m_params.getSubParamByName("Message");
-        TMessage message = protocol.getMessageByName(messageParam->getValue(), &iok);
+        TMessage message = protocolModel->protocol()->getMessageByName(messageParam->getValue(), &iok);
 
         if(!iok) {
             if(ok != nullptr) *ok = false;

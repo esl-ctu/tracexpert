@@ -7,7 +7,7 @@
 #include "tcpaoutputstream.h"
 #include "cpa.hpp"
 
-TCPADevice::TCPADevice() {
+TCPADevice::TCPADevice(): m_traceLength(0), m_predictCount(0), m_traceType("Unsigned 8 bit"), m_predictType("Unsigned 8 bit"), m_order(1) {
 
     m_preInitParams = TConfigParam("CPA configuration", "", TConfigParam::TType::TDummy, "");
 
@@ -135,7 +135,7 @@ void TCPADevice::init(bool *ok) {
     for(int order = 1; order <= m_order; order++){
 
         QString streamName = QString("%1-order correlation matrix").arg(order);
-        m_analInputStreams.append(new TCPAInputStream(streamName, "Stream of correlation coefficients", [=, order0 = order](uint8_t * buffer, size_t length){ return getCorrelations(buffer, length, order0); }));
+        m_analInputStreams.append(new TCPAInputStream(streamName, "Stream of correlation coefficients", [=, order0 = order](uint8_t * buffer, size_t length){ return getCorrelations(buffer, length, order0); }, [=, order0 = order](){ return availableBytes(order0); }));
 
         m_correlations.append(new SICAK::Matrix<qreal>());
         m_position.append(0);
@@ -246,6 +246,7 @@ void TCPADevice::resetContexts() {
         m_position[i] = m_correlations[i]->size();
     }
 
+    qInfo("All previously submitted or computed (unread) data have been erased.");
 }
 
 
@@ -281,7 +282,7 @@ void TCPADevice::computeCorrelations(){
         return;
     }
 
-    if(m_predicts.size() % (getTypeSize(m_predictType) * m_predictCount) != 0){ // TODO move to processing action
+    if(m_predicts.size() % (getTypeSize(m_predictType) * m_predictCount) != 0){
         qCritical("Buffer does not contain a valid amount of predictions");
         return;
     }
@@ -293,6 +294,9 @@ void TCPADevice::computeCorrelations(){
         qCritical("Number of traces and number of prediction sets does not match!");
         return;
     }
+
+    qInfo("Unread correlation matrices were erased. The submitted data will be added to all the previously submitted data (unless the Reset action was run), and the new correlations will be computed upon all of these.");
+    qInfo(QString("Now processing %1 bytes of power traces (%2 power traces, %3 samples each) and %4 bytes of leakage predictions (%2 sets, one for every trace, each consisting of %5 leakage predictions).").arg(m_traces.size()).arg(noOfTraces).arg(m_traceLength).arg(m_predicts.size()).arg(m_predictCount).toLatin1());
 
     // Add traces to the context
     // ... sorry (need explicit cast on both traces and predictions, shit happens)
@@ -1146,6 +1150,8 @@ void TCPADevice::computeCorrelations(){
 
     }
 
+    qInfo(QString("Generated %1 bytes of data (%2 x %3 correlation matrices) on every stream, now available for reading.").arg(m_correlations[0]->size()).arg(m_traceLength).arg(m_predictCount).toLatin1());
+
 }
 
 size_t TCPADevice::getCorrelations(uint8_t * buffer, size_t length, size_t order0){
@@ -1158,4 +1164,8 @@ size_t TCPADevice::getCorrelations(uint8_t * buffer, size_t length, size_t order
 
     return sent;
 
+}
+
+size_t TCPADevice::availableBytes(size_t order){
+    return m_correlations[order-1]->size() - m_position[order-1];
 }

@@ -7,6 +7,7 @@
 #include <QDialogButtonBox>
 #include <QPushButton>
 #include <QMessageBox>
+#include <QCoreApplication>
 
 bool TDialog::addDeviceDialog(QWidget * parent, QString &name, QString &info)
 {
@@ -87,6 +88,54 @@ bool TDialog::renameDeviceDialog(QWidget * parent, QString &name, QString &info)
     return (addDeviceDialog->result() == QDialog::Accepted && nameEdit->text() != QString(""));
 }
 
+bool TDialog::exportImageDimensionsDialog(QWidget * parent, uint &width, uint &height)
+{
+    QDialog * addDeviceDialog = new QDialog(parent);
+    QLabel * widthLabel = new QLabel(parent->tr("Width"));
+    QLabel * heightLabel = new QLabel(parent->tr("Height"));
+
+    QLineEdit * widthEdit = new QLineEdit(QString::number(width));
+    QLineEdit * heightEdit = new QLineEdit(QString::number(height));
+
+    QGridLayout * dialogGridLayout = new QGridLayout;
+    dialogGridLayout->addWidget(widthLabel, 0, 0);
+    dialogGridLayout->addWidget(widthEdit, 0, 1);
+    dialogGridLayout->addWidget(heightLabel, 1, 0);
+    dialogGridLayout->addWidget(heightEdit, 1, 1);
+
+    QDialogButtonBox * buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
+    buttonBox->button(QDialogButtonBox::Ok)->setText("Continue");
+
+    parent->connect(widthEdit, &QLineEdit::textChanged, parent, [=]() {
+        bool ok;
+        widthEdit->text().toUInt(&ok);
+        buttonBox->button(QDialogButtonBox::Ok)->setEnabled(ok);
+    });
+
+    parent->connect(heightEdit, &QLineEdit::textChanged, parent, [=]() {
+        bool ok;
+        heightEdit->text().toUInt(&ok);
+        buttonBox->button(QDialogButtonBox::Ok)->setEnabled(ok);
+    });
+
+    parent->connect(buttonBox, &QDialogButtonBox::accepted, addDeviceDialog, &QDialog::accept);
+    parent->connect(buttonBox, &QDialogButtonBox::rejected, addDeviceDialog, &QDialog::reject);
+
+    QVBoxLayout * dialogLayout = new QVBoxLayout;
+    dialogLayout->addLayout(dialogGridLayout);
+    dialogLayout->addWidget(buttonBox);
+
+    addDeviceDialog->setLayout(dialogLayout);
+
+    addDeviceDialog->adjustSize();
+    addDeviceDialog->exec();
+
+    width = widthEdit->text().toUInt();
+    height = heightEdit->text().toUInt();
+
+    return (addDeviceDialog->result() == QDialog::Accepted);
+}
+
 
 bool TDialog::paramWarningQuestion(QWidget * parent)
 {
@@ -106,6 +155,11 @@ bool TDialog::componentDeinitQuestion(QWidget * parent)
 bool TDialog::deviceReinitQuestion(QWidget * parent)
 {
     return question(parent, parent->tr("Device Initialized"), parent->tr("The selected device is already initialized. Do you want to reinitialize it?"));
+}
+
+bool TDialog::deviceOpenQuestion(QWidget * parent)
+{
+    return question(parent, parent->tr("Device Initialized"), parent->tr("The selected device is already initialized. Do you want to open the device?"));
 }
 
 void TDialog::componentInitFailedGeneralMessage(QWidget * parent)
@@ -183,14 +237,27 @@ void TDialog::protocolMessageCouldNotBeFormed(QWidget * parent)
     criticalMessage(parent, parent->tr("Send failed"), parent->tr("Protocol message could not be formed, check console for errors!"));
 }
 
-bool TDialog::closeConfirmation(QWidget * parent)
+bool TDialog::closeConfirmation(QWidget * parent, QString closedObjectName)
 {
+    if (closedObjectName.isEmpty())
+        closedObjectName = "this window";
+
     return QMessageBox::question(
         parent,
         parent->tr("Close confirmation"),
-        parent->tr("Are you sure you want to close this window? All unsaved changes will be lost."),
+        parent->tr("Are you sure you want to close %1? All unsaved changes will be lost.").arg(closedObjectName),
         QMessageBox::Yes | QMessageBox::No,
         QMessageBox::No) == QMessageBox::Yes;
+}
+
+bool TDialog::scenarioTerminationConfirmation(QWidget * parent)
+{
+    return QMessageBox::question(
+               parent,
+               parent->tr("Terminate"),
+               parent->tr("Are you sure you want to terminate scenario execution?"),
+               QMessageBox::Yes | QMessageBox::No,
+               QMessageBox::No) == QMessageBox::Yes;
 }
 
 bool TDialog::question(QWidget * parent, const QString &title, const QString &text)
@@ -228,34 +295,42 @@ void TConfigParamDialog::accept()
 {
     TConfigParam param = m_preInit ? m_unit->setPreInitParams(m_paramWidget->param()) : m_unit->setPostInitParams(m_paramWidget->param());
 
-    TConfigParam::TState state = param.getState();
-    if (state == TConfigParam::TState::TError) {
-        m_paramWidget->setParam(param);
-        return;
-    }
-    else if (state == TConfigParam::TState::TWarning) {
+    TConfigParam::TState state = param.getState(true);
+
+    if (state == TConfigParam::TState::TWarning) {
         if (!TDialog::paramWarningQuestion(this)) {
             m_paramWidget->setParam(param);
             return;
         }
     }
-    else {
-        QDialog::accept();
+    // if state is TError or unknown enum value...
+    else if (state != TConfigParam::TState::TOk && state != TConfigParam::TState::TInfo) {
+
+        if(state != TConfigParam::TState::TError) {
+            qWarning("An unknown value was encuntered as config param state!");
+        }
+
+        m_paramWidget->setParam(param);
+        TDialog::paramValueErrorMessage(this);
+        return;
     }
+
+    QDialog::accept();
 }
 
 TScenarioConfigParamDialog::TScenarioConfigParamDialog(QString acceptText, QString title, TScenarioItem * item, QWidget * parent)
     : QDialog(parent), m_item(item)
 {
+    setWindowTitle(title);
+    setMinimumSize(500, 400);
+
     TConfigParam param = m_item->getParams();
     m_originalParams = param;
 
     m_paramWidget = new TConfigParamWidget(param);
 
-    //evaluate validity immediately on widget open
-    m_paramWidget->setParam(m_paramWidget->param());
-
-    setWindowTitle(title);
+    // evaluate validity immediately on widget open
+    m_paramWidget->setParam(m_paramWidget->param());  
 
     if(item->getConfigWindowSize() != QSize(0, 0)) {
         resize(item->getConfigWindowSize());
@@ -304,16 +379,23 @@ void TScenarioConfigParamDialog::accept()
     TConfigParam param = m_item->setParams(m_paramWidget->param());
 
     TConfigParam::TState state = param.getState(true);
-    if (state == TConfigParam::TState::TError) {
-        m_paramWidget->setParam(param);
-        TDialog::paramValueErrorMessage(this);
-        return;
-    }
-    else if (state == TConfigParam::TState::TWarning) {
+
+    if (state == TConfigParam::TState::TWarning) {
         if (!TDialog::paramWarningQuestion(this)) {
             m_paramWidget->setParam(param);
             return;
         }
+    }
+    // if state is TError or unknown enum value...
+    else if (state != TConfigParam::TState::TOk && state != TConfigParam::TState::TInfo) {
+
+        if(state != TConfigParam::TState::TError) {
+            qWarning("An unknown value was encuntered as config param state!");
+        }
+
+        m_paramWidget->setParam(param);
+        TDialog::paramValueErrorMessage(this);
+        return;
     }
 
     QDialog::accept();
@@ -368,4 +450,50 @@ TPluginUnitInfoDialog::TPluginUnitInfoDialog(TPluginUnitModel * unit, QWidget * 
     dialogLayout->addWidget(buttonBox);
 
     setLayout(dialogLayout);
+}
+
+TLoadingDialog::TLoadingDialog(QWidget *parent)
+    : QDialog(parent)
+{
+    setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+    setModal(true);
+    setAttribute(Qt::WA_DeleteOnClose, false);
+
+    QVBoxLayout * layout = new QVBoxLayout(this);
+    layout->setAlignment(Qt::AlignCenter);
+
+    QLabel * imageLabel = new QLabel(this);
+    QPixmap pixmap(":/icons/tracexpert64.png");
+    imageLabel->setPixmap(pixmap);
+    imageLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(imageLabel);
+
+    m_label = new QLabel("Please wait...", this);
+    layout->addWidget(m_label);
+
+    resize(250, 80);
+}
+
+TLoadingDialog* TLoadingDialog::showDialog(QWidget *parent, const QString &text)
+{
+    auto *dialog = new TLoadingDialog(parent);
+
+    if (dialog->m_label)
+        dialog->m_label->setText(text);
+
+    if(parent) {
+        QRect geom = parent->window()->geometry();
+        dialog->move(geom.center() - QPoint(dialog->width()/2, dialog->height()/2));
+    }
+
+    dialog->show();
+    QCoreApplication::processEvents();
+
+    return dialog;
+}
+
+void TLoadingDialog::closeAndDeleteLater()
+{
+    hide();
+    deleteLater();
 }

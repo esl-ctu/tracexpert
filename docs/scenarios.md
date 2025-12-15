@@ -1,4 +1,7 @@
+[Back to the top (index)](README.md)
+
 # Scenarios
+
 **TraceXpert** allows you to create *scenarios*—automated workflows 
 represented as flow graphs. These scenarios can be used to automate 
 processes using all the tools the program provides.
@@ -234,6 +237,34 @@ The script's output data has to be returned from the `process_data` function.
 The return value has to be an array with the same number of elements as is set in the block settings. The values from individual array indexes will be passed to corresponding **data output ports**.
 
 ![Script block settings](images/scenarios_script_settings.png)
+
+In your script, you can use the NumPy package as follows:
+
+```
+import numpy as np
+
+def process_data():
+    pt = np.frombuffer(input_raw[0], dtype=np.uint8)
+    key = np.frombuffer(input_raw[1], dtype=np.uint8)
+    state = np.bitwise_xor(pt, key)
+    #apply sbox...
+
+    return [state.tobytes()]
+```
+If you want to return a single value instead of an array, you need to convert the output to a byte array:
+
+```
+import numpy as np
+
+def process_data():
+    arr = np.frombuffer(input_raw[0], dtype=np.uint8)
+    hd = np.bitwise_xor.reduce(arr)
+
+    return [hd.tobytes()]
+```
+
+
+
 
 ### IO Device reading and writing
 

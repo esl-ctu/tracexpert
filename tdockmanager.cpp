@@ -1,6 +1,10 @@
 #include "tdockmanager.h"
 #include <qevent.h>
 
+#ifdef USE_ADS
+#include "DockAreaWidget.h"
+#endif
+
 TDockWidget::TDockWidget(const QString & title, QWidget * parent)
     : TDockWidgetBase(title, parent)
 {
@@ -53,7 +57,7 @@ void TDockWidget::close()
 #ifdef USE_ADS    
     closeDockWidget();
 #else
-    ((QDockWidget *)this)->close();
+    ((QDockWidget *)this)->hide();
 #endif
 }
 
@@ -70,3 +74,66 @@ void TDockWidget::closeEvent(QCloseEvent *event)
     }
 }
 #endif
+
+TDockManager::TDockManager(QWidget *parent, Qt::WindowFlags flags)
+#ifdef USE_ADS
+    : TDockManagerBase(parent)
+#else
+    : m_mainWindow((TDockManagerBase *)parent)
+#endif
+{
+
+}
+
+#ifndef USE_ADS
+void TDockManager::addDockWidget(TDockArea dockArea, TDockWidget * dockWidget) {
+    m_mainWindow->addDockWidget(dockArea, dockWidget);
+}
+
+void TDockManager::removeDockWidget(TDockWidget * dockWidget) {
+    m_mainWindow->removeDockWidget(dockWidget);
+}
+#endif
+
+/**
+ * Adds a widget to the center dock as a tab.
+ * It does NOT show the tab, call show() on the widget to show it to the user.
+ */
+void TDockManager::addCenterDockWidgetTab(TDockWidget * dockWidget, TDockWidget * existingDockWidget) {
+#ifdef USE_ADS
+    // prevent newly added widget showing on top/taking focus automatically
+
+    // find the currently open tab
+    ads::CDockWidget * currentTab = nullptr;
+    for(ads::CDockWidget * widget : dockWidgets()) {
+        if(widget->isCurrentTab() && widget->dockAreaWidget() == existingDockWidget->dockAreaWidget()) {
+            currentTab = widget;
+        }
+    }
+
+    addDockWidget(TDockArea::CenterDockWidgetArea, dockWidget, existingDockWidget->dockAreaWidget());
+
+    // set the previously opened tab as current again
+    if(currentTab) {
+        currentTab->setAsCurrentTab();
+    }
+#else
+    m_mainWindow->tabifyDockWidget(existingDockWidget, dockWidget);
+#endif
+}
+
+void TDockManager::addCenterDockWidget(TDockWidget * dockWidget) {
+#ifdef USE_ADS
+    dockWidget->setFeature(ads::CDockWidget::DockWidgetMovable, false);
+    dockWidget->setFeature(ads::CDockWidget::DockWidgetFloatable, false);
+    dockWidget->setFeature(ads::CDockWidget::DockWidgetClosable, false);
+    dockWidget->setFeature(ads::CDockWidget::NoTab, true);
+    addDockWidget(TDockArea::CenterDockWidgetArea, dockWidget);
+    dockWidget->dockAreaWidget()->setDockAreaFlag(ads::CDockAreaWidget::HideSingleWidgetTitleBar, true);
+#else
+    m_mainWindow->addDockWidget(TDockArea::RightDockWidgetArea, dockWidget);
+#endif
+}
+
+
+

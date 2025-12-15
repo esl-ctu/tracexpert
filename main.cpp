@@ -1,37 +1,17 @@
 #include "tmainwindow.h"
-#include "tlogwidget.h"
+#include "logger/tloghandler.h"
 
 #include <QApplication>
-#include <QMutex>
-
-
-static TLogWidget *gLogWidget = nullptr;
-static QMutex gLogMutex;
-
-void logMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
-{
-    Q_UNUSED(context);
-
-    QMutexLocker locker(&gLogMutex);
-
-    if (gLogWidget) {
-        QMetaObject::invokeMethod(
-            gLogWidget,
-            "appendLogMessage",
-            Qt::QueuedConnection,
-            Q_ARG(QtMsgType, type),
-            Q_ARG(QString, msg));
-    }
-}
 
 int main(int argc, char * argv[])
 {
+    qputenv("QT_QPA_PLATFORM", "windows:darkmode=0"); // disable dark mode on Windows until the wrong color palette is resolved
+
     QApplication a(argc, argv);
 
-    gLogWidget = new TLogWidget;
-    qInstallMessageHandler(logMessageHandler);
+    TLogHandler::installLogger();
 
-    TMainWindow w(gLogWidget);
+    TMainWindow w;
     w.show();
     return a.exec();
 }

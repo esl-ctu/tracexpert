@@ -48,6 +48,7 @@ void TScenarioScene::loadScenario(const TScenario * scenario) {
     for(TScenarioItem * item : m_scenario->getItems()) {
         item->setProjectModel(m_projectModel);
         item->updateParams(false);
+        item->resetState(true);
 
         TScenarioGraphicalItem * graphicalItem = TScenarioGraphicalItem::createScenarioGraphicalItem(item);
         graphicalItem->setZValue(1);
@@ -75,8 +76,8 @@ void TScenarioScene::loadScenario(const TScenario * scenario) {
 
 void TScenarioScene::setPointerTool(TScenarioPointerTool pointerTool)
 {
-    cancelInsertMode();
-    m_pointerTool = pointerTool;
+    cleanupAfterCurrentTool();
+    m_pointerTool = pointerTool;    
     emit pointerToolChanged(pointerTool);
 }
 
@@ -107,8 +108,8 @@ void TScenarioScene::removeItem(QGraphicsItem * item) {
     }
     else if(item->type() == TScenarioGraphicalConnection::Type) {
         TScenarioGraphicalConnection * graphicalConnection = (TScenarioGraphicalConnection *)item;
-        graphicalConnection->startItem()->removeGraphicalConnection(graphicalConnection);
-        graphicalConnection->endItem()->removeGraphicalConnection(graphicalConnection);
+        graphicalConnection->startItemPort()->removeGraphicalConnection(graphicalConnection);
+        graphicalConnection->endItemPort()->removeGraphicalConnection(graphicalConnection);
 
         m_scenario->removeConnection(graphicalConnection->getScenarioConnection(), &ok);
 
@@ -167,15 +168,13 @@ void TScenarioScene::sendSelectedToBack() {
 }
 
 void TScenarioScene::setInsertItemMode(TScenarioGraphicalItem * insertedBlockInstance) {
-    if(m_insertedBlockInstance != nullptr) {
-        removeItem(m_insertedBlockInstance);
-    }
-
-    m_insertedBlockInstance = insertedBlockInstance;    
-    m_insertedBlockInstance->setOpacity(0); // hide before cursor first over scene
-    addItem(m_insertedBlockInstance);
-
     setPointerTool(TScenarioPointerTool::InsertItem);
+
+    m_insertedItemInstance = insertedBlockInstance;
+    m_insertedItemInstance->setOpacity(0); // hide before cursor first over scene
+    addItem(m_insertedItemInstance);
+
+    emit itemInsertStarted(m_insertedItemInstance->getScenarioItem()->itemClass());
 }
 
 void TScenarioScene::mousePressEvent(QGraphicsSceneMouseEvent * mouseEvent) {
@@ -183,28 +182,39 @@ void TScenarioScene::mousePressEvent(QGraphicsSceneMouseEvent * mouseEvent) {
         switch (m_pointerTool) {
             case TScenarioPointerTool::InsertItem:
                 bool ok;
-                m_scenario->addItem(m_insertedBlockInstance->getScenarioItem(), &ok);                
+                m_scenario->addItem(m_insertedItemInstance->getScenarioItem(), &ok);
 
                 if(ok) {
-                    m_insertedBlockInstance->getScenarioItem()->setProjectModel(m_projectModel);
-                    m_insertedBlockInstance->getScenarioItem()->updateParams(false);
-                    m_insertedBlockInstance->setScene(this);
-                    m_insertedBlockInstance->setOpacity(1.0);
-                    m_insertedBlockInstance->setZValue(1);
-                    m_insertedBlockInstance = nullptr;
-                    setPointerTool(TScenarioPointerTool::MousePointer);
+                    m_insertedItemInstance->getScenarioItem()->setProjectModel(m_projectModel);
+                    m_insertedItemInstance->getScenarioItem()->updateParams(false);
+                    m_insertedItemInstance->setScene(this);
+                    m_insertedItemInstance->setOpacity(1.0);
+                    m_insertedItemInstance->setZValue(1);
+
+                    m_pointerTool = TScenarioPointerTool::MousePointer;
+                    emit itemInserted(m_insertedItemInstance->getScenarioItem()->itemClass());
+
+                    // do not delete item, just lose the reference
+                    // (it is now owned by the scene)
+                    m_insertedItemInstance = nullptr;
 
                     qDebug("Item added to scenario.");
-                    emit itemInserted(m_insertedBlockInstance);
                     break;
                 }
 
                 qDebug("Failed to add item to scenario.");
                 break;
             case TScenarioPointerTool::InsertLine: {
-                    cancelInsertMode();
+                    // cancel current line, if it exists
+                    cleanupAfterCurrentTool();
+                    // create a new line
                     m_tmpLineStartPort = findLineStartPort(mouseEvent->scenePos());
-                    QPointF lineStartPoint = m_tmpLineStartPort == nullptr ? mouseEvent->scenePos() : m_tmpLineStartPort->scenePos();
+
+                    QPointF lineStartPoint = mouseEvent->scenePos();
+                    if(m_tmpLineStartPort) {
+                        lineStartPoint = m_tmpLineStartPort->scenePos();
+                    }
+
                     m_tmpLine = new QGraphicsLineItem(QLineF(lineStartPoint, lineStartPoint));
                     m_tmpLine->setPen(QPen(Qt::black, 2));
                     m_tmpLine->setZValue(2);
@@ -219,7 +229,6 @@ void TScenarioScene::mousePressEvent(QGraphicsSceneMouseEvent * mouseEvent) {
         }
     }
     else if(mouseEvent->button() == Qt::RightButton) {
-        cancelInsertMode();
         setPointerTool(TScenarioPointerTool::MousePointer);
     }
     else {
@@ -227,18 +236,18 @@ void TScenarioScene::mousePressEvent(QGraphicsSceneMouseEvent * mouseEvent) {
     }
 }
 
-void TScenarioScene::cancelInsertMode() {
+void TScenarioScene::cleanupAfterCurrentTool() {
     switch (m_pointerTool) {
         case TScenarioPointerTool::InsertItem:
-            if(m_insertedBlockInstance != nullptr) {
-                removeItem(m_insertedBlockInstance);
-                delete m_insertedBlockInstance;
-                m_insertedBlockInstance = nullptr;
-                emit itemInsertCanceled();
+            if(m_insertedItemInstance) {
+                emit itemInsertCancelled(m_insertedItemInstance->getScenarioItem()->itemClass());
+                removeItem(m_insertedItemInstance);
+                delete m_insertedItemInstance;
+                m_insertedItemInstance = nullptr;
             }
             break;
         case TScenarioPointerTool::InsertLine:
-            if (m_tmpLine != nullptr) {
+            if (m_tmpLine) {
                 removeItem(m_tmpLine);
                 delete m_tmpLine;
                 m_tmpLine = nullptr;
@@ -251,8 +260,10 @@ void TScenarioScene::cancelInsertMode() {
 
 void TScenarioScene::mouseMoveEvent(QGraphicsSceneMouseEvent * mouseEvent) {
     if(m_pointerTool == TScenarioPointerTool::InsertItem) {
-        m_insertedBlockInstance->setOpacity(0.75);
-        m_insertedBlockInstance->setPos(mouseEvent->scenePos());
+        if(m_insertedItemInstance) {
+            m_insertedItemInstance->setOpacity(0.75);
+            m_insertedItemInstance->setPos(mouseEvent->scenePos());
+        }
     }
     else if(m_pointerTool == TScenarioPointerTool::InsertLine && m_tmpLine != nullptr) {
         m_tmpLineEndPort = findLineEndPort(mouseEvent->scenePos());

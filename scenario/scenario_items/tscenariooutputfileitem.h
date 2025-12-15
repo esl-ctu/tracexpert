@@ -19,12 +19,13 @@
 class TScenarioOutputFileItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 90 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioOutputFileItem;
+    }
 
     TScenarioOutputFileItem() : TScenarioItem(tr("Write to: untracked file"), tr("This block writes data into files not tracked by TraceXpert.")) {
         addFlowInputPort("flowIn");
-        addDataInputPort("dataIn");
+        addDataInputPort("dataIn", "", "", "[any]");
         addFlowOutputPort("flowOut", "done", tr("Flow continues through this port on success."));
         addFlowOutputPort("flowOutError", "error", tr("Flow continues through this port on error."));
 
@@ -87,7 +88,7 @@ public:
         return true;
     }
 
-    QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
+    QHash<TScenarioItemPort *, QByteArray> executeDirect(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
         QString directory = m_params.getSubParamByName("Path to folder")->getValue();
         QString filename = m_params.getSubParamByName("File name")->getValue();
 

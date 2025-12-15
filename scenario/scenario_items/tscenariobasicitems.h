@@ -13,8 +13,9 @@
 class TScenarioFlowStartItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 1 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioFlowStartItem;
+    }
 
     TScenarioFlowStartItem() : TScenarioItem(tr("Flow start"), tr("This block is the start point of the scenario.")) {
         setType(TItemAppearance::TFlowStart);
@@ -36,8 +37,9 @@ public:
 class TScenarioFlowEndItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 2 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioFlowEndItem;
+    }
 
     TScenarioFlowEndItem() : TScenarioItem(tr("Flow end"), tr("This block is the end point of the scenario.")) {
         setType(TItemAppearance::TFlowEnd);
@@ -60,8 +62,9 @@ public:
 class TScenarioFlowMergeItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 3 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioFlowMergeItem;
+    }
 
     TScenarioFlowMergeItem() : TScenarioItem(tr("Flow merge"), tr("This block merges multiple flow paths; e.g. after a condition.")) {
         setType(TItemAppearance::TFlowMerge);
@@ -131,13 +134,14 @@ private:
 class TScenarioConditionItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 4 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioConditionItem;
+    }
 
     TScenarioConditionItem() : TScenarioItem(tr("Condition"), tr("This block directs flow based on a set condition.")) {
         setType(TItemAppearance::TCondition);
         addFlowInputPort("flowIn");
-        addDataInputPort("predicateIn", "", tr("Data passed through this port will be evaluated to be true/false."));
+        addDataInputPort("predicateIn", "", tr("Data passed through this port will be evaluated to be true/false."), "[any]");
         addFlowOutputPort("flowOutTrue", "", tr("If the input is evaluated to be TRUE, the flow will continue through this port."));
         addFlowOutputPort("flowOutFalse", "", tr("If the input is evaluated to be FALSE, the flow will continue through this port."));
     }
@@ -146,7 +150,7 @@ public:
         return new TScenarioConditionItem(*this);
     }
 
-    QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
+    QHash<TScenarioItemPort *, QByteArray> executeDirect(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
         // evaluates bool value of first byte array byte
         QByteArray predicateIn = dataInputValues.value(this->getItemPortByName("predicateIn"));
         m_predicateInBoolValue = predicateIn.size() > 0 ? predicateIn.at(0) : false;

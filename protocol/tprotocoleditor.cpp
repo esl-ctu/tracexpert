@@ -11,19 +11,19 @@
 #include <QHeaderView>
 
 #include "tprotocoleditor.h"
-#include "tprotocoltableview.h"
+#include "../projectunit/tprojectunittableview.h"
 #include "tmessageeditor.h"
 #include "../tdialog.h"
 
-TProtocolEditorDetailsPage::TProtocolEditorDetailsPage(const TProtocol & protocol, const TProtocolContainer * protocolContainer, QWidget * parent)
-    : QWizardPage(parent), m_originalName(protocol.getName()), m_protocolContainer(protocolContainer)  {
+TProtocolEditorDetailsPage::TProtocolEditorDetailsPage(const TProtocol * protocol, const TProtocolContainer * protocolContainer, QWidget * parent)
+    : QWizardPage(parent), m_originalName(protocol->name()), m_protocolContainer(protocolContainer)  {
 
     setTitle("Protocol details");
     setSubTitle("Set protocol name and description");
 
-    m_nameLineEdit = new QLineEdit(protocol.getName());
+    m_nameLineEdit = new QLineEdit(protocol->name());
 
-    QLineEdit * descLineEdit = new QLineEdit(protocol.getDescription());
+    QLineEdit * descLineEdit = new QLineEdit(protocol->description());
 
     QFormLayout * formLayout = new QFormLayout();
     formLayout->addRow(tr("&Name:"), m_nameLineEdit);
@@ -55,25 +55,26 @@ bool TProtocolEditorDetailsPage::validatePage() {
     return true;
 }
 
-TProtocolEditor::TProtocolEditor(const TProtocol & protocol, const TProtocolContainer * protocolContainer, QWidget * parent) : QWizard(parent), m_protocol(protocol) {
+TProtocolEditorWizard::TProtocolEditorWizard(const TProtocolModel * protocolModel, TProtocolContainer * protocolContainer, QWidget * parent)
+    : QWizard(parent), m_protocolModel(protocolModel), m_protocolContainer(protocolContainer) {
 
     setWindowTitle("Protocol wizard");
     setOption(QWizard::CancelButtonOnLeft);
 
-    addPage(new TProtocolEditorDetailsPage(protocol, protocolContainer));
+    addPage(new TProtocolEditorDetailsPage(protocolModel->protocol(), protocolContainer));
 
     QWizardPage * messageListPage = new QWizardPage;
     messageListPage->setTitle("Protocol messages");
     messageListPage->setSubTitle("Define protocol messages");
 
     QPushButton * addMessageButton = new QPushButton("Add");
-    connect(addMessageButton, &QPushButton::clicked, this, &TProtocolEditor::onAddButtonClicked);
+    connect(addMessageButton, &QPushButton::clicked, this, &TProtocolEditorWizard::onAddButtonClicked);
 
     QPushButton * editMessageButton = new QPushButton("Edit");
-    connect(editMessageButton, &QPushButton::clicked, this, &TProtocolEditor::onEditButtonClicked);
+    connect(editMessageButton, &QPushButton::clicked, this, &TProtocolEditorWizard::onEditButtonClicked);
 
     QPushButton * removeMessageButton = new QPushButton("Remove");
-    connect(removeMessageButton, &QPushButton::clicked, this, &TProtocolEditor::onRemoveButtonClicked);
+    connect(removeMessageButton, &QPushButton::clicked, this, &TProtocolEditorWizard::onRemoveButtonClicked);
 
     QVBoxLayout * sideButtonsLayout = new QVBoxLayout();
     sideButtonsLayout->addWidget(addMessageButton);
@@ -81,11 +82,11 @@ TProtocolEditor::TProtocolEditor(const TProtocol & protocol, const TProtocolCont
     sideButtonsLayout->addWidget(removeMessageButton);
     sideButtonsLayout->addStretch();
 
-    QTableView * messageView = new TProtocolTableView();
-    m_messageContainer = new TMessageSimpleContainer(protocol.getMessages());
+    QTableView * messageView = new TProjectUnitTableView();
+    m_messageContainer = new TMessageContainer(protocolModel->protocol()->getMessages());
     messageView->setModel(m_messageContainer);
     messageView->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeMode::ResizeToContents);
-    connect(messageView, &QTableView::doubleClicked, this, &TProtocolEditor::onEditButtonClicked);
+    connect(messageView, &QTableView::doubleClicked, this, &TProtocolEditorWizard::onEditButtonClicked);
 
     m_messageView = messageView;
 
@@ -98,65 +99,80 @@ TProtocolEditor::TProtocolEditor(const TProtocol & protocol, const TProtocolCont
     addPage(messageListPage);
 }
 
-TProtocol TProtocolEditor::protocol() {
-    TProtocol constructedProtocol(
+void TProtocolEditorWizard::accept() {
+
+    TProtocol * constructedProtocol = new TProtocol(
         field("name").toString(),
         field("description").toString()
     );
 
     int size = m_messageContainer->rowCount();
     for(int i = 0; i < size; i++) {
-        constructedProtocol.addMessage(m_messageContainer->getItem(i));
+        constructedProtocol->addMessage(m_messageContainer->getItem(i));
     }
 
-    return constructedProtocol;
+    int protocolIndex = m_protocolContainer->getIndexByName(m_protocolModel->name());
+    if(protocolIndex >= 0) {
+        if(!m_protocolContainer->update(protocolIndex, constructedProtocol)) {
+            qWarning("Failed to update protocol, validation in editor probably failed.");
+            delete constructedProtocol;
+        }
+    }
+    else {
+        if(!m_protocolContainer->add(constructedProtocol)) {
+            qWarning("Failed to add protocol, validation in editor probably failed.");
+            delete constructedProtocol;
+        }
+    }
+
+    QWizard::accept();
 }
 
-void TProtocolEditor::onAddButtonClicked() {
-    m_editedItemIndex = -1;
+void TProtocolEditorWizard::onAddButtonClicked() {
+    m_editedMessageIndex = -1;
 
-    m_editor = new TMessageEditor(TMessage(), m_messageContainer->getItems(), this);
-    connect(m_editor, &QWizard::finished, this, &TProtocolEditor::onEditorFinished);
-    m_editor->open();
+    m_messageEditor = new TMessageEditor(TMessage(), m_messageContainer->getItems(), this);
+    connect(m_messageEditor, &QWizard::finished, this, &TProtocolEditorWizard::onEditorFinished);
+    m_messageEditor->open();
 }
 
-void TProtocolEditor::onRowDoubleClicked(const QModelIndex & index) {
-    m_editedItemIndex = index.row();
-    openEditor();
+void TProtocolEditorWizard::onRowDoubleClicked(const QModelIndex & index) {
+    m_editedMessageIndex = index.row();
+    openMessageEditor();
 }
 
-void TProtocolEditor::onEditButtonClicked() {
+void TProtocolEditorWizard::onEditButtonClicked() {
     if(m_messageView->selectionModel()->selectedIndexes().isEmpty()) {
         return;
     }
 
-    m_editedItemIndex = m_messageView->selectionModel()->selectedIndexes().first().row();
-    openEditor();
+    m_editedMessageIndex = m_messageView->selectionModel()->selectedIndexes().first().row();
+    openMessageEditor();
 }
 
-void TProtocolEditor::openEditor() {
-    m_editor = new TMessageEditor(m_messageContainer->getItem(m_editedItemIndex), m_messageContainer->getItems(), this);
-    connect(m_editor, &QWizard::finished, this, &TProtocolEditor::onEditorFinished);
-    m_editor->open();
+void TProtocolEditorWizard::openMessageEditor() {
+    m_messageEditor = new TMessageEditor(m_messageContainer->getItem(m_editedMessageIndex), m_messageContainer->getItems(), this);
+    connect(m_messageEditor, &QWizard::finished, this, &TProtocolEditorWizard::onEditorFinished);
+    m_messageEditor->open();
 }
 
-void TProtocolEditor::onEditorFinished(int finished) {
+void TProtocolEditorWizard::onEditorFinished(int finished) {
     if(finished != QDialog::Accepted) {
         return;
     }
 
-    if(m_editedItemIndex >= 0) {
-        m_messageContainer->updateItem(m_editedItemIndex, m_editor->message());
+    if(m_editedMessageIndex >= 0) {
+        m_messageContainer->updateItem(m_editedMessageIndex, m_messageEditor->message());
     }
     else {
-        m_messageContainer->addItem(m_editor->message());
+        m_messageContainer->addItem(m_messageEditor->message());
     }
 
     m_messageContainer->sort();
 }
 
 
-void TProtocolEditor::onRemoveButtonClicked() {
+void TProtocolEditorWizard::onRemoveButtonClicked() {
     if(m_messageView->selectionModel()->selectedIndexes().isEmpty())
         return;
 

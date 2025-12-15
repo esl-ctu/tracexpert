@@ -16,22 +16,23 @@
 class TScenarioScriptItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 110 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioScriptItem;
+    }
 
-    TScenarioScriptItem() : TScenarioItem(tr("Script"), tr("This block runs a Python script.")) {        
+    TScenarioScriptItem() : TScenarioItem(tr("Python script"), tr("This block runs a Python script.")) {
         addFlowInputPort("flowIn");
         addFlowOutputPort("flowOut");
 
-        addDataInputPort("dataIn0", "", tr("Data will be passed to the script through this port."));
-        addDataInputPort("dataIn1", "", tr("Data will be passed to the script through this port."));
-        addDataOutputPort("dataOut0", "", tr("Data from the the script will be returned through this port."));
+        addDataInputPort("dataIn0", "", tr("Data will be passed to the script through this port."), "[any]");
+        addDataInputPort("dataIn1", "", tr("Data will be passed to the script through this port."), "[any]");
+        addDataOutputPort("dataOut0", "", tr("Data from the the script will be returned through this port."), "[any]");
 
         m_inputPortCount = 2;
         m_outputPortCount = 1;
 
         m_params = TConfigParam(m_name + " configuration", "", TConfigParam::TType::TDummy, "");
-        m_params.addSubParam(TConfigParam("Block name", "Script", TConfigParam::TType::TString, tr("Display name of the block."), false));
+        m_params.addSubParam(TConfigParam("Block name", "Python script", TConfigParam::TType::TString, tr("Display name of the block."), false));
         m_params.addSubParam(TConfigParam("Python path", "", TConfigParam::TType::TFileName, tr("The python interpreter (executable) path."), false));
         m_params.addSubParam(TConfigParam("Input count", "2", TConfigParam::TType::TUInt, "Number of data inputs of the block between 0 and 10.", false));
         m_params.addSubParam(TConfigParam("Output count", "1", TConfigParam::TType::TUInt, "Number of data outputs of the block between 0 and 10.", false));
@@ -59,7 +60,7 @@ def process_data():
         cleanupProcess();
     }
 
-    bool supportsImmediateExecution() const override {
+    bool supportsDirectExecution() const override {
         return false;
     }
 
@@ -79,7 +80,7 @@ def process_data():
         return true;
     }
 
-    bool validateParamsStructure(TConfigParam params) {
+    bool validateParamsStructure(TConfigParam params) override {
         bool iok = false;
 
         params.getSubParamByName("Block name", &iok);
@@ -129,7 +130,7 @@ def process_data():
                 }
                 else {
                     // create a new port
-                    addDataInputPort(QString("dataIn%1").arg(i), "", tr("Data will be passed to the script through this port."));
+                    addDataInputPort(QString("dataIn%1").arg(i), "", tr("Data will be passed to the script through this port."), "[any]");
                 }
             }
 
@@ -151,7 +152,7 @@ def process_data():
                 }
                 else {
                     // create a new port
-                    addDataOutputPort(QString("dataOut%1").arg(i), "", tr("Data from the the script will be returned through this port."));
+                    addDataOutputPort(QString("dataOut%1").arg(i), "", tr("Data from the the script will be returned through this port."), "[any]");
                 }
             }
 
@@ -163,7 +164,7 @@ def process_data():
             setState(TState::TError, tr("Block configuration contains errors!"));
         }
         else {
-            setState(TState::TOk);
+            resetState();
         }
 
         return m_params;
@@ -172,21 +173,21 @@ def process_data():
     void processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
        /* if (!m_pythonProcess->waitForFinished()) {
             setState(TState::TRuntimeError, "Python process did not finish!");
-            log("Python process did not finish!", "red");
+            log("Python process did not finish!", TLogLevel::TError);
             emit executionFinished();
             return;
         } */
 
         if (!m_pythonProcess) {
            setState(TState::TRuntimeError, "An error has occured during script execution.");
-           log("An error has occured during script execution.", "red");
+           log("An error has occured during script execution.", TLogLevel::TError);
            emit executionFinished();
            return;
         }
 
         QByteArray errorOutput = m_pythonProcess->readAllStandardError();
         if (!errorOutput.isEmpty()) {
-            log(QString("Python process finished with errors in stderr:\n%1").arg(errorOutput), "orange");
+            log(QString("Python process finished with errors in stderr:\n%1").arg(errorOutput), TLogLevel::TWarning);
         }
 
         // Read and decode response
@@ -194,7 +195,7 @@ def process_data():
 
         if(exitCode > 0) {
             setState(TState::TRuntimeError, response);
-            log(QString("Python process finished with exit code %1").arg(exitCode), "red");
+            log(QString("Python process finished with exit code %1").arg(exitCode), TLogLevel::TError);
 
             cleanupProcess();
             emit executionFinished();
@@ -204,7 +205,7 @@ def process_data():
         QHash<TScenarioItemPort *, QByteArray> decodedData;
         if (!decodeData(response, decodedData)) {
             setState(TState::TRuntimeError, "Failed to decode output data!");
-            log("Failed to decode output data!", "red");
+            log("Failed to decode output data!", TLogLevel::TError);
 
             cleanupProcess();
             emit executionFinished();
@@ -212,15 +213,21 @@ def process_data():
         }
 
         cleanupProcess();
-        emit executionFinishedWithOutput(decodedData);
+        emit executionFinished(decodedData);
     }
 
-    bool stopExecution() override {
+    void stopExecution() override {
+        if(m_pythonProcess) {
+            m_pythonProcess->terminate();
+        }
+
+        emit executionFinished();
+    }
+
+    void terminateExecution() override {
         if(m_pythonProcess) {
             m_pythonProcess->kill();
-            return true;
         }
-        return false;
     }
 
     void cleanupProcess() {
@@ -230,10 +237,10 @@ def process_data():
         }
     }
 
-    void execute(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
+    void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
         cleanupProcess();
 
-        m_pythonProcess = new QProcess(this);
+        m_pythonProcess = new QProcess();
         connect(m_pythonProcess, &QProcess::finished, this, &TScenarioScriptItem::processFinished);
 
         if(m_params.getSubParamByName("Python path")->getValue().isEmpty()) {
@@ -379,7 +386,7 @@ except Exception as e:
 
         if (!m_pythonProcess->waitForStarted()) {
             setState(TState::TRuntimeError, "Failed to start Python process!");
-            log("Failed to start Python process!", "red");
+            log("Failed to start Python process!", TLogLevel::TError);
             cleanupProcess();
             emit executionFinished();
             return;
@@ -400,7 +407,7 @@ except Exception as e:
         QByteArray encodedData;
         if (!encodeData(inputData, encodedData)) {
             setState(TState::TRuntimeError, "Failed to encode input data!");
-            log("Failed to encode input data!", "red");
+            log("Failed to encode input data!", TLogLevel::TError);
             cleanupProcess();
             emit executionFinished();
             return;
@@ -420,7 +427,7 @@ except Exception as e:
         for (int i = 0; i < inputCount; i++) {
             TScenarioItemPort *port = getItemPortByName(QString("dataIn%1").arg(i));
             if (!port) {
-                log(QString("Missing input port: dataIn%1").arg(i), "red");
+                log(QString("Missing input port: dataIn%1").arg(i), TLogLevel::TError);
                 return false;
             }
 
@@ -428,7 +435,7 @@ except Exception as e:
             if (inputData.contains(port)) {
                 data = inputData[port];
             } else {
-                log(QString("Missing input port data: dataIn%1").arg(i), "orange");
+                log(QString("Missing input port data: dataIn%1").arg(i), TLogLevel::TWarning);
             }
 
             uint32_t length = data.size();
@@ -444,22 +451,22 @@ except Exception as e:
         int outputCount = m_params.getSubParamByName("Output count")->getValue().toUInt();
 
         if (response.isEmpty()) {
-            log("No output data from Python!", "red");
+            log("No output data from Python!", TLogLevel::TError);
             return false;
         }
 
-        int index = 0;
+        qsizetype index = 0;
         int numSegments = static_cast<unsigned char>(response[index++]);
 
         if (numSegments != outputCount) {
-            log(QString("Unexpected number of outputs from python! (got %1, expected %2)").arg(numSegments).arg(outputCount), "red");
+            log(QString("Unexpected number of outputs from python! (got %1, expected %2)").arg(numSegments).arg(outputCount), TLogLevel::TError);
             return false;
         }
 
         // For each output, read a 4-byte length and then the data immediately.
         for (int i = 0; i < numSegments; i++) {
             if (index + sizeof(uint32_t) > response.size()) {
-                log(QString("Unexpected end of response when reading length for segment %1").arg(i), "red");
+                log(QString("Unexpected end of response when reading length for segment %1").arg(i), TLogLevel::TError);
                 return false;
             }
             uint32_t length;
@@ -467,7 +474,7 @@ except Exception as e:
             index += sizeof(length);
 
             if (index + length > response.size()) {
-                log(QString("Unexpected end of response when reading data for segment %1").arg(i), "red");
+                log(QString("Unexpected end of response when reading data for segment %1").arg(i), TLogLevel::TError);
                 return false;
             }
             QByteArray segment = response.mid(index, length);
@@ -475,7 +482,7 @@ except Exception as e:
 
             TScenarioItemPort *port = getItemPortByName(QString("dataOut%1").arg(i));
             if (!port) {
-                log(QString("Missing output port: dataOut%1").arg(i), "red");
+                log(QString("Missing output port: dataOut%1").arg(i), TLogLevel::TError);
                 return false;
             }
             decodedData.insert(port, segment);

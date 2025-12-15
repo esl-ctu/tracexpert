@@ -11,11 +11,12 @@
 class TScenarioVariableWriteItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 101 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioVariableWriteItem;
+    }
 
     TScenarioVariableWriteItem() : TScenarioItem(tr("Variable: write"), tr("This block allows writing to a variable.")) {
-        addDataInputPort("dataIn");
+        addDataInputPort("dataIn", "", "", "[any]");
 
         m_params = TConfigParam(m_name + " configuration", "", TConfigParam::TType::TDummy, "");
         m_params.addSubParam(TConfigParam("Block name", "Variable: write", TConfigParam::TType::TString, tr("Display name of the block."), false));
@@ -85,13 +86,13 @@ public:
             setState(TState::TError, tr("Block configuration contains errors!"));
         }
         else {
-            setState(TState::TOk);
+            resetState();
         }
 
         return m_params;
     }
 
-    QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
+    QHash<TScenarioItemPort *, QByteArray> executeDirect(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
         // purposefully left blank
         return QHash<TScenarioItemPort *, QByteArray>();
     }

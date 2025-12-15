@@ -1,3 +1,5 @@
+[Back to the top (index)](README.md)
+
 # Ciphers
 
 TraceExpert component *Ciphers* generates intermediate values during encryption/decryption.
@@ -31,7 +33,7 @@ The **Output** parameter can be one of the follows:
 
 1. **Whole block** - The analytical device returns the whole cipher context (size of the block).
 2. **Mth byte** -- The analytical device returns only the selected byte (leftmost byte is 0).
-3. **Mth bit** -- The analytical device returns only the selected bit, as a byte-sized value, i.e. 0x00 or 0x01 (rightmost byte is 0).
+3. **Mth bit** -- The analytical device returns only the selected bit, as a byte-sized value, i.e. 0x00 or 0x01 (rightmost bit is 0).
 
 ### Input
 
@@ -53,6 +55,8 @@ The action fails when an invalid amount of data was previously submitted to the 
 ### Output
 
 After the **Encrypt input data (+ flush streams)** action finishes, the requested intermediate values are available for reading from the **Intermediate values** stream.
+
+![User interface with a widget](images/cipherdevice.png)
 
 ### Example usage 1
 

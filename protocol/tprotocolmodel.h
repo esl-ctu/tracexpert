@@ -1,40 +1,26 @@
 #ifndef TPROTOCOLMODEL_H
 #define TPROTOCOLMODEL_H
 
-#include <QObject>
+#include "../projectunit/tprojectunitmodel.h"
 
-#include "tprotocol.h"
-#include "../tprojectitem.h"
-
+class TProtocol;
 class TProtocolContainer;
 
-class TProtocolModel : public QObject, public TProjectItem {
-    Q_OBJECT
+/*!
+ * \brief The TProtocolModel class represents a model for a Protocol.
+ *
+ * The class represents a model for a Protocol.
+ * It is a model for the Protocol view in the Project view.
+ * It is also a model for the Protocol table view in the Protocol Manager.
+ *
+ */
+class TProtocolModel : public TProjectUnitModel {
 
 public:
     TProtocolModel(TProtocolContainer * parent);
-    TProtocolModel(TProtocol protocol, TProtocolContainer * parent);
+    TProtocolModel(TProtocol * protocol, TProtocolContainer * parent);
 
-    const TProtocol & protocol() const;
-    void setProtocol(const TProtocol & protocol);
-
-    // methods for TProjectItem - to be able to show Protocols in the Project view
-    int childrenCount() const override;
-    TProjectItem * child(int row) const override;
-    QString name() const override;
-    Status status() const override;
-
-    bool toBeSaved() const override;
-    QDomElement save(QDomDocument & document) const override;
-    void load(QDomElement * element);
-
-private:
-    QByteArray saveMessages(const QList<TMessage> & messages) const;
-    QList<TMessage> loadMessages(const QByteArray & array) const;
-
-    TProtocol m_protocol;
+    TProtocol * protocol() const;
 };
-
-
 
 #endif // TPROTOCOLMODEL_H

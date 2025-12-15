@@ -51,6 +51,7 @@ public:
     void computeCorrelations();
 
     size_t getCorrelations(uint8_t * buffer, size_t length, size_t order0);
+    size_t availableBytes(size_t order);
 
     size_t getTypeSize(const QString & dataType);    
 

@@ -100,6 +100,7 @@ void TScenarioGraphicalItem::updateTooltip() {
             break;
         case TScenarioItem::TState::TInfo:
         case TScenarioItem::TState::TRuntimeInfo:
+        case TScenarioItem::TState::TBeingExecuted:
             setBrush(QBrush(QColor::fromRgb(225, 235, 255), Qt::SolidPattern));
             toolTipText.append("<span style=\"color:blue\"><b><i>" + m_scenarioItem->getStateMessage() + "</i></b></span>");
             break;
@@ -230,10 +231,10 @@ QVariant TScenarioGraphicalItem::itemChange(GraphicsItemChange change, const QVa
 
                 qreal dist;
                 if(port->portDirection() == TScenarioItemPort::TItemPortDirection::TInputPort) {
-                    dist = port->scenePos().y() - connection->startItem()->scenePos().y();
+                    dist = port->scenePos().y() - connection->startItemPort()->scenePos().y();
                 }
                 else {
-                    dist = port->scenePos().y() - connection->endItem()->scenePos().y();
+                    dist = port->scenePos().y() - connection->endItemPort()->scenePos().y();
                 }
 
                 if(abs(dist) < minDist) {

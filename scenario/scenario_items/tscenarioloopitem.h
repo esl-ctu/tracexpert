@@ -16,8 +16,9 @@
 class TScenarioLoopItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 50 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioLoopItem;
+    }
 
     TScenarioLoopItem() : TScenarioItem(tr("Loop"), tr("This block represents a loop.")) {
         addFlowInputPort("flowIn");
@@ -84,7 +85,7 @@ public:
         return ok;
     }
 
-    QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
+    QHash<TScenarioItemPort *, QByteArray> executeDirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {
         if(m_numIterationsLeft == 0) {
             m_numIterationsLeft = m_totalIterations;
         }

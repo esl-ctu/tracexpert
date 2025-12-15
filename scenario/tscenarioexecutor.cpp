@@ -5,6 +5,8 @@
 #include "scenario_items/tscenariobasicitems.h"
 #include "scenario_items/tscenariovariablereaditem.h"
 #include "scenario_items/tscenariovariablewriteitem.h"
+#include "tscenarioexecutionexceptions.h"
+
 
 TScenarioExecutor::TScenarioExecutor(TProjectModel * projectModel) {
     m_projectModel = projectModel;
@@ -25,7 +27,7 @@ void TScenarioExecutor::setScenario(TScenario * scenario) {
         }
 
         // gather all variable write items and their dataIn ports
-        if(item->itemClass() == TScenarioVariableWriteItem::TItemClass) {
+        if(item->itemClass() == TScenarioItem::TItemClass::TScenarioVariableWriteItem) {
             QString variableName = ((TScenarioVariableWriteItem*)item)->variableName();
 
             QList<TScenarioItemPort *> ports;
@@ -37,7 +39,7 @@ void TScenarioExecutor::setScenario(TScenario * scenario) {
             variableDataInPorts.insert(variableName, ports);
         }
         // gather all variable read items and their dataOut ports
-        else if(item->itemClass() == TScenarioVariableReadItem::TItemClass) {
+        else if(item->itemClass() == TScenarioItem::TItemClass::TScenarioVariableReadItem) {
             QString variableName = ((TScenarioVariableReadItem*)item)->variableName();
 
             QList<TScenarioItemPort *> ports;
@@ -102,267 +104,302 @@ void TScenarioExecutor::setScenario(TScenario * scenario) {
             m_dataConnectionMap.insert(connection->getSourcePort(), ports);
         }
     }
+}
 
-    m_prepareSuccessful = true;
+bool TScenarioExecutor::prepareScenarioItems() {
+    bool prepareSuccessful = true;
     for(TScenarioItem * item : m_scenario->getItems()) {
         try {
-            connect(item, &TScenarioItem::asyncLog, this, &TScenarioExecutor::log, Qt::BlockingQueuedConnection);
-            connect(item, &TScenarioItem::syncLog, this, &TScenarioExecutor::log);
             item->setProjectModel(m_projectModel);
             item->updateParams(false);
             item->resetState(true);
 
             if(!item->prepare()) {
-                m_prepareSuccessful = false;
-                emit log("Failed to prepare block \"" + item->getName() + "\"!", "red");
+                prepareSuccessful = false;
+                qWarning("Failed to prepare block \"%s\"!", qPrintable(item->getName()));
             }
         }
         catch(...) {
-            m_prepareSuccessful = false;
-            emit log("Failed to prepare block \"" + item->getName() + "\", exception thrown!", "red");
+            prepareSuccessful = false;
+            qWarning("Failed to prepare block \"%s\", exception thrown!", qPrintable(item->getName()));
         }
     }
 
-    if(!m_prepareSuccessful) {
-        for(TScenarioItem * item : m_scenario->getItems()) {
-            disconnect(item, &TScenarioItem::asyncLog, this, &TScenarioExecutor::log);
-            disconnect(item, &TScenarioItem::syncLog, this, &TScenarioExecutor::log);
+    if(!prepareSuccessful) {
+        cleanupScenarioItems();
+    }
+
+    return prepareSuccessful;
+}
+
+void TScenarioExecutor::cleanupScenarioItems() {
+    for(TScenarioItem * item : m_scenario->getItems()) {
+        try {
+            if(!item->cleanup()) {
+                qWarning("Failed to cleanup after block \"%s\"!", qPrintable(item->getName()));
+            }
+        }
+        catch(...) {
+            qWarning("Failed to cleanup after block \"%s\", exception thrown!", qPrintable(item->getName()));
         }
     }
 }
 
-void TScenarioExecutor::haltExecution() {
-    m_isRunning = false;
-
-    for(TScenarioItem * item : m_scenario->getItems()) {
-        try {
-            disconnect(item, nullptr, this, nullptr);
-            if(!item->cleanup()) {
-                emit log("Failed to cleanup block \"" + item->getName() + "\"!", "orange");
-            }
-        }
-        catch(...) {
-            emit log("Failed to cleanup block \"" + item->getName() + "\", exception thrown!", "orange");
-        }
-    }
+void TScenarioExecutor::cleanupScenarioExecutionData() {
+    m_scenarioItemDataInputValues.clear();
 }
 
 void TScenarioExecutor::stop() {
-    m_isSupposedToRun = false;
+    m_stopRequested = true;
 }
 
-void TScenarioExecutor::start() {
-    if(!m_prepareSuccessful) {
-        qWarning("Scenario cannot be executed, prepare step failed.");
-        emit log("Scenario cannot be executed, prepare step failed.", "red");
-        haltExecution();
-        emit scenarioExecutionFinished();
-        return;
-    }
+void TScenarioExecutor::terminate() {
+    m_terminationRequested = true;
+}
+
+void TScenarioExecutor::start(TScenario * scenario) {
 
     if(m_isRunning) {
         qWarning("Scenario execution cannot be started while it is already running.");
-        emit log("Scenario execution cannot be started while it is already running.", "red");
-        haltExecution();
-        emit scenarioExecutionFinished();
         return;
     }
 
-    m_isRunning = true;
-    m_isSupposedToRun = true;
+    setScenario(scenario);
+
+    if(!prepareScenarioItems()) {
+        qWarning("Scenario cannot be executed, prepare step failed.");
+        emit scenarioExecutionFinished();
+        return;
+    }   
+
+    m_stopRequested = false;
+    m_terminationRequested = false;
 
     if(!m_scenario->validate()) {
         if(m_scenario->getState() != TScenario::TState::TOk) {
-            emit log(m_scenario->getStateMessage(), "red");
+            qWarning("Scenario validation result: %s", qPrintable(m_scenario->getStateMessage()));
         }
 
-        qWarning("Failed to execute the scenario - validation failed. Fix scenario errors first.");
-        emit log("Failed to execute the scenario - validation failed. Fix scenario errors first.", "red");
-        haltExecution();
+        qWarning("Scenario cannot be executed, validation failed. Fix scenario errors first.");
+
+        cleanupScenarioItems();
         emit scenarioExecutionFinished();
         return;
     }
 
-    m_scenarioItemDataInputValues.clear();
+    // clean execution data possibly left by a previous run
+    cleanupScenarioExecutionData();
 
     QFutureWatcher<void> * watcher = new QFutureWatcher<void>(this);
-    connect(watcher, &QFutureWatcher<void>::finished, this, &TScenarioExecutor::scenarioExecutionFinished);
     connect(watcher, &QFutureWatcher<void>::finished, watcher, &QFutureWatcher<void>::deleteLater);
-    watcher->setFuture((m_runFuture = QtConcurrent::run([this] {
-        try {
-            executeNonFlowItems();
-            executeFlowItems();
-        }
-        catch(...) {
-            qWarning("An unhandled exception occured during scenario execution, halting!");
-            emit log("An unhandled exception occured during scenario execution, halting!", "red");
+    connect(watcher, &QFutureWatcher<void>::finished, this, [this]() {
+        m_isRunning = false;
+        emit scenarioExecutionFinished();
+    });
 
-            haltExecution();
-            emit scenarioExecutionFinished();
-        }
-    })));
+    m_runFuture = QtConcurrent::run(&TScenarioExecutor::runScenario, this);
+    watcher->setFuture(m_runFuture);
+}
+
+void TScenarioExecutor::runScenario() {
+    m_isRunning = true;
+    qInfo("Scenario execution started.");
+
+    try {
+        executeNonFlowItems();
+        executeFlowItems();
+
+        qInfo("Scenario execution finished successfully.");
+    }
+    catch(ScenarioExecutionException &) {
+        qWarning("Scenario cannot continue execution, halting!");
+    }
+    catch(ScenarioHaltRequestedException &) {
+        qWarning("Scenario stop was requested by the user, halting!");
+    }
+    catch(...) {
+        qWarning("An unhandled exception occured during scenario execution, halting!");
+    }
+
+    try {
+        cleanupScenarioItems();
+    }
+    catch(...) {
+        qWarning("Failed to clean up after scenario!");
+    }
+
+    cleanupScenarioExecutionData();
 }
 
 void TScenarioExecutor::executeNonFlowItems() {
     // find items with no flow input ports (to be executed first), except flow end item...
     for(TScenarioItem * item : m_scenario->getItems()) {
-        if(!m_isSupposedToRun) {
-            qWarning("Scenario stopped during execution!");
-            return;
-        }
+        if(m_stopRequested || m_terminationRequested)
+            throw ScenarioHaltRequestedException();
 
-        if(!item->hasFlowInputPort() && item->itemClass() != TScenarioFlowStartItem::TItemClass) {
-            m_currentItem = item;
-            executeCurrentItem();
+        if(!item->hasFlowInputPort() && item->itemClass() != TScenarioItem::TItemClass::TScenarioFlowStartItem) {
+            executeItem(item);
         }        
     }
-
-    qDebug("Non-flow items execution finished!");
 }
 
-bool TScenarioExecutor::executeCurrentItem() {
-    if(m_currentItem->supportsImmediateExecution()) {
-        QHash<TScenarioItemPort *, QByteArray> outputData;
-        outputData = m_currentItem->executeImmediate(m_scenarioItemDataInputValues.value(m_currentItem));
-        saveOutputData(outputData);
+void TScenarioExecutor::executeItem(TScenarioItem * item) {
+    item->setState(TScenarioItem::TState::TBeingExecuted, "This block is being executed.");
+
+    if(item->supportsDirectExecution()) {
+        executeItemDirectly(item);
     }
     else {
-        m_blockExecutionFinished = false;
-        connect(m_currentItem, &TScenarioItem::executionFinished, this, &TScenarioExecutor::blockExecutionFinished);
-        connect(m_currentItem, &TScenarioItem::executionFinishedWithOutput, this, &TScenarioExecutor::blockExecutionFinishedWithOutput);
-        m_currentItem->execute(m_scenarioItemDataInputValues.value(m_currentItem));
+        executeItemIndirectly(item);
+    }
 
-        qint64 executionStoppedAt = 0;
-        while (!m_blockExecutionFinished) {
-            if(!m_isSupposedToRun) {
-                if(executionStoppedAt > 0) {
-                    if(QDateTime::currentMSecsSinceEpoch() - executionStoppedAt > 5000) {
-                        qWarning("Current process failed to finish in time, halting!");
-                        emit log("Current process failed to finish in time, halting!", "red");
+    if(item->getState() == TScenarioItem::TState::TBeingExecuted) {
+        item->resetState();
+    }
+}
 
-                        haltExecution();
-                        return false;
-                    }
-                }
-                else if(!m_currentItem->stopExecution()) {
-                    qWarning("Scenario was stopped during block execution, halting!");
-                    emit log("Scenario was stopped during block execution, halting!", "red");
+void TScenarioExecutor::executeItemDirectly(TScenarioItem * item) {
+    QHash<TScenarioItemPort *, QByteArray> inputData, outputData;
 
-                    haltExecution();
-                    return false;
-                }
-                else {
-                    qWarning("Scenario was stopped during block execution, waiting for current process to finish!");
-                    emit log("Scenario was stopped during block execution, waiting for current process to finish!", "red");
+    inputData = m_scenarioItemDataInputValues.value(item);
+    outputData = item->executeDirect(inputData);
 
-                    executionStoppedAt = QDateTime::currentMSecsSinceEpoch();
-                }
+    saveOutputData(outputData);
+}
+
+void TScenarioExecutor::executeItemIndirectly(TScenarioItem * item) {
+    bool executionFinished = false;
+
+    QEventLoop loop;
+    connect(item, &TScenarioItem::executionFinished, &loop, &QEventLoop::quit);
+    connect(item, &TScenarioItem::executionFinished, this, [&executionFinished, this](QHash<TScenarioItemPort *, QByteArray> outputData) {
+        saveOutputData(outputData);
+        executionFinished = true;
+    });
+
+    try {
+        item->executeIndirect(m_scenarioItemDataInputValues.value(item));
+    }
+    catch (...) {
+        disconnect(item, &TScenarioItem::executionFinished, nullptr, nullptr);
+
+        qWarning("An exception occurred while waiting for block execution to finish.");
+        throw ScenarioExecutionException();
+    }
+
+    bool cancelCalled = false;
+
+    while (!executionFinished) {
+        QTimer::singleShot(1000, &loop, &QEventLoop::quit);
+        loop.exec();
+
+        if(m_stopRequested && !cancelCalled) {
+            try {
+                item->stopExecution();
+                qWarning() << "An attempt at stopping scenario block execution was made; "
+                            << "to terminate forcefully, press the stop button again.";
             }
-            QCoreApplication::processEvents();
-            QThread::yieldCurrentThread();
+            catch(...) {
+                qWarning() << "An attempt at stopping scenario block execution failed; "
+                           << "to terminate forcefully, press the stop button again.";
+            }
+
+            cancelCalled = true;
+        }
+
+        if(m_terminationRequested) {
+            try {
+                item->terminateExecution();
+                qWarning() << "Scenario block execution was terminated forcefully.";
+            }
+            catch(...) {
+                qWarning() << "An attempt at forceful scenario block execution termination failed; "
+                           << "the program may be in an undefined state.";
+            }
+
+            break;
         }
     }
 
-    return true;
+    disconnect(item, &TScenarioItem::executionFinished, nullptr, nullptr);
 }
 
 void TScenarioExecutor::executeFlowItems() {
     // find the flow start - first item
-    m_currentItem = nullptr;
+    TScenarioItem * firstItem = nullptr;
     for(TScenarioItem * item : m_scenario->getItems()) {
         if(item->getType() == TScenarioItem::TItemAppearance::TFlowStart) {
-            m_currentItem = item;
+            firstItem = item;
             break;
         }
     }
 
-    if(!m_currentItem) {
+    if(!firstItem) {
         qWarning("Failed to execute the scenario - no start block.");
-        emit log("Failed to execute the scenario - no start block.", "red");
-        haltExecution();
-        return;
+        throw ScenarioExecutionException();
     }
 
-    while(true) {
-        if(!m_isSupposedToRun) {
-            qWarning("Scenario stopped during execution!");
-            emit log("Scenario stopped during execution!", "red");
-            haltExecution();
-            return;
-        }
+    TScenarioItem * currentItem = findNextFlowItem(firstItem);
 
-        if(!executeNextFlowItem()) {
+    while(currentItem) {
+        if(m_stopRequested || m_terminationRequested)
+            throw ScenarioHaltRequestedException();
+
+        if(currentItem->getType() == TScenarioItem::TItemAppearance::TFlowEnd) {
+            currentItem->setState(TScenarioItem::TState::TRuntimeInfo, "Execution finished here successfully.");
             break;
         }
-    }
 
-    qDebug("Flow items execution finished!");
+        currentItem->resetState(true);
+        executeItem(currentItem);
+        currentItem = findNextFlowItem(currentItem);
+    }
 }
 
-bool TScenarioExecutor::executeNextFlowItem() {
-    TScenarioItem * previousItem = m_currentItem;
+TScenarioItem * TScenarioExecutor::findNextFlowItem(TScenarioItem * item) {
 
-    TScenarioItemPort * currentItemFlowOutputPort = m_currentItem->getPreferredOutputFlowPort();
+    TScenarioItemPort * currentItemFlowOutputPort = item->getPreferredOutputFlowPort();
     if(!currentItemFlowOutputPort) {
-        currentItemFlowOutputPort = getDefaultOutputFlowPort(m_currentItem);
+        currentItemFlowOutputPort = getDefaultOutputFlowPort(item);
     }
 
     TScenarioItemPort * nextItemFlowInputPort = m_flowConnectionMap.value(currentItemFlowOutputPort);
     if(!nextItemFlowInputPort) {
+        item->setState(
+            TScenarioItem::TState::TRuntimeError,
+            QString("Execution stopped here: unconnected output flow port (%1)!").arg(currentItemFlowOutputPort->getLabelText())
+        );
         qWarning("Failed to execute the scenario - nowhere to go after executed block.");
-        emit log("Failed to execute the scenario - nowhere to go after executed block.", "red");
-        previousItem->setState(TScenarioItem::TState::TRuntimeError, "Execution stopped here: unconnected output flow port!");
-        haltExecution();
-        return false;
+
+        throw ScenarioExecutionException();
     }
 
-    m_currentItem = nextItemFlowInputPort->getParentItem();
-    if(!m_currentItem) {
+    TScenarioItem * nextItem = nextItemFlowInputPort->getParentItem();
+    if(!nextItem) {
+        item->setState(TScenarioItem::TState::TRuntimeError, "Execution stopped here: broken connection on an output flow port!");
         qWarning("Failed to execute the scenario - nowhere to go after executed block.");
-        emit log("Failed to execute the scenario - nowhere to go after executed block.", "red");
-        previousItem->setState(TScenarioItem::TState::TRuntimeError, "Execution stopped here: broken connection on an output flow port!");
-        haltExecution();
-        return false;
+
+        throw ScenarioExecutionException();
     }
 
-    if(m_currentItem->getType() == TScenarioItem::TItemAppearance::TFlowEnd) {
-        m_currentItem->setState(TScenarioItem::TState::TRuntimeInfo, "Execution finished here successfully.");
-        emit log("Scenario executed successfully.", "green");
-        haltExecution();
-        return false;
-    }
-
-    return executeCurrentItem();
-}
-
-void TScenarioExecutor::blockExecutionFinished() {
-    disconnect(m_currentItem, &TScenarioItem::executionFinished, this, &TScenarioExecutor::blockExecutionFinished);
-    disconnect(m_currentItem, &TScenarioItem::executionFinishedWithOutput, this, &TScenarioExecutor::blockExecutionFinishedWithOutput);
-    m_blockExecutionFinished = true;
-}
-
-void TScenarioExecutor::blockExecutionFinishedWithOutput(QHash<TScenarioItemPort *, QByteArray> outputData) {
-    disconnect(m_currentItem, &TScenarioItem::executionFinished, this, &TScenarioExecutor::blockExecutionFinished);
-    disconnect(m_currentItem, &TScenarioItem::executionFinishedWithOutput, this, &TScenarioExecutor::blockExecutionFinishedWithOutput);
-    saveOutputData(outputData);
-    m_blockExecutionFinished = true;
+    return nextItem;
 }
 
 void TScenarioExecutor::saveOutputData(QHash<TScenarioItemPort *, QByteArray> outputData) {
     // figure out where to send the data output values
-    for (auto [sourceScenarioItemPort, value] : outputData.asKeyValueRange()) {
-        if(!m_dataConnectionMap.contains(sourceScenarioItemPort)) {
-            QString portName = sourceScenarioItemPort->getDisplayName().isEmpty() ?
-                                   sourceScenarioItemPort->getName() : sourceScenarioItemPort->getDisplayName();
-            emit log("Failed to pass output data to next block - no connection (" + portName + ").", "orange");
-            m_currentItem->setState(
+    for (auto [sourceItemPort, value] : outputData.asKeyValueRange()) {
+        if(!m_dataConnectionMap.contains(sourceItemPort)) {
+            QString portName = sourceItemPort->getLabelText().isEmpty() ? sourceItemPort->getName() : sourceItemPort->getLabelText();
+            qInfo() << "Output data could not be passed to next block: "
+                    << "unconnected output data port (" << portName << ") in block " << sourceItemPort->getParentItem()->getName() << ".";
+            sourceItemPort->getParentItem()->setState(
                 TScenarioItem::TState::TRuntimeWarning,
-                "Failed to pass data: unconnected output data port (" + portName + ")!"
+                "Output data could not be passed to next block: unconnected output data port (" + portName + ")!"
             );
             continue;
         }
 
-        for(TScenarioItemPort * destinationItemPort : m_dataConnectionMap.value(sourceScenarioItemPort)) {
+        for(TScenarioItemPort * destinationItemPort : m_dataConnectionMap.value(sourceItemPort)) {
             TScenarioItem * destinationItem = destinationItemPort->getParentItem();
 
             QHash<TScenarioItemPort *, QByteArray>  data;

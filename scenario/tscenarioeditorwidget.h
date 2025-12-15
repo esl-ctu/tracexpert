@@ -5,11 +5,11 @@
 #include <QWidget>
 #include <QToolBar>
 
-#include "qtextbrowser.h"
 #include "tscenarioexecutor.h"
 #include "tscenariographicsview.h"
 #include "tscenario.h"
 #include "tscenariocontainer.h"
+#include "../scenario/tscenariomodel.h"
 
 QT_BEGIN_NAMESPACE
 class QAction;
@@ -39,8 +39,6 @@ QT_END_NAMESPACE
  * It has a toolbar with actions for running, stopping and saving the scenario and manipulating the items.
  * It has a toolbox with buttons for inserting different types of items.
  * It has a scene with a view for displaying the scenario.
- * It has a log view for displaying log messages.
- *
  */
 class TScenarioEditorWidget : public QWidget
 {
@@ -50,7 +48,7 @@ public:
     ~TScenarioEditorWidget();
 
 private slots:
-    void buttonGroupClicked(QAbstractButton *button);
+    void itemGroupButtonClicked(QAbstractButton *button);
 
     void runScenario();
     void stopScenario();
@@ -65,15 +63,13 @@ private slots:
     void bringToFront();
     void sendToBack();
 
-    void resetPressedButtons();
+    void checkItemButton(TScenarioItem::TItemClass itemClass);
+    void uncheckItemButton(TScenarioItem::TItemClass itemClass);
 
     void scaleChangedUsingMouseWheel(qreal scale);
     void sceneScaleChangedBySelection(const QString &scale);
 
-
     void lineButtonTriggered();
-
-    void log(const QString & message, const QString & color);
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -86,23 +82,23 @@ private:
     TScenarioContainer * m_scenarioContainer;
 
     void createToolBox();
-    void createToolBoxDrawer(const QString & title, QList<int> itemClassList);
+    void createToolBoxDrawer(const QString & title, QList<TScenarioItem::TItemClass> itemClassList);
 
     void createActions();
     void createToolbars();
     
-    QWidget * createCellWidget(int itemClass);
+    QWidget * createCellWidget(TScenarioItem::TItemClass itemClass);
 
     TScenario * m_runScenario;
     TScenarioScene * m_scene;
     TScenarioGraphicsView * m_view;
 
-    QTextBrowser * m_logView;
-
     TScenarioExecutor * m_scenarioExecutor;
+    bool m_stopRequested;
+    bool m_terminateRequested;
 
     QAction * m_runAction;
-    QAction * m_stopAction;
+    QAction * m_stopAction;    
 
     QAction * m_addAction;
     QAction * m_deleteAction;
@@ -110,17 +106,14 @@ private:
     QAction * m_toFrontAction;
     QAction * m_sendBackAction;
 
-
     QToolBar * m_editToolBar;
     QToolBar * m_pointerToolbar;
 
     QComboBox * m_sceneScaleCombo;
 
     QToolBox * m_toolBox;
-    QButtonGroup * m_buttonGroup;
+    QButtonGroup * itemGroup;
     QButtonGroup * m_pointerTypeGroup;
-
-    int m_insertedItemClass = -1;
 };
 
 #endif // TSCENARIOEDITORWIDGET_H

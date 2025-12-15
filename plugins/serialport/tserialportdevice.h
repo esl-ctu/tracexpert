@@ -6,6 +6,19 @@
 #include <QElapsedTimer>
 #include "tiodevice.h"
 
+#ifdef _WIN32
+
+#include <windows.h>
+
+#else
+
+#include <termios.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+#endif
+
+
 class TSerialPortDevice : public TIODevice {
 
 public:
@@ -29,6 +42,7 @@ public:
 
     virtual size_t writeData(const uint8_t * buffer, size_t len) override;
     virtual size_t readData(uint8_t * buffer, size_t len) override;
+    virtual std::optional<size_t> availableBytes() override;
 
 protected:
 
@@ -37,7 +51,7 @@ protected:
     bool _validatePostInitParamsStructure(TConfigParam & params);
 
     bool m_createdManually;
-    QSerialPort m_port;
+    //QSerialPort m_port;
     QSerialPortInfo m_portInfo;
     QString m_name;
     QString m_info;
@@ -46,6 +60,16 @@ protected:
     qint32 m_readTimeout;
     qint32 m_writeTimeout;
     bool m_initialized;
+
+#ifdef _WIN32
+
+    HANDLE m_osHandle;
+
+#else
+
+    int m_osHandle;
+
+#endif
 
 };
 

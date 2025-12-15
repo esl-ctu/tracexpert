@@ -4,17 +4,18 @@
 #include <QMainWindow>
 #include <QDir>
 
+#include "graphs/tgraph.h"
 #include "tdockmanager.h"
-#include "tprojectmodel.h"
-#include "tprojectview.h"
-#include "tlogwidget.h"
+#include "project/tprojectmodel.h"
+#include "project/tprojectview.h"
+#include "logger/tloghandler.h"
 
 class TMainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit TMainWindow(TLogWidget * logWidget, QWidget * parent = nullptr);
+    explicit TMainWindow(QWidget * parent = nullptr);
     ~TMainWindow();
 
 public slots:
@@ -24,11 +25,13 @@ public slots:
     void createScopeDockWidget(TScopeModel * scope);
     void createAnalDeviceDockWidget(TAnalDeviceModel * IODevice);
 
-    void createProtocolManagerWidget();
-    void openProtocolEditor(const QString & protocolName);
+    void createProtocolManagerDockWidget();
+    void createProtocolEditor(TProtocolModel * protocol);
 
-    void createScenarioManagerWidget();
+    void createScenarioManagerDockWidget();
     void createScenarioEditorDockWidget(TScenarioModel * scenario);
+
+    void createGraphDockWidget(TGraph * graph);
 
 private slots:
     void showDeviceWizard();
@@ -37,14 +40,20 @@ private slots:
     void openProject();
     void saveProject(bool saveAs = false);
     void saveProjectAs();
-    void closeProject();
+    bool closeProject();
+
+    void showHelp();
+    void showLicense();
+    void showContributors();
+    void showAbout();
 
 private:
     void createMenus();
     void createActions();
 
     void createWelcome();
-    void createLog();
+    void createLog(TLogWidget * logWidget);
+    void createStatusBar(TLogLineWidget * logLineWidget);
 
     void readSettings();
     void writeSettings();
@@ -56,8 +65,16 @@ private:
     QAction * m_saveProjectAction;
     QAction * m_saveProjectAsAction;
     QAction * m_closeProjectAction;
+    QAction * m_exitAction;
 
     QAction * m_openDeviceAction;
+    QAction * m_openProtocolsAction;
+    QAction * m_openScenariosAction;
+
+    QAction * m_helpAction;
+    QAction * m_licenseAction;
+    QAction * m_contributorsAction;
+    QAction * m_aboutAction;
 
     QMenu * m_viewMenu;
     
@@ -67,12 +84,13 @@ private:
 
     TDockManager * m_dockManager;
 
-    TLogWidget * m_logWidget;
+    TDockWidget * m_logDockWidget;
     TDockWidget * m_welcomeDockWidget;
     TDockWidget * m_projectDockWidget;
     TDockWidget * m_protocolManagerDockWidget;
     TDockWidget * m_scenarioManagerDockWidget;
     QList<TDockWidget *> m_scenarioEditorDockWidgets;
+    QList<TDockWidget *> m_graphDockWidgets;
 
     QString m_projectFileName;
     QDir m_projectDirectory;

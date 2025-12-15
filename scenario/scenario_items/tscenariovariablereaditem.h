@@ -11,11 +11,12 @@
 class TScenarioVariableReadItem : public TScenarioItem {
 
 public:
-    enum { TItemClass = 100 };
-    int itemClass() const override { return TItemClass; }
+    TItemClass itemClass() const override {
+        return TItemClass::TScenarioVariableReadItem;
+    }
 
     TScenarioVariableReadItem() : TScenarioItem(tr("Variable: read"), tr("This block allows reading of a variable.")) {
-        addDataOutputPort("dataOut");
+        addDataOutputPort("dataOut", "", "", "[original data type]");
 
         m_params = TConfigParam(m_name + " configuration", "", TConfigParam::TType::TDummy, "");
         m_params.addSubParam(TConfigParam("Block name", "Variable: read", TConfigParam::TType::TString, tr("Display name of the block."), false));
@@ -45,7 +46,7 @@ public:
         return true;
     }
 
-    bool validateParamsStructure(TConfigParam params) {
+    bool validateParamsStructure(TConfigParam params) override {
         bool iok = false;
 
         params.getSubParamByName("Block name", &iok);
@@ -85,13 +86,13 @@ public:
             setState(TState::TError, tr("Block configuration contains errors!"));
         }
         else {
-            setState(TState::TOk);
+            resetState();
         }
 
         return m_params;
     }
 
-    QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
+    QHash<TScenarioItemPort *, QByteArray> executeDirect(const QHash<TScenarioItemPort *, QByteArray> & dataInputValues) override {
         // purposefully left blank
         return QHash<TScenarioItemPort *, QByteArray>();
     }

@@ -298,12 +298,16 @@ size_t TFileDevice::readData(uint8_t * buffer, size_t len) {
     qsizetype readLen;
     readLen = m_file.read((char *) buffer, len);
 
-    if(readLen != len) {
+    /*if(readLen != len) {
         qWarning("Failed to read as much data as requested from the file.");
-    }
+    }*/
 
     m_postInitParams.getSubParamByName("Seek to position")->setValue(m_file.pos());
 
     return readLen < 0 ? 0 : readLen;
 
+}
+
+std::optional<size_t> TFileDevice::availableBytes(){
+    return m_file.size() - m_file.pos();
 }

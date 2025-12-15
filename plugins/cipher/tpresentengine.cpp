@@ -131,7 +131,7 @@ void TPRESENTEngine::init(bool *ok) {
     m_analOutputStreams.append(new TCipherOutputStream((m_operation == 0) ? "Plaintext" : "Ciphertext", "Stream of input data", [=](const uint8_t * buffer, size_t length){ return addData(buffer, length); }));
     m_analOutputStreams.append(new TCipherOutputStream("Cipher key", "Stream of input data", [=](const uint8_t * buffer, size_t length){ return addKeyData(buffer, length); }));
 
-    m_analInputStreams.append(new TCipherInputStream("Intermediate values", "Stream of output data as selected in configuration", [=](uint8_t * buffer, size_t length){ return getIntermediates(buffer, length); }));
+    m_analInputStreams.append(new TCipherInputStream("Intermediate values", "Stream of output data as selected in configuration", [=](uint8_t * buffer, size_t length){ return getIntermediates(buffer, length); }, [=](){ return availableBytes(); }));
 
 
     if (ok != nullptr) *ok = true;
@@ -312,6 +312,8 @@ void TPRESENTEngine::reset() {
     m_intermediates.clear();
     m_position = 0;
 
+    qInfo("All previously submitted or computed (unread) data have been erased.");
+
     // TODO clear key
 
 }
@@ -324,25 +326,26 @@ size_t TPRESENTEngine::getIntermediates(uint8_t * buffer, size_t length){
         buffer[sent] = m_intermediates[m_position];
     }
 
-    /*if(m_position == m_intermediates.size()){
-        m_intermediates.clear();
-        m_position = m_intermediates.length();
-    }*/
-
     return sent;
 
+}
+
+size_t TPRESENTEngine::availableBytes(){
+    return m_intermediates.size() - m_position;
 }
 
 void TPRESENTEngine::loadKey(){
 
     if(m_keyData.length() != m_keysizeB){
-        qCritical("Key buffer does not contain a valid amount of bytes (10 B for PRESENT-80, 16 B for PRESENT-128)");
+        qCritical("Key buffer does not contain a valid amount of bytes (10 B for PRESENT-80, 16 B for PRESENT-128). Consider running the Reset action.");
         return;
     }
 
     for(int i = 0; i < m_keysizeB; i++){
         m_key[i] = m_keyData[i];
     }
+
+    qInfo(QString("The cipher key (%1 bytes) was succesfully set.").arg(m_keysizeB).toLatin1());
 
     m_keyData.clear();
 
@@ -360,6 +363,8 @@ void TPRESENTEngine::computeIntermediates(){
     m_position = m_intermediates.length();
 
     size_t blocksN = m_data.length() / 8;
+
+    qInfo(QString("Unread previously generated data were erased. Now processing %1 bytes of data (%2 cipher blocks).").arg(m_data.length()).arg(blocksN).toLatin1());
 
     uint8_t PRESENTOut[8];
 
@@ -393,5 +398,7 @@ void TPRESENTEngine::computeIntermediates(){
     }
 
     m_data.clear();
+
+    qInfo(QString("Generated %1 bytes of data, now available for reading.").arg(m_intermediates.length()).toLatin1());
 
 }

@@ -54,8 +54,9 @@ public slots:
     void setInsertItemMode(TScenarioGraphicalItem * insertedBlockInstance);
 
 signals:
-    void itemInserted(TScenarioGraphicalItem * item);
-    void itemInsertCanceled();
+    void itemInserted(TScenarioItem::TItemClass itemClass);
+    void itemInsertStarted(TScenarioItem::TItemClass itemClass);
+    void itemInsertCancelled(TScenarioItem::TItemClass itemClass);
     void pointerToolChanged(TScenarioPointerTool tool);
 
 protected:
@@ -73,8 +74,8 @@ private:
     TScenario * m_scenario;
     TProjectModel * m_projectModel;
 
-    void cancelInsertMode();
-    TScenarioGraphicalItem * m_insertedBlockInstance = nullptr;
+    void cleanupAfterCurrentTool();
+    TScenarioGraphicalItem * m_insertedItemInstance = nullptr;
 
     // methods for line (aka possible connection) validity evaluation
     bool isLineValidArrow() const;

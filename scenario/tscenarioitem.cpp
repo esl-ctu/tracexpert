@@ -9,21 +9,23 @@
 #include "scenario_items/tscenariobasicitems.h"
 #include "scenario_items/tscenarioconstantvalueitem.h"
 #include "scenario_items/tscenariodelayitem.h"
+#include "scenario_items/tscenariographwidgetitem.h"
 #include "scenario_items/tscenarioiodevicereaditem.h"
 #include "scenario_items/tscenarioiodevicewriteitem.h"
 #include "scenario_items/tscenariologitem.h"
 #include "scenario_items/tscenarioloopitem.h"
 #include "scenario_items/tscenariooutputfileitem.h"
-#include "scenario_items/tscenariorandomstringitem.h"
 #include "scenario_items/tscenarioscopesingleitem.h"
 #include "scenario_items/tscenarioscopestartitem.h"
 #include "scenario_items/tscenarioscopestopitem.h"
 #include "scenario_items/tscenarioprotocolencodeitem.h"
-#include "scenario_items/tscenariorandomstringitem.h"
 #include "scenario_items/tscenariovariablereaditem.h"
 #include "scenario_items/tscenariovariablewriteitem.h"
 #include "scenario_items/tscenarioscriptitem.h"
-#include "../tprojectmodel.h"
+#include "../project/tprojectmodel.h"
+#include "scenario_items/tscenarioanaldevicereaditem.h"
+#include "scenario_items/tscenarioanaldevicewriteitem.h"
+#include "scenario_items/tscenarioanaldeviceactionitem.h"
 #include "tscenarioitem.h"
 
 #include "tconfigparam.h"
@@ -101,50 +103,55 @@ TScenarioItem * TScenarioItem::copy() const {
     return new TScenarioItem(*this);
 }
 
-TScenarioItem * TScenarioItem::createScenarioItemByClass(int itemClass) {
+TScenarioItem * TScenarioItem::createScenarioItemByClass(TScenarioItem::TItemClass itemClass) {
     switch(itemClass) {
-        case TScenarioProtocolEncodeItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioProtocolEncodeItem:
             return new TScenarioProtocolEncodeItem();
-        case TScenarioDelayItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioDelayItem:
             return new TScenarioDelayItem();
-        case TScenarioConstantValueItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioConstantValueItem:
             return new TScenarioConstantValueItem();
-        case TScenarioIODeviceReadItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioIODeviceReadItem:
             return new TScenarioIODeviceReadItem();
-        case TScenarioIODeviceWriteItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioIODeviceWriteItem:
             return new TScenarioIODeviceWriteItem();
-        case TScenarioRandomStringItem::TItemClass:
-            return new TScenarioRandomStringItem();
-        case TScenarioLogItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioLogItem:
             return new TScenarioLogItem();
-        case TScenarioFlowStartItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioFlowStartItem:
             return new TScenarioFlowStartItem();
-        case TScenarioFlowEndItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioFlowEndItem:
             return new TScenarioFlowEndItem();
-        case TScenarioFlowMergeItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioFlowMergeItem:
             return new TScenarioFlowMergeItem();
-        case TScenarioConditionItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioConditionItem:
             return new TScenarioConditionItem();
-        case TScenarioLoopItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioLoopItem:
             return new TScenarioLoopItem();
-        case TScenarioScopeSingleItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioScopeSingleItem:
             return new TScenarioScopeSingleItem();
-        case TScenarioScopeStartItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioScopeStartItem:
             return new TScenarioScopeStartItem();
-        case TScenarioScopeStopItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioScopeStopItem:
             return new TScenarioScopeStopItem();
-        case TScenarioOutputFileItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioOutputFileItem:
             return new TScenarioOutputFileItem();
-        case TScenarioVariableReadItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioVariableReadItem:
             return new TScenarioVariableReadItem();
-        case TScenarioVariableWriteItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioVariableWriteItem:
             return new TScenarioVariableWriteItem();
-        case TScenarioScriptItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioScriptItem:
             return new TScenarioScriptItem();
-        case TScenarioItem::TItemClass:
+        case TScenarioItem::TItemClass::TScenarioAnalDeviceReadItem:
+            return new TScenarioAnalDeviceReadItem();
+        case TScenarioItem::TItemClass::TScenarioAnalDeviceWriteItem:
+            return new TScenarioAnalDeviceWriteItem();
+        case TScenarioItem::TItemClass::TScenarioAnalDeviceActionItem:
+            return new TScenarioAnalDeviceActionItem();
+        case TScenarioItem::TItemClass::TScenarioGraphWidgetItem:
+            return new TScenarioCreateGraphItem();
+        case TScenarioItem::TItemClass::TScenarioItem:
             return new TScenarioItem();
         default:
-            qWarning("Failed to instantiate scenario item: unknown item class");
             return nullptr;
     }
 }
@@ -212,19 +219,24 @@ const QString & TScenarioItem::getStateMessage() const {
 }
 
 void TScenarioItem::setState(TState state){
-    m_state = state;
-    emit stateChanged();
+    if(state >= m_state) {
+        m_state = state;
+        emit stateChanged();
+    }
 }
 
 void TScenarioItem::setState(TState state, const QString &message){
-    m_state = state;
-    m_stateMessage = message;
-    emit stateChanged();
+    if(state >= m_state) {
+        m_state = state;
+        m_stateMessage = message;
+        emit stateChanged();
+    }
 }
 
 void TScenarioItem::resetState(bool resetOnlyRuntime){
     if(resetOnlyRuntime) {
-        if( m_state != TState::TRuntimeInfo &&
+        if( m_state != TState::TBeingExecuted &&
+            m_state != TState::TRuntimeInfo &&
             m_state != TState::TRuntimeWarning &&
             m_state != TState::TRuntimeError)
         {
@@ -283,7 +295,7 @@ int TScenarioItem::getItemPortSideOrderByName(const QString & name) {
 }
 
 
-void TScenarioItem::addFlowInputPort(const QString & name, const QString & displayName, const QString & description) {
+void TScenarioItem::addFlowInputPort(const QString & name, const QString & labelText, const QString & description) {
     if(!verifyPortNameUnique(name)) {
         return;
     }
@@ -292,12 +304,12 @@ void TScenarioItem::addFlowInputPort(const QString & name, const QString & displ
         new TScenarioItemPort(name,
                               TScenarioItemPort::TItemPortType::TFlowPort,
                               TScenarioItemPort::TItemPortDirection::TInputPort,
-                              this, displayName, description)
+                              this, labelText, description)
         );
     sortItemPorts();
 }
 
-void TScenarioItem::addFlowOutputPort(const QString & name, const QString & displayName, const QString & description) {
+void TScenarioItem::addFlowOutputPort(const QString & name, const QString & labelText, const QString & description) {
     if(!verifyPortNameUnique(name)) {
         return;
     }
@@ -306,12 +318,12 @@ void TScenarioItem::addFlowOutputPort(const QString & name, const QString & disp
         new TScenarioItemPort(name,
                               TScenarioItemPort::TItemPortType::TFlowPort,
                               TScenarioItemPort::TItemPortDirection::TOutputPort,
-                              this, displayName, description)
+                              this, labelText, description)
         );
     sortItemPorts();
 }
 
-void TScenarioItem::addDataInputPort(const QString & name, const QString & displayName, const QString & description) {
+void TScenarioItem::addDataInputPort(const QString & name, const QString & labelText, const QString & description, const QString & dataTypeHint) {
     if(!verifyPortNameUnique(name)) {
         return;
     }
@@ -320,12 +332,12 @@ void TScenarioItem::addDataInputPort(const QString & name, const QString & displ
         new TScenarioItemPort(name,
                               TScenarioItemPort::TItemPortType::TDataPort,
                               TScenarioItemPort::TItemPortDirection::TInputPort,
-                              this, displayName, description)
+                              this, labelText, description, dataTypeHint)
         );
     sortItemPorts();
 }
 
-void TScenarioItem::addDataOutputPort(const QString & name, const QString & displayName, const QString & description) {
+void TScenarioItem::addDataOutputPort(const QString & name, const QString & labelText, const QString & description, const QString & dataTypeHint) {
     if(!verifyPortNameUnique(name)) {
         return;
     }
@@ -334,12 +346,12 @@ void TScenarioItem::addDataOutputPort(const QString & name, const QString & disp
         new TScenarioItemPort(name,
                               TScenarioItemPort::TItemPortType::TDataPort,
                               TScenarioItemPort::TItemPortDirection::TOutputPort,
-                              this, displayName, description)
+                              this, labelText, description, dataTypeHint)
         );
     sortItemPorts();
 }
 
-void TScenarioItem::addConnectionInputPort(const QString & name, const QString & displayName, const QString & description) {
+void TScenarioItem::addConnectionInputPort(const QString & name, const QString & labelText, const QString & description) {
     if(!verifyPortNameUnique(name)) {
         return;
     }
@@ -348,12 +360,12 @@ void TScenarioItem::addConnectionInputPort(const QString & name, const QString &
         new TScenarioItemPort(name,
                               TScenarioItemPort::TItemPortType::TConnectionPort,
                               TScenarioItemPort::TItemPortDirection::TInputPort,
-                              this, displayName, description)
+                              this, labelText, description)
         );
     sortItemPorts();
 }
 
-void TScenarioItem::addConnectionOutputPort(const QString & name, const QString & displayName, const QString & description) {
+void TScenarioItem::addConnectionOutputPort(const QString & name, const QString & labelText, const QString & description) {
     if(!verifyPortNameUnique(name)) {
         return;
     }
@@ -362,21 +374,18 @@ void TScenarioItem::addConnectionOutputPort(const QString & name, const QString 
         new TScenarioItemPort(name,
                               TScenarioItemPort::TItemPortType::TConnectionPort,
                               TScenarioItemPort::TItemPortDirection::TOutputPort,
-                              this, displayName, description)
+                              this, labelText, description)
         );
     sortItemPorts();
 }
 
 void TScenarioItem::removePort(const QString & name) {
-    QList<TScenarioItemPort *>::iterator it = m_itemPorts.begin();
-    while (it != m_itemPorts.end()) {
-        if ((*it)->getName() == name) {
-            const TScenarioItemPort * port = *it;
-            it = m_itemPorts.erase(it);
+    QMutableListIterator<TScenarioItemPort *> it(m_itemPorts);
+    while (it.hasNext()) {
+        TScenarioItemPort *port = it.next();
+        if (port->getName() == name) {
+            it.remove();
             delete port;
-        }
-        else {
-            ++it;
         }
     }
 
@@ -435,8 +444,8 @@ bool TScenarioItem::prepare() {
     return true;
 }
 
-QHash<TScenarioItemPort *, QByteArray> TScenarioItem::executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & inputData) {
-    if(!supportsImmediateExecution()) {
+QHash<TScenarioItemPort *, QByteArray> TScenarioItem::executeDirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) {
+    if(!supportsDirectExecution()) {
         qWarning("Scenario item was executed using the wrong method!");
     }
 
@@ -444,8 +453,8 @@ QHash<TScenarioItemPort *, QByteArray> TScenarioItem::executeImmediate(const QHa
     return QHash<TScenarioItemPort *, QByteArray>();
 }
 
-void TScenarioItem::execute(const QHash<TScenarioItemPort *, QByteArray> & inputData) {
-    if(supportsImmediateExecution()) {
+void TScenarioItem::executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) {
+    if(supportsDirectExecution()) {
         qWarning("Scenario item was executed using the wrong method!");
     }
 
@@ -453,9 +462,24 @@ void TScenarioItem::execute(const QHash<TScenarioItemPort *, QByteArray> & input
     emit executionFinished();
 }
 
-bool TScenarioItem::stopExecution() {
-    return false;
-}
+/**
+ * This method is meant to abort execution,
+ * meaning it gives an opportunity to the item to cancel its execution gracefully.
+ *
+ * IMPLEMENTATION NOTE:
+ * The ScenarioExecutor still *expects to receive the executionFinished signal* after this method is called.
+ * Indicate that cancelling was successful by emitting the signal!
+ */
+void TScenarioItem::stopExecution() { }
+
+/**
+ * This method is meant to terminate execution forcefully.
+ * There is no opportunity to take time executing this method.
+ *
+ * IMPLEMENTATION NOTE:
+ * The ScenarioExecutor does not expect the executionFinished signal after this method is called.
+ */
+void TScenarioItem::terminateExecution() { }
 
 TScenarioItemPort * TScenarioItem::getPreferredOutputFlowPort() {
     return getItemPortByName(m_preferredOutputFlowPortName);
@@ -469,7 +493,7 @@ void TScenarioItem::setProjectModel(TProjectModel * projectModel) {
     m_projectModel = projectModel;
 }
 
-bool TScenarioItem::supportsImmediateExecution() const {
+bool TScenarioItem::supportsDirectExecution() const {
     return true;
 }
 
@@ -485,13 +509,22 @@ void TScenarioItem::setConfigWindowSize(QSize value) {
     m_configWindowSize = value;
 }
 
-void TScenarioItem::log(const QString & message, const QString & color) {
-    QString prefixedMessage = QString("[%1] %2").arg(m_title.isEmpty() ? m_name : m_title, message);
+void TScenarioItem::log(const QString & message, TLogLevel logLevel) {
+    QString prefixedMessage = QString("[%1] %2").arg(m_title.isEmpty() ? m_name : m_title).arg(message);
 
-    if (QObject().thread() != thread()) {
-        // BlockingQueuedConnection  would dead-lock if in same thread
-        emit asyncLog(prefixedMessage, color);
-    } else {
-        emit syncLog(prefixedMessage, color);
+    switch(logLevel) {
+        case TLogLevel::TError:
+        case TLogLevel::TWarning:
+            qWarning().noquote() << prefixedMessage;
+            break;
+        case TLogLevel::TInfo:
+        case TLogLevel::TSuccess:
+        default:
+            qInfo().noquote() << prefixedMessage;
+            break;
     }
+}
+
+bool TScenarioItem::validateParamsStructure(TConfigParam params) {
+    return true;
 }

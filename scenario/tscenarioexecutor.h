@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QFuture>
 
-#include "../tprojectmodel.h"
+#include "../project/tprojectmodel.h"
 #include "tscenario.h"
 
 /*!
@@ -20,39 +20,40 @@ public:
     TScenarioExecutor(TProjectModel * projectModel);
     ~TScenarioExecutor();
 
-    void setScenario(TScenario * scenario);
-
-    void start();
+    void start(TScenario * scenario);
     void stop();
-
-public slots:
-    void blockExecutionFinished();
-    void blockExecutionFinishedWithOutput(QHash<TScenarioItemPort *, QByteArray> outputData);
+    void terminate();
 
 signals:
     void scenarioExecutionFinished();
-    void log(const QString & message, const QString & color = "black");
 
-private:
+private:    
+    void setScenario(TScenario * scenario);
+    bool prepareScenarioItems();
+
+    void cleanupScenarioItems();
+    void cleanupScenarioExecutionData();
+
     QFuture<void> m_runFuture;
+    void runScenario();
 
     void executeNonFlowItems();
     void executeFlowItems();
 
-    bool executeNextFlowItem();
+    TScenarioItem * findNextFlowItem(TScenarioItem * currentItem);
 
-    bool executeCurrentItem();
-
-    void haltExecution();
+    void executeItem(TScenarioItem * item);
+    void executeItemDirectly(TScenarioItem * item);
+    void executeItemIndirectly(TScenarioItem * item);
 
     void saveOutputData(QHash<TScenarioItemPort *, QByteArray> outputData);
-    bool m_blockExecutionFinished;
 
     TScenarioItemPort * getDefaultOutputFlowPort(TScenarioItem * item);
 
-    bool m_prepareSuccessful = false;
     bool m_isRunning = false;
-    std::atomic<bool> m_isSupposedToRun = false;
+    std::atomic<bool> m_stopRequested = false;
+    std::atomic<bool> m_terminationRequested = false;
+
 
     TScenario * m_scenario = nullptr;
     TProjectModel * m_projectModel = nullptr;
@@ -60,8 +61,6 @@ private:
     QHash<TScenarioItem *, QHash<TScenarioItemPort *, QByteArray>> m_scenarioItemDataInputValues;
     QHash<TScenarioItemPort *, TScenarioItemPort *> m_flowConnectionMap;
     QHash<TScenarioItemPort *, QList<TScenarioItemPort *>> m_dataConnectionMap;
-
-    TScenarioItem * m_currentItem;
 };
 
 #endif // TSCENARIOEXECUTOR_H

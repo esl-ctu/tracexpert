@@ -11,10 +11,10 @@
 #include <qsize.h>
 
 #include "tconfigparam.h"
-#include "../tprojectmodel.h"
+#include "../project/tprojectmodel.h"
 #include "tscenarioitemport.h"
 
-#define TSCENARIOITEMVER "cz.cvut.fit.TraceXpert.TScenarioItem/0.1"
+#define TSCENARIOITEMVER "cz.cvut.fit.TraceXpert.TScenarioItem/0.2"
 
 /*!
  * \brief The TScenario class represents a scenario item (called block in the GUI).
@@ -31,8 +31,38 @@ class TScenarioItem : public QObject {
     Q_OBJECT
 
 public:
-    enum { TItemClass = 0 };
-    virtual int itemClass() const { return TItemClass; }
+    enum class TLogLevel {
+        TInfo,
+        TSuccess,
+        TWarning,
+        TError
+    };
+
+    enum class TItemClass {
+        TScenarioItem = 0,
+        TScenarioFlowStartItem = 1,
+        TScenarioFlowEndItem = 2,
+        TScenarioFlowMergeItem = 3,
+        TScenarioConditionItem = 4,
+        TScenarioLogItem = 10,
+        TScenarioIODeviceReadItem = 31,
+        TScenarioIODeviceWriteItem = 32,
+        TScenarioConstantValueItem = 40,
+        TScenarioLoopItem = 50,
+        TScenarioScopeSingleItem = 61,
+        TScenarioScopeStartItem = 62,
+        TScenarioScopeStopItem = 63,
+        TScenarioDelayItem = 70,
+        TScenarioProtocolEncodeItem = 80,
+        TScenarioOutputFileItem = 90,
+        TScenarioVariableReadItem = 100,
+        TScenarioVariableWriteItem = 101,
+        TScenarioScriptItem = 110,
+        TScenarioAnalDeviceReadItem = 131,
+        TScenarioAnalDeviceWriteItem = 132,
+        TScenarioAnalDeviceActionItem = 133,
+        TScenarioGraphWidgetItem = 140
+    };
 
     enum class TItemAppearance {
         TDefault,
@@ -48,6 +78,7 @@ public:
         TInfo = (int)TConfigParam::TState::TInfo,
         TWarning = (int)TConfigParam::TState::TWarning,
         TError = (int)TConfigParam::TState::TError,
+        TBeingExecuted,
         TRuntimeInfo,
         TRuntimeWarning,
         TRuntimeError
@@ -57,9 +88,11 @@ public:
     TScenarioItem(const QString &name, const QString &description);
     virtual ~TScenarioItem();
 
+    virtual TItemClass itemClass() const { return TItemClass::TScenarioItem; }
+
     TScenarioItem(const TScenarioItem &x);
     TScenarioItem & operator=(const TScenarioItem &x);
-    bool operator==(const TScenarioItem * x) const;
+    bool operator==(const TScenarioItem *x) const;
     bool operator==(const TScenarioItem &x) const;
 
     friend QDataStream & operator<<(QDataStream &out, const TScenarioItem &x) {
@@ -112,14 +145,15 @@ public:
             in >> x->m_configWindowSize;
 
         } else {
-            qCritical("Failed deserializing TScenarioItem: Wrong version or wrong data.");
+            qCritical("Failed deserializing scenario item: Wrong version or wrong data.");
+            throw tr("Failed deserializing scenario item: Wrong version or wrong data.");
         }
         return in;
     }
 
     virtual TScenarioItem * copy() const;
 
-    static TScenarioItem * createScenarioItemByClass(int itemClass);
+    static TScenarioItem * createScenarioItemByClass(TScenarioItem::TItemClass itemClass);
 
     const QString & getName() const;
     const QString & getDescription() const;
@@ -155,13 +189,19 @@ public:
     // methods for execution purposes
     void setProjectModel(TProjectModel * projectModel);
 
-    virtual bool prepare();
-    virtual bool supportsImmediateExecution() const;
-    virtual QHash<TScenarioItemPort *, QByteArray> executeImmediate(const QHash<TScenarioItemPort *, QByteArray> & inputData);
-    virtual void execute(const QHash<TScenarioItemPort *, QByteArray> & inputData);
-    virtual bool stopExecution();
-    virtual TScenarioItemPort * getPreferredOutputFlowPort();
-    virtual bool cleanup();
+    virtual bool                                    prepare();
+    virtual bool                                    cleanup();
+
+    virtual bool                                    supportsDirectExecution() const;
+    virtual QHash<TScenarioItemPort *, QByteArray>  executeDirect(const QHash<TScenarioItemPort *, QByteArray> & inputData);
+
+    virtual void                                    executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData);
+
+    virtual void                                    stopExecution();
+    virtual void                                    terminateExecution();
+
+    virtual TScenarioItemPort *                     getPreferredOutputFlowPort();
+
 
     virtual const QString getIconResourcePath() const;
 
@@ -174,16 +214,15 @@ signals:
     void portsChanged();
 
     // signals for execution purposes
-    void executionFinished();
-    void executionFinishedWithOutput(QHash<TScenarioItemPort *, QByteArray> outputData);
-    void asyncLog(const QString & message, const QString & color = "black");
-    void syncLog(const QString & message, const QString & color = "black");
+    void executionFinished(QHash<TScenarioItemPort *, QByteArray> outputData = {});
 
 protected:
-    void addFlowInputPort (const QString & name, const QString & displayName = QString(), const QString & description = QString());
-    void addFlowOutputPort(const QString & name, const QString & displayName = QString(), const QString & description = QString());
-    void addDataInputPort (const QString & name, const QString & displayName = QString(), const QString & description = QString());
-    void addDataOutputPort(const QString & name, const QString & displayName = QString(), const QString & description = QString());
+    virtual bool validateParamsStructure(TConfigParam params);
+
+    void addFlowInputPort       (const QString & name, const QString & displayName = QString(), const QString & description = QString());
+    void addFlowOutputPort      (const QString & name, const QString & displayName = QString(), const QString & description = QString());
+    void addDataInputPort       (const QString & name, const QString & displayName = QString(), const QString & description = QString(), const QString & dataTypeHint = QString());
+    void addDataOutputPort      (const QString & name, const QString & displayName = QString(), const QString & description = QString(), const QString & dataTypeHint = QString());
     void addConnectionInputPort (const QString & name, const QString & displayName = QString(), const QString & description = QString());
     void addConnectionOutputPort(const QString & name, const QString & displayName = QString(), const QString & description = QString());
 
@@ -193,8 +232,7 @@ protected:
 
     static bool isParamValueDifferent(TConfigParam & paramsA, TConfigParam & paramsB, QString parameterName);
 
-    // for execution purposes
-    void log(const QString & message, const QString & color = "black");
+    void log(const QString & message, TLogLevel logLevel = TLogLevel::TInfo);
 
     TProjectModel * m_projectModel;
     QString m_preferredOutputFlowPortName;
