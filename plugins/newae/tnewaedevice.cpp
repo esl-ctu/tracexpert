@@ -636,3 +636,7 @@ size_t TnewaeDevice::readData(uint8_t * buffer, size_t len){
 
     return toCopy;
 }
+
+std::optional<size_t> TnewaeDevice::availableBytes(){
+    return std::nullopt;
+}

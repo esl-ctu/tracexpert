@@ -6,6 +6,8 @@
 #include "../scenario/tscenariocontainer.h"
 #include "../pluginunit/component/tcomponentcontainer.h"
 #include "../protocol/tprotocolcontainer.h"
+#include "../protocol/tprotocolmodel.h"
+#include "../scenario/tscenariomodel.h"
 
 class TProjectModel : public QAbstractItemModel, public TProjectItem
 {
@@ -65,6 +67,12 @@ signals:
 
     void analDeviceInitialized(TAnalDeviceModel * analDevice);
     void analDeviceDeinitialized(TAnalDeviceModel * analDevice);
+
+    void protocolManagerRequested();
+    void protocolEditorRequested(TProtocolModel * protocol);
+
+    void scenarioManagerRequested();
+    void scenarioEditorRequested(TScenarioModel * scenario);
 };
 
 #endif // TPROJECTMODEL_H

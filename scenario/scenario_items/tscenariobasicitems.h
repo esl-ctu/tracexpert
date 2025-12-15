@@ -141,7 +141,7 @@ public:
     TScenarioConditionItem() : TScenarioItem(tr("Condition"), tr("This block directs flow based on a set condition.")) {
         setType(TItemAppearance::TCondition);
         addFlowInputPort("flowIn");
-        addDataInputPort("predicateIn", "", tr("Data passed through this port will be evaluated to be true/false."));
+        addDataInputPort("predicateIn", "", tr("Data passed through this port will be evaluated to be true/false."), "[any]");
         addFlowOutputPort("flowOutTrue", "", tr("If the input is evaluated to be TRUE, the flow will continue through this port."));
         addFlowOutputPort("flowOutFalse", "", tr("If the input is evaluated to be FALSE, the flow will continue through this port."));
     }

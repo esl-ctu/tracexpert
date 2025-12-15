@@ -88,6 +88,54 @@ bool TDialog::renameDeviceDialog(QWidget * parent, QString &name, QString &info)
     return (addDeviceDialog->result() == QDialog::Accepted && nameEdit->text() != QString(""));
 }
 
+bool TDialog::exportImageDimensionsDialog(QWidget * parent, uint &width, uint &height)
+{
+    QDialog * addDeviceDialog = new QDialog(parent);
+    QLabel * widthLabel = new QLabel(parent->tr("Width"));
+    QLabel * heightLabel = new QLabel(parent->tr("Height"));
+
+    QLineEdit * widthEdit = new QLineEdit(QString::number(width));
+    QLineEdit * heightEdit = new QLineEdit(QString::number(height));
+
+    QGridLayout * dialogGridLayout = new QGridLayout;
+    dialogGridLayout->addWidget(widthLabel, 0, 0);
+    dialogGridLayout->addWidget(widthEdit, 0, 1);
+    dialogGridLayout->addWidget(heightLabel, 1, 0);
+    dialogGridLayout->addWidget(heightEdit, 1, 1);
+
+    QDialogButtonBox * buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
+    buttonBox->button(QDialogButtonBox::Ok)->setText("Continue");
+
+    parent->connect(widthEdit, &QLineEdit::textChanged, parent, [=]() {
+        bool ok;
+        widthEdit->text().toUInt(&ok);
+        buttonBox->button(QDialogButtonBox::Ok)->setEnabled(ok);
+    });
+
+    parent->connect(heightEdit, &QLineEdit::textChanged, parent, [=]() {
+        bool ok;
+        heightEdit->text().toUInt(&ok);
+        buttonBox->button(QDialogButtonBox::Ok)->setEnabled(ok);
+    });
+
+    parent->connect(buttonBox, &QDialogButtonBox::accepted, addDeviceDialog, &QDialog::accept);
+    parent->connect(buttonBox, &QDialogButtonBox::rejected, addDeviceDialog, &QDialog::reject);
+
+    QVBoxLayout * dialogLayout = new QVBoxLayout;
+    dialogLayout->addLayout(dialogGridLayout);
+    dialogLayout->addWidget(buttonBox);
+
+    addDeviceDialog->setLayout(dialogLayout);
+
+    addDeviceDialog->adjustSize();
+    addDeviceDialog->exec();
+
+    width = widthEdit->text().toUInt();
+    height = heightEdit->text().toUInt();
+
+    return (addDeviceDialog->result() == QDialog::Accepted);
+}
+
 
 bool TDialog::paramWarningQuestion(QWidget * parent)
 {
@@ -107,6 +155,11 @@ bool TDialog::componentDeinitQuestion(QWidget * parent)
 bool TDialog::deviceReinitQuestion(QWidget * parent)
 {
     return question(parent, parent->tr("Device Initialized"), parent->tr("The selected device is already initialized. Do you want to reinitialize it?"));
+}
+
+bool TDialog::deviceOpenQuestion(QWidget * parent)
+{
+    return question(parent, parent->tr("Device Initialized"), parent->tr("The selected device is already initialized. Do you want to open the device?"));
 }
 
 void TDialog::componentInitFailedGeneralMessage(QWidget * parent)
@@ -242,7 +295,7 @@ void TConfigParamDialog::accept()
 {
     TConfigParam param = m_preInit ? m_unit->setPreInitParams(m_paramWidget->param()) : m_unit->setPostInitParams(m_paramWidget->param());
 
-    TConfigParam::TState state = param.getState();
+    TConfigParam::TState state = param.getState(true);
 
     if (state == TConfigParam::TState::TWarning) {
         if (!TDialog::paramWarningQuestion(this)) {

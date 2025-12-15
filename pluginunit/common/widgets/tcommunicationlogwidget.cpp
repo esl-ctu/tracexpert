@@ -91,14 +91,12 @@ void TCommunicationLogWidget::dataReceived(QByteArray data, TReceiverModel * rec
     QString formattedData;
     qsizetype size;
 
-    TProtocol protocol = m_protocols.contains(receiverModel) ? m_protocols[receiverModel] : TProtocol();
-
-    if (protocol == TProtocol()) {
+    if (!m_protocols.contains(receiverModel)) {
         formattedData = byteArraytoHumanReadableString(data);
         size = data.size();
     }
     else {
-        TMessage matchedMessage = protocol.tryMatchResponse(data);
+        TMessage matchedMessage = m_protocols[receiverModel].tryMatchResponse(data);
 
         if (matchedMessage.getName().isEmpty()) {
             qWarning("Received data could not be interpreted as any of the protocol's defined messages.");

@@ -30,6 +30,7 @@ public:
 
     virtual size_t writeData(const uint8_t * buffer, size_t len) override;
     virtual size_t readData(uint8_t * buffer, size_t len) override;
+    virtual std::optional<size_t> availableBytes() override;
 
 protected:
 

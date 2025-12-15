@@ -78,7 +78,10 @@ public:
 
     bool cleanup() override {
         TScenarioComponentItem::cleanup();
-        disconnect(m_analActionModel, nullptr, this, nullptr);
+        if(m_analActionModel) {
+            disconnect(m_analActionModel, nullptr, this, nullptr);
+            m_analActionModel = nullptr;
+        }
         return true;
     }
 

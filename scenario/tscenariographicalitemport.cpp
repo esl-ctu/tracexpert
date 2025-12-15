@@ -10,13 +10,10 @@
 TScenarioGraphicalItemPort::TScenarioGraphicalItemPort(TScenarioItemPort * scenarioItemPort, QGraphicsItem * parent)
     : QGraphicsPolygonItem(parent), m_scenarioItemPort(scenarioItemPort)
 {
-    QString toolTipText;
-
-    if(!scenarioItemPort->getDisplayName().isEmpty()) {
-        toolTipText.append("<b>" + scenarioItemPort->getDisplayName() + "</b><br>");
-        m_titleText = new QGraphicsSimpleTextItem(scenarioItemPort->getDisplayName(), this);
-        m_titleText->setParentItem(this);
-        m_titleText->setPos(scenarioItemPort->getDirection() == TScenarioItemPort::TItemPortDirection::TInputPort ? 15 : -15 - m_titleText->boundingRect().width(), -8);
+    if(!scenarioItemPort->getLabelText().isEmpty()) {
+        m_labelTextItem = new QGraphicsSimpleTextItem(scenarioItemPort->getLabelText(), this);
+        m_labelTextItem->setParentItem(this);
+        m_labelTextItem->setPos(scenarioItemPort->getDirection() == TScenarioItemPort::TItemPortDirection::TInputPort ? 15 : -15 - m_labelTextItem->boundingRect().width(), -8);
     }
 
     QPainterPath path;
@@ -29,7 +26,6 @@ TScenarioGraphicalItemPort::TScenarioGraphicalItemPort(TScenarioItemPort * scena
     m_colorStrip = new QGraphicsPolygonItem(this);
     m_colorStrip->setParentItem(this);
     m_colorStrip->setPolygon(QPolygonF(QRectF(scenarioItemPort->getDirection() == TScenarioItemPort::TItemPortDirection::TInputPort ? -5 : 2, -7.5, 3, 15)));
-
 
     if(scenarioItemPort->getType() == TScenarioItemPort::TItemPortType::TFlowPort) {
         m_colorStrip->setPen(QPen(FLOW_PORT_COLOR, 1));
@@ -44,16 +40,30 @@ TScenarioGraphicalItemPort::TScenarioGraphicalItemPort(TScenarioItemPort * scena
         m_colorStrip->setBrush(QBrush(CONN_PORT_COLOR, Qt::SolidPattern));
     }
 
+    m_lastScenePos = scenePos();
+
+    updateTooltip();
+}
+
+void TScenarioGraphicalItemPort::updateTooltip() {
+    QString toolTipText;
+
+    if(!m_scenarioItemPort->getLabelText().isEmpty()) {
+        toolTipText.append("<b>" + m_scenarioItemPort->getLabelText() + "</b> " + m_scenarioItemPort->getDataTypeHint() + "<br>");
+    }
+    else if(!m_scenarioItemPort->getDataTypeHint().isEmpty()) {
+        toolTipText.append(m_scenarioItemPort->getDataTypeHint() + "<br>");
+    }
 
     toolTipText.append("<i><b>");
-    toolTipText.append(scenarioItemPort->getName());
+    toolTipText.append(m_scenarioItemPort->getName());
     toolTipText.append("</b> (");
-    toolTipText.append(scenarioItemPort->getDirection() == TScenarioItemPort::TItemPortDirection::TInputPort ? "input " : "output ");
+    toolTipText.append(m_scenarioItemPort->getDirection() == TScenarioItemPort::TItemPortDirection::TInputPort ? "input " : "output ");
 
-    if(scenarioItemPort->getType() == TScenarioItemPort::TItemPortType::TFlowPort) {
+    if(m_scenarioItemPort->getType() == TScenarioItemPort::TItemPortType::TFlowPort) {
         toolTipText.append("flow ");
     }
-    else if(scenarioItemPort->getType() == TScenarioItemPort::TItemPortType::TDataPort) {
+    else if(m_scenarioItemPort->getType() == TScenarioItemPort::TItemPortType::TDataPort) {
         toolTipText.append("data ");
     }
     else {
@@ -62,17 +72,16 @@ TScenarioGraphicalItemPort::TScenarioGraphicalItemPort(TScenarioItemPort * scena
 
     toolTipText.append("port)</i>");
 
-    if(!scenarioItemPort->getDescription().isEmpty()) {
-        toolTipText.append("<br>" + scenarioItemPort->getDescription());
+    if(!m_scenarioItemPort->getDescription().isEmpty()) {
+        toolTipText.append("<br>" + m_scenarioItemPort->getDescription());
     }
 
     setToolTip(toolTipText);
-
-    m_lastScenePos = scenePos();
 }
 
 TScenarioGraphicalItemPort::~TScenarioGraphicalItemPort() {
     // m_scenarioItemPort is deleted by its TScenarioItem
+    delete m_labelTextItem;
 }
 
 TScenarioItemPort * TScenarioGraphicalItemPort::getScenarioItemPort() {

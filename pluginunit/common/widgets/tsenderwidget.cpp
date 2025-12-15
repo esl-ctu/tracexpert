@@ -2,6 +2,7 @@
 
 #include <QGroupBox>
 
+#include "../../protocol/tprotocol.h"
 #include "widgets/tfilenameedit.h"
 #include "../tdialog.h"
 
@@ -68,7 +69,7 @@ TSenderWidget::TSenderWidget(TSenderModel * senderModel, TProtocolContainer * pr
     setLayout(layout);
 
     updateDisplayedProtocols();
-    connect(m_protocolContainer, &TProtocolContainer::protocolsUpdated, this, &TSenderWidget::updateDisplayedProtocols);
+    connect(m_protocolContainer, &TProtocolContainer::itemsUpdated, this, &TSenderWidget::updateDisplayedProtocols);
 
     validateRawInputValues();
 }
@@ -118,13 +119,14 @@ void TSenderWidget::protocolChanged(int index)
         return;
     }
 
-    bool protocolFound;
-    m_selectedProtocol = m_protocolContainer->getByName(m_protocolComboBox->currentText(), &protocolFound);
+    TProtocolModel * selectedProtocolModel = (TProtocolModel *)m_protocolContainer->getByName(m_protocolComboBox->currentText());
 
-    if(!protocolFound) {
+    if(!selectedProtocolModel) {
         qWarning("Unknown protocol selected, maybe the user removed it?");
         return;
     }
+
+    m_selectedProtocol = *selectedProtocolModel->protocol();
 
     m_messageComboBox->clear();
     m_formLayout->setRowVisible(m_rawMessageEditLayout, false);
@@ -154,7 +156,7 @@ void TSenderWidget::messageChanged(int index)
     if(index < 0)
         return;
 
-    if(m_selectedProtocol.getName().isEmpty()) {
+    if(m_selectedProtocol.name().isEmpty()) {
         qWarning("No protocol selected, cannot find message!");
         return;
     }
@@ -173,7 +175,7 @@ void TSenderWidget::messageChanged(int index)
 
 void TSenderWidget::sendBytes()
 {
-    if(m_selectedProtocol.getName().isEmpty()) {
+    if(m_selectedProtocol.name().isEmpty()) {
         sendRawBytes();
     }
     else {

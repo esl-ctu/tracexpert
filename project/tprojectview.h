@@ -2,6 +2,7 @@
 #define TPROJECTVIEW_H
 
 #include <QTreeView>
+#include <QToolBar>
 
 #include "../protocol/tprotocolmodel.h"
 #include "../scenario/tscenariomodel.h"
@@ -16,18 +17,25 @@ class TProjectView : public QTreeView
     Q_OBJECT
 
 public:
-    TProjectView(QWidget * parent = nullptr);
+    TProjectView(QToolBar * toolbar, QWidget * parent = nullptr);
+
+    virtual void setModel(QAbstractItemModel *model) override;
 
 signals:
     void showIODeviceRequested(TIODeviceModel * IODevice);
     void showScopeRequested(TScopeModel * scope);
     void showAnalDeviceRequested(TAnalDeviceModel * analDevice);
 
+protected slots:
+    void selectionChanged(const QItemSelection & selected, const QItemSelection & deselected) override;
+
 private slots:
     void createActions();
 
-    void showContextMenu(const QPoint &point);
-    void runDefaultAction(const QModelIndex &index);
+    void refreshActions();
+    void refreshActionsForItem(TProjectItem * item);
+    void showContextMenu(const QPoint & point);
+    void runDefaultAction(const QModelIndex & index);
 
     void initComponent();
     void deinitComponent();
@@ -54,11 +62,14 @@ private slots:
 
     void showInfo();
 
-    void editProtocol();
-    void editScenario();
+    void showProtocolManager();
+    void showScenarioManager();
+
+    void openProtocolEditor();
+    void openScenarioEditor();
 
 private:
-    TMainWindow * m_mainWindow;
+    QToolBar * m_toolbar;
 
     TComponentModel * m_component;
     TIODeviceModel * m_IODevice;
@@ -67,6 +78,9 @@ private:
     TPluginUnitModel * m_unit;
     TProtocolModel * m_protocol;
     TScenarioModel * m_scenario;
+
+    QList<QAction *> m_currentActions;
+    QAction * m_currentDefaultAction;
 
     QAction * m_initComponentAction;
     QAction * m_deinitComponentAction;

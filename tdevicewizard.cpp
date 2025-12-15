@@ -479,6 +479,11 @@ bool TSelectDeviceWizardPage::validatePage()
         return false;
     }
 
+    if (m_selectedDevice->isInit() && TDialog::deviceOpenQuestion(this)) {
+        m_selectedDevice->show();
+        close();
+    }
+
     if (!m_selectedDevice->isInit() && nextId() != TDeviceWizard::Page_InitDevice) {
         return initDevice();
     }

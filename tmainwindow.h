@@ -15,7 +15,7 @@ class TMainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit TMainWindow(TLogHandler * logHandler, QWidget * parent = nullptr);
+    explicit TMainWindow(QWidget * parent = nullptr);
     ~TMainWindow();
 
 public slots:
@@ -26,7 +26,7 @@ public slots:
     void createAnalDeviceDockWidget(TAnalDeviceModel * IODevice);
 
     void createProtocolManagerDockWidget();
-    void openProtocolEditor(const QString & protocolName);
+    void createProtocolEditor(TProtocolModel * protocol);
 
     void createScenarioManagerDockWidget();
     void createScenarioEditorDockWidget(TScenarioModel * scenario);
@@ -41,6 +41,11 @@ private slots:
     void saveProject(bool saveAs = false);
     void saveProjectAs();
     bool closeProject();
+
+    void showHelp();
+    void showLicense();
+    void showContributors();
+    void showAbout();
 
 private:
     void createMenus();
@@ -60,8 +65,16 @@ private:
     QAction * m_saveProjectAction;
     QAction * m_saveProjectAsAction;
     QAction * m_closeProjectAction;
+    QAction * m_exitAction;
 
     QAction * m_openDeviceAction;
+    QAction * m_openProtocolsAction;
+    QAction * m_openScenariosAction;
+
+    QAction * m_helpAction;
+    QAction * m_licenseAction;
+    QAction * m_contributorsAction;
+    QAction * m_aboutAction;
 
     QMenu * m_viewMenu;
     

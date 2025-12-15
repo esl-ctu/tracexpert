@@ -6,16 +6,17 @@
 #include <QFormLayout>
 #include <QTableView>
 
+#include "../protocol/tprotocol.h"
+#include "../protocol/tprotocolmodel.h"
 #include "../protocol/tprotocolcontainer.h"
-#include "tmessagesimplecontainer.h"
-#include "tprotocol.h"
+#include "tmessagecontainer.h"
 #include "tmessageeditor.h"
 
 class TProtocolEditorDetailsPage : public QWizardPage {
     Q_OBJECT
 
 public:
-    explicit TProtocolEditorDetailsPage(const TProtocol & protocol, const TProtocolContainer * m_protocolContainer, QWidget * parent = nullptr);
+    explicit TProtocolEditorDetailsPage(const TProtocol * protocol, const TProtocolContainer * protocolContainer, QWidget * parent = nullptr);
     bool validatePage() override;
 
 private:
@@ -25,15 +26,14 @@ private:
     const TProtocolContainer * m_protocolContainer;
 };
 
-class TProtocolEditor : public QWizard {
+class TProtocolEditorWizard : public QWizard {
     Q_OBJECT
 
 public:
-    TProtocolEditor(const TProtocol & protocol, const TProtocolContainer * m_protocolContainer, QWidget * parent = nullptr);
+    TProtocolEditorWizard(const TProtocolModel * protocolModel, TProtocolContainer * protocolContainer, QWidget * parent = nullptr);
 
-    TProtocol protocol();
-
-signals:
+protected:
+    void accept() override;
 
 private slots:
     void onAddButtonClicked();
@@ -43,15 +43,16 @@ private slots:
     void onEditorFinished(int finished);
 
 private:
-    void openEditor();
+    void openMessageEditor();
 
-    TMessageEditor * m_editor;
-    qsizetype  m_editedItemIndex;
+    TMessageEditor * m_messageEditor;
+    qsizetype  m_editedMessageIndex;
 
     QTableView * m_messageView;
-    TMessageSimpleContainer * m_messageContainer;
+    TMessageContainer * m_messageContainer;
 
-    const TProtocol & m_protocol;
+    const TProtocolModel * m_protocolModel;
+    TProtocolContainer * m_protocolContainer;
 };
 
 #endif // TPROTOCOLEDITOR_H

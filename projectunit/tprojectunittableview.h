@@ -1,17 +1,17 @@
-#ifndef TPROTOCOLTABLEVIEW_H
-#define TPROTOCOLTABLEVIEW_H
+#ifndef TPROJECTUNITTABLEVIEW_H
+#define TPROJECTUNITTABLEVIEW_H
 
 #include <QWidget>
 #include <QTableView>
 #include <QHeaderView>
 
-class TProtocolTableView : public QTableView
+class TProjectUnitTableView : public QTableView
 {
 public:
-    TProtocolTableView(QWidget * parent = nullptr) : QTableView(parent)
+    TProjectUnitTableView(QWidget * parent = nullptr) : QTableView(parent)
     {
         setSelectionBehavior(QTableView::SelectionBehavior::SelectRows);
-        setSelectionMode(QTableView::SelectionMode::SingleSelection);
+        setSelectionMode(QTableView::SelectionMode::ExtendedSelection);
         setFocusPolicy(Qt::FocusPolicy::NoFocus);
 
         verticalHeader()->hide();
@@ -21,4 +21,4 @@ public:
     }
 };
 
-#endif // TPROTOCOLTABLEVIEW_H
+#endif // TPROJECTUNITTABLEVIEW_H

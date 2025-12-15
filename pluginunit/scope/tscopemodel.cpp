@@ -47,6 +47,7 @@ bool TScopeModel::init()
     collectorThread.start();
 
     emit initialized(this);
+    itemDataChanged();
 
     return true;
 }
@@ -64,6 +65,7 @@ bool TScopeModel::deInit()
     m_isInit = false;
 
     emit deinitialized(this);
+    itemDataChanged();
 
     return true;
 }

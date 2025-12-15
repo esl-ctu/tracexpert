@@ -63,6 +63,9 @@ int TPluginUnitContainer::childrenCount() const
 
 TProjectItem * TPluginUnitContainer::child(int row) const
 {
+    if (!count())
+        return nullptr;
+
     return at(row);
 }
 

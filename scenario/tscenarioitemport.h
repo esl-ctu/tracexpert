@@ -4,6 +4,7 @@
 #include <QString>
 #include <QSet>
 #include <QDataStream>
+#include <QCoreApplication>
 
 #define TSCENARIOITEMPORTVER "cz.cvut.fit.TraceXpert.TScenarioItemPort/0.1"
 
@@ -19,6 +20,7 @@
 class TScenarioItem;
 
 class TScenarioItemPort {
+    Q_DECLARE_TR_FUNCTIONS(TScenarioItemPort)
 
 public:
     enum class TItemPortType {
@@ -34,34 +36,45 @@ public:
 
     TScenarioItemPort(TScenarioItem * parentItem) : m_parentItem(parentItem), m_connectedPorts() { }
 
-    TScenarioItemPort(const QString &name, TItemPortType type, TItemPortDirection direction, TScenarioItem * parentItem, const QString &displayName = QString(), const QString &description = QString()):
+    TScenarioItemPort(
+        const QString &name,
+        TItemPortType type,
+        TItemPortDirection direction,
+        TScenarioItem * parentItem,
+        const QString &labelText = QString(),
+        const QString &description = QString(),
+        const QString &dataTypeHint = QString()
+    ):
         m_name(name),
+        m_description(description),
+        m_dataTypeHint(dataTypeHint),
+        m_labelText(labelText),
         m_type(type),
         m_direction(direction),
         m_parentItem(parentItem),
-        m_displayName(displayName),
-        m_description(description),
         m_connectedPorts()
     { }
 
     TScenarioItemPort(const TScenarioItemPort &x):
         m_name(x.m_name),
+        m_description(x.m_description),
+        m_dataTypeHint(x.m_dataTypeHint),
+        m_labelText(x.m_labelText),
         m_type(x.m_type),
         m_direction(x.m_direction),
         m_parentItem(nullptr),
-        m_displayName(x.m_displayName),
-        m_description(x.m_description),
         m_connectedPorts()
     { }
 
     TScenarioItemPort & operator=(const TScenarioItemPort &x){
         if(&x != this){
             m_name = x.m_name;
+            m_description = x.m_description;
+            m_dataTypeHint = x.m_dataTypeHint;
+            m_labelText = x.m_labelText;
             m_type = x.m_type;
             m_direction = x.m_direction;
             m_parentItem = nullptr;
-            m_displayName = x.m_displayName;
-            m_description = x.m_description;
         }
         return *this;
     }
@@ -78,10 +91,11 @@ public:
         out << QString(TSCENARIOITEMPORTVER);
         out << x.m_serializationId;
         out << x.m_name;
+        out << x.m_description;
+        out << x.m_dataTypeHint;
+        out << x.m_labelText;
         out << x.m_type;
         out << x.m_direction;
-        out << x.m_displayName;
-        out << x.m_description;
         return out;
     }
 
@@ -91,12 +105,14 @@ public:
         if(Q_LIKELY(verString == QString(TSCENARIOITEMPORTVER))){
             in >> x.m_serializationId;
             in >> x.m_name;
+            in >> x.m_description;
+            in >> x.m_dataTypeHint;
+            in >> x.m_labelText;
             in >> x.m_type;
             in >> x.m_direction;
-            in >> x.m_displayName;
-            in >> x.m_description;
         } else {
             qCritical("Failed deserializing TScenarioItemPort: Wrong version or wrong data.");
+            throw tr("Failed deserializing scenario item port: Wrong version or wrong data.");
         }
         return in;
     }
@@ -107,6 +123,14 @@ public:
 
     const QString & getDescription() const {
         return m_description;
+    }
+
+    const QString & getDataTypeHint() const {
+        return m_dataTypeHint;
+    }
+
+    const QString & getLabelText() const {
+        return m_labelText;
     }
 
     TItemPortType getType() const {
@@ -125,16 +149,20 @@ public:
         return m_parentItem;
     }
 
-    const QString & getDisplayName() const {
-        return m_displayName;
-    }
-
     void setName(const QString & value) {
         m_name = value;
     }
 
     void setDescription(const QString & value) {
         m_description = value;
+    }
+
+    void setDataTypeHint(const QString & value) {
+        m_dataTypeHint = value;
+    }
+
+    void setLabelText(const QString & value) {
+        m_labelText = value;
     }
 
     void setType(TItemPortType value) {
@@ -151,11 +179,7 @@ public:
 
     void setSerializationId(uint id) {
         m_serializationId = id;
-    }
-
-    void setDisplayName(const QString & value) {
-        m_displayName = value;
-    }
+    }    
 
     bool hasConnectedPort() const {
         return !m_connectedPorts.empty();
@@ -179,15 +203,16 @@ public:
 
 protected:
     QString m_name;
+    QString m_description;
+    QString m_dataTypeHint;
+    QString m_labelText;
+
     TItemPortType m_type;
     TItemPortDirection m_direction;
 
     uint m_serializationId;
 
-    TScenarioItem * m_parentItem;
-
-    QString m_displayName;
-    QString m_description;
+    TScenarioItem * m_parentItem;  
 
     // NOT copied, NOT serialized,
     // available both during editing and execution

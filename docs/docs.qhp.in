@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QtHelpProject version="1.0">
+  <namespace>@NAMESPACE@</namespace>
+  <virtualFolder>docs</virtualFolder>
+
+  <filterSection>
+
+    <toc>
+@HTML_TOC@
+    </toc>
+
+    <files>
+@DOC_FILES_XML@
+    </files>
+
+  </filterSection>
+</QtHelpProject>

@@ -1,4 +1,7 @@
 #include "tprojectmodel.h"
+#include "../scenario/tscenariomodel.h"
+#include "../protocol/tprotocolmodel.h"
+#include "../tdialog.h"
 
 #include <QDir>
 #include <QCoreApplication>
@@ -12,7 +15,15 @@ TProjectModel::TProjectModel(QObject * parent)
     loadPlugins();
 
     m_protocolContainer = new TProtocolContainer(this);
+
+    connect(m_protocolContainer, &TProtocolContainer::showManagerRequested, this, &TProjectModel::protocolManagerRequested);
+    connect(m_protocolContainer, &TProtocolContainer::editorRequested, this,
+            [=](TProjectUnitModel * unitModel){ emit protocolEditorRequested((TProtocolModel *)unitModel); });
+
     m_scenarioContainer = new TScenarioContainer(this);
+    connect(m_scenarioContainer, &TScenarioContainer::showManagerRequested, this, &TProjectModel::scenarioManagerRequested);
+    connect(m_scenarioContainer, &TScenarioContainer::editorRequested, this,
+            [=](TProjectUnitModel * unitModel){ emit scenarioEditorRequested((TScenarioModel *)unitModel); });
 }
 
 TProjectModel::~TProjectModel()
@@ -117,7 +128,7 @@ int TProjectModel::columnCount(const QModelIndex & parent) const
     return 2;
 }
 
-void TProjectModel::emitDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
+void TProjectModel::emitDataChanged(const QModelIndex & topLeft, const QModelIndex & bottomRight)
 {
     emit dataChanged(topLeft, bottomRight);
 }
@@ -223,6 +234,9 @@ void TProjectModel::unloadComponents()
 {
     for (int i = 0; i < m_componentContainer->count(); i++) {
         m_componentContainer->at(i)->deInit();
+    }
+
+    for (int i = 0; i < m_componentContainer->count(); i++) {
         delete m_componentContainer->at(i);
     }
 }
@@ -338,23 +352,21 @@ void TProjectModel::loadProtocols(QDomElement * element)
         if (child.isNull())
             throw tr("Unexpected node type");
 
-        if (child.tagName() == "protocol")
-            loadProtocol(&child);
-        else
-            throw tr("Unexpected node name");
+        loadProtocol(&child);
     }
 }
 
 void TProjectModel::loadProtocol(QDomElement * element)
 {
-    if (!element)
-        return;
-
-    if (element->tagName() != "protocol")
-        throw tr("Unexpected node name");
-
     TProtocolModel * protocolModel = new TProtocolModel(m_protocolContainer);
-    protocolModel->load(element);
+
+    try {
+        protocolModel->load(element);
+    }
+    catch(QString message) {
+        delete protocolModel;
+        throw message;
+    }
 
     bool wasAdded = m_protocolContainer->add(protocolModel);
 
@@ -379,23 +391,21 @@ void TProjectModel::loadScenarios(QDomElement * element)
         if (child.isNull())
             throw tr("Unexpected node type");
 
-        if (child.tagName() == "scenario")
-            loadScenario(&child);
-        else
-            throw tr("Unexpected node name");
+        loadScenario(&child);
     }
 }
 
 void TProjectModel::loadScenario(QDomElement * element)
 {
-    if (!element)
-        return;
-
-    if (element->tagName() != "scenario")
-        throw tr("Unexpected node name");
-
     TScenarioModel * scenarioModel = new TScenarioModel(m_scenarioContainer);
-    scenarioModel->load(element);
+
+    try {
+        scenarioModel->load(element);
+    }
+    catch(QString message) {
+        delete scenarioModel;
+        throw message;
+    }
 
     bool wasAdded = m_scenarioContainer->add(scenarioModel);
 

@@ -1,5 +1,5 @@
-#ifndef TMESSAGEMODEL_H
-#define TMESSAGEMODEL_H
+#ifndef TMESSAGECONTAINER_H
+#define TMESSAGECONTAINER_H
 
 #include <QApplication>
 #include <QStyle>
@@ -7,10 +7,10 @@
 #include "tabstracttablemodel.h"
 #include "tmessage.h"
 
-class TMessageSimpleContainer : public TAbstractTableModel<TMessage> {
+class TMessageContainer : public TAbstractTableModel<TMessage> {
 
 public:
-    explicit TMessageSimpleContainer(QList<TMessage> initialItems, QObject * parent = nullptr) : TAbstractTableModel<TMessage>(initialItems, parent) {
+    explicit TMessageContainer(QList<TMessage> initialItems, QObject * parent = nullptr) : TAbstractTableModel<TMessage>(initialItems, parent) {
         for(TMessage & message : m_items) {
             message.validateMessage();
         }
@@ -82,4 +82,4 @@ public:
     }
 };
 
-#endif // TMESSAGEMODEL_H
+#endif // TMESSAGECONTAINER_H

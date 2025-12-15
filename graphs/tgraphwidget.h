@@ -24,6 +24,9 @@ private slots:
     void interpretationChanged();
 
 private:
+    void saveGraph();
+    void renderGraph(QPaintDevice * paintDevice, uint width, uint height);
+
     TGraph * m_graph;
 
     TConfigParamWidget * m_graphParamWidget;

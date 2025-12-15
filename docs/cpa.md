@@ -1,3 +1,5 @@
+[Back to the top (index)](README.md)
+
 # Correlation power analysis
 
 TraceExpert component *Correlation power analysis* provides a correlation coefficient computation for the CPA attack.
@@ -15,6 +17,8 @@ The analytical device allows for incremental computation (see Actions).
 * **Number of predictions per trace**: The number of leakage predictions to be correlated with each sampling point in the trace. I.e., **number of key hypotheses**.
 * **Prediction data type**: The data type of the predictions (same as for sample data type)
 * **Maximum order**: The order of the attack up to which the correlations will be computed. If unsure, keep order 1. Has a direct impact on the computation time.
+
+![CPA initialization](images/analytical-init.png)
 
 ### Input
 

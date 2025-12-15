@@ -17,6 +17,7 @@ public:
 
 protected:
     size_t readData(uint8_t * buffer, size_t len) override;
+    std::optional<size_t> availableBytes() override;
 
 private:
     TAnalInputStream * m_stream;

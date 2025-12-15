@@ -1,4 +1,7 @@
+[Back to the top (index)](README.md)
+
 # Scenarios
+
 **TraceXpert** allows you to create *scenarios*—automated workflows 
 represented as flow graphs. These scenarios can be used to automate 
 processes using all the tools the program provides.

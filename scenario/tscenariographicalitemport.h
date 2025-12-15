@@ -31,6 +31,8 @@ public:
 
     TScenarioItemPort * getScenarioItemPort();
 
+    void updateTooltip();
+
     enum { Type = UserType + 32 };
     int type() const override { return Type; }
 
@@ -56,7 +58,7 @@ private:
     QGraphicsPolygonItem * m_colorStrip;
     TScenarioItemPort * m_scenarioItemPort;
 
-    QGraphicsSimpleTextItem * m_titleText = nullptr;
+    QGraphicsSimpleTextItem * m_labelTextItem = nullptr;
 
     QList<TScenarioGraphicalConnection *> m_scenarioGraphicalConnections;
 };

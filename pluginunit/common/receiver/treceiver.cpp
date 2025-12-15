@@ -74,3 +74,7 @@ void TReceiver::stopReceiving()
 bool TReceiver::isBusy() {
     return m_isBusy;
 }
+
+std::optional<size_t> TReceiver::availableBytes() {
+    return 0;
+}

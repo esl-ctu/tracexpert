@@ -47,12 +47,17 @@ bool TAnalDeviceModel::init()
     }
 
     emit initialized(this);
+    itemDataChanged();
 
     return true;
 }
 
 bool TAnalDeviceModel::deInit()
 {
+    for (int i = 0; i < m_receiverModels.length(); i++) {
+        m_receiverModels[i]->disableAutoRead();
+    }
+
     if (!isInit() || !TPluginUnitModel::deInit()) {
         return false;
     }
@@ -75,6 +80,7 @@ bool TAnalDeviceModel::deInit()
     m_actionModels.clear();
 
     emit deinitialized(this);
+    itemDataChanged();
 
     return true;
 }

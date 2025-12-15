@@ -24,9 +24,9 @@ public:
         addFlowInputPort("flowIn");
         addFlowOutputPort("flowOut");
 
-        addDataInputPort("dataIn0", "", tr("Data will be passed to the script through this port."));
-        addDataInputPort("dataIn1", "", tr("Data will be passed to the script through this port."));
-        addDataOutputPort("dataOut0", "", tr("Data from the the script will be returned through this port."));
+        addDataInputPort("dataIn0", "", tr("Data will be passed to the script through this port."), "[any]");
+        addDataInputPort("dataIn1", "", tr("Data will be passed to the script through this port."), "[any]");
+        addDataOutputPort("dataOut0", "", tr("Data from the the script will be returned through this port."), "[any]");
 
         m_inputPortCount = 2;
         m_outputPortCount = 1;
@@ -130,7 +130,7 @@ def process_data():
                 }
                 else {
                     // create a new port
-                    addDataInputPort(QString("dataIn%1").arg(i), "", tr("Data will be passed to the script through this port."));
+                    addDataInputPort(QString("dataIn%1").arg(i), "", tr("Data will be passed to the script through this port."), "[any]");
                 }
             }
 
@@ -152,7 +152,7 @@ def process_data():
                 }
                 else {
                     // create a new port
-                    addDataOutputPort(QString("dataOut%1").arg(i), "", tr("Data from the the script will be returned through this port."));
+                    addDataOutputPort(QString("dataOut%1").arg(i), "", tr("Data from the the script will be returned through this port."), "[any]");
                 }
             }
 

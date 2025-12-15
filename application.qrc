@@ -1,5 +1,7 @@
 <RCC>
     <qresource prefix="/">
+        <file>LICENSE</file>
+        <file>CONTRIBUTORS</file>
         <file>icons/play.png</file>
         <file>icons/repeat.png</file>
         <file>icons/stop.png</file>
@@ -27,5 +29,18 @@
         <file>icons/tracexpert128.png</file>
         <file>icons/tracexpert256.png</file>
         <file>icons/tracexpert512.png</file>
+        <file>icons/add-analytical.png</file>
+        <file>icons/add-iodevice.png</file>
+        <file>icons/add-open-device.png</file>
+        <file>icons/add-oscilloscope.png</file>
+        <file>icons/close-project.png</file>
+        <file>icons/info.png</file>
+        <file>icons/new-project.png</file>
+        <file>icons/open-project.png</file>
+        <file>icons/protocol-manager.png</file>
+        <file>icons/save-as.png</file>
+        <file>icons/scenario-manager.png</file>
+        <file>icons/settings.png</file>
+        <file>icons/show.png</file>
     </qresource>
 </RCC>

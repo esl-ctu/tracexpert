@@ -2,26 +2,62 @@
 
 TLogHandler::TLogHandler()
 {
-    m_logLineWidget = new TLogLineWidget();
-    m_logTextEdit = new QPlainTextEdit();
+    m_logLineWidget = new TLogLineWidget;
+    m_logTextEdit = new TLogWidget;
 }
 
 TLogHandler::~TLogHandler()
 {
-    delete m_logLineWidget;
-    delete m_logTextEdit;
+
 }
 
-TLogLineWidget * TLogHandler::logLineWidget() {
-    return m_logLineWidget;
+void TLogHandler::installLogger()
+{
+    if (!m_instance)
+        m_instance = new TLogHandler;
+
+    qInstallMessageHandler(TLogHandler::messageHandler);
 }
 
-TLogWidget * TLogHandler::logWidget() {
-    return m_logTextEdit;
+TLogLineWidget * TLogHandler::logLineWidget()
+{
+    if (!m_instance) {
+        qWarning("Logger not installed!");
+        return nullptr;
+    }
+
+    return m_instance->m_logLineWidget;
 }
 
-void TLogHandler::appendLogMessage(QtMsgType type, const QString &msg) {
+TLogWidget * TLogHandler::logWidget()
+{
+    if (!m_instance) {
+        qWarning("Logger not installed!");
+        return nullptr;
+    }
 
+    return m_instance->m_logTextEdit;
+}
+
+void TLogHandler::messageHandler(QtMsgType type, const QMessageLogContext &, const QString & msg)
+{
+    QMutexLocker locker(&m_logMutex);
+
+    if (!m_instance) {
+        qWarning("Logger not installed!");
+        return;
+    }
+
+    QMetaObject::invokeMethod(
+        m_instance,
+        "appendLogMessage",
+        Qt::QueuedConnection,
+        Q_ARG(QtMsgType, type),
+        Q_ARG(QString, msg));
+}
+
+void TLogHandler::appendLogMessage(QtMsgType type, const QString &msg)
+{
     if(msg.startsWith("QWindowsWindow")) return; // ugly workaround, TODO: message filtering system
 
     QString time = QDateTime::currentDateTime().toString("hh:mm:ss.zzz");

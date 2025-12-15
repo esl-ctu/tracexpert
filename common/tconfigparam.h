@@ -4,6 +4,7 @@
 #include <QList>
 #include <QDataStream>
 #include <QtGlobal>
+#include <qregularexpression.h>
 
 #define TCONFIGPARAMVER "cz.cvut.fit.TraceXpert.TConfigParam/0.1"
 
@@ -32,6 +33,7 @@ public:
 
     enum class TType {
         TString,
+        TByteArray,
         TInt,
         TUInt,
         TShort,
@@ -162,8 +164,9 @@ public:
     }
 
     const QString & setValue(const QString &value, bool *ok = nullptr){
+        static const QRegularExpression hexRegex(QStringLiteral("[^A-Za-z0-9]"));
 
-        bool iok=true;
+        bool iok = true;
 
         switch(m_type) {
             case TType::TString:
@@ -171,6 +174,9 @@ public:
             case TType::TDirectoryName:
             case TType::TCode:
                 iok = true;
+                break;
+            case TType::TByteArray:
+                iok = !value.contains(hexRegex);
                 break;
             case TType::TInt:
                 value.toInt(&iok);

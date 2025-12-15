@@ -224,9 +224,12 @@ bool TSerialPortDevice::_validatePostInitParamsStructure(TConfigParam & params) 
 
 void TSerialPortDevice::deInit(bool *ok) {
 
+    if(m_initialized == true){
+
 #ifdef _WIN32
 
     CloseHandle(m_osHandle);
+    m_osHandle = nullptr;
 
 #else
 
@@ -234,6 +237,8 @@ void TSerialPortDevice::deInit(bool *ok) {
     close(m_osHandle);
 
 #endif
+
+    }
 
     m_initialized = false;
     if(ok != nullptr) *ok = true;
@@ -652,3 +657,8 @@ size_t TSerialPortDevice::readData(uint8_t * buffer, size_t len) {
 #endif
 
 }
+
+std::optional<size_t> TSerialPortDevice::availableBytes(){
+    return std::nullopt;
+}
+

@@ -6,7 +6,7 @@
 
 #include "../receiver/treceivermodel.h"
 #include "../sender/tsendermodel.h"
-#include "tprotocol.h"
+#include "../protocol/tprotocol.h"
 
 #define DISPLAY_DATA_LENGTH_LIMIT 300
 

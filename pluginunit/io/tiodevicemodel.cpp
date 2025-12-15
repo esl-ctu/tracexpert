@@ -41,6 +41,7 @@ bool TIODeviceModel::init()
     m_receiverModel = new TReceiverModel(receiver);
 
     emit initialized(this);
+    itemDataChanged();
 
     return true;
 }
@@ -67,6 +68,7 @@ bool TIODeviceModel::deInit()
     m_receiverModel = nullptr;
 
     emit deinitialized(this);
+    itemDataChanged();
 
     return true;
 }

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(TraceXpert VERSION 0.1 LANGUAGES CXX)
+project(TraceXpert VERSION 1.0 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -9,19 +9,44 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Generate build info
+string(TIMESTAMP BUILD_TIMESTAMP "%Y-%m-%d %H:%M:%S")
+find_package(Git QUIET)
+
+if(GIT_FOUND)
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_REVISION
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+else()
+    set(GIT_REVISION "unknown")
+endif()
+
+set(COPYRIGHT_BASE_YEAR 2025)
+string(TIMESTAMP CURRENT_YEAR "%Y")
+if (CURRENT_YEAR STRGREATER COPYRIGHT_BASE_YEAR)
+    set(COPYRIGHT_YEAR "${COPYRIGHT_BASE_YEAR}-${CURRENT_YEAR}")
+else()
+    set(COPYRIGHT_YEAR "${COPYRIGHT_BASE_YEAR}")
+endif()
+set(COPYRIGHT_YEAR "${COPYRIGHT_YEAR}")
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/buildinfo.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/buildinfo.h
+    @ONLY
+)
+
 # Remove the 'lib' prefix for all libraries
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 # Ensure no 'lib' prefix is added to library names
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Charts Xml Concurrent)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts Xml Concurrent)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Charts Xml Concurrent Svg)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts Xml Concurrent Help Svg)
 
 add_subdirectory(ads)
 
@@ -45,8 +70,7 @@ add_executable(${PROJECT_NAME} WIN32
     common/tiodevice.h
     common/tmessage.h
     common/tmessagepart.h
-    common/tplugin.h
-    common/tprotocol.h
+    common/tplugin.h    
     common/tscope.h
     common/widgets/tcodeedit.cpp
     common/widgets/tcodeedit.h
@@ -58,6 +82,10 @@ add_executable(${PROJECT_NAME} WIN32
     common/widgets/tfilenameedit.h
     common/widgets/ttimeedit.cpp
     common/widgets/ttimeedit.h
+    help/thelpbrowser.cpp
+    help/thelpbrowser.h
+    help/thelpwidget.cpp
+    help/thelpwidget.h
     logger/tloghandler.cpp
     logger/tloghandler.h
     logger/tloglinewidget.cpp
@@ -130,20 +158,29 @@ add_executable(${PROJECT_NAME} WIN32
     project/tprojectmodel.h
     project/tprojectview.cpp
     project/tprojectview.h
+    projectunit/tprojectunitcontainer.cpp
+    projectunit/tprojectunitcontainer.h
+    projectunit/tprojectunitmodel.h
+    projectunit/tprojectunitmodel.cpp
+    projectunit/tprojectunit.h
+    projectunit/tprojectunit.cpp
+    projectunit/tprojectunittableview.h
+    projectunit/tprojectunitwidget.cpp
+    projectunit/tprojectunitwidget.h
     protocol/tabstracttablemodel.h
     protocol/tmessageeditor.cpp
     protocol/tmessageeditor.h
     protocol/tmessageparteditor.cpp
     protocol/tmessageparteditor.h
-    protocol/tmessagepartsimplecontainer.h
-    protocol/tmessagesimplecontainer.h
+    protocol/tmessagepartcontainer.h
+    protocol/tmessagecontainer.h
+    protocol/tprotocol.h
     protocol/tprotocolcontainer.cpp
     protocol/tprotocolcontainer.h
     protocol/tprotocoleditor.cpp
     protocol/tprotocoleditor.h
     protocol/tprotocolmodel.cpp
     protocol/tprotocolmodel.h
-    protocol/tprotocoltableview.h
     protocol/tprotocolwidget.cpp
     protocol/tprotocolwidget.h
     scenario/tscenarioconnection.h
@@ -190,15 +227,16 @@ add_executable(${PROJECT_NAME} WIN32
     graphs/tgraphwidget.cpp
     graphs/tgraph.h
     graphs/tcpagraph.h
+    buildinfo.h.in
+    twelcomescreen.h
+    twelcomescreen.cpp
 )
 
 
-target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(TraceXpert PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_include_directories(${PROJECT_NAME} PRIVATE common)
+target_include_directories(${PROJECT_NAME} PRIVATE 
+    common
+    ${CMAKE_CURRENT_BINARY_DIR}
+)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE qt${QT_VERSION_MAJOR}advanceddocking)
 
@@ -210,12 +248,19 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Xml)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Concurrent)
 
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Svg)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Help)
+
 function(add_plugin dir target additional_files)
   # Add the subdirectory for the plugin
   add_subdirectory(plugins/${dir})
 
+  add_custom_target(copy_${target} ALL
+      DEPENDS ${target})
+
   # Copy the library (.dll) file to the plugin directory
-  add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+  add_custom_command(TARGET copy_${target}
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
           "$<TARGET_FILE:${target}>"
           "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins")
@@ -223,7 +268,7 @@ function(add_plugin dir target additional_files)
   # Copy additional files (if provided) to the plugin directory (separate by ";")
   if(additional_files)
     foreach(file IN LISTS additional_files)
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        add_custom_command(TARGET copy_${target}
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 "${CMAKE_SOURCE_DIR}/plugins/${dir}/${file}"
                 "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/${file}")
@@ -236,6 +281,7 @@ add_plugin(cipher TCipherPlugin "")
 add_plugin(predict TPredictPlugin "")
 add_plugin(cpa TCPAPlugin "")
 add_plugin(dummyscope TDummyScopePlugin "")
+add_plugin(filescope TFileScopePlugin "")
 add_plugin(file TFile "")
 add_plugin(ps6000 TPS6000 "")
 add_plugin(ps6000a TPS6000a "")
@@ -244,3 +290,9 @@ add_plugin(serialport TSerialPort "")
 add_plugin(smartcard TSmartCard "")
 add_plugin(newae Tnewae executable.py)
 add_plugin(ttest TTTestPlugin "")
+
+option(BUILD_HELP "Enable building help collection" ON)
+
+if (BUILD_HELP)
+    add_subdirectory(docs)
+endif()

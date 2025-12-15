@@ -16,7 +16,7 @@ public:
     }
 
     TScenarioVariableWriteItem() : TScenarioItem(tr("Variable: write"), tr("This block allows writing to a variable.")) {
-        addDataInputPort("dataIn");
+        addDataInputPort("dataIn", "", "", "[any]");
 
         m_params = TConfigParam(m_name + " configuration", "", TConfigParam::TType::TDummy, "");
         m_params.addSubParam(TConfigParam("Block name", "Variable: write", TConfigParam::TType::TString, tr("Display name of the block."), false));

@@ -18,7 +18,7 @@ public:
     }
 
     TScenarioAnalDeviceWriteItem() : TScenarioAnalDeviceItem(tr("Analytic Device: write"), tr("This block writes to selected Analytic Device.")) {
-        addDataInputPort("dataIn", "data", tr("Byte array with data to write."));
+        addDataInputPort("dataIn", "data", tr("Byte array with data to write."), "[byte array]");
 
         TConfigParam streamParam("Input stream", "", TConfigParam::TType::TEnum, tr("Select the stream to write to."), false);
         m_params.addSubParam(streamParam);
@@ -97,6 +97,15 @@ public:
 
         log(QString("[%1] Write failed - device busy.").arg(m_deviceModel->name()));
         emit executionFinished();
+    }
+
+    bool cleanup() override {
+        TScenarioComponentItem::cleanup();
+        if(m_analStreamModel) {
+            disconnect(m_analStreamModel, nullptr, this, nullptr);
+            m_analStreamModel = nullptr;
+        }
+        return true;
     }
 
     void executeIndirect(const QHash<TScenarioItemPort *, QByteArray> & inputData) override {

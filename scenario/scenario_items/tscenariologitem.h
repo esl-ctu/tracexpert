@@ -24,7 +24,7 @@ public:
 
     TScenarioLogItem() : TScenarioItem(tr("Logger"), tr("This block logs data input to scenario run log.")) {
         addFlowInputPort("flowIn");
-        addDataInputPort("dataIn", "", tr("Data pased through this port will be put into the scenario run log."));
+        addDataInputPort("dataIn", "", tr("Data pased through this port will be put into the scenario run log."), "[any]");
         addFlowOutputPort("flowOut");
 
         m_params = TConfigParam(m_name + " configuration", "", TConfigParam::TType::TDummy, "");

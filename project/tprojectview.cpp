@@ -1,203 +1,287 @@
 #include "tprojectview.h"
 
 #include <QMenu>
+#include <QApplication>
 
 #include "../tdialog.h"
 #include "../tdevicewizard.h"
-#include "../tmainwindow.h"
 
-TProjectView::TProjectView(QWidget * parent) : QTreeView(parent), m_mainWindow((TMainWindow *) parent)
+TProjectView::TProjectView(QToolBar * toolbar, QWidget * parent)
+    : QTreeView(parent), m_toolbar(toolbar)
 {
     createActions();
 
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &TProjectView::customContextMenuRequested, this, &TProjectView::showContextMenu);
-    connect(this, &QAbstractItemView::doubleClicked, this, &TProjectView::runDefaultAction);
+    connect(this, &TProjectView::doubleClicked, this, &TProjectView::runDefaultAction);
+}
+
+void TProjectView::setModel(QAbstractItemModel * newModel)
+{
+    QTreeView::setModel(newModel);
+
+    connect(model(), &TProjectModel::dataChanged, this, &TProjectView::refreshActions);
 }
 
 void TProjectView::createActions()
 {
     m_initComponentAction = new QAction(tr("Initialize"), this);
+    m_initComponentAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_DialogYesButton));
     connect(m_initComponentAction, &QAction::triggered, this, &TProjectView::initComponent);
     m_deinitComponentAction = new QAction(tr("Deinitialize"), this);
+    m_deinitComponentAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_DialogNoButton));
     connect(m_deinitComponentAction, &QAction::triggered, this, &TProjectView::deinitComponent);
     m_showComponentSettingsAction = new QAction(tr("Settings"), this);
+    m_showComponentSettingsAction->setIcon(QPixmap(":/icons/settings.png"));
     connect(m_showComponentSettingsAction, &QAction::triggered, this, &TProjectView::showComponentSettings);
     m_openDeviceAction = new QAction(tr("Open device"), this);
+    m_openDeviceAction->setIcon(QPixmap(":/icons/add-open-device.png"));
     connect(m_openDeviceAction, &QAction::triggered, this, &TProjectView::openDevice);
+
     m_addIODeviceAction = new QAction(tr("Add IO device"), this);
+    m_addIODeviceAction->setIcon(QPixmap(":/icons/add-iodevice.png"));
     connect(m_addIODeviceAction, &QAction::triggered, this, &TProjectView::addIODevice);
     m_addScopeAction = new QAction(tr("Add oscilloscope"), this);
+    m_addScopeAction->setIcon(QPixmap(":/icons/add-oscilloscope.png"));
     connect(m_addScopeAction, &QAction::triggered, this, &TProjectView::addScope);
     m_addAnalDeviceAction = new QAction(tr("Add analytical device"), this);
+    m_addAnalDeviceAction->setIcon(QPixmap(":/icons/add-analytical.png"));
     connect(m_addAnalDeviceAction, &QAction::triggered, this, &TProjectView::addAnalDevice);
 
     m_initIODeviceAction = new QAction(tr("Initialize"), this);
+    m_initIODeviceAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_DialogYesButton));
     connect(m_initIODeviceAction, &QAction::triggered, this, &TProjectView::initIODevice);
     m_deinitIODeviceAction = new QAction(tr("Deinitialize"), this);
+    m_deinitIODeviceAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_DialogNoButton));
     connect(m_deinitIODeviceAction, &QAction::triggered, this, &TProjectView::deinitIODevice);
     m_showIODeviceAction = new QAction(tr("Show"), this);
+    m_showIODeviceAction->setIcon(QPixmap(":/icons/show.png"));
     connect(m_showIODeviceAction, &QAction::triggered, this, &TProjectView::showIODevice);
     m_removeIODeviceAction = new QAction(tr("Remove"), this);
+    m_removeIODeviceAction->setIcon(QPixmap(":/icons/delete.png"));;
     connect(m_removeIODeviceAction, &QAction::triggered, this, &TProjectView::removeIODevice);
 
     m_initScopeAction = new QAction(tr("Initialize"), this);
+    m_initScopeAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_DialogYesButton));
     connect(m_initScopeAction, &QAction::triggered, this, &TProjectView::initScope);
     m_deinitScopeAction = new QAction(tr("Deinitialize"), this);
+    m_deinitScopeAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_DialogNoButton));
     connect(m_deinitScopeAction, &QAction::triggered, this, &TProjectView::deinitScope);
     m_showScopeAction = new QAction(tr("Show"), this);
+    m_showScopeAction->setIcon(QPixmap(":/icons/show.png"));
     connect(m_showScopeAction, &QAction::triggered, this, &TProjectView::showScope);
     m_removeScopeAction = new QAction(tr("Remove"), this);
+    m_removeScopeAction->setIcon(QPixmap(":/icons/delete.png"));
     connect(m_removeScopeAction, &QAction::triggered, this, &TProjectView::removeScope);
 
     m_initAnalDeviceAction = new QAction(tr("Initialize"), this);
+    m_initAnalDeviceAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_DialogYesButton));
     connect(m_initAnalDeviceAction, &QAction::triggered, this, &TProjectView::initAnalDevice);
     m_deinitAnalDeviceAction = new QAction(tr("Deinitialize"), this);
+    m_deinitAnalDeviceAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_DialogNoButton));
     connect(m_deinitAnalDeviceAction, &QAction::triggered, this, &TProjectView::deinitAnalDevice);
     m_showAnalDeviceAction = new QAction(tr("Show"), this);
+    m_showAnalDeviceAction->setIcon(QPixmap(":/icons/show.png"));
     connect(m_showAnalDeviceAction, &QAction::triggered, this, &TProjectView::showAnalDevice);
     m_removeAnalDeviceAction = new QAction(tr("Remove"), this);
+    m_removeAnalDeviceAction->setIcon(QPixmap(":/icons/delete.png"));
     connect(m_removeAnalDeviceAction, &QAction::triggered, this, &TProjectView::removeAnalDevice);
 
     m_showInfoAction = new QAction(tr("Info"), this);
+    m_showInfoAction->setIcon(QPixmap(":/icons/info.png"));
     connect(m_showInfoAction, &QAction::triggered, this, &TProjectView::showInfo);
 
     m_openProtocolManagerAction = new QAction(tr("Open Protocol Manager"), this);
-    connect(m_openProtocolManagerAction, &QAction::triggered, m_mainWindow, &TMainWindow::createProtocolManagerDockWidget);
+    m_openProtocolManagerAction->setIcon(QPixmap(":/icons/protocol-manager.png"));
+    connect(m_openProtocolManagerAction, &QAction::triggered, this, &TProjectView::showProtocolManager);
     m_editProtocolAction = new QAction(tr("Edit"), this);
-    connect(m_editProtocolAction, &QAction::triggered, this, &TProjectView::editProtocol);
+    m_editProtocolAction->setIcon(QPixmap(":/icons/show.png"));
+    connect(m_editProtocolAction, &QAction::triggered, this, &TProjectView::openProtocolEditor);
 
     m_openScenarioManagerAction = new QAction(tr("Open Scenario Manager"), this);
-    connect(m_openScenarioManagerAction, &QAction::triggered, m_mainWindow, &TMainWindow::createScenarioManagerDockWidget);
+    m_openScenarioManagerAction->setIcon(QPixmap(":/icons/scenario-manager.png"));
+    connect(m_openScenarioManagerAction, &QAction::triggered, this, &TProjectView::showScenarioManager);
     m_editScenarioAction = new QAction(tr("Edit"), this);
-    connect(m_editScenarioAction, &QAction::triggered, this, &TProjectView::editScenario);
+    m_editScenarioAction->setIcon(QPixmap(":/icons/show.png"));
+    connect(m_editScenarioAction, &QAction::triggered, this, &TProjectView::openScenarioEditor);
 }
 
-void TProjectView::showContextMenu(const QPoint &point)
+void TProjectView::refreshActions()
 {
-    QModelIndex index = indexAt(point);
+    TProjectItem * item = nullptr;
 
-    if (!index.internalPointer()) {
-        return;
-    }
+    if (!selectedIndexes().isEmpty())
+        item = static_cast<TProjectItem *>(selectedIndexes().constFirst().internalPointer());
 
-    TProjectItem * item = static_cast<TProjectItem *>(index.internalPointer());
+    refreshActionsForItem(item);
+}
 
-    QMenu * contextMenu = new QMenu(this);
-
-    QAction * defaultAction = nullptr;
+void TProjectView::refreshActionsForItem(TProjectItem * item)
+{
+    m_currentActions.clear();
 
     m_component = nullptr;
     m_IODevice = nullptr;
     m_scope = nullptr;
     m_analDevice = nullptr;
     m_unit = nullptr;
+    m_protocol = nullptr;
+    m_scenario = nullptr;
 
     if ((m_component = dynamic_cast<TComponentModel *>(item))) {
         m_unit = m_component;
 
         m_initComponentAction->setDisabled(m_component->status() != TProjectItem::Uninitialized);
-        contextMenu->addAction(m_initComponentAction);
+        m_currentActions.append(m_initComponentAction);
         m_deinitComponentAction->setDisabled(m_component->status() != TProjectItem::Initialized);
-        contextMenu->addAction(m_deinitComponentAction);
+        m_currentActions.append(m_deinitComponentAction);
         m_showComponentSettingsAction->setDisabled(m_component->status() != TProjectItem::Initialized);
-        contextMenu->addAction(m_showComponentSettingsAction);
-        m_openDeviceAction->setDisabled(m_component->status() != TProjectItem::Initialized);
-        contextMenu->addAction(m_openDeviceAction);
+        m_currentActions.append(m_showComponentSettingsAction);
+        m_currentActions.append(m_openDeviceAction);
         m_addIODeviceAction->setDisabled(m_component->status() != TProjectItem::Initialized || !m_component->canAddIODevice());
-        contextMenu->addAction(m_addIODeviceAction);
+        m_currentActions.append(m_addIODeviceAction);
         m_addScopeAction->setDisabled(m_component->status() != TProjectItem::Initialized || !m_component->canAddScope());
-        contextMenu->addAction(m_addScopeAction);
+        m_currentActions.append(m_addScopeAction);
         m_addAnalDeviceAction->setDisabled(m_component->status() != TProjectItem::Initialized || !m_component->canAddAnalDevice());
-        contextMenu->addAction(m_addAnalDeviceAction);
+        m_currentActions.append(m_addAnalDeviceAction);
 
-        defaultAction = chooseDefaultAction(m_component);
+        m_currentDefaultAction = chooseDefaultAction(m_component);
     }
     else if ((m_IODevice = dynamic_cast<TIODeviceModel *>(item))) {
         m_unit = m_IODevice;
 
         m_initIODeviceAction->setDisabled(m_IODevice->status() != TProjectItem::Uninitialized);
-        contextMenu->addAction(m_initIODeviceAction);
+        m_currentActions.append(m_initIODeviceAction);
         m_deinitIODeviceAction->setDisabled(m_IODevice->status() != TProjectItem::Initialized);
-        contextMenu->addAction(m_deinitIODeviceAction);
+        m_currentActions.append(m_deinitIODeviceAction);
         m_showIODeviceAction->setDisabled(m_IODevice->status() != TProjectItem::Initialized);
-        contextMenu->addAction(m_showIODeviceAction);
+        m_currentActions.append(m_showIODeviceAction);
         m_removeIODeviceAction->setDisabled(!m_IODevice->isManual() && m_IODevice->isAvailable());
-        contextMenu->addAction(m_removeIODeviceAction);
+        m_currentActions.append(m_removeIODeviceAction);
 
-        defaultAction = chooseDefaultAction(m_IODevice);
+        m_currentDefaultAction = chooseDefaultAction(m_IODevice);
     }
     else if ((m_scope = dynamic_cast<TScopeModel *>(item))) {
         m_unit = m_scope;
 
         m_initScopeAction->setDisabled(m_scope->status() != TProjectItem::Uninitialized);
-        contextMenu->addAction(m_initScopeAction);
+        m_currentActions.append(m_initScopeAction);
         m_deinitScopeAction->setDisabled(m_scope->status() != TProjectItem::Initialized);
-        contextMenu->addAction(m_deinitScopeAction);
+        m_currentActions.append(m_deinitScopeAction);
         m_showScopeAction->setDisabled(m_scope->status() != TProjectItem::Initialized);
-        contextMenu->addAction(m_showScopeAction);
+        m_currentActions.append(m_showScopeAction);
         m_removeScopeAction->setDisabled(!m_scope->isManual() && m_scope->isAvailable());
-        contextMenu->addAction(m_removeScopeAction);
+        m_currentActions.append(m_removeScopeAction);
 
-        defaultAction = chooseDefaultAction(m_scope);
+        m_currentDefaultAction = chooseDefaultAction(m_scope);
     }
     else if ((m_analDevice = dynamic_cast<TAnalDeviceModel *>(item))) {
         m_unit = m_analDevice;
 
         m_initAnalDeviceAction->setDisabled(m_analDevice->status() != TProjectItem::Uninitialized);
-        contextMenu->addAction(m_initAnalDeviceAction);
+        m_currentActions.append(m_initAnalDeviceAction);
         m_deinitAnalDeviceAction->setDisabled(m_analDevice->status() != TProjectItem::Initialized);
-        contextMenu->addAction(m_deinitAnalDeviceAction);
+        m_currentActions.append(m_deinitAnalDeviceAction);
         m_showAnalDeviceAction->setDisabled(m_analDevice->status() != TProjectItem::Initialized);
-        contextMenu->addAction(m_showAnalDeviceAction);
+        m_currentActions.append(m_showAnalDeviceAction);
         m_removeAnalDeviceAction->setDisabled(!m_analDevice->isManual() && m_analDevice->isAvailable());
-        contextMenu->addAction(m_removeAnalDeviceAction);
+        m_currentActions.append(m_removeAnalDeviceAction);
 
-        defaultAction = chooseDefaultAction(m_analDevice);
+        m_currentDefaultAction = chooseDefaultAction(m_analDevice);
+    }
+    else if ((m_protocol = dynamic_cast<TProtocolModel *>(item))) {
+        m_currentActions.append(m_editProtocolAction);
+        m_currentDefaultAction = m_editProtocolAction;
+    }
+    else if ((m_scenario = dynamic_cast<TScenarioModel *>(item))) {
+        m_currentActions.append(m_editScenarioAction);
+        m_currentDefaultAction = m_editScenarioAction;
     }
     else if (dynamic_cast<TIODeviceContainer *>(item) && (m_component = dynamic_cast<TComponentModel *>(item->parent()))) {
         m_addIODeviceAction->setDisabled(m_component->status() != TProjectItem::Initialized || !m_component->canAddIODevice());
-        contextMenu->addAction(m_addIODeviceAction);
+        m_currentActions.append(m_addIODeviceAction);
 
-        defaultAction = m_addIODeviceAction;
+        m_currentDefaultAction = m_addIODeviceAction;
     }
     else if (dynamic_cast<TScopeContainer *>(item) && (m_component = dynamic_cast<TComponentModel *>(item->parent()))) {
         m_addScopeAction->setDisabled(m_component->status() != TProjectItem::Initialized || !m_component->canAddScope());
-        contextMenu->addAction(m_addScopeAction);
+        m_currentActions.append(m_addScopeAction);
 
-        defaultAction = m_addScopeAction;
+        m_currentDefaultAction = m_addScopeAction;
     }
     else if (dynamic_cast<TAnalDeviceContainer *>(item) && (m_component = dynamic_cast<TComponentModel *>(item->parent()))) {
         m_addAnalDeviceAction->setDisabled(m_component->status() != TProjectItem::Initialized || !m_component->canAddAnalDevice());
-        contextMenu->addAction(m_addAnalDeviceAction);
+        m_currentActions.append(m_addAnalDeviceAction);
 
-        defaultAction = m_addAnalDeviceAction;
+        m_currentDefaultAction = m_addAnalDeviceAction;
     }
     else if ((dynamic_cast<TProtocolContainer *>(item))) {
         m_openProtocolManagerAction->setEnabled(true);
-        contextMenu->addAction(m_openProtocolManagerAction);
+        m_currentActions.append(m_openProtocolManagerAction);
 
-        defaultAction = nullptr;
+        m_currentDefaultAction = nullptr;
     }
     else if ((dynamic_cast<TScenarioContainer *>(item))) {
         m_openScenarioManagerAction->setEnabled(true);
-        contextMenu->addAction(m_openScenarioManagerAction);
+        m_currentActions.append(m_openScenarioManagerAction);
 
-        defaultAction = nullptr;
+        m_currentDefaultAction = nullptr;
+    }
+    else if ((dynamic_cast<TComponentContainer *>(item))){
+        m_currentActions.append(m_openDeviceAction);
+
+        m_currentDefaultAction = nullptr;
+    }
+    else {
+        m_currentActions.append(m_openDeviceAction);
+        m_currentActions.append(m_openProtocolManagerAction);
+        m_currentActions.append(m_openScenarioManagerAction);
     }
 
     if (m_unit) {
-        m_showInfoAction->setDisabled(m_unit->status() != TProjectItem::Initialized);
-        contextMenu->addAction(m_showInfoAction);
+        m_showInfoAction->setDisabled(m_unit->status() != TProjectItem::Initialized || m_unit->preInitParams().isEmpty());
+        m_currentActions.append(m_showInfoAction);
     }
+
+    if (!m_toolbar)
+        return;
+
+    m_toolbar->clear();
+    m_toolbar->addActions(m_currentActions);
+}
+
+void TProjectView::selectionChanged(const QItemSelection & selected, const QItemSelection & deselected)
+{
+    QTreeView::selectionChanged(selected, deselected);
+
+    TProjectItem * item = nullptr;
+
+    if (!selected.indexes().isEmpty())
+        item = static_cast<TProjectItem *>(selected.indexes().first().internalPointer());
+
+    refreshActionsForItem(item);
+}
+
+void TProjectView::showContextMenu(const QPoint &point)
+{
+    QModelIndex index = indexAt(point);
+
+    if (!index.internalPointer())
+        return;
+
+    refreshActionsForItem(static_cast<TProjectItem *>(index.internalPointer()));
+
+    QMenu * contextMenu = new QMenu(this);
+
+    contextMenu->addActions(m_currentActions);
 
     if (contextMenu->isEmpty()) {
         delete contextMenu;
         return;
     }
 
-    if (defaultAction) {
-        contextMenu->setDefaultAction(defaultAction);
+    if (m_currentDefaultAction) {
+        contextMenu->setDefaultAction(m_currentDefaultAction);
     }
     contextMenu->setAttribute(Qt::WA_DeleteOnClose, true);
     contextMenu->exec(viewport()->mapToGlobal(point));
@@ -543,21 +627,31 @@ void TProjectView::showInfo()
     dialog.exec();
 }
 
-void TProjectView::editProtocol()
+void TProjectView::showProtocolManager()
+{
+    ((TProjectModel *)model())->protocolContainer()->showManager();
+}
+
+void TProjectView::showScenarioManager()
+{
+    ((TProjectModel *)model())->scenarioContainer()->showManager();
+}
+
+void TProjectView::openProtocolEditor()
 {
     if (!m_protocol) {
         return;
     }
 
-    m_mainWindow->openProtocolEditor(m_protocol->name());
+    m_protocol->openEditor();
 }
 
-void TProjectView::editScenario()
+void TProjectView::openScenarioEditor()
 {
     if (!m_scenario) {
         return;
     }
 
-    m_mainWindow->createScenarioEditorDockWidget(m_scenario);
+    m_scenario->openEditor();
 }
 

@@ -17,11 +17,14 @@ public:
     static bool addDeviceDialog(QWidget * parent, QString & name, QString & info);
     static bool renameDeviceDialog(QWidget * parent, QString & name, QString & info);
 
+    static bool exportImageDimensionsDialog(QWidget * parent, uint &width, uint &height);
+
     static bool paramErrorQuestion(QWidget * parent);
     static bool paramWarningQuestion(QWidget * parent);
     static bool componentReinitQuestion(QWidget * parent);
     static bool componentDeinitQuestion(QWidget * parent);
     static bool deviceReinitQuestion(QWidget * parent);
+    static bool deviceOpenQuestion(QWidget * parent);
 
     static void componentInitFailedGeneralMessage(QWidget * parent);
     static void componentDeinitFailedGeneralMessage(QWidget * parent);
