@@ -9,10 +9,6 @@
 #include <QJsonArray>
 #include <QJsonValue>
 
-/*!
- * \brief ...
- *
- */
 class TScenarioScriptItem : public TScenarioItem {
 
 public:
@@ -67,10 +63,6 @@ def process_data():
     TScenarioItem * copy() const override {
         return new TScenarioScriptItem(*this);
     }
-
-    /*const QString getIconResourcePath() const override {
-        return ":/icons/variable.png";
-    }*/
 
     bool prepare() override {
         if(getState() == TState::TError) {
@@ -171,13 +163,6 @@ def process_data():
     }
 
     void processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
-       /* if (!m_pythonProcess->waitForFinished()) {
-            setState(TState::TRuntimeError, "Python process did not finish!");
-            log("Python process did not finish!", TLogLevel::TError);
-            emit executionFinished();
-            return;
-        } */
-
         if (!m_pythonProcess) {
            setState(TState::TRuntimeError, "An error has occured during script execution.");
            log("An error has occured during script execution.", TLogLevel::TError);
@@ -185,22 +170,28 @@ def process_data():
            return;
         }
 
-        QByteArray errorOutput = m_pythonProcess->readAllStandardError();
-        if (!errorOutput.isEmpty()) {
-            log(QString("Python process finished with errors in stderr:\n%1").arg(errorOutput), TLogLevel::TWarning);
-        }
-
-        // Read and decode response
-        QByteArray response = m_pythonProcess->readAll();
-
-        if(exitCode > 0) {
-            setState(TState::TRuntimeError, response);
-            log(QString("Python process finished with exit code %1").arg(exitCode), TLogLevel::TError);
+        if(exitStatus == QProcess::ExitStatus::CrashExit) {
+            QString crashError = "Python process crashed.";
+            setState(TState::TRuntimeError, crashError);
+            log(crashError, TLogLevel::TError);
 
             cleanupProcess();
             emit executionFinished();
             return;
         }
+
+        if(exitCode > 0) {
+            QString exitCodeError = QString("Python process finished with exit code %1.").arg(exitCode);
+            setState(TState::TRuntimeError, exitCodeError);
+            log(exitCodeError, TLogLevel::TError);
+
+            cleanupProcess();
+            emit executionFinished();
+            return;
+        }
+
+        // Read and decode response
+        QByteArray response = m_pythonProcess->readAll();
 
         QHash<TScenarioItemPort *, QByteArray> decodedData;
         if (!decodeData(response, decodedData)) {
@@ -214,6 +205,15 @@ def process_data():
 
         cleanupProcess();
         emit executionFinished(decodedData);
+    }
+
+    void readStandardError()  {
+        QString output = m_pythonProcess->readAllStandardError();
+        QStringList outputLines = output.split('\n', Qt::SkipEmptyParts);
+
+        for(const QString & line : std::as_const(outputLines)) {
+            log(QString("Script output: %1").arg(line), TLogLevel::TInfo);
+        }
     }
 
     void stopExecution() override {
@@ -242,6 +242,7 @@ def process_data():
 
         m_pythonProcess = new QProcess();
         connect(m_pythonProcess, &QProcess::finished, this, &TScenarioScriptItem::processFinished);
+        connect(m_pythonProcess, &QProcess::readyReadStandardError, this, &TScenarioScriptItem::readStandardError);
 
         if(m_params.getSubParamByName("Python path")->getValue().isEmpty()) {
            m_pythonProcess->setProgram("python");
@@ -271,8 +272,17 @@ try:
     script_length = struct.unpack("<I", read_exactly(4))[0]
     user_code = read_exactly(script_length).decode('utf-8')
 
+    # Prevent user from using stdout, redirect any and all output to stderr
+    real_stdout = sys.stdout
+    sys.stdout = sys.stderr
+
     # Execute the user code in the global namespace.
     exec(user_code, globals())
+
+    sys.stdout = real_stdout
+
+    sys.stderr.flush()
+    sys.stderr.buffer.flush()
 
     # === Step 2: Read raw input data ===
     # Protocol: 1 byte for the number of input elements.

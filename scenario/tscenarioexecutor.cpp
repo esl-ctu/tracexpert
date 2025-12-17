@@ -391,10 +391,10 @@ void TScenarioExecutor::saveOutputData(QHash<TScenarioItemPort *, QByteArray> ou
         if(!m_dataConnectionMap.contains(sourceItemPort)) {
             QString portName = sourceItemPort->getLabelText().isEmpty() ? sourceItemPort->getName() : sourceItemPort->getLabelText();
             qInfo() << "Output data could not be passed to next block: "
-                    << "unconnected output data port (" << portName << ") in block " << sourceItemPort->getParentItem()->getName() << ".";
+                    << "unconnected output data port " << portName << " in block " << sourceItemPort->getParentItem()->getName() << ".";
             sourceItemPort->getParentItem()->setState(
                 TScenarioItem::TState::TRuntimeWarning,
-                "Output data could not be passed to next block: unconnected output data port (" + portName + ")!"
+                "Output data could not be passed to next block: unconnected output data port " + portName + "!"
             );
             continue;
         }
