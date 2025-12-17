@@ -1,6 +1,7 @@
 #include "tsenderwidget.h"
 
 #include <QGroupBox>
+#include <QMessageBox>
 
 #include "../../protocol/tprotocol.h"
 #include "widgets/tfilenameedit.h"
@@ -42,11 +43,14 @@ TSenderWidget::TSenderWidget(TSenderModel * senderModel, TProtocolContainer * pr
     QLayout * sendFileLayout = new QVBoxLayout();
 
     TFileNameEdit * sendFileEdit = new TFileNameEdit(QFileDialog::ExistingFile);
-    QPushButton * sendFileButton = new QPushButton("Send");
+    QPushButton * sendFileButton = new QPushButton("Load from file and send");
+    QPushButton * importFileButton = new QPushButton("Import from HDF and send");
     connect(sendFileButton, &QPushButton::clicked, this, [=](){ sendFile(sendFileEdit->text()); });
-
+    connect(importFileButton, &QPushButton::clicked, this, [=](){ importFile(); });
+    
     sendFileLayout->addWidget(sendFileEdit);
     sendFileLayout->addWidget(sendFileButton);
+    sendFileLayout->addWidget(importFileButton);
 
     sendFileGroupBox->setLayout(sendFileLayout);
 
@@ -239,3 +243,48 @@ void TSenderWidget::sendFile(QString fileName)
 
     file.close();
 }
+
+void TSenderWidget::importFile()
+{
+    qDebug() << "Importing from HDF";
+
+    auto *wiz = new TImportHDFDataWizard(this);
+    wiz->setWindowTitle(tr("Import data from HDF5"));
+
+    const int rc = wiz->exec();
+
+    if (rc != QDialog::Accepted) {
+        qDebug() << "Import wizard canceled.";
+        wiz->deleteLater();
+        return;
+    }
+
+    // Wizard finished (Page 3 ran). Pull results via your getters.
+    if (!wiz->importSucceeded()) {
+        const QString msg = wiz->importLog().isEmpty()
+        ? tr("Import failed.")
+        : tr("Import failed:\n\n%1").arg(wiz->importLog());
+
+        QMessageBox::warning(this, tr("Import failed"), msg);
+        wiz->deleteLater();
+        return;
+    }
+
+    QByteArray data                = wiz->importedData();
+    const QString typeText         = wiz->importedTypeText();
+    const int elemBytes            = wiz->importedElementBytes();
+    const QVector<quint64> dims    = wiz->importedDims();
+
+    // Optional debug info
+    qDebug() << "Import OK"
+             << "dataset:" << wiz->sourceDatasetPath()
+             << "type:" << typeText
+             << "elemBytes:" << elemBytes
+             << "dims:" << dims
+             << "bytes:" << data.size();
+
+    m_senderModel->writeData(data);
+
+    wiz->deleteLater();
+}
+

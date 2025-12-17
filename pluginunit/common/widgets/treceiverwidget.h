@@ -23,6 +23,7 @@ public slots:
     void receiveBytes();
 
     void receiveFile(QString fileName);
+    void exportFile();
 
     void updateDisplayedProtocols();
 

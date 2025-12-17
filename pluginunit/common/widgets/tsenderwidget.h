@@ -29,6 +29,7 @@ public slots:
     void sendProtocolBytes();
 
     void sendFile(QString fileName);
+    void importFile();
 
     bool validateRawInputValues();
 

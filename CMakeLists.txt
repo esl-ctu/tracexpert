@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(TraceXpert VERSION 1.0 LANGUAGES CXX)
+project(TraceXpert VERSION 1.0 LANGUAGES C CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -8,6 +8,9 @@ set(CMAKE_AUTORCC ON)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # Generate build info
 string(TIMESTAMP BUILD_TIMESTAMP "%Y-%m-%d %H:%M:%S")
@@ -50,11 +53,22 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts Xml Concur
 
 add_subdirectory(ads)
 
+# HDF5 library
+set(HDF5_BUILD_CPP_LIB ON CACHE BOOL "" FORCE)
+set(HDF5_BUILD_HL_LIB  OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(BUILD_TESTING        OFF CACHE BOOL "" FORCE)
+set(HDF5_BUILD_TESTING   OFF CACHE BOOL "" FORCE)
+set(HDF5_BUILD_TOOLS     OFF CACHE BOOL "" FORCE)
+set(HDF5_BUILD_EXAMPLES  OFF CACHE BOOL "" FORCE)
+add_subdirectory(hdf5)
+
 set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/appicon.rc")
 
 add_executable(${PROJECT_NAME} WIN32
     ${APP_ICON_RESOURCE_WINDOWS}
     application.qrc
+    buildinfo.h.in
     main.cpp
     tdevicewizard.cpp
     tdevicewizard.h
@@ -64,6 +78,8 @@ add_executable(${PROJECT_NAME} WIN32
     tdockmanager.h
     tmainwindow.cpp
     tmainwindow.h
+    twelcomescreen.h
+    twelcomescreen.cpp
     common/tanaldevice.h
     common/tcommon.h
     common/tconfigparam.h
@@ -227,9 +243,18 @@ add_executable(${PROJECT_NAME} WIN32
     graphs/tgraphwidget.cpp
     graphs/tgraph.h
     graphs/tcpagraph.h
-    buildinfo.h.in
-    twelcomescreen.h
-    twelcomescreen.cpp
+    eximport/thdfsession.h 
+    eximport/thdfsession.cpp
+    eximport/texporthdfscopewizard.h
+    eximport/texporthdfscopewizard.cpp    
+    eximport/thdfbrowserwidget.h 
+    eximport/thdfbrowserwidget.cpp
+    eximport/taddopenhdfwizard.h 
+    eximport/taddopenhdfwizard.cpp
+    eximport/texporthdfdatawizard.h 
+    eximport/texporthdfdatawizard.cpp
+    eximport/timporthdfdatawizard.h 
+    eximport/timporthdfdatawizard.cpp
 )
 
 
@@ -251,6 +276,15 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Concurrent)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Svg)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Help)
+
+# Try shared first (most common); if not present, use static
+if (TARGET hdf5_cpp-shared)
+    target_link_libraries(${PROJECT_NAME} PRIVATE hdf5_cpp-shared)
+elseif (TARGET hdf5_cpp-static)
+    target_link_libraries(${PROJECT_NAME} PRIVATE hdf5_cpp-static)
+else()
+    message(FATAL_ERROR "No HDF5 C++ target (hdf5_cpp-*) found in subdirectory build")
+endif()
 
 function(add_plugin dir target additional_files)
   # Add the subdirectory for the plugin
