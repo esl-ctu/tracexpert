@@ -6,6 +6,7 @@
 #include "../../protocol/tprotocol.h"
 #include "widgets/tfilenameedit.h"
 #include "../tdialog.h"
+#include "../../eximport/timporthdfdatawizard.h"
 
 TSenderWidget::TSenderWidget(TSenderModel * senderModel, TProtocolContainer * protocolContainer, QWidget * parent)
     : QWidget(parent), m_senderModel(senderModel), m_protocolContainer(protocolContainer)
