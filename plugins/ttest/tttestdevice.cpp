@@ -7,7 +7,7 @@
 #include "tttestoutputstream.h"
 #include "ttest.hpp"
 
-TTTestDevice::TTTestDevice(): m_traceLength(0), m_numberOfClasses(0), m_traceType("Unsigned 8 bit"), m_order(1), m_inputFormat(0), m_labelType("Unsigned 8 bit") {
+TTTestDevice::TTTestDevice(): m_traceLength(0), m_numberOfClasses(0), m_traceType("Unsigned 8 bit"), m_order(1), m_inputFormat(0), m_labelType("Unsigned 8 bit"), m_nonLabeledTraces(nullptr) {
     m_preInitParams = TConfigParam("Welch's t-test configuration", "", TConfigParam::TType::TDummy, "");
     TConfigParam traceLength = TConfigParam("Trace length (in samples)", "1000", TConfigParam::TType::TUInt, "The number of samples per data trace");
     m_preInitParams.addSubParam(traceLength);
@@ -204,7 +204,9 @@ void TTTestDevice::deInit(bool *ok) {
     m_contexts.clear();
 
     for (int i = 0; i < m_tvals.length(); i++) {
-        delete m_tvals[i];
+        if(m_tvals[i] != nullptr)
+            delete m_tvals[i];
+        m_tvals[i] = nullptr;
     }
     m_tvals.clear();
 
@@ -212,7 +214,9 @@ void TTTestDevice::deInit(bool *ok) {
 
     m_traces.clear();
     m_labels.clear();
-    delete [] m_nonLabeledTraces;
+    if(m_nonLabeledTraces != nullptr)
+        delete [] m_nonLabeledTraces;
+    m_nonLabeledTraces = nullptr;
 
     if (ok != nullptr) *ok = true;
 }
