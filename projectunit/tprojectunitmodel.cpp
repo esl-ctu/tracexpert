@@ -1,15 +1,10 @@
 #include "tprojectunitmodel.h"
 #include "tprojectunit.h"
+#include "../scenario/tscenario.h"
+#include "../protocol/tprotocol.h"
 
 
-TProjectUnitModel::TProjectUnitModel(const QString & typeName, TProjectUnitContainer * parent) :
-    TProjectItem(parent->model(), parent),
-    m_unit(nullptr)
-{
-    m_typeName = typeName;
-}
-
-TProjectUnitModel::TProjectUnitModel(const QString & typeName, TProjectUnit * unit, TProjectUnitContainer * parent)
+TProjectUnitModel::TProjectUnitModel(const QString & typeName, TProjectUnitContainer * parent, TProjectUnit * unit)
     : TProjectItem(parent->model(), parent), m_unit(unit)
 {
     m_typeName = typeName;
@@ -94,4 +89,33 @@ void TProjectUnitModel::load(QDomElement * element) {
     // rather than the data attribute
     m_unit->setName(name);
     m_unit->setDescription(description);
+}
+
+TProjectUnitModel * TProjectUnitModel::instantiate(const QString & typeName, TProjectUnitContainer * parent, TProjectUnit * unit)
+{
+    if(typeName == "scenario") {
+        TScenarioContainer * scenarioContainer = dynamic_cast<TScenarioContainer *>(parent);
+        if (!scenarioContainer)
+            qWarning("Attempted to create scenario model in non-scenario container");
+
+        TScenario * scenario = dynamic_cast<TScenario *>(unit);
+        if (unit && !scenario)
+            qWarning("Attempted to create scenario model from non-scenario unit");
+
+        return new TScenarioModel(scenarioContainer, scenario);
+    }
+    if(typeName == "protocol") {
+        TProtocolContainer * protocolContainer = dynamic_cast<TProtocolContainer *>(parent);
+        if (!protocolContainer)
+            qWarning("Attempted to create protocol model in non-protocol container");
+
+        TProtocol * protocol = dynamic_cast<TProtocol *>(unit);
+        if (unit && !protocol)
+            qWarning("Attempted to create protocol model from non-protocol unit");
+
+        return new TProtocolModel(protocolContainer, protocol);
+    }
+
+    qCritical() << "Failed to instatiate TProjectUnit: unknown type: " << typeName;
+    return nullptr;
 }

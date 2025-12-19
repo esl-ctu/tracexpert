@@ -218,7 +218,7 @@ uint TProjectUnitWidget::importFromFiles() {
         document.setContent(documentArray);
 
         QDomElement projectElement = document.documentElement();
-        TProjectUnitModel * model = new TProjectUnitModel(m_container->unitTypeName(), m_container);
+        TProjectUnitModel * model = TProjectUnitModel::instantiate(m_container->unitTypeName(), m_container);
 
         try {
             model->load(&projectElement);

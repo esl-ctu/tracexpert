@@ -17,8 +17,7 @@ class TScenarioContainer;
 class TScenarioModel : public TProjectUnitModel {
 
 public:
-    TScenarioModel(TScenarioContainer * parent);
-    TScenarioModel(TScenario * scenario, TScenarioContainer * parent);
+    TScenarioModel(TScenarioContainer * parent, TScenario * scenario = nullptr);
 
     TScenario * scenario() const;
 };
