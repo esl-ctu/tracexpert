@@ -1,5 +1,6 @@
 #ifndef TAIAPICONNECTENGINE_H
 #define TAIAPICONNECTENGINE_H
+#pragma once
 
 #include "AIAPIConnectEngine_global.h"
 #include "tplugin.h"

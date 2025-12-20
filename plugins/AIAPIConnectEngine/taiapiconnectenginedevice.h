@@ -1,5 +1,6 @@
 #ifndef TAIAPICONNECTENGINEDEVICE_H
 #define TAIAPICONNECTENGINEDEVICE_H
+#pragma once
 
 #include <QJsonObject>
 #include <QNetworkAccessManager>
@@ -64,6 +65,7 @@ public:
     //testModel
     size_t getData(uint8_t * buffer, size_t length, bool train);
     size_t fillData(const uint8_t * buffer, size_t length, bool train);
+    size_t availableToRead(bool train);
 
     //size_t fillData(const uint8_t * buffer, size_t length, QList<QList<uint8_t> *> & set);
     //void processData(bool subtract);

@@ -297,11 +297,17 @@ void TAIAPIConnectEngineDevice::init(bool *ok /*= nullptr*/) {
     m_analActions.append(new TAIAPIConnectEngineDeviceAction("Upload data (traces)", "Uploads the data from the input stream.", [=](){ uploadData(); }));
     m_analActions.append(new TAIAPIConnectEngineDeviceAction("Upload HDF5", "Uploads a HDF5 file specifed in config param. Make sure that the override is on. After a successful upload, override will be switched off.", [=](){ uploadHDF5(); }));
     m_analActions.append(new TAIAPIConnectEngineDeviceAction("Train", "Trains the model acording to set params.", [=](){ train(); }));
-    m_analActions.append(new TAIAPIConnectEngineDeviceAction("Stop training", "Stops the training (even if it is not running).", [=](){ stopTraining(); }));
+    m_analActions.append(new TAIAPIConnectEngineDeviceAction("Stop training", "Stops the training (even if it is not running).", [=](){ stopTraining(); })); //
     //test model?
-    m_analInputStreams.append(new TAIAPIConnectEngineDeviceInputStream("Prediction result", "Stream of prediction results", [=](uint8_t * buffer, size_t length){ return getData(buffer, length, false); }));
+    m_analInputStreams.append(new TAIAPIConnectEngineDeviceInputStream("Prediction result", "Stream of prediction results",
+                                                                    [=](uint8_t * buffer, size_t length){ return getData(buffer, length, false); },
+                                                                    [=](){ return availableToRead(false); })
+                              );
     m_analOutputStreams.append(new TAIAPIConnectEngineDeviceOutputStream("Prediction input", "Stream of traces as input to the model for prediction", [=](const uint8_t * buffer, size_t length){ return fillData(buffer, length, false); }));
-    m_analInputStreams.append(new TAIAPIConnectEngineDeviceInputStream("Training result", "Stream of training results", [=](uint8_t * buffer, size_t length){ return getData(buffer, length, true); }));
+    m_analInputStreams.append(new TAIAPIConnectEngineDeviceInputStream("Training result", "Stream of training results",
+                                                                    [=](uint8_t * buffer, size_t length){ return getData(buffer, length, true); },
+                                                                    [=](){ return availableToRead(true); })
+                              );
     m_analOutputStreams.append(new TAIAPIConnectEngineDeviceOutputStream("Training input", "Stream of traces as input to a dataset for training", [=](const uint8_t * buffer, size_t length){ return fillData(buffer, length, true); }));
 
     if (ok != nullptr) *ok = true;
@@ -422,7 +428,8 @@ TConfigParam TAIAPIConnectEngineDevice::getPostInitParams() const {
     }
     ok &= getListOfDatasets(datasetMap);
     ok &= getListOfX(modelList, "list_models");
-    ok &= getListOfX(archList, "list_architectures");
+    if (mode == ENDPOINT_TRAIN)
+        ok &= getListOfX(archList, "list_architectures");
 
     auto ret = m_postInitParams;
 
@@ -487,12 +494,13 @@ TConfigParam TAIAPIConnectEngineDevice::getPostInitParams() const {
         ret.getSubParamByName("Used model")->addEnumValue(*it);
     }
 
-
-    ret.getSubParamByName("Training params")->getSubParamByName("Architecture")->clearEnumValues();
-    for (auto it = archList.begin(); it != archList.end(); ++it) {
-        ret.getSubParamByName("Training params")->getSubParamByName("Architecture")->addEnumValue(*it);
+    if (mode == ENDPOINT_TRAIN) {
+        ret.getSubParamByName("Training params")->getSubParamByName("Architecture")->clearEnumValues();
+        for (auto it = archList.begin(); it != archList.end(); ++it) {
+            ret.getSubParamByName("Training params")->getSubParamByName("Architecture")->addEnumValue(*it);
+        }
+        ret.getSubParamByName("Training params")->getSubParamByName("Architecture")->addEnumValue("None");
     }
-    ret.getSubParamByName("Training params")->getSubParamByName("Architecture")->addEnumValue("None");
 
     //Upload params remain
 
@@ -581,7 +589,11 @@ TConfigParam TAIAPIConnectEngineDevice::setPostInitParams(TConfigParam params) {
         }
 
         QString arch = params.getSubParamByName("Training params")->getSubParamByName("Architecture")->getValue();
-        ok = setArchitecture(arch);
+        if (arch != "None"){
+            ok = setArchitecture(arch);
+        } else {
+            ok = true;
+        }
 
         if (!ok) {
             m_postInitParams = params;
@@ -1228,6 +1240,22 @@ bool TAIAPIConnectEngineDevice::loadDataset(QString name, int fromTime/* = 0*/, 
     return true;
 }
 
+size_t TAIAPIConnectEngineDevice::availableToRead(bool train) {
+    QString type = m_preInitParams.getSubParamByName("Data type")->getValue();
+    uint8_t typeSize = getTypeSize(type);
+
+    if (train) {
+        if (!dataReadyTrain) {
+            return typeSize*m_lengthTrain;
+        }
+    } else {
+        if (!dataReadyPredict) {
+            return typeSize*m_lengthPredict;
+        }
+    }
+    return 0;
+}
+
 size_t TAIAPIConnectEngineDevice::getData(uint8_t * buffer, size_t length, bool train) {
     //train == true -> use m_dataTrain, otherwise m_dataPredict
     if (running) {
@@ -1756,14 +1784,18 @@ bool TAIAPIConnectEngineDevice::getListOfX(QList<QString> & l, QString x) const 
     int statusCode = sendGetRequest(response, QString(x));
     if (statusCode != 200) return false;
 
-    QJsonArray models;
-    bool ok = getJsonArrayFromJsonDocumentField(models, response, QString("message"));
-    if (!ok) return false;
+    QJsonArray arr;
+    if (response.isArray()) {
+        arr = response.array();
+    } else {
+        bool ok = getJsonArrayFromJsonDocumentField(arr, response, QString("message"));
+        if (!ok) return false;
+    }
 
     l = QList<QString>();
 
-    for (int i = 0; i < models.size(); ++i) {
-        const QJsonValue& value = models[i];
+    for (int i = 0; i < arr.size(); ++i) {
+        const QJsonValue& value = arr[i];
         if (value.isString()) {
             l.append(value.toString());
         } else {

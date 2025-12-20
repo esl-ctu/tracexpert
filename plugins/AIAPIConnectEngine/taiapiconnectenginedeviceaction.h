@@ -1,5 +1,6 @@
 #ifndef TAIAPICONNECTENGINEDEVICEACTION_H
 #define TAIAPICONNECTENGINEDEVICEACTION_H
+#pragma once
 
 #include "taiapiconnectengine.h"
 
