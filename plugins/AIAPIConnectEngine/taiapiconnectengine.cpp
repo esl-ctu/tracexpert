@@ -12,7 +12,7 @@ TAIAPIConnectEngine::TAIAPIConnectEngine() {
 TAIAPIConnectEngine::~TAIAPIConnectEngine() {}
 
 QString TAIAPIConnectEngine::getName() const {
-    return QString("AI API Conect Engine");
+    return QString("AI API Conect Engine (beta)");
 }
 
 QString TAIAPIConnectEngine::getInfo() const {
