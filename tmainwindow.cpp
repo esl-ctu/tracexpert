@@ -30,6 +30,7 @@
 #include "help/thelpwidget.h"
 #include "buildinfo.h"
 #include "twelcomescreen.h"
+#include "project/migration/tprojectmigrator.h"
 
 TMainWindow::TMainWindow(QWidget * parent)
     : QMainWindow(parent)
@@ -478,6 +479,12 @@ void TMainWindow::openProject()
 
     QDomDocument document;
     document.setContent(documentArray);
+
+    QString errorMessage;
+    if (!TProjectMigrator::migrate(document, &errorMessage)) {
+        QMessageBox::critical(this, tr("Project migration failed"), tr("Unable to migrate selected project file: %1").arg(errorMessage));
+        return;
+    }
 
     QDomElement projectElement = document.documentElement();
 

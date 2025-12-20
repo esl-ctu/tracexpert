@@ -98,6 +98,22 @@ add_executable(${PROJECT_NAME} WIN32
     common/widgets/tfilenameedit.h
     common/widgets/ttimeedit.cpp
     common/widgets/ttimeedit.h
+    eximport/taddopenhdfwizard.cpp
+    eximport/taddopenhdfwizard.h
+    eximport/timporthdfdatawizard.cpp
+    eximport/timporthdfdatawizard.h
+    eximport/texporthdfdatawizard.cpp
+    eximport/texporthdfdatawizard.h
+    eximport/texporthdfscopewizard.cpp
+    eximport/texporthdfscopewizard.h
+    eximport/thdfbrowserwidget.cpp
+    eximport/thdfbrowserwidget.h
+    eximport/thdfsession.cpp
+    eximport/thdfsession.h
+    graphs/tcpagraph.h
+    graphs/tgraph.h
+    graphs/tgraphwidget.cpp
+    graphs/tgraphwidget.h
     help/thelpbrowser.cpp
     help/thelpbrowser.h
     help/thelpwidget.cpp
@@ -174,6 +190,8 @@ add_executable(${PROJECT_NAME} WIN32
     project/tprojectmodel.h
     project/tprojectview.cpp
     project/tprojectview.h
+    project/migration/tprojectmigrator.cpp
+    project/migration/tprojectmigrator.h
     projectunit/tprojectunitcontainer.cpp
     projectunit/tprojectunitcontainer.h
     projectunit/tprojectunitmodel.h
@@ -204,6 +222,7 @@ add_executable(${PROJECT_NAME} WIN32
     scenario/tscenariocontainer.h
     scenario/tscenarioeditorwidget.cpp
     scenario/tscenarioeditorwidget.h
+    scenario/tscenarioexecutionexceptions.h
     scenario/tscenarioexecutor.cpp
     scenario/tscenarioexecutor.h
     scenario/tscenariographicalconnection.cpp
@@ -236,25 +255,8 @@ add_executable(${PROJECT_NAME} WIN32
     scenario/scenario_items/tscenarioanaldeviceactionitem.h
     scenario/scenario_items/tscenarioanaldevicereaditem.h
     scenario/scenario_items/tscenarioanaldevicewriteitem.h
-    scenario/tscenarioexecutionexceptions.h
     scenario/scenario_items/tscenariocomponentitem.h
     scenario/scenario_items/tscenariographwidgetitem.h
-    graphs/tgraphwidget.h
-    graphs/tgraphwidget.cpp
-    graphs/tgraph.h
-    graphs/tcpagraph.h
-    eximport/thdfsession.h 
-    eximport/thdfsession.cpp
-    eximport/texporthdfscopewizard.h
-    eximport/texporthdfscopewizard.cpp    
-    eximport/thdfbrowserwidget.h 
-    eximport/thdfbrowserwidget.cpp
-    eximport/taddopenhdfwizard.h 
-    eximport/taddopenhdfwizard.cpp
-    eximport/texporthdfdatawizard.h 
-    eximport/texporthdfdatawizard.cpp
-    eximport/timporthdfdatawizard.h 
-    eximport/timporthdfdatawizard.cpp
 )
 
 
