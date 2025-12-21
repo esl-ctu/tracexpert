@@ -28,7 +28,7 @@ find_library(PICOSCOPE6000A_LIBRARY
     PATH_SUFFIXES
         lib)
                
-
+include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
   PicoScopeSDK
   FOUND_VAR PICOSCOPESDK_FOUND
