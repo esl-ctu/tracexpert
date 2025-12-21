@@ -131,7 +131,7 @@ add_custom_target(copy_images ALL
 # ----------------------------------------------------------------------
 # Variables for qhp/qhcp templates (static bits)
 # ----------------------------------------------------------------------
-set(NAMESPACE "org.tracexpert.docs")
+set(NAMESPACE "org.cvut.fit.tracexpert")
 set(PROJECT_NAME "TraceXpert Documentation")
 
 # Expand any @...@ inside these XML snippets if you ever add placeholders

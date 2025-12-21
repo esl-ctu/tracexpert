@@ -753,9 +753,7 @@ void TMainWindow::closeEvent(QCloseEvent *event)
 
 void TMainWindow::writeSettings()
 {
-    //QSettings settings(QSettings::IniFormat, QSettings::UserScope, "Czech Technical University", "traceXpert");
-    QSettings settings(QString("traceXpert.ini"), QSettings::IniFormat);
-
+    QSettings settings;
     settings.beginGroup("MainWindow");
     settings.setValue("geometry", saveGeometry());
     settings.setValue("windowState", saveState());
@@ -765,17 +763,10 @@ void TMainWindow::writeSettings()
 
 void TMainWindow::readSettings()
 {
-    //QSettings settings(QSettings::IniFormat, QSettings::UserScope, "Czech Technical University", "traceXpert");
-    QSettings settings(QString("traceXpert.ini"), QSettings::IniFormat);
-
+    QSettings settings;
     settings.beginGroup("MainWindow");
     restoreState(settings.value("windowState").toByteArray());
-    QByteArray geometry = settings.value("geometry").toByteArray();
-    if (!geometry.isEmpty()) {
-        restoreGeometry(geometry);
-    } else {
-        resize(QSize(1360, 800)); // assure minimum size on first launch
-    }
+    restoreGeometry(settings.value("geometry").toByteArray());
     m_projectDirectory = QDir(settings.value("projectDirectory").toString());
     settings.endGroup();
 }

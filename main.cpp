@@ -1,3 +1,4 @@
+#include "buildinfo.h"
 #include "tmainwindow.h"
 #include "logger/tloghandler.h"
 
@@ -10,6 +11,10 @@ int main(int argc, char * argv[])
     QApplication a(argc, argv);
 
     TLogHandler::installLogger();
+
+    QCoreApplication::setOrganizationName("org.cvut.fit");
+    QCoreApplication::setApplicationName("TraceXpert");
+    QCoreApplication::setApplicationVersion(TRACEXPERT_VERSION);
 
     TMainWindow w;
     w.show();

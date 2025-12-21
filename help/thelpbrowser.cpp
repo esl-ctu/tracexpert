@@ -7,7 +7,7 @@
 THelpBrowser::THelpBrowser(QHelpEngine * helpEngine, QWidget * parent)
     : QTextBrowser(parent), m_helpEngine(helpEngine)
 {
-    setSource(QUrl("qthelp://org.example.docs/docs/README.html"));
+    setSource(QUrl("qthelp://org.cvut.fit.tracexpert/docs/README.html"));
     connect(helpEngine->contentWidget(), &QHelpContentWidget::linkActivated, this, [=](const QUrl & source) { setSource(source); });
     connect(helpEngine->indexWidget(), &QHelpIndexWidget::documentActivated, this, [=](const QHelpLink & document) { setSource(document.url); });
 }
