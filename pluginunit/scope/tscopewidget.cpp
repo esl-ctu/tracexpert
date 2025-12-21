@@ -10,9 +10,14 @@
 #include <QMessageBox>
 #include <QSplitter>
 #include <QFileDialog>
+#include <QSharedPointer>
+#include <QJsonObject>
+#include <QJsonDocument>
 
 #include "tscopewidget.h"
 #include "widgets/tconfigparamwidget.h"
+#include "../../eximport/texporthdfscopewizard.h"
+#include "../../eximport/thdfsession.h"
 
 TDynamicRadioDialog::TDynamicRadioDialog(const QStringList &options,
                                        QWidget *parent)
@@ -22,7 +27,7 @@ TDynamicRadioDialog::TDynamicRadioDialog(const QStringList &options,
 
     auto *layout = new QVBoxLayout(this);
 
-    layout->addWidget(new QLabel(tr("Please select the channel to save:")));
+    layout->addWidget(new QLabel(tr("Please select the channel to export:")));
 
     // Create radio buttons dynamically
     bool first = true;
@@ -141,11 +146,18 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
     connect(m_clearDataButton, &QPushButton::clicked, this, &TScopeWidget::clearTraceData);
 
     m_saveDataButton = new QPushButton();
-    m_saveDataButton->setIcon(QIcon(":/icons/save.png"));
+    m_saveDataButton->setIcon(QIcon(":/icons/exportraw.png"));
     m_saveDataButton->setIconSize(QSize(22, 22));
-    m_saveDataButton->setToolTip("Save trace data to file");
+    m_saveDataButton->setToolTip("Export raw data to file");
     m_saveDataButton->setEnabled(false);
     connect(m_saveDataButton, &QPushButton::clicked, this, &TScopeWidget::saveTraceData);
+
+    m_exportDataButton = new QPushButton();
+    m_exportDataButton->setIcon(QIcon(":/icons/exporthdf.png"));
+    m_exportDataButton->setIconSize(QSize(22, 22));
+    m_exportDataButton->setToolTip("Export data to HDF5");
+    m_exportDataButton->setEnabled(false);
+    connect(m_exportDataButton, &QPushButton::clicked, this, &TScopeWidget::exportHdf);
 
     m_prevTraceButton = new QPushButton();
     m_prevTraceButton->setIcon(QIcon(":/icons/prev.png"));
@@ -185,6 +197,7 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
     toolbarLayout->addWidget(m_stopButton);
     toolbarLayout->addWidget(m_clearDataButton);
     toolbarLayout->addWidget(m_saveDataButton);
+    toolbarLayout->addWidget(m_exportDataButton);
     toolbarLayout->addStretch();
     toolbarLayout->addWidget(m_prevTraceButton);
     toolbarLayout->addWidget(m_traceIndexSpinBox);
@@ -255,17 +268,334 @@ void TScopeWidget::clearTraceData(bool force) {
 
     m_clearDataButton->setEnabled(false);
     m_saveDataButton->setEnabled(false);
+    m_exportDataButton->setEnabled(false);
+}
+
+static QString triggerTypeToString(TScope::TTriggerStatus::TTriggerType t)
+{
+    switch (t) {
+    case TScope::TTriggerStatus::TTriggerType::TNone:
+        return QStringLiteral("none");
+    case TScope::TTriggerStatus::TTriggerType::TRising:
+        return QStringLiteral("rising");
+    case TScope::TTriggerStatus::TTriggerType::TFalling:
+        return QStringLiteral("falling");
+    case TScope::TTriggerStatus::TTriggerType::TRisingOrFalling:
+        return QStringLiteral("rising_or_falling");
+    case TScope::TTriggerStatus::TTriggerType::TAbove:
+        return QStringLiteral("above");
+    case TScope::TTriggerStatus::TTriggerType::TBelow:
+        return QStringLiteral("below");
+    case TScope::TTriggerStatus::TTriggerType::TOther:
+        return QStringLiteral("other");
+    }
+
+    return QStringLiteral("unknown");
+}
+
+class TWizLog
+{
+public:
+    void critical(const QString &msg)
+    {
+        add("Fail: ", msg);
+        qCritical() << msg;
+    }
+
+    void success(const QString &msg)
+    {
+        add("Success: ", msg);
+    }
+
+    QString text()
+    {
+        flushPending();
+        m_lastMessage.clear();
+        m_lastCount = 0;
+        return m_lines.join('\n');
+    }
+
+private:
+    void add(const QString &prefix, const QString &msg)
+    {
+        if (m_lastMessage == msg) {
+            ++m_lastCount;
+            return;
+        }
+
+        flushPending();
+
+        m_lastMessage = msg;
+        m_lastCount = 1;
+
+        m_lines << (prefix + msg);
+    }
+
+    void flushPending()
+    {
+        if (m_lastMessage.isEmpty())
+            return;
+
+        if (m_lastCount > 1) {
+            m_lines << QString("(%1x) %2")
+            .arg(m_lastCount)
+                .arg(m_lastMessage);
+        }
+    }
+
+private:
+    QStringList m_lines;
+    QString m_lastMessage;
+    int m_lastCount = 0;
+};
+
+void TScopeWidget::exportHdf() {
+
+    TWizLog log;
+
+    // List enabled channels
+    QStringList channels;
+    for(TScope::TChannelStatus channel : m_scopeModel->channelsStatus()) {
+        if(channel.isEnabled())
+            channels << channel.getAlias();
+    }
+
+    if (m_exportWizard) {
+        m_exportWizard->close();
+        m_exportWizard->deleteLater(); // safe Qt deletion
+        m_exportWizard = nullptr;
+    }
+
+    m_exportWizard = new TExportHDFScopeWizard(this);
+
+    // config the wizard
+    m_exportWizard->setInitialFileName("");
+    m_exportWizard->setTraceInfo(m_totalTraceCount);
+    m_exportWizard->setChannels(channels);
+    m_exportWizard->setTraceFormat(m_samples, m_type);
+
+    int r = m_exportWizard->exec();
+
+    if (r == TExportHDFScopeWizard::Result_Paused) {
+
+        // read input data from the export wizard
+
+        const QString outFile = m_exportWizard->outputFile();
+        const auto targets = m_exportWizard->channelTargets();
+        QSharedPointer<THdfSession> session = m_exportWizard->hdfSession();
+        bool exportAll = m_exportWizard->field("exportAllTraces").toBool();
+
+        // write data to HDF file
+        if (!session || !session->isOpen()) {
+            log.critical("No open HDF5 session; cannot export.");
+            m_exportWizard->showResultsPage(log.text());
+            m_exportWizard->exec();
+            m_exportWizard->deleteLater();
+            m_exportWizard = nullptr;
+            return;
+        }
+
+        for (const TExportHDFScopeWizard::TChannelTarget &t : targets) {
+            const QString alias        = t.alias;
+            const QString tracesPath   = THdfSession::normalizePath(t.tracesDataset);
+            const QString metadataPath = THdfSession::normalizePath(t.metadataGroup);
+
+            qDebug() << "[ExportCaller] Channel:" << alias
+                     << "traces:" << tracesPath
+                     << "meta:" << metadataPath
+                     << "all:" << exportAll;
+
+
+            THdfSession::TraceAppendHandle h;
+
+            // --- Append traces
+
+            size_t startTraceIdx = 0;
+            size_t totalTraceCount = m_totalTraceCount;
+            if(!exportAll){
+                startTraceIdx = m_currentTraceNumber - 1;
+                totalTraceCount = 1;
+            }
+
+            if (!session->beginAppendTraces(tracesPath, m_samples, m_type, totalTraceCount, h)){
+                log.critical("Failed to open the HDF dataset: " + tracesPath);
+                continue;
+            }
+
+            size_t first_trace = h.nextRow;
+            TScope::TChannelStatus channelStatus(0, 0, 0, 0, 0, 0, 0); // will be set later
+
+            bool ok = true;
+
+            for(size_t traceIndex = startTraceIdx; traceIndex < startTraceIdx + totalTraceCount; traceIndex++){
+                bool found = false;
+                size_t traceDataListIndex = 0;
+                while(traceDataListIndex < (size_t)m_traceDataList.size()) {
+                    if(m_traceDataList[traceDataListIndex].firstTraceIndex + m_traceDataList[traceDataListIndex].traces > traceIndex) {
+                        found = true;
+                        break;
+                    }
+
+                    traceDataListIndex++;
+                }
+
+                if(!found) {
+                    log.critical("Trying to save a trace with valid index, but data is missing!");
+                    ok = false;
+                    continue;
+                }
+
+                const TScopeTraceData traceData = m_traceDataList[traceDataListIndex];
+                size_t traceBufferIndex = traceIndex - m_traceDataList[traceDataListIndex].firstTraceIndex;
+
+
+                size_t channelIndex = 0;
+                bool foundChIdx = false;
+
+
+                for(TScope::TChannelStatus channel : m_scopeModel->channelsStatus()) {
+
+                    if(!channel.isEnabled() || traceData.buffers[channelIndex] == nullptr || channel.getAlias() != alias) {
+                        channelIndex++;
+                        continue;
+                    } else {
+                        foundChIdx = true;
+                        channelStatus = channel;
+                        break;
+                    }
+
+                }
+
+                if(!foundChIdx) {
+                    log.critical("Exported channel was not found in the oscilloscope widget!");
+                    ok = false;
+                    continue;
+                }
+
+                switch(traceData.type) {
+                case TScope::TSampleType::TUInt8:
+                    if (!session->appendTraceRow(h, reinterpret_cast<const void *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples * sizeof(uint8_t))), traceData.type, traceData.samples * sizeof(uint8_t))){
+                        log.critical("Failed to append a trace into HDF file.");
+                        ok = false;
+                    }
+                    break;
+                case TScope::TSampleType::TInt8:
+                    if (!session->appendTraceRow(h, reinterpret_cast<const void *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples * sizeof(int8_t))), traceData.type, traceData.samples * sizeof(int8_t))){
+                        log.critical("Failed to append a trace into HDF file.");
+                        ok = false;
+                    }
+                    break;
+                case TScope::TSampleType::TUInt16:
+                    if (!session->appendTraceRow(h, reinterpret_cast<const void *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples * sizeof(uint16_t))), traceData.type, traceData.samples * sizeof(uint16_t))){
+                        log.critical("Failed to append a trace into HDF file.");
+                        ok = false;
+                    }
+                    break;
+                case TScope::TSampleType::TInt16:
+                    if (!session->appendTraceRow(h, reinterpret_cast<const void *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples * sizeof(int16_t))), traceData.type, traceData.samples * sizeof(int16_t))){
+                        log.critical("Failed to append a trace into HDF file.");
+                        ok = false;
+                    }
+                    break;
+                case TScope::TSampleType::TUInt32:
+                    if (!session->appendTraceRow(h, reinterpret_cast<const void *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples * sizeof(uint32_t))), traceData.type, traceData.samples * sizeof(uint32_t))){
+                        log.critical("Failed to append a trace into HDF file.");
+                        ok = false;
+                    }
+                    break;
+                case TScope::TSampleType::TInt32:
+                    if (!session->appendTraceRow(h, reinterpret_cast<const void *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples * sizeof(int32_t))), traceData.type, traceData.samples * sizeof(int32_t))){
+                        log.critical("Failed to append a trace into HDF file.");
+                        ok = false;
+                    }
+                    break;
+                case TScope::TSampleType::TReal32:
+                    if (!session->appendTraceRow(h, reinterpret_cast<const void *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples * sizeof(float))), traceData.type, traceData.samples * sizeof(float))){
+                        log.critical("Failed to append a trace into HDF file.");
+                        ok = false;
+                    }
+                    break;
+                case TScope::TSampleType::TReal64:
+                    if (!session->appendTraceRow(h, reinterpret_cast<const void *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples * sizeof(double))), traceData.type, traceData.samples * sizeof(double))){
+                        log.critical("Failed to append a trace into HDF file.");
+                        ok = false;
+                    }
+                    break;
+                }
+
+            }
+
+            session->endAppendTraces(h);
+
+            if(ok) log.success("Successfully exported " + QString::number(totalTraceCount) + " traces to " + tracesPath);
+            ok = true;
+
+            // --- Append metadata
+
+            // ssize_t first_trace
+            size_t trace_count = totalTraceCount;
+            QString timestamp = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+
+            // TScope::TChannelStatus channelStatus
+            TScope::TTriggerStatus triggerStatus = m_scopeModel->triggerStatus();
+            TScope::TTimingStatus timingStatus = m_scopeModel->timingStatus();
+
+            QJsonObject JChannel;
+            JChannel["alias"] = channelStatus.getAlias();
+            JChannel["index"] = channelStatus.getIndex();
+            JChannel["maxValue"] = channelStatus.getMaxValue();
+            JChannel["minValue"] = channelStatus.getMinValue();
+            JChannel["offset"] = channelStatus.getOffset();
+            JChannel["range"] = channelStatus.getRange();
+            QJsonObject JTrigger;
+            JTrigger["sourceIndex"] = triggerStatus.getTriggerSourceIndex();
+            JTrigger["type"] = triggerTypeToString(triggerStatus.getTriggerType());
+            JTrigger["voltage"] = triggerStatus.getTriggerVoltage();
+            QJsonObject JTiming;
+            JTiming["preTriggerSamples"] = static_cast<qint64>(timingStatus.getPreTriggerSamples());
+            JTiming["postTriggerSamples"] = static_cast<qint64>(timingStatus.getPostTriggerSamples());
+            JTiming["capturesPerRun"] = static_cast<qint64>(timingStatus.getCapturesPerRun());
+            JTiming["samplePeriod"] = timingStatus.getSamplePeriod();
+            QJsonObject JRoot;
+            JRoot["channel"] = JChannel;
+            JRoot["trigger"] = JTrigger;
+            JRoot["timing"] = JTiming;
+            QJsonDocument JDoc(JRoot);
+            const QString settings = QString::fromUtf8(JDoc.toJson(QJsonDocument::Compact));
+
+
+            if (!session->appendTracesMetadataRecord(metadataPath, first_trace, trace_count, timestamp, settings)){
+                log.critical(QString("Failed to append metadata to the HDF group: %1").arg(metadataPath));
+                ok = false;
+            }
+
+            if(ok) log.success("Successfully exported metadata to " + metadataPath);
+
+        }
+
+        // give feedback to the wizard and launch it again
+        m_exportWizard->showResultsPage(log.text());
+        m_exportWizard->exec();
+
+    } else {
+        QMessageBox::warning(this, tr("Error"), tr("The export was cancelled."));
+    }
+
+    m_exportWizard->deleteLater();
+    m_exportWizard = nullptr;
+    return;
+
 }
 
 void TScopeWidget::saveTraceData() {
 
-    QStringList options;
+    QStringList channels;
     for(TScope::TChannelStatus channel : m_scopeModel->channelsStatus()) {
         if(channel.isEnabled())
-            options << channel.getAlias();
+            channels << channel.getAlias();
     }
 
-    TDynamicRadioDialog dlg(options, this);
+    TDynamicRadioDialog dlg(channels, this);
 
     if (dlg.exec() != QDialog::Accepted)
         return;
@@ -279,8 +609,17 @@ void TScopeWidget::saveTraceData() {
         tr("Binary (*.dat);;All Files (*.*)")
         );
 
+    // Strip trailing dots
+    while (fileName.endsWith('.'))
+        fileName.chop(1);
+
     if (fileName.isEmpty())
         return;
+
+    QFileInfo fi(fileName);
+    if (fi.suffix().isEmpty()) {
+        fileName += ".dat";
+    }
 
     QFile file(fileName);
     if (!file.open(QIODevice::WriteOnly)) {
@@ -288,7 +627,6 @@ void TScopeWidget::saveTraceData() {
         qCritical("Cannot open file for writing.");
         return;
     }
-
 
     for(size_t traceIndex = 0; traceIndex < m_totalTraceCount; traceIndex++){
         bool found = false;
@@ -310,7 +648,6 @@ void TScopeWidget::saveTraceData() {
         const TScopeTraceData traceData = m_traceDataList[traceDataListIndex];
         size_t traceBufferIndex = traceIndex - m_traceDataList[traceDataListIndex].firstTraceIndex;
 
-
         size_t channelIndex = 0;
         for(TScope::TChannelStatus channel : m_scopeModel->channelsStatus()) {
 
@@ -322,25 +659,25 @@ void TScopeWidget::saveTraceData() {
             switch(traceData.type) {
             case TScope::TSampleType::TUInt8:
             case TScope::TSampleType::TInt8:
-                file.write(reinterpret_cast<const char *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples)), traceData.samples * sizeof(uint8_t));
+                file.write(reinterpret_cast<const char *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples * sizeof(uint8_t))), traceData.samples * sizeof(uint8_t));
                 break;
 
             case TScope::TSampleType::TUInt16:
             case TScope::TSampleType::TInt16:
-                file.write(reinterpret_cast<const char *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples)), traceData.samples * sizeof(uint16_t));
+                file.write(reinterpret_cast<const char *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples * sizeof(uint16_t))), traceData.samples * sizeof(uint16_t));
                 break;
 
             case TScope::TSampleType::TUInt32:
             case TScope::TSampleType::TInt32:
-                file.write(reinterpret_cast<const char *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples)), traceData.samples * sizeof(uint32_t));
+                file.write(reinterpret_cast<const char *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples * sizeof(uint32_t))), traceData.samples * sizeof(uint32_t));
                 break;
 
             case TScope::TSampleType::TReal32:
-                file.write(reinterpret_cast<const char *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples)), traceData.samples * sizeof(float));
+                file.write(reinterpret_cast<const char *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples * sizeof(float))), traceData.samples * sizeof(float));
                 break;
 
             case TScope::TSampleType::TReal64:
-                file.write(reinterpret_cast<const char *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples)), traceData.samples * sizeof(double));
+                file.write(reinterpret_cast<const char *>((traceData.buffers[channelIndex].constData()) + (traceBufferIndex * traceData.samples * sizeof(double))), traceData.samples * sizeof(double));
                 break;
             }
 
@@ -357,6 +694,7 @@ void TScopeWidget::setGUItoRunning() {
     m_stopButton->setEnabled(true);
     m_clearDataButton->setEnabled(false);
     m_saveDataButton->setEnabled(false);
+    m_exportDataButton->setEnabled(false);
 
     //clearTraceData();
 
@@ -369,6 +707,7 @@ void TScopeWidget::setGUItoReady() {
     m_stopButton->setEnabled(false);
     m_clearDataButton->setEnabled(m_totalTraceCount ? true : false);
     m_saveDataButton->setEnabled(m_totalTraceCount ? true : false);
+    m_exportDataButton->setEnabled(m_totalTraceCount ? true : false);
 
     if(m_totalTraceCount){
         m_traceIndexSpinBox->setMinimum(1);
@@ -397,6 +736,7 @@ void TScopeWidget::stopButtonClicked() {
     m_stopButton->setEnabled(false);
     m_clearDataButton->setEnabled(false);
     m_saveDataButton->setEnabled(false);
+    m_exportDataButton->setEnabled(false);
 
     m_scopeModel->stop();
 }
@@ -436,6 +776,7 @@ void TScopeWidget::stopFailed() {
     m_stopButton->setEnabled(true);
     m_clearDataButton->setEnabled(false);
     m_saveDataButton->setEnabled(false);
+    m_exportDataButton->setEnabled(false);
 
     QMessageBox::critical(this, "Error", "Failed to stop sampling");
 }
@@ -472,12 +813,15 @@ void TScopeWidget::receiveTraces(size_t traces, size_t samples, TScope::TSampleT
 
     // save data to internal buffers
     m_traceDataList.append(TScopeTraceData{m_totalTraceCount, traces, samples, type, buffers, overvoltage});
-
+    m_samples = samples;
+    m_type = type;
+    
     // update GUI
     m_totalTraceCount += traces;
     m_currentTraceNumber = m_totalTraceCount;
     updateTraceIndexView();
     m_saveDataButton->setEnabled(true);
+    m_exportDataButton->setEnabled(true);
 
     // show latest trace on chart
     displayTrace(m_currentTraceNumber-1);

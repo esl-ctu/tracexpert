@@ -35,6 +35,7 @@ public:
     QString name() const override;
     Status status() const override;
 
+    virtual QDomElement save(QDomDocument & document) const override;
     void load(QDomElement * element);
 
 private:

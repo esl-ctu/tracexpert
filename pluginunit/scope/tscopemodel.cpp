@@ -109,6 +109,9 @@ TScope::TTriggerStatus TScopeModel::triggerStatus()
     return m_scope->getTriggerStatus();
 }
 
+TScope::TTimingStatus TScopeModel::timingStatus() {
+    return m_scope->getTimingStatus();
+}
 
 void TScopeModel::run()
 {

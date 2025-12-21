@@ -30,8 +30,13 @@ void TRandomDevice::_createPreInitParams() {
     rtypeParam.addEnumValue("bit-by-bit");
     m_preInitParams.addSubParam(rtypeParam);
 
-    TConfigParam seedParam = TConfigParam("Seed", 0, TConfigParam::TType::TULongLong, "Random seed to initialize generator (use 0 to init with time)", false);
+    TConfigParam seedParam = TConfigParam("Seed", "time", TConfigParam::TType::TEnum, "Select source of random seed - fixed value or time.", false);
+    seedParam.addEnumValue("time");
+    seedParam.addEnumValue("fixed value");
     m_preInitParams.addSubParam(seedParam);
+
+    TConfigParam seedValueParam = TConfigParam("Seed value", "0", TConfigParam::TType::TULongLong, "Random seed to initialize generator, if fixed value is selected.", false);
+    m_preInitParams.addSubParam(seedValueParam);
 }
 
 bool TRandomDevice::_validatePreInitParamsStructure(TConfigParam & params) {
@@ -47,6 +52,9 @@ bool TRandomDevice::_validatePreInitParamsStructure(TConfigParam & params) {
     if(!iok) return false;
 
     params.getSubParamByName("Seed", &iok);
+    if(!iok) return false;
+
+    params.getSubParamByName("Seed value", &iok);
     if(!iok) return false;
 
     return true;
@@ -295,9 +303,15 @@ void TRandomDevice::init(bool *ok) {
     // std::random_device could also be used for seed...
 
     // no need to check validity - it should already have been validated when setting value
-    quint64 seed = m_preInitParams.getSubParamByName("Seed")->getValue().toULongLong();
-    m_engine.seed(seed == 0 ? time(0) : seed);
+    quint64 seed;
+    if(m_preInitParams.getSubParamByName("Seed")->getValue() == "time") {
+        seed = time(0);
+    }
+    else {
+        seed = m_preInitParams.getSubParamByName("Seed value")->getValue().toULongLong();
+    }
 
+    m_engine.seed(seed);
 
     if(ok != nullptr) *ok = true;
 
@@ -368,7 +382,6 @@ TConfigParam TRandomDevice::setPostInitParams(TConfigParam params) {
 bool TRandomDevice::_validatePostInitParamsStructure(TConfigParam & params) {
 
     // Only checks the structure of parameters. Values are validated later during init. Enum values are checked during their setting by the TConfigParam.
-
     bool iok = false;
 
     QString distrParam = m_preInitParams.getSubParamByName("Random number distribution")->getValue();
@@ -415,9 +428,6 @@ bool TRandomDevice::_validatePostInitParamsStructure(TConfigParam & params) {
 bool TRandomDevice::_validatePostInitParamsValues(TConfigParam & params) {
 
     // Only checks the values of parameters. Structure has to be (!) validated previous to call of this method.
-
-    bool iok = false;
-
     QString distrParam = m_preInitParams.getSubParamByName("Random number distribution")->getValue();
 
     if(m_returnTypeSize == 0) {

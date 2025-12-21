@@ -10,12 +10,14 @@
 #include <QDialogButtonBox>
 #include <QTextBrowser>
 #include <QVBoxLayout>
+#include <QFileDialog>
+
 
 #include "tmainwindow.h"
+#include "eximport/taddopenhdfwizard.h"
 #include "graphs/tgraph.h"
 #include "graphs/tgraphwidget.h"
 #include "protocol/tprotocoleditor.h"
-#include "qfiledialog.h"
 #include "tdevicewizard.h"
 #include "pluginunit/common/widgets/tcommunicationdevicewidget.h"
 #include "scenario/tscenariowidget.h"
@@ -28,6 +30,7 @@
 #include "help/thelpwidget.h"
 #include "buildinfo.h"
 #include "twelcomescreen.h"
+#include "project/migration/tprojectmigrator.h"
 
 TMainWindow::TMainWindow(QWidget * parent)
     : QMainWindow(parent)
@@ -82,6 +85,8 @@ void TMainWindow::createMenus()
     toolsMenu->addAction(m_openDeviceAction);
     toolsMenu->addAction(m_openProtocolsAction);
     toolsMenu->addAction(m_openScenariosAction);
+    toolsMenu->addSeparator();
+    toolsMenu->addAction(m_openHdfAction);
     menuBar()->addMenu(toolsMenu);
 
     QMenu * helpMenu = new QMenu(tr("&Help"), this);
@@ -155,6 +160,12 @@ void TMainWindow::createActions()
     m_openScenariosAction->setIcon(QPixmap(":/icons/scenario-manager.png"));
     m_openScenariosAction->setEnabled(false);
     connect(m_openScenariosAction, SIGNAL(triggered()), this, SLOT(createScenarioManagerDockWidget()));
+    
+    m_openHdfAction = new QAction(tr("Create/open HDF file"), this);
+    m_openHdfAction->setStatusTip(tr("Create or open HDF for inspection"));
+    m_openHdfAction->setIcon(QPixmap(":/icons/importhdf.png"));
+    m_openHdfAction->setEnabled(true);
+    connect(m_openHdfAction, SIGNAL(triggered()), this, SLOT(showHdfWizard()));
 
     m_helpAction = new QAction(tr("User Guide"), this);
     m_helpAction->setStatusTip(tr("Show help"));
@@ -412,6 +423,13 @@ void TMainWindow::showDeviceWizard()
     deviceWizard->show();
 }
 
+void TMainWindow::showHdfWizard()
+{
+    TAddOpenHdfWizard * hdfWizard = new TAddOpenHdfWizard(this);
+    hdfWizard->setAttribute(Qt::WidgetAttribute::WA_DeleteOnClose);
+    hdfWizard->show();
+}
+
 void TMainWindow::newProject()
 {
     if (m_projectModel && !closeProject())
@@ -461,6 +479,12 @@ void TMainWindow::openProject()
 
     QDomDocument document;
     document.setContent(documentArray);
+
+    QString errorMessage;
+    if (!TProjectMigrator::migrate(document, &errorMessage)) {
+        QMessageBox::critical(this, tr("Project migration failed"), tr("Unable to migrate selected project file: %1").arg(errorMessage));
+        return;
+    }
 
     QDomElement projectElement = document.documentElement();
 

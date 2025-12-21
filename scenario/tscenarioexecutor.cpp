@@ -2,7 +2,6 @@
 #include <QFutureWatcher>
 #include <QtConcurrent>
 
-#include "scenario_items/tscenariobasicitems.h"
 #include "scenario_items/tscenariovariablereaditem.h"
 #include "scenario_items/tscenariovariablewriteitem.h"
 #include "tscenarioexecutionexceptions.h"
@@ -155,6 +154,7 @@ void TScenarioExecutor::stop() {
 
 void TScenarioExecutor::terminate() {
     m_terminationRequested = true;
+    emit scenarioTerminationRequested();
 }
 
 void TScenarioExecutor::start(TScenario * scenario) {
@@ -221,6 +221,9 @@ void TScenarioExecutor::runScenario() {
         qWarning("An unhandled exception occured during scenario execution, halting!");
     }
 
+    if (m_terminationRequested)
+        return;
+
     try {
         cleanupScenarioItems();
     }
@@ -272,6 +275,7 @@ void TScenarioExecutor::executeItemIndirectly(TScenarioItem * item) {
 
     QEventLoop loop;
     connect(item, &TScenarioItem::executionFinished, &loop, &QEventLoop::quit);
+    connect(this, &TScenarioExecutor::scenarioTerminationRequested, &loop, &QEventLoop::quit);
     connect(item, &TScenarioItem::executionFinished, this, [&executionFinished, this](QHash<TScenarioItemPort *, QByteArray> outputData) {
         saveOutputData(outputData);
         executionFinished = true;
@@ -391,10 +395,10 @@ void TScenarioExecutor::saveOutputData(QHash<TScenarioItemPort *, QByteArray> ou
         if(!m_dataConnectionMap.contains(sourceItemPort)) {
             QString portName = sourceItemPort->getLabelText().isEmpty() ? sourceItemPort->getName() : sourceItemPort->getLabelText();
             qInfo() << "Output data could not be passed to next block: "
-                    << "unconnected output data port (" << portName << ") in block " << sourceItemPort->getParentItem()->getName() << ".";
+                    << "unconnected output data port " << portName << " in block " << sourceItemPort->getParentItem()->getName() << ".";
             sourceItemPort->getParentItem()->setState(
                 TScenarioItem::TState::TRuntimeWarning,
-                "Output data could not be passed to next block: unconnected output data port (" + portName + ")!"
+                "Output data could not be passed to next block: unconnected output data port " + portName + "!"
             );
             continue;
         }

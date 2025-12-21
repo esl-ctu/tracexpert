@@ -26,6 +26,7 @@ public:
 
 signals:
     void scenarioExecutionFinished();
+    void scenarioTerminationRequested();
 
 private:    
     void setScenario(TScenario * scenario);

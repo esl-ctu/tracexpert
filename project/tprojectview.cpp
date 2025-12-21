@@ -219,18 +219,18 @@ void TProjectView::refreshActionsForItem(TProjectItem * item)
         m_openProtocolManagerAction->setEnabled(true);
         m_currentActions.append(m_openProtocolManagerAction);
 
-        m_currentDefaultAction = nullptr;
+        m_currentDefaultAction = m_openProtocolManagerAction;
     }
     else if ((dynamic_cast<TScenarioContainer *>(item))) {
         m_openScenarioManagerAction->setEnabled(true);
         m_currentActions.append(m_openScenarioManagerAction);
 
-        m_currentDefaultAction = nullptr;
+        m_currentDefaultAction = m_openScenarioManagerAction;
     }
     else if ((dynamic_cast<TComponentContainer *>(item))){
         m_currentActions.append(m_openDeviceAction);
 
-        m_currentDefaultAction = nullptr;
+        m_currentDefaultAction = m_openDeviceAction;
     }
     else {
         m_currentActions.append(m_openDeviceAction);
@@ -294,36 +294,10 @@ void TProjectView::runDefaultAction(const QModelIndex & index) {
 
     TProjectItem * item = static_cast<TProjectItem *>(index.internalPointer());
 
-    QAction * defaultAction = nullptr;
+    refreshActionsForItem(item);
 
-    m_component = nullptr;
-    m_IODevice = nullptr;
-    m_scope = nullptr;
-    m_analDevice = nullptr;
-    m_protocol = nullptr;
-    m_scenario = nullptr;
-
-    if ((m_component = dynamic_cast<TComponentModel *>(item))) {
-        defaultAction = chooseDefaultAction(m_component);
-    }
-    else if ((m_IODevice = dynamic_cast<TIODeviceModel *>(item))) {
-        defaultAction = chooseDefaultAction(m_IODevice);
-    }
-    else if ((m_scope = dynamic_cast<TScopeModel *>(item))) {
-        defaultAction = chooseDefaultAction(m_scope);
-    }
-    else if ((m_analDevice = dynamic_cast<TAnalDeviceModel *>(item))) {
-        defaultAction = chooseDefaultAction(m_analDevice);
-    }
-    else if ((m_protocol = dynamic_cast<TProtocolModel *>(item))) {
-        defaultAction = m_editProtocolAction;
-    }
-    else if ((m_scenario = dynamic_cast<TScenarioModel *>(item))) {
-        defaultAction = m_editScenarioAction;
-    }
-
-    if (defaultAction) {
-        defaultAction->trigger();
+    if (m_currentDefaultAction) {
+        m_currentDefaultAction->trigger();
     }
 }
 

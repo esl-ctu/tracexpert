@@ -9,6 +9,7 @@
 
 #include "../protocol/tprotocolmodel.h"
 #include "widgets/tfilenameedit.h"
+#include "../../eximport/texporthdfdatawizard.h"
 
 TReceiverWidget::TReceiverWidget(TReceiverModel * receiverModel, TProtocolContainer * protocolContainer, QWidget * parent)
     : QWidget(parent), m_receiverModel(receiverModel), m_protocolContainer(protocolContainer)
@@ -49,11 +50,14 @@ TReceiverWidget::TReceiverWidget(TReceiverModel * receiverModel, TProtocolContai
     QLayout * receiveFileLayout = new QVBoxLayout();
 
     TFileNameEdit * receiveFileEdit = new TFileNameEdit(QFileDialog::AnyFile);
-    QPushButton * receiveFileButton = new QPushButton("Save");
+    QPushButton * receiveFileButton = new QPushButton("Save received data to file");
+    QPushButton * exportFileButton = new QPushButton("Export received data to HDF");
     connect(receiveFileButton, &QPushButton::clicked, this, [=](){ receiveFile(receiveFileEdit->text()); });
-
+    connect(exportFileButton, &QPushButton::clicked, this, [=](){ exportFile(); });
+    
     receiveFileLayout->addWidget(receiveFileEdit);
     receiveFileLayout->addWidget(receiveFileButton);
+    receiveFileLayout->addWidget(exportFileButton);
 
     receiveFileGroupBox->setLayout(receiveFileLayout);
 
@@ -115,3 +119,34 @@ void TReceiverWidget::receiveFile(QString fileName)
 
     file.close();
 }
+
+void TReceiverWidget::exportFile()
+{
+    qDebug() << "Exporting to HDF";
+
+    auto *wiz = new TExportHDFDataWizard(this);
+    wiz->setWindowTitle(tr("Export data to HDF5"));
+    wiz->setData(m_receiverModel->receivedData());
+
+    const int rc = wiz->exec();
+
+    if (rc == QDialog::Accepted) {
+        const bool allBytes = wiz->field("exportAllBytes").toBool();
+        const int  start    = wiz->field("exportStart").toInt();
+        const int  len      = wiz->field("exportLen").toInt();
+        const int  cols     = wiz->field("exportCols").toInt();
+        const int  rows     = wiz->field("exportRows").toInt();
+        const int  rank     = wiz->field("exportRank").toInt();
+
+        qDebug() << "[ExportDataWizard]"
+                 << "allBytes=" << allBytes
+                 << "start=" << start
+                 << "len="   << len
+                 << "rows="  << rows
+                 << "cols="  << cols
+                 << "rank="  << rank;
+    }
+
+    wiz->deleteLater();
+}
+

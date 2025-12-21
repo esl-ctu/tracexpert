@@ -50,6 +50,7 @@ public:
 
     QList<TScope::TChannelStatus> channelsStatus();
     TScope::TTriggerStatus triggerStatus();
+    TScope::TTimingStatus timingStatus();
 
 signals:
     void initialized(TScopeModel * scope);
