@@ -23,6 +23,7 @@
     - 7.2 [Leakage predictions](predictions.md)
     - 7.3 [Correlation power analysis](cpa.md)
     - 7.4 [Welch's t-test leakage assessment](ttest.md)
+    - 7.5 [AI API connect (from VUT Brno)](aiapiconnect.md)
 - 8 [Scenarios](scenarios.md)
 - 9 [Example use-case](examples.md)
     - 9.1 [Correlation power analysis](example-cpa.md)
