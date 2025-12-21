@@ -1,3 +1,6 @@
 [submodule "ads"]
 	path = ads
 	url = https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System.git
+[submodule "hdf5"]
+	path = hdf5
+	url = https://github.com/HDFGroup/hdf5.git
