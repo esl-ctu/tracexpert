@@ -35,6 +35,7 @@ public slots:
 
 private slots:
     void showDeviceWizard();
+    void showHdfWizard();
 
     void newProject();
     void openProject();
@@ -70,6 +71,7 @@ private:
     QAction * m_openDeviceAction;
     QAction * m_openProtocolsAction;
     QAction * m_openScenariosAction;
+    QAction * m_openHdfAction;
 
     QAction * m_helpAction;
     QAction * m_licenseAction;

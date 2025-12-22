@@ -2,6 +2,8 @@
 #include "../scenario/tscenariomodel.h"
 #include "../protocol/tprotocolmodel.h"
 #include "../tdialog.h"
+#include "buildinfo.h"
+#include "migration/tprojectmigrator.h"
 
 #include <QDir>
 #include <QCoreApplication>
@@ -187,6 +189,17 @@ TProjectItem * TProjectModel::child(int row) const
 QString TProjectModel::name() const
 {
     return tr("Project");
+}
+
+QDomElement TProjectModel::save(QDomDocument & document) const
+{
+    QDomElement element = TProjectItem::save(document);
+
+    element.setAttribute("version", TRACEXPERT_VERSION);
+    element.setAttribute("revision", BUILD_GIT_REVISION);
+    element.setAttribute("schemaVersion", TProjectMigrator::schemaVersion());
+
+    return element;
 }
 
 TProjectItem::Status TProjectModel::status() const

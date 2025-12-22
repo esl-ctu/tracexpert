@@ -17,8 +17,7 @@ class TProtocolContainer;
 class TProtocolModel : public TProjectUnitModel {
 
 public:
-    TProtocolModel(TProtocolContainer * parent);
-    TProtocolModel(TProtocol * protocol, TProtocolContainer * parent);
+    TProtocolModel(TProtocolContainer * parent, TProtocol * protocol = nullptr);
 
     TProtocol * protocol() const;
 };

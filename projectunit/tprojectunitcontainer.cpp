@@ -92,7 +92,7 @@ bool TProjectUnitContainer::add(TProjectUnit * unit) {
         return false;
     }
 
-    TProjectUnitModel * model = new TProjectUnitModel(m_unitTypeName, unit, this);
+    TProjectUnitModel * model = TProjectUnitModel::instantiate(m_unitTypeName, this, unit);
     this->add(model);
 
     return true;

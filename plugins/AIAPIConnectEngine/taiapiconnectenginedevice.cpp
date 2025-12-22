@@ -26,8 +26,8 @@ bool validateParamLL(QString in, long long min, long long max){
     return false;
 }
 
-bool processNumberInputIntoJSONArray(QJsonArray & jsonArray, void * dataIn, int inputItemSize, QString type, int len) {
-    for (int i = 0; i < len; ++i)  {
+bool processNumberInputIntoJSONArray(QJsonArray & jsonArray, void * dataIn, int inputItemSize, QString type, size_t len) {
+    /*for (int i = 0; i < len; ++i)  {
         if (type == "int16_t") jsonArray.append(((int16_t *) dataIn)[i]);
         if (type == "int32_t") jsonArray.append(((int32_t *) dataIn)[i]);
         if (type == "int64_t") jsonArray.append(((int64_t *) dataIn)[i]);
@@ -52,6 +52,39 @@ bool processNumberInputIntoJSONArray(QJsonArray & jsonArray, void * dataIn, int 
     if (jsonArray.size() % inputItemSize != 0) {
         qDebug("Uneven number of samples received (3)");
         return false;
+    }
+
+    return true;*/
+
+    size_t numItems = len;
+
+    if (numItems % inputItemSize != 0) {
+        qDebug("Uneven number of samples received (numeric)");
+        return false;
+    }
+
+    size_t numTraces = numItems / inputItemSize;
+    size_t idx = 0;
+
+    for (size_t t = 0; t < numTraces; ++t) {
+        QJsonArray trace;
+
+        for (size_t i = 0; i < inputItemSize; ++i) {
+            double v = 0.0;
+
+            if (type == "int16_t")   v = ((int16_t*)dataIn)[idx];
+            if (type == "int32_t")   v = ((int32_t*)dataIn)[idx];
+            if (type == "int64_t")   v = (double)((int64_t*)dataIn)[idx];
+            if (type == "uint16_t")  v = ((uint16_t*)dataIn)[idx];
+            if (type == "uint32_t")  v = ((uint32_t*)dataIn)[idx];
+            if (type == "uint64_t")  v = (double)((uint64_t*)dataIn)[idx];
+            if (type == "Double")    v = ((double*)dataIn)[idx];
+
+            trace.append(v);
+            idx++;
+        }
+
+        jsonArray.append(trace);
     }
 
     return true;
@@ -145,6 +178,9 @@ TAIAPIConnectEngineDevice::TAIAPIConnectEngineDevice(QString name, QString info)
     TConfigParam loadedDataset = TConfigParam("Used datset", "", TConfigParam::TType::TEnum, "");
     loadedDataset.addEnumValue("None");
     trainParams.addSubParam(loadedDataset);
+    TConfigParam architecture = TConfigParam("Architecture", "", TConfigParam::TType::TEnum, "");
+    architecture.addEnumValue("None");
+    trainParams.addSubParam(architecture);
 
     TConfigParam trainStatus = TConfigParam("Training status", "", TConfigParam::TType::TDummy, "");
     trainStatus.addSubParam(TConfigParam("Running?", "", TConfigParam::TType::TBool, "", true));
@@ -261,11 +297,17 @@ void TAIAPIConnectEngineDevice::init(bool *ok /*= nullptr*/) {
     m_analActions.append(new TAIAPIConnectEngineDeviceAction("Upload data (traces)", "Uploads the data from the input stream.", [=](){ uploadData(); }));
     m_analActions.append(new TAIAPIConnectEngineDeviceAction("Upload HDF5", "Uploads a HDF5 file specifed in config param. Make sure that the override is on. After a successful upload, override will be switched off.", [=](){ uploadHDF5(); }));
     m_analActions.append(new TAIAPIConnectEngineDeviceAction("Train", "Trains the model acording to set params.", [=](){ train(); }));
-    m_analActions.append(new TAIAPIConnectEngineDeviceAction("Stop training", "Stops the training (even if it is not running).", [=](){ stopTraining(); }));
+    m_analActions.append(new TAIAPIConnectEngineDeviceAction("Stop training", "Stops the training (even if it is not running).", [=](){ stopTraining(); })); //
     //test model?
-    m_analInputStreams.append(new TAIAPIConnectEngineDeviceInputStream("Prediction result", "Stream of prediction results", [=](uint8_t * buffer, size_t length){ return getData(buffer, length, false); }));
+    m_analInputStreams.append(new TAIAPIConnectEngineDeviceInputStream("Prediction result", "Stream of prediction results",
+                                                                    [=](uint8_t * buffer, size_t length){ return getData(buffer, length, false); },
+                                                                    [=](){ return availableToRead(false); })
+                              );
     m_analOutputStreams.append(new TAIAPIConnectEngineDeviceOutputStream("Prediction input", "Stream of traces as input to the model for prediction", [=](const uint8_t * buffer, size_t length){ return fillData(buffer, length, false); }));
-    m_analInputStreams.append(new TAIAPIConnectEngineDeviceInputStream("Training result", "Stream of training results", [=](uint8_t * buffer, size_t length){ return getData(buffer, length, true); }));
+    m_analInputStreams.append(new TAIAPIConnectEngineDeviceInputStream("Training result", "Stream of training results",
+                                                                    [=](uint8_t * buffer, size_t length){ return getData(buffer, length, true); },
+                                                                    [=](){ return availableToRead(true); })
+                              );
     m_analOutputStreams.append(new TAIAPIConnectEngineDeviceOutputStream("Training input", "Stream of traces as input to a dataset for training", [=](const uint8_t * buffer, size_t length){ return fillData(buffer, length, true); }));
 
     if (ok != nullptr) *ok = true;
@@ -375,6 +417,7 @@ TConfigParam TAIAPIConnectEngineDevice::getPostInitParams() const {
     double accuracy, loss, valAccuracy, valLoss;
     QMap<QString, QMap<QString, QPair<int, int>>> datasetMap;
     QList<QString> modelList;
+    QList<QString> archList;
 
     uint8_t mode = getServerMode();
     if (mode == ENDPOINT_ERROR)
@@ -384,7 +427,9 @@ TConfigParam TAIAPIConnectEngineDevice::getPostInitParams() const {
         ok &= getTrainingParams(epochs, batchSize, trials);
     }
     ok &= getListOfDatasets(datasetMap);
-    ok &= getListOfModels(modelList);
+    ok &= getListOfX(modelList, "list_models");
+    if (mode == ENDPOINT_TRAIN)
+        ok &= getListOfX(archList, "list_architectures");
 
     auto ret = m_postInitParams;
 
@@ -447,6 +492,14 @@ TConfigParam TAIAPIConnectEngineDevice::getPostInitParams() const {
     ret.getSubParamByName("Used model")->addEnumValue("None");
     for (auto it = modelList.begin(); it != modelList.end(); ++it) {
         ret.getSubParamByName("Used model")->addEnumValue(*it);
+    }
+
+    if (mode == ENDPOINT_TRAIN) {
+        ret.getSubParamByName("Training params")->getSubParamByName("Architecture")->clearEnumValues();
+        for (auto it = archList.begin(); it != archList.end(); ++it) {
+            ret.getSubParamByName("Training params")->getSubParamByName("Architecture")->addEnumValue(*it);
+        }
+        ret.getSubParamByName("Training params")->getSubParamByName("Architecture")->addEnumValue("None");
     }
 
     //Upload params remain
@@ -528,9 +581,29 @@ TConfigParam TAIAPIConnectEngineDevice::setPostInitParams(TConfigParam params) {
         int batchSize = params.getSubParamByName("Training params")->getSubParamByName("Batch size")->getValue().toInt();
         int trials = params.getSubParamByName("Training params")->getSubParamByName("Trials")->getValue().toInt();
         ok = setTrainParams(epochs, batchSize, trials);
+
+        if (!ok) {
+            m_postInitParams = params;
+            m_postInitParams.setState(TConfigParam::TState::TError, "Invalid values in params, nothing was set!");
+            return m_postInitParams;
+        }
+
+        QString arch = params.getSubParamByName("Training params")->getSubParamByName("Architecture")->getValue();
+        if (arch != "None"){
+            ok = setArchitecture(arch);
+        } else {
+            ok = true;
+        }
+
+        if (!ok) {
+            m_postInitParams = params;
+            m_postInitParams.setState(TConfigParam::TState::TError, "Invalid values in params, nothing was set!");
+            return m_postInitParams;
+        }
+
     } else if (mode == "Predict") {
         QList<QString> modelList;
-        ok &= getListOfModels(modelList);
+        ok &= getListOfX(modelList, "list_models");
         bool exists = false;
         QString modelName = params.getSubParamByName("Used model")->getValue();
 
@@ -818,7 +891,7 @@ bool TAIAPIConnectEngineDevice::uploadData() { //upload_data endpoint
         qDebug() << "Processing " << m_lengthTrain << " bytes of input\n";
     }
 
-    if (m_lengthTrain % traceSize == 0 && type != "Text") {
+    if (type != "Text" && m_lengthTrain % traceSize != 0) {
         qDebug("Uneven number of samples received (1)");
         inputDataTrainUseable = false;
         running = false;
@@ -954,7 +1027,7 @@ bool TAIAPIConnectEngineDevice::analyzeData() { //predict endpoint
         qDebug() << "Processing " << m_lengthPredict << " bytes of input\n";
     }
 
-    if (m_lengthPredict % inputItemSize == 0 && type != "Text") {
+    if (type != "Text" && m_lengthPredict % inputItemSize != 0) {
         qDebug("Uneven number of samples received (1)");
         running = false;
         inputDataPredictUseable = false;
@@ -1058,6 +1131,22 @@ bool TAIAPIConnectEngineDevice::stopTraining() {
 
 }
 
+bool TAIAPIConnectEngineDevice::setArchitecture(QString arch) {
+    QJsonObject json;
+    json["architecture"] = arch;
+
+    QJsonDocument jsonResponse;
+    int statusCode = sendPostRequest(json, jsonResponse, QString("set_architecture"));
+    if (statusCode != 200) {
+        qDebug() << "POST request failed";
+        running = false;
+        return false;
+    }
+
+    return true;
+
+}
+
 bool TAIAPIConnectEngineDevice::loadModel(QString name, bool opti/* = false*/) {
     QJsonObject json;
     json["model_name"] = name;
@@ -1149,6 +1238,22 @@ bool TAIAPIConnectEngineDevice::loadDataset(QString name, int fromTime/* = 0*/, 
     }
 
     return true;
+}
+
+size_t TAIAPIConnectEngineDevice::availableToRead(bool train) {
+    QString type = m_preInitParams.getSubParamByName("Data type")->getValue();
+    uint8_t typeSize = getTypeSize(type);
+
+    if (train) {
+        if (!dataReadyTrain) {
+            return typeSize*m_lengthTrain;
+        }
+    } else {
+        if (!dataReadyPredict) {
+            return typeSize*m_lengthPredict;
+        }
+    }
+    return 0;
 }
 
 size_t TAIAPIConnectEngineDevice::getData(uint8_t * buffer, size_t length, bool train) {
@@ -1674,23 +1779,27 @@ bool TAIAPIConnectEngineDevice::getTrainingParams(int & epochs, int & batchSize,
 
 }
 
-bool TAIAPIConnectEngineDevice::getListOfModels(QList<QString> & modelList) const {
+bool TAIAPIConnectEngineDevice::getListOfX(QList<QString> & l, QString x) const {
     QJsonDocument response;
-    int statusCode = sendGetRequest(response, QString("list_models"));
+    int statusCode = sendGetRequest(response, QString(x));
     if (statusCode != 200) return false;
 
-    QJsonArray models;
-    bool ok = getJsonArrayFromJsonDocumentField(models, response, QString("message"));
-    if (!ok) return false;
+    QJsonArray arr;
+    if (response.isArray()) {
+        arr = response.array();
+    } else {
+        bool ok = getJsonArrayFromJsonDocumentField(arr, response, QString("message"));
+        if (!ok) return false;
+    }
 
-    modelList = QList<QString>();
+    l = QList<QString>();
 
-    for (int i = 0; i < models.size(); ++i) {
-        const QJsonValue& value = models[i];
+    for (int i = 0; i < arr.size(); ++i) {
+        const QJsonValue& value = arr[i];
         if (value.isString()) {
-            modelList.append(value.toString());
+            l.append(value.toString());
         } else {
-            qDebug("Model name from JSON is not a string");
+            qDebug() << x << "'s name from JSON is not a string";
             return false;
         }
     }

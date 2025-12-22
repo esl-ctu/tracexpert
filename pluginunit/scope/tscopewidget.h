@@ -14,6 +14,7 @@
 
 #include "tscopemodel.h"
 #include "widgets/tconfigparamwidget.h"
+#include "../../eximport/texporthdfscopewizard.h"
 
 class TDynamicRadioDialog : public QDialog
 {
@@ -66,6 +67,7 @@ private slots:
 
     void clearTraceData(bool force = false);
     void saveTraceData();
+    void exportHdf();
 
     void showPrevTrace();
     void showNextTrace();
@@ -107,6 +109,7 @@ private:
     QPushButton * m_stopButton;
     QPushButton * m_clearDataButton;
     QPushButton * m_saveDataButton;
+    QPushButton * m_exportDataButton;
 
     QSpinBox * m_traceIndexSpinBox;
     QLabel * m_traceTotalLabel;
@@ -116,6 +119,10 @@ private:
     QPushButton * m_prevTraceButton;
 
     TConfigParamWidget * m_paramWidget;
+    
+    TExportHDFScopeWizard *m_exportWizard = nullptr;
+    size_t m_samples;
+    TScope::TSampleType m_type;
 };
 
 #endif // TOSCILLOSCOPEWIDGET_H

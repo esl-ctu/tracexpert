@@ -9,9 +9,6 @@ class TProjectUnitModel : public QObject, public TProjectItem {
     Q_OBJECT
 
 public:
-    TProjectUnitModel(const QString & typeName, TProjectUnitContainer * parent);
-    TProjectUnitModel(const QString & typeName, TProjectUnit * item, TProjectUnitContainer * parent);
-
     ~TProjectUnitModel();
 
     void openEditor();
@@ -29,10 +26,14 @@ public:
     QDomElement save(QDomDocument & document) const override;
     void load(QDomElement * element);
 
+    static TProjectUnitModel * instantiate(const QString & typeName, TProjectUnitContainer * parent, TProjectUnit * unit = nullptr);
+
 signals:
     void editorRequested(TProjectUnitModel * projectUnitModel);
 
 protected:
+    TProjectUnitModel(const QString & typeName, TProjectUnitContainer * parent, TProjectUnit * item = nullptr);
+
     TProjectUnit * m_unit;
 };
 

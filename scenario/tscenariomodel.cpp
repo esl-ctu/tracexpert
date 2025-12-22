@@ -2,12 +2,8 @@
 #include "tscenariomodel.h"
 #include "tscenariocontainer.h"
 
-TScenarioModel::TScenarioModel(TScenarioContainer * parent)
-    : TProjectUnitModel("scenario", parent)
-{}
-
-TScenarioModel::TScenarioModel(TScenario * scenario, TScenarioContainer * parent)
-    : TProjectUnitModel("scenario", scenario, parent)
+TScenarioModel::TScenarioModel(TScenarioContainer * parent, TScenario * scenario)
+    : TProjectUnitModel("scenario", parent, scenario)
 {}
 
 TScenario * TScenarioModel::scenario() const {

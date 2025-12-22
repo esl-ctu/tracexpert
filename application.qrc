@@ -42,5 +42,9 @@
         <file>icons/scenario-manager.png</file>
         <file>icons/settings.png</file>
         <file>icons/show.png</file>
+        <file>icons/exporthdf.png</file>
+        <file>icons/exportraw.png</file>
+        <file>icons/importhdf.png</file>
+        <file>icons/importraw.png</file>
     </qresource>
 </RCC>

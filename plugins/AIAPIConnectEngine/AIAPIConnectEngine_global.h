@@ -1,5 +1,6 @@
 #ifndef AIAPICONNECTENGINE_GLOBAL_H
 #define AIAPICONNECTENGINE_GLOBAL_H
+#pragma once
 
 #include <QtCore/qglobal.h>
 
