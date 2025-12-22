@@ -19,7 +19,7 @@ void TnewaeDevice::preparePreInitParams(){
 
     if (type == TARGET_CW305) {
         m_preInitParams = TConfigParam("NewAE CW305 target " + m_name + " pre-init config", "", TConfigParam::TType::TDummy, "");
-        m_preInitParams.addSubParam(TConfigParam("Alpha version! If this causes a Cadmium II leak, I'm not responsible!", "", TConfigParam::TType::TDummy, ""));
+        m_preInitParams.addSubParam(TConfigParam("Beta version! If this causes a Cadmium II leak, I'm not responsible!", "", TConfigParam::TType::TDummy, ""));
         m_preInitParams.addSubParam(TConfigParam("Bitstream", "", TConfigParam::TType::TFileName, ""));
     }
     else if (type == TARGET_CW310){
