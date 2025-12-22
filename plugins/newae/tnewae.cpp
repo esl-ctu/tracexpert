@@ -176,11 +176,11 @@ QString TNewae::getInfo() const {
 }
 
 bool TNewae::canAddIODevice(){
-    return true;
+    return false;
 }
 
 bool TNewae::canAddScope(){
-    return true;
+    return false;
 }
 
 bool TNewae::canAddAnalDevice(){
