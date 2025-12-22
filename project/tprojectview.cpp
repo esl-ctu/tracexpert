@@ -119,6 +119,7 @@ void TProjectView::refreshActions()
 void TProjectView::refreshActionsForItem(TProjectItem * item)
 {
     m_currentActions.clear();
+    m_currentDefaultAction = nullptr;
 
     m_component = nullptr;
     m_IODevice = nullptr;
@@ -201,19 +202,19 @@ void TProjectView::refreshActionsForItem(TProjectItem * item)
         m_addIODeviceAction->setDisabled(m_component->status() != TProjectItem::Initialized || !m_component->canAddIODevice());
         m_currentActions.append(m_addIODeviceAction);
 
-        m_currentDefaultAction = m_addIODeviceAction;
+        m_currentDefaultAction = nullptr;
     }
     else if (dynamic_cast<TScopeContainer *>(item) && (m_component = dynamic_cast<TComponentModel *>(item->parent()))) {
         m_addScopeAction->setDisabled(m_component->status() != TProjectItem::Initialized || !m_component->canAddScope());
         m_currentActions.append(m_addScopeAction);
 
-        m_currentDefaultAction = m_addScopeAction;
+        m_currentDefaultAction = nullptr;
     }
     else if (dynamic_cast<TAnalDeviceContainer *>(item) && (m_component = dynamic_cast<TComponentModel *>(item->parent()))) {
         m_addAnalDeviceAction->setDisabled(m_component->status() != TProjectItem::Initialized || !m_component->canAddAnalDevice());
         m_currentActions.append(m_addAnalDeviceAction);
 
-        m_currentDefaultAction = m_addAnalDeviceAction;
+        m_currentDefaultAction = nullptr;
     }
     else if ((dynamic_cast<TProtocolContainer *>(item))) {
         m_openProtocolManagerAction->setEnabled(true);
@@ -266,9 +267,6 @@ void TProjectView::showContextMenu(const QPoint &point)
 {
     QModelIndex index = indexAt(point);
 
-    if (!index.internalPointer())
-        return;
-
     refreshActionsForItem(static_cast<TProjectItem *>(index.internalPointer()));
 
     QMenu * contextMenu = new QMenu(this);
@@ -280,11 +278,13 @@ void TProjectView::showContextMenu(const QPoint &point)
         return;
     }
 
-    if (m_currentDefaultAction) {
+    if (m_currentDefaultAction)
         contextMenu->setDefaultAction(m_currentDefaultAction);
-    }
+
     contextMenu->setAttribute(Qt::WA_DeleteOnClose, true);
-    contextMenu->exec(viewport()->mapToGlobal(point));
+    contextMenu->popup(viewport()->mapToGlobal(point));
+
+    connect(contextMenu, &QMenu::aboutToHide, contextMenu, &QObject::deleteLater);
 }
 
 void TProjectView::runDefaultAction(const QModelIndex & index) {
