@@ -52,7 +52,7 @@ From now on, the scope behaves the same way as any other scope in TraceXpert. To
    
    - Mode: Choose between *Triggered* (recommended for most scenarios) and *Continuous*
 
-All of these parameters are named identically to the [CW scope API documentation](Scope API &#8212; ChipWhisperer Documentation](https://chipwhisperer.readthedocs.io/en/latest/scope-api.html). Explanation of these parameters can also be found there
+All of these parameters are named identically to the [CW scope API documentation](https://chipwhisperer.readthedocs.io/en/latest/scope-api.html). Explanation of these parameters can also be found there
 
 ## Target (non-standalone - CW308, ...)
 
@@ -72,4 +72,4 @@ To read from the device, you must first specify the *FPGA read address* in post-
 
 To write to the device, you must select whether you want to use the *fpga_read* or the *readOutput* function. If you select *fpga_read*, you must also specify the *FPGA write address* in post-init params.
 
-All of the  parameters and functions are named identically to the [CW scope target documentation]([Target API &#8212; ChipWhisperer Documentation](https://chipwhisperer.readthedocs.io/en/latest/target-api.html#api-target-cw305)). Explanation of these parameters can also be found there
+All of the  parameters and functions are named identically to the [CW scope target documentation](https://chipwhisperer.readthedocs.io/en/latest/target-api.html#api-target-cw305). Explanation of these parameters can also be found there
