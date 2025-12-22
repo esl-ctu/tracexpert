@@ -8,13 +8,16 @@
 
 #include "tiodevice.h"
 
+#include <QElapsedTimer>
+#include <QMutex>
+
 class TNewae;
 
 class TnewaeDevice : public TIODevice {
 
 public:
 
-    TnewaeDevice(const QString & name_in, const QString & sn_in, TNewae * plugin_in, bool createdManually_in = true);
+    TnewaeDevice(const QString & name_in, const QString & sn_in, TNewae * plugin_in, targetType type_in, bool createdManually_in = true);
 
     virtual ~TnewaeDevice() override;
 
@@ -34,9 +37,13 @@ public:
     virtual size_t readData(uint8_t * buffer, size_t len) override;
     virtual std::optional<size_t> availableBytes() override;
 
+    void preparePreInitParams();
+
     void setId();
     uint8_t getId();
     QString getDeviceSn();
+
+    bool m_initialized;
 
 protected:
     //void _openPort(bool *ok = nullptr);
@@ -54,12 +61,21 @@ protected:
     QString m_info;
     TNewae * plugin;
     TnewaeScope * scopeParent;
+    targetType type;
 
     TConfigParam m_preInitParams;
     TConfigParam m_postInitParams;
     qint32 m_readTimeout;
     qint32 m_writeTimeout;
-    bool m_initialized;
+
+    const QString READ_ONLY_STRING = "alwaysRunFunc";
+    const QString WRITE_ONLY_STRING = "writeOnlyFunc";
+
+    const qint64 TIMER_READ_INTERVAL = 250;
+    QByteArray m_readBuffer;       // dynamic buffer
+    QElapsedTimer m_lastReadTimer;
+    QMutex m_readMutex;
+    void performHardwareRead();
 
 };
 

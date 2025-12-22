@@ -328,6 +328,14 @@ TScope::TTriggerStatus TnewaeScope::getTriggerStatus() {
 
 void TnewaeScope::notConnectedError() {
     qWarning("%s", (QString("NewAE device with serial number ") + QString(sn) + QString(" was disconnected. Please de-init and re-init the scope and device.")).toLocal8Bit().constData());
+    m_initialized = false;
+    auto ios = plugin->getIODevices();
+    for (auto it = ios.begin(); it != ios.end(); ++it) {
+        TnewaeDevice * tmp =  (TnewaeDevice *) *it;
+        if (tmp->getId() == cwId) {
+            tmp->m_initialized = false;
+        }
+    }
 }
 
 bool TnewaeScope::isInitialized(){
@@ -535,6 +543,8 @@ void TnewaeScope::init(bool *ok/* = nullptr*/){
     }
     sn = tmpSn->getValue();
 
+    succ = plugin->setUpAndTestSHM(cwId);
+
     QString toSend;
     QList<QString> params;
     params.append(sn);
@@ -563,18 +573,18 @@ void TnewaeScope::init(bool *ok/* = nullptr*/){
 }
 
 void TnewaeScope::deInit(bool *ok/* = nullptr*/){
-    m_postInitParams = updatePostInitParams(m_postInitParams);
+    //m_postInitParams = updatePostInitParams(m_postInitParams);
 
     m_initialized = false;
 
     //TODO!!!
-    /*auto ios = plugin->getIODevices();
+    auto ios = plugin->getIODevices();
     for (auto it = ios.begin(); it != ios.end(); ++it) {
         TnewaeDevice * tmp =  (TnewaeDevice *) *it;
         if (tmp->getId() == cwId) {
             tmp->deInit();
         }
-    }*/
+    }
 
     QString toSend;
     QList<QString> params;
@@ -588,7 +598,7 @@ void TnewaeScope::deInit(bool *ok/* = nullptr*/){
 
 //This whole method is ugly. I'm sorry
 TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write /*= false*/) const {
-    bool ook, ook2, ook3;
+    bool ook;
     TConfigParam * topPrm = paramsIn.getSubParamByName("NewAE", &ook);
     if (!ook) {
         paramsIn.setState(TConfigParam::TState::TError, "Error getting scope params!");
@@ -686,7 +696,8 @@ TConfigParam TnewaeScope::updatePostInitParams(TConfigParam paramsIn, bool write
                                 size_t len;
                                 QString out;
                                 bool ok;
-                                ok = plugin->runPythonFunctionOnAnObjectAndGetStringOutput(cwId, prmName, subPrmName, len, out);
+                                QList<QString> par;
+                                ok = plugin->runPythonFunctionOnAnObjectAndGetStringOutput(cwId, prmName, subPrmName, 0, par, len, out);
                                 subSubPrms[0].setValue("No");
                                 if (!ok) {
                                     topPrm->setState(TConfigParam::TState::TWarning, "Cannot read/write some params.");

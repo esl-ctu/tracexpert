@@ -11,6 +11,12 @@
 #  define TNEWAE_EXPORT Q_DECL_IMPORT
 #endif
 
+typedef enum {
+    TARGET_NORMAL,
+    TARGET_CW305,
+    TARGET_CW310
+} targetType;
+
 #include "tplugin.h"
 #include "tscope.h"
 #include "tnewae.h"

@@ -42,8 +42,7 @@ const uint8_t NO_CW_ID = 255;
 //Special functions implemented in python - HALT, SETUP, DETECT_DEVICES, SMTEST, SMSET, DEINI. FUNC-<pythonFunctionName>, FUNO-<objname,funcname>, SPAR-<>, PARA-<>
 //Special codes to be received from python - STARTED, DONE, ERROR
 
-class TNEWAE_EXPORT TNewae : public QObject, TPlugin
-{
+class TNEWAE_EXPORT TNewae : public QObject, TPlugin {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "org.cvut.fit.TraceXpert.PluginInterface/1.0" FILE "tnewae.json")
     Q_INTERFACES(TPlugin)
@@ -72,11 +71,12 @@ public:
     virtual TConfigParam setPostInitParams(TConfigParam params) override;
 
     virtual TIODevice * addIODevice(QString name, QString info, bool *ok = nullptr) override;
-    TIODevice * addIODeviceAutomatically(QString name, QString info, bool *ok = nullptr);//Never call this manually!
+    TIODevice * addIODeviceAutomatically(QString name, QString info, targetType type, bool *ok = nullptr);//Never call this manually!
     virtual TScope * addScope(QString name, QString info, bool *ok = nullptr) override;
     TScope * addScopeAutomatically(QString name, QString info, bool *ok = nullptr);//Never call this manually!
     /// Add a Analytical device manually
     virtual TAnalDevice * addAnalDevice(QString name, QString info, bool *ok = nullptr) override;
+    uint8_t addDummyScope();
 
 
     /// Get available IO devices, available only after init()
@@ -96,22 +96,28 @@ public:
 
     TnewaeScope * getCWScopeObjectById(uint8_t id);
 
+    bool setUpAndTestSHM(uint8_t cwId);
+
     //In this block, cwId is only used for identification if the correct CW is being accessed
     bool writeToPython(uint8_t cwId, const QString &data, bool asTarget = false, bool responseExpected = true, bool wait = true);
+    bool writeBinaryToPython(uint8_t cwId, const char * data, size_t len, bool asTarget = false, bool responseExpected = true, bool wait = true);
     //bool readFromPython(uint8_t cwId, QString &data, bool wait = true);
     bool waitForPythonDone(uint8_t cwId, int timeout = 30000);
     bool waitForPythonTargetDone(uint8_t cwId, int timeout = 30000);
 
     //In this block, CW is super important
     void packageDataForPython(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out);
+    void packageErrorProcessed(uint8_t cwId, QString &out, bool asTarget = false);
+    bool sendPythonErrorProcessed(int8_t cwId, bool asTarget = false);
     bool runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out, bool asTarget = false);
-    bool runPythonFunctionOnAnObjectAndGetStringOutput(int8_t cwId, QString ObjectName, QString functionName, size_t &dataLen, QString &out);
+    bool runPythonFunctionWithBinaryDataAsOneArgumentAndGetStringOutput(int8_t cwId, QString functionName, char * data, size_t lenIn, size_t &dataLen, QString &out, bool asTarget = false);
+    bool runPythonFunctionOnAnObjectAndGetStringOutput(int8_t cwId, QString ObjectName, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out, bool asTarget = false);
     bool getPythonParameter(int8_t cwId, QString paramName, QString &out, bool asTarget = false);
-    bool getPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString &out);
+    bool getPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString &out, bool asTarget = false);
     bool setPythonParameter(int8_t cwId, QString paramName, QString value, QString &out, bool asTarget = false); //Out is the new value of the parameter, can be discarded
-    bool setPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString value, QString &out); //Out is the new value of the subparameter, can be discarded
+    bool setPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString value, QString &out, bool asTarget = false); //Out is the new value of the subparameter, can be discarded
     bool downloadSamples(uint8_t cwId, size_t * size, void * out, bool asInt, size_t bufferSize);
-    bool readFromTarget(uint8_t cwId, size_t * size, void * out, size_t bufferSize);
+    bool readFromTarget(uint8_t cwId, size_t * size, void * out, size_t bufferSize, QString func, unsigned long long addr = ULLONG_MAX);
 
     //bool getTracesFromShm(size_t &numTraces, size_t &traceSize, QList<double> &data);
 
@@ -131,16 +137,16 @@ protected:
     bool setUpPythonProcess();
     bool testSHM(uint8_t cwId);
     bool autodetectDevices(QList<std::pair<QString, QString>> & devices);
-    bool setUpAndTestSHM(uint8_t cwId);
 
     bool getDataFromShm(size_t &size, QString &data, uint8_t cwId, bool asTarget = false);
     bool getDataFromShm(size_t * size, void * data, uint8_t cwId, size_t bufferSize, bool asTarget = false);
+    bool runPythonFunctionAndGetStringOutputHelper(int8_t cwId, const char* data, size_t len_in, size_t &dataLen, QString &out, bool asTarget = false);
 
     //In this block, CW is super important
     void packagePythonFunction(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out, bool asTarget = false);
-    void packagePythonOnAnObjectFunctionWithNoParams(uint8_t cwId, QString ObjectName, QString functionName, QString &out);
+    void packagePythonOnAnObjectFunction(uint8_t cwId, QString ObjectName, QString functionName, uint8_t numParams, QList<QString> params, QString &out, bool asTarget = false);
     void packagePythonParam(uint8_t cwId, QString paramName, QString value, QString &out, bool asTarget = false);
-    void packagePythonSubparam(uint8_t cwId, QString paramName, QString subParamName, QString value, QString &out);
+    void packagePythonSubparam(uint8_t cwId, QString paramName, QString subParamName, QString value, QString &out, bool asTarget = false);
 
     uint8_t numDevices; //This counts the number of **seen** devices, not the number of connected devices. Use m_scopes.lenght() for that
     uint8_t numActiveDevices;
@@ -169,7 +175,7 @@ protected:
     size_t shmSize;
     size_t targetShmSize;
 
-    QMutex pythonProcessStdOutMutex;
+    QMutex pythonProcessMutex;
     //QString pythonProcessStdOutData;
 };
 

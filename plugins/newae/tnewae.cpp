@@ -1,11 +1,87 @@
 #include "tnewae.h"
 //Next:
-//sériovka k targetu
+//kontrola preinitparams pro target
+//opravit: sériovka k targetu
 //víc cw najednou (fronta?, víc pyth. vláken?)
 //2. co když se uživatel pokusí předidat stejné zařízení/cw dvakrát?
 //cesta k .py souboru (jako preinitparam - ano - předkodovat?)
+//python exectuable jako File
 
+QString readStderrSyncHelper(QProcess *pythonProcess, int timeoutMs = 30000) {
+    QEventLoop loop;
+    QString result;
 
+    // queued call do vlákna QProcessu
+    QMetaObject::invokeMethod(pythonProcess, [pythonProcess, &result, &loop]() {
+        result = pythonProcess->readAllStandardError();
+        loop.quit();
+    }, Qt::QueuedConnection);
+
+    // timeout pro případ, že proces nic neposílá
+    QTimer timer;
+    timer.setSingleShot(true);
+    QObject::connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
+    timer.start(timeoutMs);
+
+    loop.exec(); // čeká na queued volání nebo timeout
+
+    return result;
+}
+
+QString readStdoutSyncHelper(QProcess *pythonProcess, int timeoutMs = 30000) {
+    QEventLoop loop;
+    QString result;
+
+    // queued call do vlákna QProcessu
+    QMetaObject::invokeMethod(pythonProcess, [pythonProcess, &result, &loop]() {
+        result = pythonProcess->readAllStandardOutput();
+        loop.quit();
+    }, Qt::QueuedConnection);
+
+    // timeout pro případ, že proces nic neposílá
+    QTimer timer;
+    timer.setSingleShot(true);
+    QObject::connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
+    timer.start(timeoutMs);
+
+    loop.exec(); // čeká na queued volání nebo timeout
+
+    return result;
+}
+
+bool pythonWriteSyncHelper(QProcess *pythonProcess, const QByteArray &data, bool wait = false, int timeoutMs = 30000) {
+    if (!wait) {
+        QMetaObject::invokeMethod(pythonProcess, [pythonProcess, data]() {
+            pythonProcess->write(data);
+        }, Qt::QueuedConnection);
+        return true;
+    }
+
+    QEventLoop loop;
+    QTimer timer;
+    bool ok = false;
+    QObject tmp;
+
+    timer.setSingleShot(true);
+    timer.start(timeoutMs);
+
+    QObject::connect(&timer, &QTimer::timeout, &tmp, [&]() {
+        loop.quit(); // timeout
+    });
+
+    QObject::connect(pythonProcess, &QProcess::bytesWritten, &tmp, [&](qint64) {
+        ok = true;
+        loop.quit();
+    });
+
+    QMetaObject::invokeMethod(pythonProcess, [pythonProcess, data]() {
+        pythonProcess->write(data);
+    }, Qt::QueuedConnection);
+
+    loop.exec();
+
+    return ok;
+}
 
 TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     m_preInitParams  = TConfigParam("NewAE pre-init configuration", "", TConfigParam::TType::TDummy, "");
@@ -24,7 +100,6 @@ TNewae::TNewae(): m_ports(), m_preInitParams(), m_postInitParams() {
     pythonPath = "";
     m_initialized = false;
     numActiveDevices = 0;
-    //pythonProcessStdOutData = "";
 }
 
 TnewaeScope * TNewae::getCWScopeObjectById(uint8_t id){
@@ -166,7 +241,7 @@ void TNewae::handlePythonError(QProcess::ProcessError error){
 
 bool TNewae::setUpSHM(uint8_t cwId){
     char cwIdShmKey[4];
-    sprintf(cwIdShmKey, "%03d", cwId);
+    std::snprintf(cwIdShmKey, sizeof(cwIdShmKey), "%03d", cwId);
 
     QSharedMemory * cwSHM = new QSharedMemory();
     QSharedMemory * targetSHM = new QSharedMemory();
@@ -206,6 +281,8 @@ bool TNewae::setUpSHM(uint8_t cwId){
 
     if (pythonError[cwId]) {
         qCritical("Failed to set up scope shared memory in Python.");
+        if (pythonError[cwId] && cwId != NO_CW_ID)
+            sendPythonErrorProcessed(cwId, false);
         return false;
     }
 
@@ -288,6 +365,8 @@ bool TNewae::testSHM(uint8_t cwId) {
     succ &= !pythonError[cwId];
     if (!succ){
         qCritical("Python did not respond to SHM read request (scope).");
+        if (pythonError[cwId] && cwId != NO_CW_ID)
+            sendPythonErrorProcessed(cwId, false);
         return false;
     }
 
@@ -458,17 +537,41 @@ void TNewae::init(bool *ok) {
         }
 
         //Append available devices to m_scopes/m_devices
-        for(size_t i = 0; i < devices.size(); ++i) {
-            addScopeAutomatically(devices.at(i).first, devices.at(i).second, &succ);
-            if(!succ) {
-                if(ok != nullptr) *ok = false;
-                return;
+        for(qsizetype i = 0; i < devices.size(); ++i) {
+            //if this is not a standalone target, add the scope
+            if (!(devices.at(i).first.contains("cw305", Qt::CaseInsensitive)) &&
+                !(devices.at(i).first.contains("cw310", Qt::CaseInsensitive))){
+                addScopeAutomatically(devices.at(i).first, devices.at(i).second, &succ);
+                if(!succ) {
+                    if(ok != nullptr) *ok = false;
+                    return;
+                }
             }
-            addIODeviceAutomatically(devices.at(i).first, devices.at(i).second, &succ);
-            if(!succ) {
-                if(ok != nullptr) *ok = false;
-                return;
+
+            if (devices.at(i).first.contains("cw305", Qt::CaseInsensitive)){
+                addIODeviceAutomatically(devices.at(i).first, devices.at(i).second, TARGET_CW305, &succ);
+                if(!succ) {
+                    if(ok != nullptr) *ok = false;
+                    return;
+                }
+            } else if (devices.at(i).first.contains("cw310", Qt::CaseInsensitive)){
+                addIODeviceAutomatically(devices.at(i).first, devices.at(i).second, TARGET_CW310, &succ);
+                if(!succ) {
+                    if(ok != nullptr) *ok = false;
+                    return;
+                }
+            } else {
+                addIODeviceAutomatically(devices.at(i).first, devices.at(i).second, TARGET_NORMAL, &succ);
+                if(!succ) {
+                    if(ok != nullptr) *ok = false;
+                    return;
+                }
             }
+        }
+
+        for (auto it = m_ports.begin(); it != m_ports.end(); ++it) {
+            TnewaeDevice * t = (TnewaeDevice *)(*it);
+            t->preparePreInitParams();
         }
 
         if (!numDevices){
@@ -534,7 +637,7 @@ TIODevice * TNewae::addIODevice(QString name, QString info, bool *ok) {//TODO!!!
     return NULL;
 }
 
-TIODevice * TNewae::addIODeviceAutomatically(QString name, QString info, bool *ok) {
+TIODevice * TNewae::addIODeviceAutomatically(QString name, QString info, targetType type, bool *ok) {
     //Check if the port exists
     for (int i = 0; i < m_ports.length(); ++i){
         TnewaeDevice * port = (TnewaeDevice *) m_ports.at(i);
@@ -547,7 +650,7 @@ TIODevice * TNewae::addIODeviceAutomatically(QString name, QString info, bool *o
         }
     }
 
-    TnewaeDevice * port = new TnewaeDevice(name, info, this, false);
+    TnewaeDevice * port = new TnewaeDevice(name, info, this, type, false);
     m_ports.append(port);
     return port;
 }
@@ -571,6 +674,21 @@ TScope * TNewae::addScope(QString name, QString info, bool *ok) {
     return NULL;
 }
 
+uint8_t TNewae::addDummyScope() {
+    if (numDevices + 1 != NO_CW_ID) {
+        pythonReady[numDevices] = true;
+        pythonError[numDevices] = false;
+        pythonTargetError[numDevices] = false;
+        pythonTargetReady[numDevices] = true;
+        setUpAndTestSHM(numDevices);
+        numDevices++;
+        return numDevices-1;
+    } else {
+        qCritical("Number of available Chipwhisperer slots exceeded. Please de-init and re-init the plugin/component to continue.");
+        return 0;
+    }
+}
+
 TScope * TNewae::addScopeAutomatically(QString name, QString info, bool *ok) {
     //Check if the scope exists
     for (int i = 0; i < m_scopes.length(); ++i){
@@ -592,9 +710,8 @@ TScope * TNewae::addScopeAutomatically(QString name, QString info, bool *ok) {
         pythonError[numDevices] = false;
         pythonTargetError[numDevices] = false;
         pythonTargetReady[numDevices] = true;
-        bool succ = setUpAndTestSHM(numDevices);
         numDevices++;
-        if(ok != nullptr) *ok = succ;
+        if(ok != nullptr) *ok = true;
         return sc;
     } else {
         qCritical("Number of available Chipwhisperer slots exceeded. Please de-init and re-init the plugin/component to continue.");
@@ -621,6 +738,39 @@ void TNewae::packageDataForPython(uint8_t cwId, QString functionName, uint8_t nu
     QTextStream(&out) << lineSeparator;
 }
 
+void TNewae::packageErrorProcessed(uint8_t cwId, QString &out, bool asTarget /*= false*/){
+    QString newFunctionName;
+    QList<QString> params;
+    if (asTarget)
+        newFunctionName = "T-PERR";
+    else
+        newFunctionName = "PERR";
+    packageDataForPython(cwId, newFunctionName, 0, params, out);
+}
+
+bool TNewae::sendPythonErrorProcessed(int8_t cwId, bool asTarget /*= false*/){
+    QString toSend;
+    packageErrorProcessed(cwId, toSend, asTarget);
+    bool succ = writeToPython(cwId, toSend, asTarget);
+    if(!succ) {
+        return false;
+    }
+
+    if (asTarget){
+        succ &= waitForPythonTargetDone(cwId);
+        if(!succ || pythonTargetError[cwId]) {
+            return false;
+        }
+    } else {
+        succ &= waitForPythonDone(cwId);
+        if(!succ || pythonError[cwId]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void TNewae::packagePythonFunction(uint8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, QString &out, bool asTarget /*= false*/){
     QString newFunctionName;
     if (asTarget)
@@ -630,11 +780,14 @@ void TNewae::packagePythonFunction(uint8_t cwId, QString functionName, uint8_t n
     packageDataForPython(cwId, newFunctionName, numParams, params, out);
 }
 
-void TNewae::packagePythonOnAnObjectFunctionWithNoParams(uint8_t cwId, QString ObjectName, QString functionName, QString &out){
-    QString newFunctionName = "FUNO-" + ObjectName;
-    QList<QString> params;
-    params.append(functionName);
-    packageDataForPython(cwId, newFunctionName, 1, params, out);
+void TNewae::packagePythonOnAnObjectFunction(uint8_t cwId, QString ObjectName, QString functionName, uint8_t numParams, QList<QString> params, QString &out, bool asTarget /*= false*/){
+    QString newFunctionName;
+    if (asTarget)
+        newFunctionName = "T-FUNO-" + ObjectName;
+    else
+        newFunctionName = "FUNO-" + ObjectName;
+    params.prepend(functionName);
+    packageDataForPython(cwId, newFunctionName, numParams + 1, params, out);
 }
 
 void TNewae::packagePythonParam(uint8_t cwId, QString paramName, QString value, QString &out, bool asTarget /*= false*/){
@@ -652,8 +805,12 @@ void TNewae::packagePythonParam(uint8_t cwId, QString paramName, QString value, 
     }
 }
 
-void TNewae::packagePythonSubparam(uint8_t cwId, QString paramName, QString subParamName, QString value, QString &out){
-    QString newParamName = "SPAR-" + paramName;
+void TNewae::packagePythonSubparam(uint8_t cwId, QString paramName, QString subParamName, QString value, QString &out, bool asTarget /*= false*/){
+    QString newParamName;
+    if (asTarget)
+        newParamName = "T-SPAR-" + paramName;
+    else
+        newParamName = "SPAR-" + paramName;
     QList<QString> params;
     params.append(subParamName);
     if (value == "") {
@@ -664,12 +821,8 @@ void TNewae::packagePythonSubparam(uint8_t cwId, QString paramName, QString subP
     }
 }
 
-bool TNewae::runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out, bool asTarget /*= false*/){
-    QString toSend;
-    bool succ;
-
-    packagePythonFunction(cwId, functionName, numParams, params, toSend, asTarget);
-    succ = writeToPython(cwId, toSend, asTarget);
+bool TNewae::runPythonFunctionAndGetStringOutputHelper(int8_t cwId, const char* data, size_t len_in, size_t &dataLen, QString &out, bool asTarget /*= false*/){
+    bool succ = writeBinaryToPython(cwId, data, len_in, asTarget);
     if(!succ) {
         return false;
     }
@@ -677,15 +830,18 @@ bool TNewae::runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionNa
     if (asTarget){
         succ &= waitForPythonTargetDone(cwId);
         if(!succ || pythonTargetError[cwId]) {
+            if (pythonTargetError[cwId])
+                sendPythonErrorProcessed(cwId, true);
             return false;
         }
     } else {
         succ &= waitForPythonDone(cwId);
         if(!succ || pythonError[cwId]) {
+            if (pythonError[cwId])
+                sendPythonErrorProcessed(cwId, false);
             return false;
         }
     }
-
 
     succ = getDataFromShm(dataLen, out, cwId, asTarget);
     if (!succ) {
@@ -693,23 +849,62 @@ bool TNewae::runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionNa
         return false;
     }
 
-    if (!dataLen) {
+    /*if (!dataLen) {
         qCritical("No data from shared memory");
         return false;
-    }
+    }*/
 
     return true;
 }
 
-bool TNewae::readFromTarget(uint8_t cwId, size_t * size, void * out, size_t bufferSize) {
+//This ugly abomination reimplemets packagePythonFunction and stuff that that method calls. Reason: sending binary data over a serial connection to a target. Could it be prettier? I have no idea...
+bool TNewae::runPythonFunctionWithBinaryDataAsOneArgumentAndGetStringOutput(int8_t cwId, QString functionName, char * data, size_t lenIn, size_t &dataLen, QString &out, bool asTarget /*= false*/){
+    QString newFunctionName;
+    if (asTarget)
+        newFunctionName = "T-FUNC-" + functionName;
+    else
+        newFunctionName = "FUNC-" + functionName;
+
+    QString header;
+    QTextStream(&header) << QString::number(cwId).rightJustified(3, '0');
+    QTextStream(&header) << fieldSeparator << newFunctionName << fieldSeparator;
+    QByteArray toSend = header.toLocal8Bit();
+    toSend.append(data, static_cast<int>(lenIn));
+    toSend.append(lineSeparator);
+
+    return runPythonFunctionAndGetStringOutputHelper(cwId, toSend.constData(), toSend.size(), dataLen, out, asTarget);
+}
+
+
+bool TNewae::runPythonFunctionAndGetStringOutput(int8_t cwId, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out, bool asTarget /*= false*/){
+    QString toSend;
+
+    packagePythonFunction(cwId, functionName, numParams, params, toSend, asTarget);
+    return runPythonFunctionAndGetStringOutputHelper(cwId, toSend.toLocal8Bit().constData(), toSend.size(), dataLen, out, asTarget);
+}
+
+bool TNewae::readFromTarget(uint8_t cwId, size_t * size, void * out, size_t bufferSize, QString func, unsigned long long addr /*= ULLONG_MAX*/) {
     QString toSend;
     bool succ;
     QList<QString> params;
+    if (func == "read") {
+        params.append(QString::number(bufferSize));
+        params.append(QString::number(25));
+        packagePythonFunction(cwId, func, 2, params , toSend, true);
+    } else if (func == "readOutput") {
+        packagePythonFunction(cwId, func, 0, params , toSend, true);
+    } else if (func == "fpga_read") {
+        params.append(QString::number(addr));
+        params.append(QString::number(bufferSize));
+        packagePythonFunction(cwId, func, 2, params , toSend, true);
+    } else {
+        return false;
+    }
 
-    packagePythonFunction(cwId, "read", 0, params , toSend, true);
+
     succ = writeToPython(cwId, toSend, true);
     if(!succ) {
-        qDebug("Error sending the get_last_trace command.");
+        qDebug("Error sending the read command.");
         return false;
     }
 
@@ -751,6 +946,8 @@ bool TNewae::downloadSamples(uint8_t cwId, size_t * size, void * out, bool asInt
 
     succ &= waitForPythonDone(cwId);
     if(!succ || pythonError[cwId]) {
+        if (pythonError[cwId])
+            sendPythonErrorProcessed(cwId, false);
         return false;
     }
 
@@ -768,22 +965,31 @@ bool TNewae::downloadSamples(uint8_t cwId, size_t * size, void * out, bool asInt
     return true;
 }
 
-bool TNewae::runPythonFunctionOnAnObjectAndGetStringOutput(int8_t cwId, QString ObjectName, QString functionName, size_t &dataLen, QString &out){
+bool TNewae::runPythonFunctionOnAnObjectAndGetStringOutput(int8_t cwId, QString ObjectName, QString functionName, uint8_t numParams, QList<QString> params, size_t &dataLen, QString &out, bool asTarget /*= false*/){
     QString toSend;
     bool succ;
 
-    packagePythonOnAnObjectFunctionWithNoParams(cwId, ObjectName, functionName, toSend);
-    succ = writeToPython(cwId, toSend);
+    packagePythonOnAnObjectFunction(cwId, ObjectName, functionName, numParams, params, toSend, asTarget);
+    succ = writeToPython(cwId, toSend, asTarget);
     if(!succ) {
         return false;
     }
 
-    succ &= waitForPythonDone(cwId);
-    if(!succ || pythonError[cwId]) {
-        return false;
+    if (asTarget){
+        succ &= waitForPythonTargetDone(cwId);
+        if(!succ || pythonTargetError[cwId]) {
+            return false;
+        }
+    } else {
+        succ &= waitForPythonDone(cwId);
+        if(!succ || pythonError[cwId]) {
+            if (pythonError[cwId])
+                sendPythonErrorProcessed(cwId, false);
+            return false;
+        }
     }
 
-    succ = getDataFromShm(dataLen, out, cwId);
+    succ = getDataFromShm(dataLen, out, cwId, asTarget);
     if (!succ) {
         qCritical("Error reading from shared memory");
         return false;
@@ -802,9 +1008,9 @@ bool TNewae::getPythonParameter(int8_t cwId, QString paramName, QString &out, bo
     return setPythonParameter(cwId, paramName, tmp, out, asTarget);
 }
 
-bool TNewae::getPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString &out){
+bool TNewae::getPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString &out, bool asTarget /*= false*/){
     QString tmp = "";
-    return setPythonSubparameter(cwId, paramName, subParamName, tmp, out);
+    return setPythonSubparameter(cwId, paramName, subParamName, tmp, out, asTarget);
 }
 
 bool TNewae::setPythonParameter(int8_t cwId, QString paramName, QString value, QString &out, bool asTarget /*= false*/){
@@ -828,10 +1034,7 @@ bool TNewae::setPythonParameter(int8_t cwId, QString paramName, QString value, Q
     }
 
     size_t dataLen;
-    if (asTarget)
-        succ = getDataFromShm(dataLen, out, cwId, true);
-    else
-        succ = getDataFromShm(dataLen, out, cwId);
+    succ = getDataFromShm(dataLen, out, cwId, asTarget);
 
     if (!succ) {
         qCritical("Error reading from shared memory");
@@ -846,24 +1049,29 @@ bool TNewae::setPythonParameter(int8_t cwId, QString paramName, QString value, Q
     return true;
 }
 
-bool TNewae::setPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString value, QString &out){
+bool TNewae::setPythonSubparameter(int8_t cwId, QString paramName, QString subParamName, QString value, QString &out, bool asTarget /*= false*/){
     QString toSend;
     bool succ;
 
-    packagePythonSubparam(cwId, paramName, subParamName, value, toSend);
-    succ = writeToPython(cwId, toSend);
+    packagePythonSubparam(cwId, paramName, subParamName, value, toSend, asTarget);
+    succ = writeToPython(cwId, toSend, asTarget);
 
     if(!succ) {
         return false;
     }
 
-    succ &= waitForPythonDone(cwId);
+    if (asTarget)
+        succ &= waitForPythonTargetDone(cwId);
+    else
+        succ &= waitForPythonDone(cwId);
+
     if(!succ) {
         return false;
     }
 
     size_t dataLen;
-    succ = getDataFromShm(dataLen, out, cwId);
+    succ = getDataFromShm(dataLen, out, cwId, asTarget);
+
     if (!succ) {
         qCritical("Error reading from shared memory");
         return false;
@@ -878,8 +1086,12 @@ bool TNewae::setPythonSubparameter(int8_t cwId, QString paramName, QString subPa
 }
 
 bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool asTarget /*= false*/, bool responseExpected/* = true*/, bool wait/* = true*/){
+    return writeBinaryToPython(cwId, data.toLocal8Bit().constData(), data.size(), asTarget, responseExpected, wait);
+}
+
+bool TNewae::writeBinaryToPython(uint8_t cwId, const char * data, size_t len, bool asTarget /*= false*/, bool responseExpected/* = true*/, bool wait/* = true*/){
     if(asTarget) {
-        waitForPythonTargetDone(cwId, 1000);
+        waitForPythonTargetDone(cwId, 150);
 
         if (!pythonTargetReady[cwId]){
             qDebug("Python not ready! (target)");
@@ -887,7 +1099,7 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool asTarget /*= 
         }
         pythonTargetReady[cwId] = false;
     } else {
-        waitForPythonDone(cwId, 1000);
+        waitForPythonDone(cwId, 150);
 
         if (!pythonReady[cwId]){
             qDebug("Python not ready!");
@@ -898,17 +1110,15 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool asTarget /*= 
 
     wait = true; //!!!!!
 
-    int succ;
-
-    succ = pythonProcess->write(data.toLocal8Bit().constData());
-
-    if (succ == -1){
-        return false;
+    QByteArray raw(data, static_cast<int>(len));
+    if (!raw.isEmpty() && raw.endsWith('\n')) {
+        raw.chop(1);  // removes last byte
     }
+    QByteArray b64 = raw.toBase64();
+    b64.append('\n');
 
-    if (wait){
-        succ = pythonProcess->waitForBytesWritten();
-    }
+    //(QProcess *pythonProcess, const QByteArray &data, bool wait = false, int timeoutMs = 30000)
+    int succ = pythonWriteSyncHelper(pythonProcess, b64, wait, PROCESS_WAIT_MSCECS);
 
     if (succ == -1){
         return false;
@@ -925,18 +1135,16 @@ bool TNewae::writeToPython(uint8_t cwId, const QString &data, bool asTarget /*= 
     return true;
 }
 
+
 void TNewae::callbackPythonError() {
-    QString data = pythonProcess->readAllStandardError();
+    QString data = readStderrSyncHelper(pythonProcess, PROCESS_WAIT_MSCECS);
     qWarning("%s", (("NewAE python component returned the following error (this might or might not be recoverable): " + data)).toLocal8Bit().constData());
 }
 
 void TNewae::checkForPythonState(){
     QString buff;
 
-    pythonProcessStdOutMutex.lock();
-    //pythonProcessStdOutData = pythonProcessStdOutData + pythonProcess->readAllStandardOutput();
-    buff = pythonProcess->readAllStandardOutput();
-    pythonProcessStdOutMutex.unlock();
+    buff = readStdoutSyncHelper(pythonProcess, PROCESS_WAIT_MSCECS);
 
     //najít DONE/STARTED/NOTCN/ERROR
     //vyzobat to z toho pro všechny dostupný CW
@@ -980,8 +1188,8 @@ void TNewae::checkForPythonState(){
         }
 
         if (indexNotcn != -1){
-            QString type = buff.sliced(indexDone + 6, 2);
-            QString id = buff.sliced(indexDone + 9, 3);
+            QString type = buff.sliced(indexNotcn + 6, 2);
+            QString id = buff.sliced(indexNotcn + 9, 3);
             uint8_t idUint = id.toUShort();
 
             if (type == "IO"){
@@ -1001,8 +1209,8 @@ void TNewae::checkForPythonState(){
         }
 
         if (indexError != -1){
-            QString type = buff.sliced(indexDone + 6, 2);
-            QString id = buff.sliced(indexDone + 9, 3);
+            QString type = buff.sliced(indexError + 6, 2);
+            QString id = buff.sliced(indexError + 9, 3);
             type.truncate(2);
             id.truncate(3);
             uint8_t idUint = id.toUShort();
@@ -1027,24 +1235,51 @@ void TNewae::checkForPythonState(){
 
 
 bool TNewae::waitForPythonDone(uint8_t cwId, int timeout/* = 30000*/){
-    for (int i = 0; i < timeout/50; ++i) {
-        if (pythonReady[cwId]){
+    QEventLoop loop;
 
-            break;
+    QTimer timer;
+    timer.setSingleShot(true);
+    QObject::connect(&timer, &QTimer::timeout, &loop, [&]() {
+        loop.quit(); // timeout
+    });
+    timer.start(timeout);
+
+    QTimer checkTimer;
+    checkTimer.setInterval(50);
+    QObject::connect(&checkTimer, &QTimer::timeout, &loop, [&]() {
+        if (pythonReady[cwId]) {
+            checkTimer.stop();
+            loop.quit();
         }
-        pythonProcess->waitForReadyRead(50);
-    }
+    });
+    checkTimer.start();
+
+    loop.exec();
 
     return pythonReady[cwId];
 }
 
 bool TNewae::waitForPythonTargetDone(uint8_t cwId, int timeout/* = 30000*/){
-    for (int i = 0; i < timeout/50; ++i) {
-        if (pythonTargetReady[cwId]){
-            break;
+    QEventLoop loop;
+
+    QTimer timer;
+    timer.setSingleShot(true);
+    QObject::connect(&timer, &QTimer::timeout, &loop, [&]() {
+        loop.quit(); // timeout
+    });
+    timer.start(timeout);
+
+    QTimer checkTimer;
+    checkTimer.setInterval(50);
+    QObject::connect(&checkTimer, &QTimer::timeout, &loop, [&]() {
+        if (pythonTargetReady[cwId]) {
+            checkTimer.stop();
+            loop.quit();
         }
-        pythonProcess->waitForReadyRead(50);
-    }
+    });
+    checkTimer.start();
+
+    loop.exec();
 
     return pythonTargetReady[cwId];
 }
@@ -1121,7 +1356,7 @@ bool TNewae::getDataFromShm(size_t &size, QString &data, uint8_t cwId, bool asTa
     data = "";
     try {
         data.reserve(size + 1);
-    } catch (const std::bad_alloc& e) {
+    } catch (const std::bad_alloc&) {
         qCritical("Unable to reserve enough memory to read from SHM. Wanted to reserve: %zu", size);
         return false;
     }

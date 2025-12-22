@@ -8,11 +8,10 @@ import numpy as np
 import logging
 from threading import Thread
 from queue import Queue
-#from ctypes import c_uint8 as uint16_t
+from ctypes import c_uint8 as uint16_t
 from ctypes import c_double as double
 from datetime import datetime
 import base64
-import threading
 
 ##GLOBALS##
 PLUGIN_ID = "TraceXpert.NewAE"
@@ -21,35 +20,12 @@ FIELD_SEPARATOR = ','
 LINE_SEPARATOR = '\n'
 shmKey = PLUGIN_ID + "shm2"
 #shm = QSharedMemory()
-stdoutMutex = threading.Lock()
-stderrMutex = threading.Lock()
-mainMutex = threading.Lock()
+stdoutMutex = QMutex()
+stderrMutex = QMutex()
 
-cwDict = dict()
-targetDict = dict()
-
-cwShmDict = dict()
-targetShmDict = dict()
-
-cwQueueDict = dict()
-targetQueueDict = dict()
-
-cwConsumerDict = dict()
-targetConsumerDict = dict()
-
-cwLastErrProcessedDict = dict()
-targetLastErrProcessedDict = dict()
 
 
 def printToStdout(data, asIODevice, cwID):
-    global cwLastErrProcessedDict, targetLastErrProcessedDict
-
-    if data == "ERROR":
-        if asIODevice:
-            targetLastErrProcessedDict[cwID] = False
-        else:
-            cwLastErrProcessedDict[cwID] = False
-
     toPrint = data
     if asIODevice == True:
         data += ",IO,"
@@ -58,13 +34,15 @@ def printToStdout(data, asIODevice, cwID):
     data += str(cwID)
     #☺printToStderr(data + " " + str(datetime.now())) #TODO remove
 
-    with stdoutMutex:
-        print(data, flush=True)
+    stdoutMutex.lock()
+    print(data, flush=True)
+    stdoutMutex.unlock()
 
 
 def printToStderr(data):
-    with stderrMutex:
-        print(data, flush=True, file=sys.stderr)
+    stderrMutex.lock()
+    print(data, flush=True, file=sys.stderr)
+    stderrMutex.unlock()
 
 
 ##Write to shared memory##
@@ -123,23 +101,9 @@ def cwToStr(tmp):
 
 ##Handle error when CW is not connected
 def sendCWNotConnected(line):
-    global cwDict, targetDict
-    global cwShmDict, targetShmDict
-    global cwQueueDict, targetQueueDict
-    global cwConsumerDict, targetConsumerDict
-    global cwLastErrProcessedDict, targetLastErrProcessedDict
-
     cwID = line[0:3]
-    cwDict.pop(cwID, None)
-    targetDict.pop(cwID, None)
-    cwShmDict.pop(cwID, None)
-    targetShmDict.pop(cwID, None)
-    cwQueueDict.pop(cwID, None)
-    targetQueueDict.pop(cwID, None)
-    cwConsumerDict.pop(cwID, None)
-    targetConsumerDict.pop(cwID, None)
-    cwLastErrProcessedDict.pop(cwID, None)
-    targetLastErrProcessedDict.pop(cwID, None)
+    cwDict[cwID] = None
+    targetDict[cwID] = None
 
     try:
         if line[4] == 't' and line[5] == '-':
@@ -514,7 +478,7 @@ def callCwFunc(line, shm, dct):
         printToStderr("Invalid Python CW/target function called (this method of the CW/target object does not exist)")
         return
 
-    if functionName != "write" and functionName != "fpga_write" and functionName != "loadInput":
+    if functionName != "write" and functionName != "fpga_write":
         binaryLine = None
 
     parameters = [None] * 10
@@ -572,9 +536,11 @@ def callCwFunc(line, shm, dct):
             except:
                 break
         
+    ret = ""
     try:
         if numParams == 0:
             tmp = function()
+            ret = cwToStr(tmp)
         elif numParams == 1:
             '''if functionName == "get_last_trace":
                 shm.lock()
@@ -609,23 +575,32 @@ def callCwFunc(line, shm, dct):
             else:
                 tmp = function(parameters[0])
                 ret = cwToStr(tmp)'''
-            tmp = function(parameters[0])  
+            tmp = function(parameters[0])
+            ret = cwToStr(tmp)   
         elif numParams == 2:
             tmp = function(parameters[0], parameters[1])
+            ret = cwToStr(tmp)
         elif numParams == 3:
             tmp = function(parameters[0], parameters[1], parameters[2])
+            ret = cwToStr(tmp)
         elif numParams == 4:
             tmp = function(parameters[0], parameters[1], parameters[2], parameters[3])
+            ret = cwToStr(tmp)
         elif numParams == 5:
             tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4])
+            ret = cwToStr(tmp)
         elif numParams == 6:
             tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5])
+            ret = cwToStr(tmp)
         elif numParams == 7:
             tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6])
+            ret = cwToStr(tmp)
         elif numParams == 8:
             tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7])
+            ret = cwToStr(tmp)
         elif numParams == 9:
             tmp = function(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7], parameters[8])
+            ret = cwToStr(tmp)
         else:
             printToStdout("ERROR", asTarget, cwID) 
             printToStderr("Too many parameters passed to a Python function")
@@ -637,23 +612,10 @@ def callCwFunc(line, shm, dct):
         else:
             pass
 
-    if functionName == "read" or functionName == "fpga_read" or functionName == "readOutput":
-        try:
-            ret = tmp.encode('latin1')
-        except:
-            printToStdout("ERROR", asTarget, cwID) 
-    else:
-        ret = cwToStr(tmp) 
-
     if isinstance(ret, np.ndarray):
         pass
     else:
-        if isinstance(ret, bytes):
-            header = f"{len(ret):016x}".encode("ascii")  # ASCII header in bytes
-            ret = header + ret
-        else:
-            ret = "{:016x}".format(len(ret)) + ret
-
+        ret = "{:016x}".format(len(ret)) + ret
     writeToSHM(ret, shm)
 
     printToStdout("DONE", asTarget, cwID) 
@@ -836,7 +798,7 @@ def consumerCw(queue, cwShmDict, cwDict):
             tmpline = line
             try:
                 callCwFunc(line.lower(), cwShmDict[cwID], cwDict)
-            except:
+            except(USBError):
                 sendCWNotConnected(tmpline)
 
         ## Call a method on an object from the CW package
@@ -845,7 +807,7 @@ def consumerCw(queue, cwShmDict, cwDict):
             tmpline = line
             try:
                 callCwFuncOnAnObject(line.lower(), cwShmDict[cwID], cwDict)
-            except:
+            except(USBError):
                 sendCWNotConnected(tmpline)
 
         ## Set or read a scope parameter
@@ -854,7 +816,7 @@ def consumerCw(queue, cwShmDict, cwDict):
             tmpline = line
             try:
                 cwParam(line.lower(), cwShmDict[cwID], cwDict)
-            except:
+            except(USBError):
                 sendCWNotConnected(tmpline)
 
         ## Set or read a scope subparameter 
@@ -863,7 +825,7 @@ def consumerCw(queue, cwShmDict, cwDict):
             tmpline = line
             try:
                 cwSubParam(line.lower(), cwShmDict[cwID], cwDict)
-            except:
+            except(USBError):
                 sendCWNotConnected(tmpline)
 
 def consumerTarget(queue, targetShmDict, targetDict):
@@ -885,11 +847,11 @@ def consumerTarget(queue, targetShmDict, targetDict):
             tmpline = line
             try:
                 if isinstance(binaryLine, bytes):
-                    lineToForward = line[:11].lower().encode("ascii") + binaryLine[11:] 
+                    lineToForward = line[:11].lower().encode("ascii") + binaryLine[11:]
                 else:
                     lineToForward = line[:11].lower() + line[11:]
                 callCwFunc(lineToForward, targetShmDict[cwID], targetDict)
-            except:
+            except(USBError):
                 sendCWNotConnected(tmpline)
 
         ## Call a method from the CW package on an object
@@ -898,7 +860,7 @@ def consumerTarget(queue, targetShmDict, targetDict):
             tmpline = line
             try:
                 callCwFuncOnAnObject(line[:11].lower() + line[11:], targetShmDict[cwID], targetDict)
-            except:
+            except(USBError):
                 sendCWNotConnected(tmpline)
 
         ## Set or read a target parameter
@@ -907,7 +869,7 @@ def consumerTarget(queue, targetShmDict, targetDict):
             tmpline = line
             try:
                 cwParam(line[:11].lower() + line[11:], targetShmDict[cwID], targetDict)
-            except:
+            except(USBError):
                 sendCWNotConnected(tmpline)
         
 
@@ -917,45 +879,28 @@ def consumerTarget(queue, targetShmDict, targetDict):
             tmpline = line
             try:
                 cwSubParam(line[:11].lower() + line[11:], targetShmDict[cwID], targetDict)
-            except:
+            except(USBError):
                 sendCWNotConnected(tmpline)
-
-def periodicRecovery(cwDict, cwQueueDict, targetDict, targetQueueDict, cwLastErrProcessedDict, targetLastErrProcessedDict):
-    while True:
-        with mainMutex:
-            for i in cwDict.keys():
-                if cwDict[i] is not None:
-                    if cwQueueDict[i].empty():
-                        if cwLastErrProcessedDict[i] == True:
-                            printToStdout("DONE", False, i)
-
-            for i in targetDict.keys():
-                if targetDict[i] is not None:
-                    if targetQueueDict[i].empty():
-                        if targetLastErrProcessedDict[i] == True:
-                            printToStdout("DONE", True, i)
-        time.sleep(0.1)
 
 #####EXEXUTABLE START######
 def main():
-    global cwDict, targetDict
-    global cwShmDict, targetShmDict
-    global cwQueueDict, targetQueueDict
-    global cwConsumerDict, targetConsumerDict
-    global cwLastErrProcessedDict, targetLastErrProcessedDict
-
     print("STARTED", flush=True)
     cw.scope_logger.setLevel(logging.ERROR)
 
-    threading.Thread(
-        target=periodicRecovery, 
-        args=(cwDict, cwQueueDict, targetDict, targetQueueDict, cwLastErrProcessedDict, targetLastErrProcessedDict),
-        daemon=True
-    ).start()
+    cwDict = dict()
+    targetDict = dict()
+
+    cwShmDict = dict()
+    targetShmDict = dict()
+
+    cwQueueDict = dict()
+    targetQueueDict = dict()
+
+    cwConsumerDict = dict()
+    targetConsumerDict = dict()
 
     for b64line in sys.stdin:
         b64line = b64line.strip()  # removes all leading/trailing whitespace, including \r and \n
-        #print(b64line + " " + str(datetime.now()), flush=True, file=sys.stderr) # TODO!!! Remove!!
         if not b64line:
             printToStdout("ERROR", False, NO_CW_ID) 
             printToStderr("Could not decode received base64 data.")
@@ -963,7 +908,6 @@ def main():
 
         try:
             lineBinary = base64.b64decode(b64line, validate=True)  # returns bytes
-            #print(lineBinary + " " + str(datetime.now()), flush=True, file=sys.stderr) # TODO!!! Remove!!
             line = lineBinary.decode("ascii", errors="ignore")
         except Exception as e:
             printToStdout("ERROR", False, NO_CW_ID) 
@@ -972,188 +916,138 @@ def main():
 
         #print(line + " " + str(datetime.now()), flush=True, file=sys.stderr) # TODO!!! Remove!!
 
-        with mainMutex:
-            ## Test shared memory
-            if line.startswith("SMTEST:", 4, 12):
-                cwID = line[0:3]
-                smTest(line.lower(), cwShmDict[cwID])
+        ## Test shared memory
+        if line.startswith("SMTEST:", 4, 12):
+            cwID = line[0:3]
+            smTest(line.lower(), cwShmDict[cwID])
 
-            elif line.startswith("SMSET:", 4, 11):
-                cwID = line[0:3]
-                cwShmDict[cwID] = QSharedMemory()
-                smSet(line.lower(), cwShmDict[cwID])
+        elif line.startswith("SMSET:", 4, 11):
+            cwID = line[0:3]
+            cwShmDict[cwID] = QSharedMemory()
+            smSet(line.lower(), cwShmDict[cwID])
 
-            ## Test shared memory for target
-            elif line.startswith("T-SMTEST:", 4, 14):
-                cwID = line[0:3]
-                smTest(line.lower(), targetShmDict[cwID])
+        ## Test shared memory for target
+        elif line.startswith("T-SMTEST:", 4, 14):
+            cwID = line[0:3]
+            smTest(line.lower(), targetShmDict[cwID])
 
-            elif line.startswith("T-SMSET:", 4, 13):
-                cwID = line[0:3]
-                targetShmDict[cwID] = QSharedMemory()
-                smSet(line.lower(), targetShmDict[cwID])
+        elif line.startswith("T-SMSET:", 4, 13):
+            cwID = line[0:3]
+            targetShmDict[cwID] = QSharedMemory()
+            smSet(line.lower(), targetShmDict[cwID])
 
-            ## Detect available CWs
-            elif line.startswith(str(NO_CW_ID) + ",DETECT_DEVICES"):
-                detectDevices(line.lower(), cwShmDict[str(NO_CW_ID)])
+        ## Detect available CWs
+        elif line.startswith(str(NO_CW_ID) + ",DETECT_DEVICES"):
+            detectDevices(line.lower(), cwShmDict[str(NO_CW_ID)])
 
-            ## Initialize one CW
-            elif line.startswith("SETUP", 4, 10):
-                cwID = line[0:3]
-                if cwSetup(line.lower(), cwShmDict[cwID], cwDict):
-                    cwQueueDict[cwID] = Queue()
-                    cwConsumerDict[cwID] = Thread(target=consumerCw, args=(cwQueueDict[cwID], cwShmDict, cwDict))
-                    cwConsumerDict[cwID].start()
-                    cwLastErrProcessedDict[cwID] = True
+        ## Initialize one CW
+        elif line.startswith("SETUP", 4, 10):
+            cwID = line[0:3]
+            if cwSetup(line.lower(), cwShmDict[cwID], cwDict):
+                cwQueueDict[cwID] = Queue()
+                cwConsumerDict[cwID] = Thread(target=consumerCw, args=(cwQueueDict[cwID], cwShmDict, cwDict))
+                cwConsumerDict[cwID].start()
 
-            ## Initialize one CW taget
-            elif line.startswith("T-SETUP", 4, 12):
-                cwID = line[0:3]
-                if targetSetup(line.lower(), targetShmDict[cwID], targetDict, cwDict[cwID]):
-                    targetQueueDict[cwID] = Queue()
-                    targetConsumerDict[cwID] = Thread(target=consumerTarget, args=(targetQueueDict[cwID], targetShmDict, targetDict))
-                    targetConsumerDict[cwID].start()
-                    targetLastErrProcessedDict[cwID] = True
+        ## Initialize one CW taget
+        elif line.startswith("T-SETUP", 4, 12):
+            cwID = line[0:3]
+            if targetSetup(line.lower(), targetShmDict[cwID], targetDict, cwDict[cwID]):
+                targetQueueDict[cwID] = Queue()
+                targetConsumerDict[cwID] = Thread(target=consumerTarget, args=(targetQueueDict[cwID], targetShmDict, targetDict))
+                targetConsumerDict[cwID].start()
 
-            elif line.startswith("T305-SETUP", 4, 15):
-                cwID = line[0:3]
-                if cwID not in cwDict:
-                    cwDict[cwID] = None
-                bitsr = (line[15:]).rstrip('\r\n')
-                if FPGAtargetSetup(line.lower(), targetShmDict[cwID], targetDict, cwDict[cwID], True, bitsr):
-                    targetQueueDict[cwID] = Queue()
-                    targetConsumerDict[cwID] = Thread(target=consumerTarget, args=(targetQueueDict[cwID], targetShmDict, targetDict))
-                    targetConsumerDict[cwID].start()
-                    targetLastErrProcessedDict[cwID] = True
+        elif line.startswith("T305-SETUP", 4, 15):
+            cwID = line[0:3]
+            if cwID not in cwDict:
+                cwDict[cwID] = None
+            bitsr = (line[15:]).rstrip('\r\n')
+            if FPGAtargetSetup(line.lower(), targetShmDict[cwID], targetDict, cwDict[cwID], True, bitsr):
+                targetQueueDict[cwID] = Queue()
+                targetConsumerDict[cwID] = Thread(target=consumerTarget, args=(targetQueueDict[cwID], targetShmDict, targetDict))
+                targetConsumerDict[cwID].start()
 
-            elif line.startswith("T310-SETUP", 4, 15):
-                cwID = line[0:3]
-                if cwID not in cwDict:
-                    cwDict[cwID] = None
-                if FPGAtargetSetup(line.lower(), targetShmDict[cwID], targetDict, cwDict[cwID], False, None):
-                    targetQueueDict[cwID] = Queue()
-                    targetConsumerDict[cwID] = Thread(target=consumerTarget, args=(targetQueueDict[cwID], targetShmDict, targetDict))
-                    targetConsumerDict[cwID].start()
-                    targetLastErrProcessedDict[cwID] = True
+        elif line.startswith("T310-SETUP", 4, 15):
+            cwID = line[0:3]
+            if cwID not in cwDict:
+                cwDict[cwID] = None
+            if FPGAtargetSetup(line.lower(), targetShmDict[cwID], targetDict, cwDict[cwID], False, None):
+                targetQueueDict[cwID] = Queue()
+                targetConsumerDict[cwID] = Thread(target=consumerTarget, args=(targetQueueDict[cwID], targetShmDict, targetDict))
+                targetConsumerDict[cwID].start()
 
-            ## Deinitialize one CW
-            elif line.startswith("DEINI", 4, 10):
-                cwID = line[0:3]
-                try:
-                    cwDict[cwID].dis()
-                except:
-                    pass
-                if cwID in cwQueueDict:
-                    cwQueueDict[cwID].put("DIE")
-                if cwID in cwConsumerDict:
-                    cwConsumerDict[cwID].join()
-                cwDict.pop(cwID, None)
-                cwShmDict.pop(cwID, None)
-                cwQueueDict.pop(cwID, None)
-                cwConsumerDict.pop(cwID, None)
-                cwLastErrProcessedDict.pop(cwID, None)
-                printToStdout("DONE", False, cwID)
+        ## Deinitialize one CW
+        elif line.startswith("DEINI", 4, 10):
+            cwID = line[0:3]
+            try:
+                cwDict[cwID].dis()
+            except:
+                pass
+            cwDict[cwID] = None
+            cwQueueDict[cwID].put("DIE")
+            cwConsumerDict[cwID].join()
+            printToStdout("DONE", False, cwID)
 
-            ## Deinitialize one CW target
-            elif line.startswith("T-DEINI", 4, 12):
-                targetID = line[0:3]
-                try:
-                    targetDict[cwID].dis()
-                except:
-                    pass
-                if cwID in targetQueueDict:
-                    targetQueueDict[cwID].put("DIE")
-                if cwID in targetConsumerDict:
-                    targetConsumerDict[cwID].join()
-                targetDict.pop(cwID, None)
-                targetShmDict.pop(cwID, None)
-                targetQueueDict.pop(cwID, None)
-                targetConsumerDict.pop(cwID, None)
-                targetLastErrProcessedDict.pop(cwID, None)
-                printToStdout("DONE", True, cwID)
+        ## Deinitialize one CW target
+        elif line.startswith("T-DEINI", 4, 12):
+            targetID = line[0:3]
+            try:
+                targetDict[cwID].dis()
+            except:
+                pass
+            targetDict[cwID] = None
+            targetQueueDict[cwID].put("DIE")
+            targetConsumerDict[cwID].join()
+            printToStdout("DONE", True, cwID)
 
-            ## Call a method from the CW package
-            elif line.startswith("FUNC-", 4, 10):
-                cwID = line[0:3]
-                if cwID in cwQueueDict:
-                    cwQueueDict[cwID].put(line)
-                else:
-                    sendCWNotConnected(line)
+        ## Call a method from the CW package
+        elif line.startswith("FUNC-", 4, 10):
+            cwID = line[0:3]
+            cwQueueDict[cwID].put(line)
 
-            ## Call a method from the CW target package
-            elif line.startswith("T-FUNC-", 4, 12):
-                cwID = line[0:3]
-                if cwID in targetQueueDict:
-                    targetQueueDict[cwID].put(lineBinary)
-                else:
-                    sendCWNotConnected(lineBinary)
+        ## Call a method from the CW target package
+        elif line.startswith("T-FUNC-", 4, 12):
+            cwID = line[0:3]
+            targetQueueDict[cwID].put(lineBinary)
 
-            ## Call a method on an object from the CW package
-            elif line.startswith("FUNO-", 4, 10):
-                cwID = line[0:3]
-                if cwID in cwQueueDict:
-                    cwQueueDict[cwID].put(line)
-                else:
-                    sendCWNotConnected(line)
+        ## Call a method on an object from the CW package
+        elif line.startswith("FUNO-", 4, 10):
+            cwID = line[0:3]
+            cwQueueDict[cwID].put(line)
 
-            ## Call a method on an object from the CW package (as target)
-            elif line.startswith("T-FUNO-", 4, 12):
-                cwID = line[0:3]
-                if cwID in targetQueueDict:
-                    targetQueueDict[cwID].put(line)
-                else:
-                    sendCWNotConnected(line)
+        ## Call a method on an object from the CW package (as target)
+        elif line.startswith("T-FUNO-", 4, 12):
+            cwID = line[0:3]
+            targetQueueDict[cwID].put(line)
 
-            ## Set or read a scope parameter
-            elif line.startswith("PARA-", 4, 10):
-                cwID = line[0:3]
-                if cwID in cwQueueDict:
-                    cwQueueDict[cwID].put(line)
-                else:
-                    sendCWNotConnected(line)
+        ## Set or read a scope parameter
+        elif line.startswith("PARA-", 4, 10):
+            cwID = line[0:3]
+            cwQueueDict[cwID].put(line)
 
-            ## Set or read a target parameter
-            elif line.startswith("T-PARA-", 4, 12):
-                cwID = line[0:3]
-                if cwID in targetQueueDict:
-                    targetQueueDict[cwID].put(line)
-                else:
-                    sendCWNotConnected(line)
+        ## Set or read a target parameter
+        elif line.startswith("T-PARA-", 4, 12):
+            cwID = line[0:3]
+            targetQueueDict[cwID].put(line)
 
-            ## Set or read a scope subparameter 
-            elif line.startswith("SPAR-", 4, 10):
-                cwID = line[0:3]
-                if cwID in cwQueueDict:
-                    cwQueueDict[cwID].put(line)
-                else:
-                    sendCWNotConnected(line)
+        ## Set or read a scope subparameter 
+        elif line.startswith("SPAR-", 4, 10):
+            cwID = line[0:3]
+            cwQueueDict[cwID].put(line)
 
-            ## Set or read a target subparameter 
-            elif line.startswith("T-SPAR-", 4, 12):
-                cwID = line[0:3]
-                if cwID in targetQueueDict:
-                    targetQueueDict[cwID].put(line)
-                else:
-                    sendCWNotConnected(line)
+        ## Set or read a target subparameter 
+        elif line.startswith("T-SPAR-", 4, 12):
+            cwID = line[0:3]
+            targetQueueDict[cwID].put(line)
 
-            ## Notify of processed scope error
-            elif line.startswith("PERR", 4, 9):
-                cwID = line[0:3]
-                cwLastErrProcessedDict[cwID] = True
 
-            ## Notify of processed target error
-            elif line.startswith("T-PERR", 4, 11):
-                cwID = line[0:3]
-                targetLastErrProcessedDict[cwID] = True
-
-            ## Exit
-            elif line.startswith("HALT"):
-                sys.exit()
-            
-            ## Something went wrong
-            else:
-                printToStdout("ERROR", False, NO_CW_ID) 
-                printToStderr("The following was evaluated as an error: " + line)
+        ## Exit
+        elif line.startswith("HALT"):
+            sys.exit()
+        
+        ## Something went wrong
+        else:
+            printToStdout("ERROR", False, NO_CW_ID) 
+            printToStderr("The following was evaluated as an error: " + line)
 
 if __name__ == "__main__":
     main()
