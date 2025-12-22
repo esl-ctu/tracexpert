@@ -51,6 +51,7 @@ set(CMAKE_SHARED_LIBRARY_PREFIX "")
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Charts Xml Concurrent Svg)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts Xml Concurrent Help Svg)
 
+set(BUILD_EXAMPLES OFF CACHE BOOL "Disable ADS examples" FORCE)
 add_subdirectory(ads)
 
 # HDF5 library
