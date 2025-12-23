@@ -131,7 +131,7 @@ public:
             return;
         }
 
-        size_t dataLen = 0;
+        quint64 dataLen = 0;
 
         TConfigParam * readAllParam = m_params.getSubParamByName("Read all available bytes");
         if(readAllParam->getValue() == "true") {
