@@ -26,8 +26,7 @@
     - 7.5 [AI API connect (from VUT Brno)](aiapiconnect.md)
 - 8 [Scenarios](scenarios.md)
 - 9 [Example use-case](examples.md)
-    - 9.1 [Correlation power analysis](example-cpa.md)
-    - 9.2 [Non-specific t-test](example-nsttest.md)
-    - 9.3 [Specific t-test](example-sttest.md)
+    - 9.1 [Measurement](example-measurement.md)
+    - 9.2 [Correlation power analysis](example-cpa.md)
 - [Build instructions](build.md)
 
