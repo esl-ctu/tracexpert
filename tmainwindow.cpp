@@ -497,7 +497,7 @@ void TMainWindow::openProject()
     connect(m_projectModel, &TProjectModel::protocolManagerRequested, this, &TMainWindow::createProtocolManagerDockWidget);
     connect(m_projectModel, &TProjectModel::protocolEditorRequested, this, &TMainWindow::createProtocolEditor);
 
-    connect(m_projectModel, &TProjectModel::protocolEditorRequested, this, &TMainWindow::createProtocolEditor);
+    connect(m_projectModel, &TProjectModel::scenarioManagerRequested, this, &TMainWindow::createScenarioManagerDockWidget);
     connect(m_projectModel, &TProjectModel::scenarioEditorRequested, this, &TMainWindow::createScenarioEditorDockWidget);
 
     try {
