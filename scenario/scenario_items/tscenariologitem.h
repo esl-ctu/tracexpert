@@ -28,8 +28,8 @@ public:
         addFlowOutputPort("flowOut");
 
         m_params = TConfigParam(m_name + " configuration", "", TConfigParam::TType::TDummy, "");
-        TConfigParam modeParam("Log format", "raw", TConfigParam::TType::TEnum, tr("Log format - raw or hex."), false);
-        modeParam.addEnumValue("raw");
+        TConfigParam modeParam("Log format", "string", TConfigParam::TType::TEnum, tr("Log format - string or hex."), false);
+        modeParam.addEnumValue("string");
         modeParam.addEnumValue("hex");
         m_params.addSubParam(modeParam);
     }
