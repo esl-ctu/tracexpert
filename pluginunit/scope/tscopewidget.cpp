@@ -10,6 +10,7 @@
 #include <QMessageBox>
 #include <QSplitter>
 #include <QFileDialog>
+#include <QDialogButtonBox>
 #include <QSharedPointer>
 #include <QJsonObject>
 #include <QJsonDocument>
