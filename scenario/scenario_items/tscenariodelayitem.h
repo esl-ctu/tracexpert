@@ -23,6 +23,8 @@ public:
         m_params.addSubParam(TConfigParam("Block name", "Delay", TConfigParam::TType::TString, tr("Display name of the block."), false));
         m_params.addSubParam(TConfigParam("Length", "3", TConfigParam::TType::TReal, tr("Length of delay in seconds."), false));
 
+        m_allowedDynamicParamNames = { "Length" };
+
         m_subtitle = "3s";
     }
 

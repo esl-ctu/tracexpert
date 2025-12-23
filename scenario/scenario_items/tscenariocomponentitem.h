@@ -33,6 +33,9 @@ public:
         paramConf.setState(TConfigParam::TState::TInfo, tr("If you change pre-init params here, keep in mind you need to <b>reinitialize the device with these parameters now</b> to see updated options for post-init params and further configuration."));
         m_params.addSubParam(paramConf);
 
+        m_allowedDynamicParamNames << "pre-init params*";
+        m_allowedDynamicParamNames << "post-init params*";
+
         // item has to be initialized, otherwise it cannot be used
         m_subtitle = QString(tr("no %1 selected")).arg(deviceName);
         setState(TState::TError, tr("Block configuration contains errors!"));

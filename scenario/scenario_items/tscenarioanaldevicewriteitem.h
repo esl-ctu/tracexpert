@@ -22,6 +22,8 @@ public:
 
         TConfigParam streamParam("Input stream", "", TConfigParam::TType::TEnum, tr("Select the stream to write to."), false);
         m_params.addSubParam(streamParam);
+
+        m_allowedDynamicParamNames << "Input stream";
     }
 
     TScenarioItem * copy() const override {

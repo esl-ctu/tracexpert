@@ -101,6 +101,8 @@ public:
         out << x.m_description;
         out << x.m_type;
         out << x.m_params;
+        out << x.m_allowedDynamicParamNames;
+        out << x.m_selectedDynamicParamNames;
         out << x.m_title;
         out << x.m_subtitle;
         out << x.m_position;
@@ -128,6 +130,8 @@ public:
             in >> x->m_description;
             in >> x->m_type;
             in >> x->m_params;
+            in >> x->m_allowedDynamicParamNames;
+            in >> x->m_selectedDynamicParamNames;
             in >> x->m_title;
             in >> x->m_subtitle;
             in >> x->m_position;
@@ -189,6 +193,8 @@ public:
     // methods for execution purposes
     void setProjectModel(TProjectModel * projectModel);
 
+    void setDynamicParameters(const QHash<TScenarioItemPort *, QByteArray> & inputData);
+
     virtual bool                                    prepare();
     virtual bool                                    cleanup();
 
@@ -207,6 +213,11 @@ public:
 
     QSize getConfigWindowSize();
     void setConfigWindowSize(QSize value);
+
+    const QStringList & getAllowedDynamicParamNames() const;
+
+    const QStringList & getSelectedDynamicParamNames() const;
+    void setSelectedDynamicParamNames(const QStringList & selectedDynamicParamNames);
 
 signals:
     void appearanceChanged();
@@ -241,7 +252,10 @@ protected:
     QString m_name;
     QString m_description;
     TItemAppearance m_type;
+
     TConfigParam m_params;
+    QStringList m_allowedDynamicParamNames;
+    QStringList m_selectedDynamicParamNames;
 
     QString m_title;
     QString m_subtitle;

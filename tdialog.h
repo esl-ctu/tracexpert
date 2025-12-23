@@ -4,6 +4,7 @@
 #include <QDialog>
 #include <QLabel>
 
+#include "scenario/tscenarioconfigwidget.h"
 #include "widgets/tconfigparamwidget.h"
 #include "pluginunit/component/tcomponentmodel.h"
 #include "pluginunit/io/tiodevicemodel.h"
@@ -69,7 +70,7 @@ protected:
 
 private:
     TScenarioItem * m_item;
-    TConfigParamWidget * m_paramWidget;
+    TScenarioConfigParamWidget * m_scenarioParamWidget;
     TConfigParam m_originalParams;
 };
 

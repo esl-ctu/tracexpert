@@ -327,16 +327,17 @@ TScenarioConfigParamDialog::TScenarioConfigParamDialog(QString acceptText, QStri
     TConfigParam param = m_item->getParams();
     m_originalParams = param;
 
-    m_paramWidget = new TConfigParamWidget(param);
+    m_scenarioParamWidget = new TScenarioConfigParamWidget(param);
+    m_scenarioParamWidget->setDynamicParamNames(item->getAllowedDynamicParamNames(), item->getSelectedDynamicParamNames());
 
     // evaluate validity immediately on widget open
-    m_paramWidget->setParam(m_paramWidget->param());  
+    m_scenarioParamWidget->setParam(m_scenarioParamWidget->param());
 
     if(item->getConfigWindowSize() != QSize(0, 0)) {
         resize(item->getConfigWindowSize());
     }
 
-    parent->connect(m_paramWidget, &TConfigParamWidget::inputValueChanged, this, &TScenarioConfigParamDialog::tryUpdateParams);
+    parent->connect(m_scenarioParamWidget, &TConfigParamWidget::inputValueChanged, this, &TScenarioConfigParamDialog::tryUpdateParams);
 
     QPushButton * leftButton = new QPushButton(tr("Update available options"));
     parent->connect(leftButton, &QPushButton::clicked, this, &TScenarioConfigParamDialog::updateParams);
@@ -352,7 +353,7 @@ TScenarioConfigParamDialog::TScenarioConfigParamDialog(QString acceptText, QStri
     buttonLayout->addWidget(rightButtonBox);
 
     QVBoxLayout * dialogLayout = new QVBoxLayout;
-    dialogLayout->addWidget(m_paramWidget);
+    dialogLayout->addWidget(m_scenarioParamWidget);
     dialogLayout->addLayout(buttonLayout);
 
     setLayout(dialogLayout);
@@ -361,28 +362,28 @@ TScenarioConfigParamDialog::TScenarioConfigParamDialog(QString acceptText, QStri
 void TScenarioConfigParamDialog::updateParams()
 {
     m_item->updateParams(true);
-    m_paramWidget->setParam(m_item->getParams());
+    m_scenarioParamWidget->setParam(m_item->getParams());
 }
 
 void TScenarioConfigParamDialog::tryUpdateParams()
 {
-    TConfigParam newParams = m_paramWidget->param();
+    TConfigParam newParams = m_scenarioParamWidget->param();
     if(!m_item->shouldUpdateParams(newParams)) {
         return;
     }
 
-    m_paramWidget->setParam(m_item->setParams(newParams));
+    m_scenarioParamWidget->setParam(m_item->setParams(newParams));
 }
 
 void TScenarioConfigParamDialog::accept()
 {
-    TConfigParam param = m_item->setParams(m_paramWidget->param());
+    TConfigParam param = m_item->setParams(m_scenarioParamWidget->param());
 
     TConfigParam::TState state = param.getState(true);
 
     if (state == TConfigParam::TState::TWarning) {
         if (!TDialog::paramWarningQuestion(this)) {
-            m_paramWidget->setParam(param);
+            m_scenarioParamWidget->setParam(param);
             return;
         }
     }
@@ -393,10 +394,12 @@ void TScenarioConfigParamDialog::accept()
             qWarning("An unknown value was encuntered as config param state!");
         }
 
-        m_paramWidget->setParam(param);
+        m_scenarioParamWidget->setParam(param);
         TDialog::paramValueErrorMessage(this);
         return;
     }
+
+    m_item->setSelectedDynamicParamNames(m_scenarioParamWidget->getSelectedDynamicParamNames());
 
     QDialog::accept();
 }

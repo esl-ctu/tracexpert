@@ -18,10 +18,29 @@ TConfigParamWidget::TConfigParamWidget(const TConfigParam & param, QWidget * par
     : QTreeWidget(parent), m_readOnly(readOnly)
 {
     setParam(param);
+
+    setColumnCount(3);
+
+    setAlternatingRowColors(true);
+
+    headerItem()->setText(0, tr("Parameter"));
+    headerItem()->setText(1, tr("Value"));
+    headerItem()->setText(2, "");
+
+    header()->setSectionResizeMode(0, QHeaderView::Interactive);
+    header()->setSectionResizeMode(1, QHeaderView::Stretch);
+    header()->setSectionResizeMode(2, QHeaderView::Fixed);
+    header()->setStretchLastSection(false);
+
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 }
 
 TConfigParamWidget::~TConfigParamWidget()
 {
+}
+
+bool TConfigParamWidget::isReadOnly() {
+    return m_readOnly;
 }
 
 TConfigParam TConfigParamWidget::param(bool * ok)
@@ -47,8 +66,6 @@ void TConfigParamWidget::refreshParam()
 
     delete takeTopLevelItem(0);
 
-    setColumnCount(3);
-
     QTreeWidgetItem * topItem = new QTreeWidgetItem(this);
     topItem->setExpanded(true);
 
@@ -56,22 +73,9 @@ void TConfigParamWidget::refreshParam()
 
     addTopLevelItem(topItem);
 
-    setAlternatingRowColors(true);
-
-    headerItem()->setText(0, tr("Parameter"));
-    headerItem()->setText(1, tr("Value"));
-    headerItem()->setText(2, "");
-
-    header()->setSectionResizeMode(0, QHeaderView::Interactive);
-    header()->setSectionResizeMode(1, QHeaderView::Stretch);
-    header()->setSectionResizeMode(2, QHeaderView::Fixed);
-    header()->setStretchLastSection(false);
-
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
-    resizeColumnToContents(0);
-    resizeColumnToContents(1);
-    resizeColumnToContents(2);
+    for(int i = 0; i < columnCount(); i++) {
+        resizeColumnToContents(i);
+    }
 
     // allow GUI to repaint again
     blockSignals(false);

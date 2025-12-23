@@ -13,6 +13,8 @@ public:
     TScenarioAnalDeviceActionItem() : TScenarioAnalDeviceItem(tr("Analytic Device: action"), tr("This block performs action on a selected Analytic Device.")) {
         TConfigParam actionParam("Action to execute", "", TConfigParam::TType::TEnum, tr("Select the action to execute."), false);
         m_params.addSubParam(actionParam);
+
+        m_allowedDynamicParamNames << "Action to execute";
     }
 
     TScenarioItem * copy() const override {

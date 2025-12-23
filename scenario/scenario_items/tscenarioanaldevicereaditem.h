@@ -27,6 +27,8 @@ public:
 
         TConfigParam readAllParam("Read all available bytes", "true", TConfigParam::TType::TBool, tr("Select true to always read all available bytes from the selected stream."), false);
         m_params.addSubParam(readAllParam);
+
+        m_allowedDynamicParamNames << "Output stream";
     }
 
     TScenarioItem * copy() const override {

@@ -26,6 +26,8 @@ public:
     explicit TConfigParamWidget(const TConfigParam & param, QWidget * parent = nullptr, bool readOnly = false);
     ~TConfigParamWidget();
 
+    bool isReadOnly();
+
 signals:
     void inputValueChanged();
 

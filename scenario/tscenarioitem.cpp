@@ -50,6 +50,8 @@ TScenarioItem::TScenarioItem(const TScenarioItem &x): // TScenarioItemExecutionI
     m_description(x.m_description),
     m_type(x.m_type),
     m_params(x.m_params),
+    m_allowedDynamicParamNames(x.m_allowedDynamicParamNames),
+    m_selectedDynamicParamNames(x.m_selectedDynamicParamNames),
     m_title(x.m_title),
     m_subtitle(x.m_subtitle),
     m_position(x.m_position),
@@ -71,6 +73,8 @@ TScenarioItem & TScenarioItem::operator=(const TScenarioItem &x) {
         m_description = x.m_description;
         m_type = x.m_type;
         m_params = x.m_params;
+        m_allowedDynamicParamNames = x.m_allowedDynamicParamNames;
+        m_selectedDynamicParamNames = x.m_selectedDynamicParamNames;
         m_title = x.m_title;
         m_subtitle = x.m_subtitle;
         m_state = x.m_state;
@@ -440,6 +444,74 @@ bool TScenarioItem::isParamValueDifferent(TConfigParam & paramsA, TConfigParam &
     return paramA->getValue() != paramB->getValue();
 }
 
+static QString toCamelCase(const QString& s)
+{
+    QStringList parts = s.toLower().split(' ', Qt::SkipEmptyParts);
+    for(int i = 1; i < parts.size(); i++)
+        parts[i].replace(0, 1, parts[i][0].toUpper());
+
+    return parts.join("");
+}
+
+void TScenarioItem::setDynamicParameters(const QHash<TScenarioItemPort *, QByteArray> & inputData) {
+
+    TConfigParam params = m_params;
+
+    bool atLeastOneParameterSet = false;
+    for(const QString & paramName : m_selectedDynamicParamNames) {
+        TScenarioItemPort * itemPort = getItemPortByName("dynParam:" + toCamelCase(paramName));
+
+        if(!itemPort) {
+            qWarning("Could not find item port for dynamic parameter \"%s\", skipping.", qPrintable(paramName));
+            continue;
+        }
+
+        if(!inputData.contains(itemPort)) {
+            qWarning("No data passed to dynamic parameter port \"%s\", value unchanged.", qPrintable(paramName));
+            continue;
+        }
+
+        QByteArray data = inputData.value(itemPort);
+
+        bool ok;
+        TConfigParam * referencedParam = params.getSubParamByNameRecursive(paramName, &ok);
+
+        if(!ok) {
+            qWarning("Could not find the parameter \"%s\" that the dynamic parameter port is referencing, skipping.", qPrintable(paramName));
+            continue;
+        }
+
+        referencedParam->setValueAsByteArray(data, &ok);
+
+        // if the parameter is an enum, and an integer of any length is received
+        // attempt to interpret it as an index into the enum value list...
+        if(!ok && referencedParam->getType() == TConfigParam::TType::TEnum) {
+            quint64 value = 0;
+            const int n = data.size();
+            if (n > 0 && n <= 8) {
+                memcpy(&value, data.constData(), n);
+
+                qsizetype valueCount = referencedParam->getEnumValues().count();
+                if(value < valueCount) {
+                    referencedParam->setValue(referencedParam->getEnumValues().at(value), &ok);
+                }
+            }
+        }
+
+        if(!ok) {
+            qWarning("Could not set the passed value for dynamic parameter \"%s\".", qPrintable(paramName));
+            continue;
+        }
+
+        qInfo("Dynamic parameter \"%s\" set, interpreted value: \"%s\".", qPrintable(paramName), qPrintable(referencedParam->getValue()));
+        atLeastOneParameterSet = true;
+    }
+
+    if(atLeastOneParameterSet) {
+        setParams(params);
+    }
+}
+
 bool TScenarioItem::prepare() {
     return true;
 }
@@ -509,8 +581,40 @@ void TScenarioItem::setConfigWindowSize(QSize value) {
     m_configWindowSize = value;
 }
 
+const QStringList & TScenarioItem::getAllowedDynamicParamNames() const {
+    return m_allowedDynamicParamNames;
+}
+
+const QStringList & TScenarioItem::getSelectedDynamicParamNames() const {
+    return m_selectedDynamicParamNames;
+}
+
+void TScenarioItem::setSelectedDynamicParamNames(const QStringList & selectedDynamicParamNames) {
+    const QStringList & oldParamNames = m_selectedDynamicParamNames;
+    const QStringList & newParamNames = selectedDynamicParamNames;
+
+    for(const QString &paramName : newParamNames) {
+        if(!oldParamNames.contains(paramName)) {
+            addDataInputPort(
+                "dynParam:" + toCamelCase(paramName),
+                "",
+                tr("The value received through this port will be set to the \"%1\" parameter before the block is executed.").arg(paramName),
+                "[data type of parameter | any integer for enums]"
+            );
+        }
+    }
+
+    for(const QString &paramName : oldParamNames) {
+        if(!newParamNames.contains(paramName)) {
+            removePort("dynParam:" + toCamelCase(paramName));
+        }
+    }
+
+    m_selectedDynamicParamNames = selectedDynamicParamNames;
+}
+
 void TScenarioItem::log(const QString & message, TLogLevel logLevel) {
-    QString prefixedMessage = QString("[%1] %2").arg(m_title.isEmpty() ? m_name : m_title).arg(message);
+    QString prefixedMessage = QString("[%1] %2").arg(m_title.isEmpty() ? m_name : m_title, message);
 
     switch(logLevel) {
         case TLogLevel::TError:

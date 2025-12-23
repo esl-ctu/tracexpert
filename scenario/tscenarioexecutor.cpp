@@ -262,9 +262,17 @@ void TScenarioExecutor::executeItem(TScenarioItem * item) {
 }
 
 void TScenarioExecutor::executeItemDirectly(TScenarioItem * item) {
-    QHash<TScenarioItemPort *, QByteArray> inputData, outputData;
+    QHash<TScenarioItemPort *, QByteArray> outputData;
+    QHash<TScenarioItemPort *, QByteArray> inputData =  m_scenarioItemDataInputValues.value(item);
 
-    inputData = m_scenarioItemDataInputValues.value(item);
+    item->setDynamicParameters(inputData);
+
+    // setting parameters might set an errorwarning state, make sure we don't override it
+    // at the same time, it might reset the TBeingExecuted state, so make sure it is set otherwise
+    if(item->getState() == TScenarioItem::TState::TOk) {
+        item->setState(TScenarioItem::TState::TBeingExecuted, "This block is being executed.");
+    }
+
     outputData = item->executeDirect(inputData);
 
     saveOutputData(outputData);
@@ -282,7 +290,17 @@ void TScenarioExecutor::executeItemIndirectly(TScenarioItem * item) {
     });
 
     try {
-        item->executeIndirect(m_scenarioItemDataInputValues.value(item));
+        QHash<TScenarioItemPort *, QByteArray> inputData = m_scenarioItemDataInputValues.value(item);
+
+        item->setDynamicParameters(inputData);
+
+        // setting parameters might set an errorwarning state, make sure we don't override it
+        // at the same time, it might reset the TBeingExecuted state, so make sure it is set otherwise
+        if(item->getState() == TScenarioItem::TState::TOk) {
+            item->setState(TScenarioItem::TState::TBeingExecuted, "This block is being executed.");
+        }
+
+        item->executeIndirect(inputData);
     }
     catch (...) {
         disconnect(item, &TScenarioItem::executionFinished, nullptr, nullptr);

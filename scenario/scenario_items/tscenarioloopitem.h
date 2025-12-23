@@ -24,6 +24,7 @@ public:
         addFlowInputPort("flowIn");
         addFlowOutputPort("flowOutDone", "done", tr("After the final iteration, flow will continue through this port."));
         addFlowOutputPort("flowOutRepeat", "repeat", tr("Flow will continue through this port at the start of every iteration."));
+        addDataOutputPort("iterationNumber", "#iter", "The curent iteration number, starting at 0.", "[unsigned long long]");
 
         m_params = TConfigParam(m_name + " configuration", "", TConfigParam::TType::TDummy, "");
         m_params.addSubParam(TConfigParam("Block name", "Loop", TConfigParam::TType::TString, tr("Display name of the block."), false));
@@ -40,7 +41,7 @@ public:
         return ":/icons/loop.png";
     }
 
-    bool validateParamsStructure(TConfigParam params) {
+    bool validateParamsStructure(TConfigParam params) override {
         bool iok = false;
 
         params.getSubParamByName("Block name", &iok);
@@ -93,9 +94,11 @@ public:
             m_numIterationsLeft--;
         }
 
+        uint64_t iterationIndex = m_totalIterations - m_numIterationsLeft;
+
         if(m_numIterationsLeft > 0) {
-            log(QString(tr("Starting iteration #%1")).arg(m_totalIterations - m_numIterationsLeft + 1));
-            m_subtitle = QString(tr("Iteration %1 of %2")).arg(m_totalIterations-m_numIterationsLeft).arg(m_totalIterations);
+            log(QString(tr("Starting iteration #%1")).arg(iterationIndex + 1));
+            m_subtitle = QString(tr("Iteration %1 of %2")).arg(iterationIndex).arg(m_totalIterations);
             emit appearanceChanged();
         }
         else {
@@ -104,7 +107,14 @@ public:
             emit appearanceChanged();
         }
 
-        return QHash<TScenarioItemPort *, QByteArray>();
+        QByteArray byteValue;
+        QDataStream byteStream(&byteValue, QIODevice::WriteOnly);
+        byteStream.setByteOrder(QDataStream::LittleEndian);
+        byteStream << iterationIndex;
+
+        QHash<TScenarioItemPort *, QByteArray> outputData;
+        outputData.insert(getItemPortByName("iterationNumber"), byteValue);
+        return outputData;
     }
     
     TScenarioItemPort * getPreferredOutputFlowPort() override {
