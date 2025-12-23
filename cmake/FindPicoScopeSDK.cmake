@@ -10,6 +10,18 @@ find_path(PICOSCOPESDK_INCLUDE_DIR
         include/
         include/libps6000)
 
+find_path(PICOSCOPE6000A_INCLUDE_DIR
+    NAMES
+        ps6000aApi.h
+    PATHS
+        ENV "PROGRAMFILES"
+        $ENV{PROGRAMFILES}/Pico\ Technology/SDK
+        /opt/picoscope/
+    PATH_SUFFIXES
+        inc
+        include/
+        include/libps6000a)
+        
 find_library(PICOSCOPESDK_LIBRARY
     NAMES ps6000
     PATHS
@@ -32,4 +44,4 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
   PicoScopeSDK
   FOUND_VAR PICOSCOPESDK_FOUND
-  REQUIRED_VARS PICOSCOPESDK_LIBRARY PICOSCOPESDK_INCLUDE_DIR)
+  REQUIRED_VARS PICOSCOPESDK_LIBRARY PICOSCOPE6000A_LIBRARY PICOSCOPESDK_INCLUDE_DIR PICOSCOPE6000A_INCLUDE_DIR)

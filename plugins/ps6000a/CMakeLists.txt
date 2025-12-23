@@ -25,7 +25,7 @@ add_library(${PROJECT_NAME} SHARED
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ../../common)
-target_include_directories(${PROJECT_NAME} PRIVATE "${PICOSCOPESDK_INCLUDE_DIR}")
+target_include_directories(${PROJECT_NAME} PRIVATE "${PICOSCOPE6000A_INCLUDE_DIR}")
 
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 target_link_libraries(${PROJECT_NAME} PRIVATE "${PICOSCOPE6000A_LIBRARY}")
