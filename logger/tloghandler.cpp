@@ -58,6 +58,12 @@ void TLogHandler::messageHandler(QtMsgType type, const QMessageLogContext &, con
 
 void TLogHandler::appendLogMessage(QtMsgType type, const QString &msg)
 {
+
+    #ifndef QT_DEBUG
+    if (type == QtDebugMsg)
+        return;
+    #endif
+
     if(msg.startsWith("QWindowsWindow")) return; // ugly workaround, TODO: message filtering system
 
     QString time = QDateTime::currentDateTime().toString("hh:mm:ss.zzz");
