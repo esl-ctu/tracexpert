@@ -482,6 +482,7 @@ void TMainWindow::openProject()
 
     QString errorMessage;
     if (!TProjectMigrator::migrate(document, &errorMessage)) {
+        loadingDialog->closeAndDeleteLater();
         QMessageBox::critical(this, tr("Project migration failed"), tr("Unable to migrate selected project file: %1").arg(errorMessage));
         return;
     }
