@@ -1,4 +1,3 @@
-// COPYRIGHT HEADER BEGIN
 // TraceXpert
 // Copyright (C) 2025 Embedded Security Lab, CTU in Prague, and contributors.
 // 
@@ -17,8 +16,6 @@
 // 
 // Contributors to this file:
 // Adam Švehla (initial author)
-// COPYRIGHT HEADER END
-
 
 #ifndef TSCENARIODELAYITEM_H
 #define TSCENARIODELAYITEM_H

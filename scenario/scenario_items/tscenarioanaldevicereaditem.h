@@ -1,4 +1,3 @@
-// COPYRIGHT HEADER BEGIN
 // TraceXpert
 // Copyright (C) 2025 Embedded Security Lab, CTU in Prague, and contributors.
 // 
@@ -19,7 +18,6 @@
 // Adam Švehla (initial author)
 // Vojtěch Miškovský
 // Petr Socha
-// COPYRIGHT HEADER END
 
 #ifndef TSCENARIOANALDEVICEREADITEM_H
 #define TSCENARIOANALDEVICEREADITEM_H

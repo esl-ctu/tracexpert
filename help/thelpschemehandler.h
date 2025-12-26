@@ -1,4 +1,3 @@
-// COPYRIGHT HEADER BEGIN
 // TraceXpert
 // Copyright (C) 2025 Embedded Security Lab, CTU in Prague, and contributors.
 // 
@@ -17,7 +16,6 @@
 // 
 // Contributors to this file:
 // Vojtěch Miškovský (initial author)
-// COPYRIGHT HEADER END
 
 #ifndef THELPSCHEMEHANDLER_H
 #define THELPSCHEMEHANDLER_H
