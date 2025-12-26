@@ -482,7 +482,6 @@ void TMainWindow::openProject()
 
     QString errorMessage;
     if (!TProjectMigrator::migrate(document, &errorMessage)) {
-        loadingDialog->closeAndDeleteLater();
         QMessageBox::critical(this, tr("Project migration failed"), tr("Unable to migrate selected project file: %1").arg(errorMessage));
         return;
     }
@@ -714,10 +713,20 @@ Revision %6<br><br>\
 Faculty of Information Technology<br>\
 Czech Technical University in Prague<br><br>\
 \
+This program is free software: you can redistribute it and/or modify<br>\
+it under the terms of the GNU General Public License as published by<br>\
+the Free Software Foundation, version 3 of the License.<br><br>\
+\
 This program is distributed in the hope that it will be useful,<br>\
 but WITHOUT ANY WARRANTY; without even the implied warranty of<br>\
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.<br>\
-See the GNU General Public License v3.0 (<i>Help > License</i>) for more details.");
+See the GNU General Public License v3.0 (<i>Help > License</i>) for more details.<br><br>\
+\
+This application uses the Qt framework, licensed under the GNU (L)GPL version 3, © The Qt Company Ltd.<br>\
+\
+This application uses Advanced Docking System (ADS), licensed under the GNU LGPL, © its respective authors.<br>\
+\
+This application uses the HDF5 library, licenced under the 3-clause BSD License, © The HDF Group.");
 
     QString compiler;
 
