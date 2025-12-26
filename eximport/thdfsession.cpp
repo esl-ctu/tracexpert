@@ -1821,6 +1821,11 @@ bool THdfSession::appendRawSlice(const QString &datasetPath, QByteArrayView payl
         return false;
     }
 
+    if (rowsToAppend == 0) {
+        addLog("Nothing to append (rowsToAppend==0)");
+        return true;
+    }
+
     addLog(QString("File: %1").arg(m_filePath));
     addLog(QString("Dataset: %1").arg(pNorm));
     addLog(QString("Type: %1 (%2 bytes/element)").arg(typeText).arg(QString::number(elementBytes)));
@@ -1858,6 +1863,13 @@ bool THdfSession::appendRawSlice(const QString &datasetPath, QByteArrayView payl
     const hsize_t oldDim0 = info.dims[0];
     newDims[0] = oldDim0 + rowsToAppend;
 
+    auto rollbackExtent = [&]() {
+        QVector<hsize_t> rollbackDims = info.dims;
+        // restore original dim0
+        rollbackDims[0] = oldDim0;
+        H5Dset_extent(dset, rollbackDims.data());
+    };
+
     if (H5Dset_extent(dset, newDims.data()) < 0) {
         qCritical() << "[THdfSession] appendRawSlices: H5Dset_extent failed for:" << pNorm;
         addLog("ERROR: failed to extend dataset (H5Dset_extent)");
@@ -1867,6 +1879,7 @@ bool THdfSession::appendRawSlice(const QString &datasetPath, QByteArrayView payl
 
     hid_t fileSpace = H5Dget_space(dset);
     if (fileSpace < 0) {
+        rollbackExtent();
         qCritical() << "[THdfSession] appendRawSlices: H5Dget_space failed for:" << pNorm;
         addLog("ERROR: failed to get file dataspace");
         H5Dclose(dset);
@@ -1935,14 +1948,70 @@ bool THdfSession::appendRawSlice(const QString &datasetPath, QByteArrayView payl
         }
     }
 
-    H5Sclose(fileSpace);
-    H5Dclose(dset);
-
-    if (!ok) {
+    if(!ok){
+        rollbackExtent();
+        H5Sclose(fileSpace);
+        H5Dclose(dset);
         addLog("ERROR: append failed");
         return false;
     }
 
+    H5Sclose(fileSpace);
+    H5Dclose(dset);
+
     addLog("OK: append completed");
     return true;
+}
+
+QString THdfSession::datasetTypeText(const QString &datasetPath) const
+{
+    if (!isOpen())
+        return QString();
+
+    const QString pNorm = normalizePath(datasetPath);
+    if (!isDataset(pNorm))
+        return QString();
+
+    hid_t dset = H5Dopen2(m_fileId, pNorm.toUtf8().constData(), H5P_DEFAULT);
+    if (dset < 0)
+        return QString();
+
+    hid_t t = H5Dget_type(dset);
+    if (t < 0) {
+        H5Dclose(dset);
+        return QString();
+    }
+
+    const H5T_class_t cls = H5Tget_class(t);
+    const size_t sz = H5Tget_size(t);
+
+    QString out;
+
+    if (cls == H5T_INTEGER) {
+        const H5T_sign_t sign = H5Tget_sign(t);
+
+        if (sz == 1) out = (sign == H5T_SGN_NONE) ? "uint8"  : "int8";
+        if (sz == 2) out = (sign == H5T_SGN_NONE) ? "uint16" : "int16";
+        if (sz == 4) out = (sign == H5T_SGN_NONE) ? "uint32" : "int32";
+        // NOTE: you purposely don’t expose 64-bit types in the wizard; keep it consistent:
+        // if (sz == 8) out = (sign == H5T_SGN_NONE) ? "uint64" : "int64";
+    }
+    else if (cls == H5T_FLOAT) {
+        if (sz == 4) out = "float32";
+        if (sz == 8) out = "float64";
+    }
+
+    H5Tclose(t);
+    H5Dclose(dset);
+    return out;
+}
+
+bool THdfSession::datasetMatchesTypeText(const QString &datasetPath,
+                                         const QString &expectedTypeText) const
+{
+    const QString got = datasetTypeText(datasetPath).trimmed().toLower();
+    const QString want = expectedTypeText.trimmed().toLower();
+    if (got.isEmpty() || want.isEmpty())
+        return false;
+    return got == want;
 }

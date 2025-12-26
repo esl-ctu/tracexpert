@@ -126,7 +126,13 @@ public:
     // rows [rowStart, rowStart+rowCount), cols [colStart, colStart+colCount).
     bool readDataset(const QString &datasetPath, quint64 rowStart, quint64 rowCount, quint64 colStart, quint64 colCount, QByteArray &out, QVector<quint64> *outDims = nullptr, QString *logOut = nullptr) const;
 
+    // Returns a canonical datatype string for a dataset, matching your UI names:
+    // "uint8", "int8", "uint16", "int16", "uint32", "int32", "float32", "float64".
+    // Returns empty string on error/unsupported type.
+    QString datasetTypeText(const QString &datasetPath) const;
 
+    // Strict check: datasetTypeText(datasetPath) == expectedTypeText (case-insensitive).
+    bool datasetMatchesTypeText(const QString &datasetPath, const QString &expectedTypeText) const;
 
 private:
     QString m_filePath;
