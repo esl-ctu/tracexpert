@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(AIAPIConnectEngine LANGUAGES CXX)
+project(TAIAPIConnectEngine LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC ON)
@@ -16,7 +16,7 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Network)
 
 include_directories(../../common)
 
-add_library(AIAPIConnectEngine SHARED
+add_library(TAIAPIConnectEngine SHARED
   AIAPIConnectEngine_global.h
   taiapiconnectengine.cpp
   taiapiconnectengine.h
@@ -26,11 +26,15 @@ add_library(AIAPIConnectEngine SHARED
   taiapiconnectenginedeviceaction.h taiapiconnectenginedeviceaction.cpp
 )
 
-target_link_libraries(AIAPIConnectEngine PRIVATE Qt${QT_VERSION_MAJOR}::Core)
-target_link_libraries(AIAPIConnectEngine PRIVATE Qt${QT_VERSION_MAJOR}::Network)
+target_link_libraries(TAIAPIConnectEngine PRIVATE Qt${QT_VERSION_MAJOR}::Core)
+target_link_libraries(TAIAPIConnectEngine PRIVATE Qt${QT_VERSION_MAJOR}::Network)
 
-find_package(HDF5 REQUIRED COMPONENTS C CXX)
-target_include_directories(AIAPIConnectEngine PRIVATE ${HDF5_INCLUDE_DIRS})
-target_link_libraries(AIAPIConnectEngine PUBLIC HDF5::HDF5)
+if (TARGET hdf5_cpp-shared)
+    target_link_libraries(TAIAPIConnectEngine PRIVATE hdf5_cpp-shared)
+elseif (TARGET hdf5_cpp-static)
+    target_link_libraries(TAIAPIConnectEngine PRIVATE hdf5_cpp-static)
+else()
+    message(FATAL_ERROR "No in-tree HDF5 C++ target (hdf5_cpp-*) found. Did top-level add_subdirectory(hdf5)?")
+endif()
 
-target_compile_definitions(AIAPIConnectEngine PRIVATE AIAPICONNECTENGINE_LIBRARY)
+target_compile_definitions(TAIAPIConnectEngine PRIVATE AIAPICONNECTENGINE_LIBRARY)

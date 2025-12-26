@@ -318,6 +318,7 @@ function(add_plugin dir target additional_files)
 endfunction()
 
 
+add_plugin(AIAPIConnectEngine TAIAPIConnectEngine "")
 add_plugin(cipher TCipherPlugin "")
 add_plugin(predict TPredictPlugin "")
 add_plugin(cpa TCPAPlugin "")
