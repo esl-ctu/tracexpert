@@ -258,6 +258,8 @@ add_executable(${PROJECT_NAME} WIN32
     scenario/scenario_items/tscenarioanaldevicewriteitem.h
     scenario/scenario_items/tscenariocomponentitem.h
     scenario/scenario_items/tscenariographwidgetitem.h
+    scenario/scenario_items/tscenarioexportitem.h
+    scenario/scenario_items/tscenarioimportitem.h
     scenario/tscenarioconfigwidget.h
     scenario/tscenarioconfigwidget.cpp
 )

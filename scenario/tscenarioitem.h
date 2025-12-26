@@ -55,6 +55,8 @@ public:
         TScenarioDelayItem = 70,
         TScenarioProtocolEncodeItem = 80,
         TScenarioOutputFileItem = 90,
+        TScenarioExportItem = 92,
+        TScenarioImportItem = 93,
         TScenarioVariableReadItem = 100,
         TScenarioVariableWriteItem = 101,
         TScenarioScriptItem = 110,

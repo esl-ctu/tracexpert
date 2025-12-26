@@ -9,6 +9,8 @@
 #include "scenario_items/tscenariobasicitems.h"
 #include "scenario_items/tscenarioconstantvalueitem.h"
 #include "scenario_items/tscenariodelayitem.h"
+#include "scenario_items/tscenarioexportitem.h"
+#include "scenario_items/tscenarioimportitem.h"
 #include "scenario_items/tscenariographwidgetitem.h"
 #include "scenario_items/tscenarioiodevicereaditem.h"
 #include "scenario_items/tscenarioiodevicewriteitem.h"
@@ -139,6 +141,10 @@ TScenarioItem * TScenarioItem::createScenarioItemByClass(TScenarioItem::TItemCla
             return new TScenarioScopeStopItem();
         case TScenarioItem::TItemClass::TScenarioOutputFileItem:
             return new TScenarioOutputFileItem();
+        case TScenarioItem::TItemClass::TScenarioExportItem:
+            return new TScenarioExportItem();
+        case TScenarioItem::TItemClass::TScenarioImportItem:
+            return new TScenarioImportItem();
         case TScenarioItem::TItemClass::TScenarioVariableReadItem:
             return new TScenarioVariableReadItem();
         case TScenarioItem::TItemClass::TScenarioVariableWriteItem:

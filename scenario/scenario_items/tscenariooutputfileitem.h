@@ -49,7 +49,7 @@ public:
         return ":/icons/file.png";
     }
 
-    bool validateParamsStructure(TConfigParam params) {
+    bool validateParamsStructure(TConfigParam params) override {
         bool iok = false;
 
         params.getSubParamByName("Block name", &iok);
