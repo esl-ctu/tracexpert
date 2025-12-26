@@ -157,6 +157,16 @@ bool TDialog::deviceReinitQuestion(QWidget * parent)
     return question(parent, parent->tr("Device Initialized"), parent->tr("The selected device is already initialized. Do you want to reinitialize it?"));
 }
 
+bool TDialog::deviceDeinitQuestion(QWidget * parent)
+{
+    return question(parent, parent->tr("Device Initialized"), parent->tr("Are you sure you want to deinitialize the device?"));
+}
+
+bool TDialog::deviceRemoveQuestion(QWidget * parent)
+{
+    return question(parent, parent->tr("Removal confirmation"), parent->tr("Are you sure you want to remove the device?"));
+}
+
 bool TDialog::deviceOpenQuestion(QWidget * parent)
 {
     return question(parent, parent->tr("Device Initialized"), parent->tr("The selected device is already initialized. Do you want to open the device?"));
@@ -249,6 +259,17 @@ bool TDialog::closeConfirmation(QWidget * parent, QString closedObjectName)
         QMessageBox::Yes | QMessageBox::No,
         QMessageBox::No) == QMessageBox::Yes;
 }
+
+bool TDialog::itemsRemoveQuestion(QWidget * parent, QString removedObjectName)
+{
+    return QMessageBox::question(
+               parent,
+               parent->tr("Removal confirmation"),
+               removedObjectName.isEmpty() ? parent->tr("Are you sure you want to remove selected item(s)?") : parent->tr("Are you sure you want to remove following items?\n\n%1").arg(removedObjectName),
+               QMessageBox::Yes | QMessageBox::No,
+               QMessageBox::No) == QMessageBox::Yes;
+}
+
 
 bool TDialog::scenarioTerminationConfirmation(QWidget * parent)
 {

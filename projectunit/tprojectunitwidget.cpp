@@ -13,38 +13,47 @@ TProjectUnitWidget::TProjectUnitWidget(TProjectUnitContainer * container, QWidge
 {
     QAction * addAction = new QAction(tr("&Add"), this);
     addAction->setStatusTip(tr("Create a new %1").arg(container->unitTypeName()));
+    addAction->setIcon(QPixmap(":/icons/add.png"));
     connect(addAction, &QAction::triggered, this, &TProjectUnitWidget::onAddButtonClicked);
 
     QAction * editAction = new QAction(tr("&Edit"), this);
     editAction->setStatusTip(tr("Edit selected %1").arg(container->unitTypeName()));
+    editAction->setIcon(QPixmap(":/icons/show.png"));
     connect(editAction, &QAction::triggered, this, &TProjectUnitWidget::onEditButtonClicked);
 
     QAction * renameAction = new QAction(tr("Re&name"), this);
     renameAction->setStatusTip(tr("Rename selected %1").arg(container->unitTypeName()));
+    renameAction->setIcon(QPixmap(":/icons/rename.png"));
     connect(renameAction, &QAction::triggered, this, &TProjectUnitWidget::onRenameButtonClicked);
 
     QAction * removeAction = new QAction(tr("&Remove"), this);
     removeAction->setStatusTip(tr("Remove selected %1").arg(container->unitTypeName()));
+    removeAction->setIcon(QPixmap(":/icons/delete.png"));
     connect(removeAction, &QAction::triggered, this, &TProjectUnitWidget::onRemoveButtonClicked);
 
     QAction * duplicateAction = new QAction(tr("&Duplicate"), this);
     duplicateAction->setStatusTip(tr("Duplicate selected %1").arg(container->unitTypeName()));
+    duplicateAction->setIcon(QPixmap(":/icons/duplicate.png"));
     connect(duplicateAction, &QAction::triggered, this, &TProjectUnitWidget::onDuplicateButtonClicked);
 
     QAction * importAction = new QAction(tr("&Import"), this);
     importAction->setStatusTip(tr("Import %1(s) from file(s)").arg(container->unitTypeName()));
+    importAction->setIcon(QPixmap(":/icons/import.png"));
     connect(importAction, &QAction::triggered, this, &TProjectUnitWidget::onImportButtonClicked);
 
     QAction * exportAction = new QAction(tr("E&xport"), this);
     exportAction->setStatusTip(tr("Export %1(s) to file(s)").arg(container->unitTypeName()));
+    exportAction->setIcon(QPixmap(":/icons/export.png"));
     connect(exportAction, &QAction::triggered, this, &TProjectUnitWidget::onExportButtonClicked);
 
     QToolBar * toolBar = new QToolBar();
-    toolBar->addAction(addAction);
     toolBar->addAction(editAction);
+    toolBar->addSeparator();
+    toolBar->addAction(addAction);    
     toolBar->addAction(renameAction);
-    toolBar->addAction(removeAction);
     toolBar->addAction(duplicateAction);
+    toolBar->addAction(removeAction);
+    toolBar->addSeparator();
     toolBar->addAction(importAction);
     toolBar->addAction(exportAction);
 
@@ -115,8 +124,14 @@ void TProjectUnitWidget::onRemoveButtonClicked() {
     QStringList unitNames;
 
     QModelIndexList rows = m_tableView->selectionModel()->selectedRows();
+    if (rows.isEmpty())
+        return;
     for (const QModelIndex &rowIndex : rows) {
         unitNames << m_container->at(rowIndex.row())->name();
+    }
+
+    if (!TDialog::itemsRemoveQuestion(this, unitNames.join("\n"))) {
+        return;
     }
 
     for (const QString & unitName : unitNames) {

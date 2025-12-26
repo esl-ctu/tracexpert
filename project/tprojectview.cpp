@@ -485,6 +485,10 @@ void TProjectView::deinitIODevice()
     if (!m_IODevice|| !m_IODevice->isInit()) {
         return;
     }
+    
+    if (!TDialog::deviceDeinitQuestion(this)) {
+        return;
+    }
 
     if (!m_IODevice->deInit()) {
         TDialog::deviceDeinitFailedGeneralMessage(this);
@@ -498,6 +502,13 @@ void TProjectView::showIODevice()
 
 void TProjectView::removeIODevice()
 {
+    if(!m_IODevice)
+        return;
+
+    if (!TDialog::deviceRemoveQuestion(this)) {
+        return;
+    }
+    
     m_IODevice->remove();
 }
 
@@ -530,6 +541,10 @@ void TProjectView::deinitScope()
     if (!m_scope|| !m_scope->isInit()) {
         return;
     }
+    
+    if (!TDialog::deviceDeinitQuestion(this)) {
+        return;
+    }
 
     if (!m_scope->deInit()) {
         TDialog::deviceDeinitFailedGeneralMessage(this);
@@ -543,6 +558,13 @@ void TProjectView::showScope()
 
 void TProjectView::removeScope()
 {
+    if(!m_scope)
+        return;
+
+    if (!TDialog::deviceRemoveQuestion(this)) {
+        return;
+    }
+    
     m_scope->remove();
 }
 
@@ -575,6 +597,10 @@ void TProjectView::deinitAnalDevice()
     if (!m_analDevice|| !m_analDevice->isInit()) {
         return;
     }
+    
+    if (!TDialog::deviceDeinitQuestion(this)) {
+        return;
+    }
 
     if (!m_analDevice->deInit()) {
         TDialog::deviceDeinitFailedGeneralMessage(this);
@@ -588,6 +614,13 @@ void TProjectView::showAnalDevice()
 
 void TProjectView::removeAnalDevice()
 {
+    if(!m_analDevice)
+        return;
+
+    if (!TDialog::deviceRemoveQuestion(this)) {
+        return;
+    }
+    
     m_analDevice->remove();
 }
 

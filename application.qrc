@@ -46,5 +46,10 @@
         <file>icons/exportraw.png</file>
         <file>icons/importhdf.png</file>
         <file>icons/importraw.png</file>
+        <file>icons/add.png</file>
+        <file>icons/duplicate.png</file>
+        <file>icons/rename.png</file>
+        <file>icons/export.png</file>
+        <file>icons/import.png</file>
     </qresource>
 </RCC>

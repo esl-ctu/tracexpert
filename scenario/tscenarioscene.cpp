@@ -4,6 +4,7 @@
 #include "tscenariographicalitem.h"
 
 #include <QGraphicsSceneMouseEvent>
+#include <QMessageBox>
 
 TScenarioScene::TScenarioScene(TProjectModel * projectModel, QObject * parent) :
     QGraphicsScene(parent),
@@ -123,6 +124,27 @@ void TScenarioScene::removeItem(QGraphicsItem * item) {
 
 void TScenarioScene::removeSelectedItems() {
     QList<QGraphicsItem *> selectedItems = this->selectedItems();
+
+    if(selectedItems.size() == 0)
+        return;
+
+    const QString message =
+        (selectedItems.size() == 1)
+            ? tr("Are you sure you want to remove the selected item?")
+            : tr("Are you sure you want to remove the %1 selected items?")
+                  .arg(selectedItems.size());
+
+    QMessageBox::StandardButton reply =
+        QMessageBox::question(
+            nullptr, // or your parent widget if you have one
+            tr("Confirm removal"),
+            message,
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No
+            );
+
+    if (reply != QMessageBox::Yes)
+        return;
 
     for (QGraphicsItem * item : selectedItems) {
         removeItem(item);

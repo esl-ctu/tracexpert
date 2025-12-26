@@ -26,6 +26,8 @@ public:
     static bool componentDeinitQuestion(QWidget * parent);
     static bool deviceReinitQuestion(QWidget * parent);
     static bool deviceOpenQuestion(QWidget * parent);
+    static bool deviceDeinitQuestion(QWidget * parent);
+    static bool deviceRemoveQuestion(QWidget * parent);
 
     static void componentInitFailedGeneralMessage(QWidget * parent);
     static void componentDeinitFailedGeneralMessage(QWidget * parent);
@@ -48,6 +50,8 @@ public:
     static void paramValueErrorMessage(QWidget * parent);
 
     static void protocolMessageCouldNotBeFormed(QWidget * parent);
+
+    static bool itemsRemoveQuestion(QWidget * parent, QString removedObjectName = QString());
 
     static bool closeConfirmation(QWidget * parent, QString closedObjectName = QString());
     static bool scenarioTerminationConfirmation(QWidget * parent);
