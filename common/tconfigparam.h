@@ -162,6 +162,93 @@ public:
         m_hint = hint;
         return m_hint;
     }
+    
+    // name changed to avoid ambiguous calls
+    const QString & setValueAsByteArray(const QByteArray &value, bool *ok = nullptr){
+        bool iok = true;
+        QDataStream stream(value);
+        stream.setByteOrder(QDataStream::LittleEndian);
+        switch(m_type) {
+            case TType::TString:
+            case TType::TFileName:
+            case TType::TDirectoryName:
+            case TType::TCode:
+                m_value = QString::fromUtf8(value);
+                break;
+            case TType::TByteArray:
+                m_value = value.toHex();
+                break;
+            case TType::TInt: {
+                qint32 v;
+                stream >> v;
+                iok = (stream.status() == QDataStream::Ok);
+                if (iok) m_value = QString::number(v);
+                break;
+            }
+            case TType::TUInt: {
+                quint32 v;
+                stream >> v;
+                iok = (stream.status() == QDataStream::Ok);
+                if (iok) m_value = QString::number(v);
+                break;
+            }
+            case TType::TShort: {
+                qint16 v;
+                stream >> v;
+                iok = (stream.status() == QDataStream::Ok);
+                if (iok) m_value = QString::number(v);
+                break;
+            }
+            case TType::TUShort: {
+                quint16 v;
+                stream >> v;
+                iok = (stream.status() == QDataStream::Ok);
+                if (iok) m_value = QString::number(v);
+                break;
+            }
+            case TType::TLongLong: {
+                qint64 v;
+                stream >> v;
+                iok = (stream.status() == QDataStream::Ok);
+                if (iok) m_value = QString::number(v);
+                break;
+            }
+            case TType::TULongLong: {
+                quint64 v;
+                stream >> v;
+                iok = (stream.status() == QDataStream::Ok);
+                if (iok) m_value = QString::number(v);
+                break;
+            }
+            case TType::TReal:
+            case TType::TTime: {
+                double v;
+                stream >> v;
+                iok = (stream.status() == QDataStream::Ok);
+                if (iok) m_value = QString::number(v, 'g', 15);
+                break;
+            }
+            case TType::TBool: {
+                bool v;
+                stream >> v;
+                iok = (stream.status() == QDataStream::Ok);
+                if (iok) m_value = v ? "true" : "false";
+                break;
+            }
+            case TType::TEnum: {
+                QString s = QString::fromUtf8(value);
+                iok = m_enums.contains(s);
+                if (iok) m_value = s;
+                break;
+            }
+            case TType::TDummy:
+            default:
+                iok = false;
+                break;
+        }
+        if(ok != nullptr) *ok = iok;
+        return m_value;
+    }
 
     const QString & setValue(const QString &value, bool *ok = nullptr){
         static const QRegularExpression hexRegex(QStringLiteral("[^A-Za-z0-9]"));
@@ -434,6 +521,22 @@ public:
             if(ok != nullptr) *ok = true;
             return &(this->getSubParams()[index]);
         }
+    }
+    
+    TConfigParam * getSubParamByNameRecursive(const QString &name, bool *ok = nullptr){
+        for(auto & sub : this->getSubParams()) {
+            if(sub.getName() == name) {
+                if(ok != nullptr) *ok = true;
+                return &sub;
+            }
+            bool found = false;
+            if (TConfigParam * res = sub.getSubParamByNameRecursive(name, &found)) {
+                if(ok != nullptr) *ok = true;
+                return res;
+            }
+        }
+        if(ok != nullptr) *ok = false;
+        return nullptr;
     }
 
     void clearSubParams(){
