@@ -53,11 +53,11 @@ The workflow consists of the following steps:
 
 The following figure shows an example scenario configuration for performing a CPA attack on AES-128, including plaintext input, leakage prediction, correlation computation, and result visualization.
 
-![Example CPA Scenario for AES-128](images/example-scenario-cpa.png)
+![Example CPA Scenario for AES-128](images/example-cpa-scenario.png)
 
 The following figure shows the output correlation graph, where correlation peaks indicate the most likely key hypotheses.
 
-![Example Correlation Output Graph](images/example-corr-graph.png)
+![Example Correlation Output Graph](images/example-cpa-graph.png)
 
 ## Notes on Input File Sizes
 

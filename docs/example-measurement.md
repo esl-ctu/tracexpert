@@ -6,7 +6,7 @@ This guide describes a general workflow for measuring power consumption traces.
 The measurement setup and workflow are kept generic so they can be applied to different hardware platforms.
 In this example, we use ChipWhisperer, but the same principles apply to other supported oscilloscopes and targets.
 
-This setup does not use the SimpleSerial protocol and relies on a custom, minimal communication interface.
+This setup **does not use the SimpleSerial protocol** and relies on a custom, minimal communication interface.
 
 ## Preparation
 
@@ -24,7 +24,7 @@ As a concrete example used throughout this guide, consider a target device imple
 - Command `k` followed by 16 bytes  
   Loads an encryption key into the target. This command does not trigger a measurement.
 - Command `p` followed by 16 bytes  
-  Starts encryption, enables the trigger on the operation of interest, and returns 16 bytes of ciphertext.
+  Starts encryption, enables the trigger, and returns 16 bytes of ciphertext.
 
 This type of interface is sufficient to demonstrate command formatting using protocols, triggered trace acquisition, and collection of plaintext, ciphertext, and power traces.
 
@@ -42,7 +42,7 @@ The following initialization order applies when using ChipWhisperer:
 
 1. Initialize the oscilloscope plugin
 2. Initialize the oscilloscope device
-   Note: the target (not standing alone device) must be initialized before the oscilloscope, because communication with the target is performed through the oscilloscope.
+   Note: if the target communicates via the oscilloscope, the oscilloscope must be initialized first.
 3. Initialize the target device
 4. Configure oscilloscope parameters
 
@@ -52,19 +52,21 @@ For basic measurements, it is sufficient to set the following parameters:
   Number of samples to capture.  
   If you are unsure about the required number of samples, record the trigger counter value, trigger once, and compare the new value with the previous one.
 - ADC · timeout  
-  Maximum time to wait for the trigger
+  Maximum time to wait for the trigger in seconds, zero is immediately.
 - TraceXpert mode set to Triggered (default)
 
 ## Verifying Communication and Measurement
 
-### Verify device communication
+### Verify target communication
 
 - In the IO Device tab corresponding to your target:
   - Manually send a test command (for example `k` or `p`)
   - Enable automatic receive to verify that a response is returned
 
-If no response is received, try resetting the target hardware or disconnecting and reconnecting the target from the measurement device.
+If no response is received, try resetting the target hardware, or disconnect and reconnect the communication cable.
 Once communication is verified, disable automatic receive.
+
+![Verify target communication](images/example-measurement-verify-target.png)
 
 ### Verify oscilloscope functionality
 
@@ -72,8 +74,11 @@ Once communication is verified, disable automatic receive.
   - Start a measurement
   - Send a command that triggers the operation of interest (for example the `p` command)
   - Ensure the timeout is long enough to allow you to send the command
+  - Now it is time to fine-tune the oscilloscope parameters.
 
 You should see a captured power trace.
+
+![Verify oscilloscope functionality](images/example-measurement-verify-oscilloscope.png)
 
 ## Preparing the Protocol
 
@@ -100,6 +105,8 @@ For the example interface above, this typically includes a command message for l
 
 You should see a valid response from the target device, confirming that the protocol and communication are configured correctly.
 
+![Testing the protocol](images/example-measurement-verify-protocol.png)
+
 ## Creating Storage for Measured Data and Related Values
 
 If the measured data is not immediately used in an analysis scenario, it should be stored for later processing.
@@ -121,27 +128,28 @@ The measurement scenario typically executes a loop where each iteration:
 2. Assembles the corresponding command message
 3. Arms the oscilloscope
 4. Sends the command to the target and waits for the response
-5. Downloads and stores the measured trace data
+5. Downloads the measured trace data 
+6. Stores all required information (plaintext, ciphertext, and power consumption).
 
 ### Scenario setup
 
-1. Create a new scenario named Measurement.
+1. Create a new scenario named *Measurement*.
 2. Add Flow start and a loop.
 3. Message assembly:
-   - IO Device read (input data generator)  
+   - *IO Device read* (input data generator)  
      Set the required output length (for example 16 bytes).
-   - Protocol format message  
+   - *Protocol format message*  
      Select the appropriate command message and connect the generator output.
    - You can test message formatting by connecting the protocol output to a Logger.
 4. Trace measurement:
-   - Add Oscilloscope start measurement
-   - Add Oscilloscope download data
+   - Add *Oscilloscope start measurement*
+   - Add *Oscilloscope download data*
    - Connect them using the stop/start connection (purple)
 
-   Note: In this setup, single capture is not used, as communication with the target must occur while waiting for the trigger. Using single capture would either block indefinitely or end due to a timeout without a valid response. Single capture remains applicable when the trigger is generated externally or when triggered mode is not employed.
+   Note: In this setup, *Oscilloscope single capture* is not used, as communication with the target must occur while waiting for the trigger. Using single capture would either block indefinitely or end due to a timeout without a valid response. Single capture remains applicable when the trigger event is initiated externally or when triggered mode is not employed.
 5. Device communication:
-   - Add IO Device write for sending commands
-   - Add IO Device read for receiving responses (for example reading 16 bytes of ciphertext)
+   - Add *IO Device write* for sending commands
+   - Add *IO Device read* for receiving responses (for example reading 16 bytes of ciphertext)
 6. Storing output data:
    - Store all required outputs (input data and measured traces)
    - Store data only after a successful measurement
@@ -169,11 +177,12 @@ The scenario is implemented using two nested loops:
 
 The result is a faster measurement workflow.
 
+![Example of scenario](images/example-measurement-picoscope.png)
+
 ### Notes
 
-- In this setup, PicoScope is capable of storing significantly more than 20 traces.
+- In this setup, PicoScope would be capable of storing significantly more than 20 traces.
 - The *Oscilloscope: download data* block is shown in yellow because not all output data paths are connected; this is only a warning and does not indicate an error.
 
-![Example of scenario](images/example-measurement-picoscope.png)
 
 
