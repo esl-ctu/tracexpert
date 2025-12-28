@@ -2,6 +2,8 @@
 
 **An integrated environment for side-channel data acquisition and analysis**
 
+For an up-to-date version see our [GitHub repository https://github.com/esl-ctu/tracexpert](https://github.com/esl-ctu/tracexpert).
+
 ## Index
 
 - [Index](README.md)
@@ -23,10 +25,11 @@
     - 7.2 [Leakage predictions](predictions.md)
     - 7.3 [Correlation power analysis](cpa.md)
     - 7.4 [Welch's t-test leakage assessment](ttest.md)
-    - 7.5 [AI API connect (from VUT Brno)](aiapiconnect.md)
+    - 7.5 [AI API connect (VUT Brno project interface)](aiapiconnect.md)
 - 8 [Scenarios](scenarios.md)
-- 9 [Example use-case](examples.md)
-    - 9.1 [Measurement](example-measurement.md)
-    - 9.2 [Correlation power analysis](example-cpa.md)
+- 9 [HDF5 import/export](hdf.md)
+- 10 [Example use-cases](examples.md)
+    - 10.1 [Measurement](example-measurement.md)
+    - 10.2 [Correlation power analysis](example-cpa.md)
 - [Build instructions](build.md)
 

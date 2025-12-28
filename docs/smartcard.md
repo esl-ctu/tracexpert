@@ -4,6 +4,8 @@
 
 TraceXpert component *Smart card* provides access to Smart card readers.
 
+Currently (release 1.0), the Smart card component is only supported on the Windows platform. 
+
 When **Auto-detect** is enabled during initialization, the component tries to detect available readers, and it automatically creates respective I/O devices.
 
 ![Smart card component initialization](images/serialport_cominit.png)
