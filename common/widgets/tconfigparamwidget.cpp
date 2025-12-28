@@ -37,8 +37,6 @@
 TConfigParamWidget::TConfigParamWidget(const TConfigParam & param, QWidget * parent, bool readOnly)
     : QTreeWidget(parent), m_readOnly(readOnly)
 {
-    setParam(param);
-
     setColumnCount(3);
 
     setAlternatingRowColors(true);
@@ -53,6 +51,8 @@ TConfigParamWidget::TConfigParamWidget(const TConfigParam & param, QWidget * par
     header()->setStretchLastSection(false);
 
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    setParam(param);
 }
 
 TConfigParamWidget::~TConfigParamWidget()
