@@ -14,14 +14,20 @@ TraceXpert 1.0 supports both Windows and Linux platforms and is distributed as o
 
 # Installation
 
-...
+On Windows, the TraceXpert may be installed using either online or offline installer. See our [GitHub repository https://github.com/esl-ctu/tracexpert](https://github.com/esl-ctu/tracexpert) for the current release.
 
-# First launch
+On Linux, as of now, the TraceXpert must be built manually. The packages/installers will be made available later, check our [GitHub repository https://github.com/esl-ctu/tracexpert](https://github.com/esl-ctu/tracexpert).
 
-...
+# Where to next
 
-# Next
+For information about the user interface and the component/device architecture of TraceXpert, refer to the following pages:
 
 * [User interface and Projects](ui-projects.md)
 * [Components and Devices](components-devices.md)
+
+Futhermore, usage examples are available:
+
+* [Measurement of data](example-measurement.md)
+* [Correlation power analysis (CPA) attack](example-cpa.md)
+
 
