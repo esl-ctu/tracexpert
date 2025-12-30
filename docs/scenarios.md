@@ -353,3 +353,28 @@ The **Oscilloscope: start measurement** and **Oscilloscope: download data** have
 
 ![Oscilloscope block](images/scenarios_oscilloscope_start_stop_example.png)
 ![Oscilloscope block](images/scenarios_oscilloscope_start_stop_example2.png)
+
+
+### Dynamic parameters
+
+> ⚠️ Dynamic parameters are currently an **experimental feature!**
+
+Some scenario block settings can be marked as *dynamic*, allowing their values to be modified by the scenario while it is running.
+
+#### Enabling a dynamic parameter
+To make a parameter dynamic, enable the corresponding checkbox in the block settings dialog.
+
+![Dynamic parameters (settings dialog)](images/scenarios_dynamic_params.png)
+
+Once enabled, an additional input port is added to the block.
+
+![Dynamic parameters (block w/ dynamic port)](images/scenarios_dynamic_params2.png)
+
+#### Runtime behavior
+- If no data is received on the dynamic input port, the parameter value remains unchanged.
+- When a new value is received, the parameter is immediately updated to that value. This is done before the pre- or post-init params are set and the block is executed.
+- Any errors encountered during the update are reported in the console.
+
+> 💡 **Data type requirements:** The value provided to the input port must match the parameter’s data type.
+For parameters represented by a dropdown list, either a string or an integer index (starting at 0) is accepted. 
+
