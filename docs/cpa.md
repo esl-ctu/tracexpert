@@ -29,10 +29,7 @@ The input consists of two streams:
 
 ### Actions
 
-1. **Compute correlation matrix (+ flush streams)** first *deletes all unread data from the output streams buffers* and then computes correlation coefficients between every sampling point and every key hypothesis.
-The correlation coefficients are based on all previously submitted data (including data sent prior to previous computation).
-The correlation matrices are then ready to be read from the output streams. 
-The action fails when an invalid amount of data was previously submitted to the input stream (the number of submitted samples must be divisible by the trace length, i.e., the traces are complete, and the number of power predictions for each power trace must match the number of key hypotheses). 
+1. **Compute correlation matrix (+ flush streams)** first *deletes all unread data from the output streams buffers* and then computes correlation coefficients between every sampling point and every key hypothesis. The correlation coefficients are based on all previously submitted data (including data sent prior to previous computation). The correlation matrices are then ready to be read from the output streams. The action fails when an invalid amount of data was previously submitted to the input stream (the number of submitted samples must be divisible by the trace length, i.e., the traces are complete, and the number of power predictions for each power trace must match the number of key hypotheses). 
 
 2. **Reset (delete all data)** resets the state of the analytical device to the after-init state, i.e., it also deletes information about any previously submitted data.
 
