@@ -148,7 +148,9 @@ Both of these variants can also be run from scenarios.
    
    ![aiapi-preinit.png](images/aiapi-train3.png)
 
-4. You can stop the training by running the *Stop training* action.![aiapi-preinit.png](images/aiapi-train5.png)
+4. You can stop the training by running the *Stop training* action.
+
+   ![aiapi-preinit.png](images/aiapi-train5.png)
 
 5. You can receive the training result in the *Training resut* stream.
    
@@ -156,4 +158,5 @@ Both of these variants can also be run from scenarios.
 
 
 6. All of these actions can also be done from the scenarios.
+
 
