@@ -2,9 +2,7 @@
 
 # Example: Measuring Power Traces (Generic Setup)
 
-This guide describes a general workflow for measuring power consumption traces.
-The measurement setup and workflow are kept generic so they can be applied to different hardware platforms.
-In this example, we use ChipWhisperer, but the same principles apply to other supported oscilloscopes and targets.
+This guide describes a general workflow for measuring power consumption traces. The measurement setup and workflow are kept generic so they can be applied to different hardware platforms. In this example, we use ChipWhisperer, but the same principles apply to other supported oscilloscopes and targets.
 
 This setup **does not use the SimpleSerial protocol** and relies on a custom, minimal communication interface.
 
@@ -48,10 +46,10 @@ The following initialization order applies when using ChipWhisperer:
 
 For basic measurements, it is sufficient to set the following parameters:
 
-- ADC · samples  
+- ADC Â· samples  
   Number of samples to capture.  
   If you are unsure about the required number of samples, record the trigger counter value, trigger once, and compare the new value with the previous one.
-- ADC · timeout  
+- ADC Â· timeout  
   Maximum time to wait for the trigger in seconds, zero is immediately.
 - TraceXpert mode set to Triggered (default)
 
@@ -63,8 +61,7 @@ For basic measurements, it is sufficient to set the following parameters:
   - Manually send a test command (for example `k` or `p`)
   - Enable automatic receive to verify that a response is returned
 
-If no response is received, try resetting the target hardware, or disconnect and reconnect the communication cable.
-Once communication is verified, disable automatic receive.
+If no response is received, try resetting the target hardware, or disconnect and reconnect the communication cable. Once communication is verified, disable automatic receive.
 
 ![Verify target communication](images/example-measurement-verify-target.png)
 
