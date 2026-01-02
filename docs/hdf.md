@@ -64,8 +64,7 @@ Measured traces may be exported directly from the Oscilloscope widget as well.
 
 ![Export traces](images/hdf-export-traces.png)
 
-After selecting channels and traces to export, compatible datasets must be selected for each channel.
-The exported channel requires a dataset with the correct datatype and columns=samples, so that each trace is represented as a row. 
+After selecting channels and traces to export, compatible datasets must be selected for each channel. The exported channel requires a dataset with the correct datatype and columns=samples, so that each trace is represented as a row. 
 
 Furthermore, metadata group is required for each channel. This group contains information about the measured traces. Each export appends:
 - Index of the first appended trace (first_trace dataset)
