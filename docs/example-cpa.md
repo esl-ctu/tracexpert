@@ -25,8 +25,7 @@ The CPA attack consists of the following steps:
     - the x-axis represents sample indices
     - the y-axis represents the *Pearson correlation coefficient*
 
-TraceXpert also supports CPA attacks on *hardware implementations*.  
-The procedure is identical, with the following differences:
+TraceXpert also supports CPA attacks on *hardware implementations*. The procedure is identical, with the following differences:
 
 - The attack targets the *last AES round* instead of the first.
 - *Hamming distance* is used instead of Hamming weight.
@@ -64,8 +63,8 @@ The following figure shows the output correlation graph, where correlation peaks
 - In this example, *1000 power traces* were measured.
 - Each trace contains *7671 samples*.
 - The plaintext size is *16000 bytes*  
-  (1000 traces × 16 bytes of plaintext per trace).
+  (1000 traces Ã— 16 bytes of plaintext per trace).
 - The power trace file size is *15,342,000 bytes*, calculated as:  
-  1000 × 7671 × 2  
+  1000 Ã— 7671 Ã— 2  
   where each trace contains 7671 samples stored as `int16` (2 bytes per sample).
 
