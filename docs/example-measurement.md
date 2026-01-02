@@ -28,8 +28,7 @@ This type of interface is sufficient to demonstrate command formatting using pro
 
 ### Software preparation
 
-Required software and dependencies depend on the selected oscilloscope and plugins.
-Detailed installation and configuration instructions can be found in the documentation of the individual plugins.
+Required software and dependencies depend on the selected oscilloscope and plugins. Detailed installation and configuration instructions can be found in the documentation of the individual plugins.
 
 - For ChipWhisperer, this typically means a working Python installation with the PySide6 and chipwhisperer packages installed.
 - For PicoScope, this typically means installing the appropriate PicoScope SDK.
