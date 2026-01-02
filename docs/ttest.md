@@ -30,10 +30,7 @@ The labels stream (if configured) accepts labels ranging from 0 to N-1, where N 
 
 ### Actions
 
-1. **Compute t-values (+ flush streams)** first *deletes all unread data from the output streams buffers* and then computes t-test t-values between traces in each class. The t-value is computed in every sampling point independently. 
-The t-values are based on all previously submitted data (including data sent prior to previous computation).
-The t-values and corresponding degrees of freedom are then ready to be read from the output streams. 
-The action fails when an invalid amount of data was previously submitted to the input stream (the number of submitted samples must be divisible by the trace length, i.e., the traces are complete, and the number of labels must match the number of submitted power traces). 
+1. **Compute t-values (+ flush streams)** first *deletes all unread data from the output streams buffers* and then computes t-test t-values between traces in each class. The t-value is computed in every sampling point independently. The t-values are based on all previously submitted data (including data sent prior to previous computation). The t-values and corresponding degrees of freedom are then ready to be read from the output streams. The action fails when an invalid amount of data was previously submitted to the input stream (the number of submitted samples must be divisible by the trace length, i.e., the traces are complete, and the number of labels must match the number of submitted power traces). 
 
 2. **Reset (delete all data)** resets the state of the analytical device to the after-init state, i.e., it also deletes information about any previously submitted data.
 
