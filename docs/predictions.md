@@ -33,9 +33,7 @@ The stream **Plaintext**/**Ciphertext** accepts full blocks of AES, i.e. 16 byte
 
 ### Actions
 
-1. **Compute predictions (+ flush streams)** first *deletes all unread data from the output streams buffers* and then processes the AES input blocks from the input stream.
-The leakage predictions are then ready to be read from the output streams. 
-The action fails when an invalid amount of data was previously submitted to the input stream (the number of bytes must be divisible by 16). 
+1. **Compute predictions (+ flush streams)** first *deletes all unread data from the output streams buffers* and then processes the AES input blocks from the input stream. The leakage predictions are then ready to be read from the output streams. The action fails when an invalid amount of data was previously submitted to the input stream (the number of bytes must be divisible by 16). 
 
 2. **Reset (delete all data)** resets the state of the analytical device to the after-init state.
 
@@ -65,4 +63,5 @@ She then reads 10\*256 bytes of leakage predictions from the **Byte 3 Leakage Pr
 The correlations between these leakage predictions and power traces can be computed using the **Correlation power analysis** component.
 
 If she then wishes to attack 4th byte of the key, she obtains the data from the **Byte 4 Leakage Predictions** output stream.
+
 
