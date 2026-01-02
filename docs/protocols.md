@@ -2,9 +2,7 @@
 
 # Protocols
 
-TraceXpert allows you to define *protocols*, 
-which can be used with IO Devices for communication 
-and data processing.
+TraceXpert allows you to define *protocols*, which can be used with IO Devices for communication and data processing.
 
 A protocol in TraceXpert consists of:
 
@@ -28,9 +26,7 @@ To create, edit, or remove protocols in your project:
 
 ![Opening Protocol Manager](images/protocols_open_manager.png)
 
-This opens the **Protocol Manager** window, 
-which displays a list of existing protocols and 
-provides options to add, edit, or remove them.
+This opens the **Protocol Manager** window, which displays a list of existing protocols and provides options to add, edit, or remove them.
 
 ![Protocol Manager window](images/protocols_manager.png)
 
@@ -40,8 +36,7 @@ To define a new protocol, click **Add**.
 
 You’ll now be guided through a wizard to define your protocol.
 
-Provide a **name** and an optional **description** for the protocol, 
-then click **Next**.
+Provide a **name** and an optional **description** for the protocol, then click **Next**.
 
 ![Setting Protocol Details](images/protocols_new_protocol.png)
 
@@ -60,16 +55,13 @@ To create your first message, click **Add**.
 
 Enter the **name**, **type** (either *command* or *response*), and an optional **description**.
 
-> 💡 *For example: when communicating over serial, 
-the message you send is a **command**, 
-and the one you receive back is a **response**.*
+> 💡 *For example: when communicating over serial, the message you send is a **command**, and the one you receive back is a **response**.*
 
 ![Adding a Command](images/protocols_new_command.png)
 
 ### Step 5: Define message parts
 
-This step allows you to define the structure of the message 
-by adding individual **message parts**.
+This step allows you to define the structure of the message by adding individual **message parts**.
 
 - You can **add**, **edit**, **reorder**, or **remove** parts.
 - A status indicator helps you verify the validity of the message as you build it.
@@ -87,9 +79,7 @@ Fill out the **name**, **description**, and select a **data type** for the messa
 - **Fixed length**: character, short, integer, long, etc.
 - **Variable length**: string, byte array
 
-You can also mark a message part as a **payload**. 
-Payloads represent variable values that are filled in at runtime, 
-such as when sending commands or receiving data from a device.
+You can also mark a message part as a **payload**. Payloads represent variable values that are filled in at runtime, such as when sending commands or receiving data from a device.
 
 For variable-length payloads:
 
