@@ -363,6 +363,5 @@ Once enabled, an additional input port is added to the block.
 - When a new value is received, the parameter is immediately updated to that value. This is done before the pre- or post-init params are set and the block is executed.
 - Any errors encountered during the update are reported in the console.
 
-> 💡 **Data type requirements:** The value provided to the input port must match the parameter’s data type.
-For parameters represented by a dropdown list, either a string or an integer index (starting at 0) is accepted. 
+> 💡 **Data type requirements:** The value provided to the input port must match the parameter’s data type. For parameters represented by a dropdown list, either a string or an integer index (starting at 0) is accepted. 
 
