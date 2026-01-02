@@ -43,12 +43,9 @@ The stream **Cipher key** accepts an AES key of the correct length (according to
 
 ### Actions
 
-1. **Encrypt input data (+ flush streams)** first *deletes all unread data from the output streams buffers* and then processes the AES input blocks from the input stream.
-The selected intermediate values are then ready to be read from the output stream. 
-The action fails when an invalid amount of data was previously submitted to the input stream (the number of bytes must be divisible by 16).
+1. **Encrypt input data (+ flush streams)** first *deletes all unread data from the output streams buffers* and then processes the AES input blocks from the input stream. The selected intermediate values are then ready to be read from the output stream. The action fails when an invalid amount of data was previously submitted to the input stream (the number of bytes must be divisible by 16).
 
-2. **Load cipher key (+ flush streams)** first *deletes all unread data from the output streams buffers* and then loads the key from *Cipher key* stream into the AES engine. 
-The action fails when an invalid amount of data was previously submitted to the cipher key stream (incorrect number of bits according to the key length settings of the device).  
+2. **Load cipher key (+ flush streams)** first *deletes all unread data from the output streams buffers* and then loads the key from *Cipher key* stream into the AES engine. The action fails when an invalid amount of data was previously submitted to the cipher key stream (incorrect number of bits according to the key length settings of the device).  
 
 2. **Reset (delete all data)** resets the state of the analytical device to the after-init state.
 
@@ -62,11 +59,9 @@ After the **Encrypt input data (+ flush streams)** action finishes, the requeste
 
 The analyst has 10 plaintext that she wishes to examine. She wants to know the AES-128 cipher state after the 2nd MixColumns operation.
 
-She configures the *AES* analytical device for 128-bit key length and encryption. 
-Then she submits her 16-byte cipher key to the **Cipher key** stream and launches **Load cipher key** action. 
+She configures the *AES* analytical device for 128-bit key length and encryption. Then she submits her 16-byte cipher key to the **Cipher key** stream and launches **Load cipher key** action. 
 
-After that, she selects **After Nth MixColumns** and sets **N** to *2*. She applies the settings.
-She is interested with the entire cipher state, so she keeps **Output** at *Whole block*.
+After that, she selects **After Nth MixColumns** and sets **N** to *2*. She applies the settings. She is interested with the entire cipher state, so she keeps **Output** at *Whole block*.
 
 Then she submits 10 plaintexts (10\*16 bytes) to the **Plaintext** stream, launches **Encrypt input data** action, and reads 10 blocks (10\*16 bytes) from the **Intermediate values** stream.
 
