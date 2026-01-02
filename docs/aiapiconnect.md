@@ -16,11 +16,11 @@ This component has no pre-init paramteres. When initializing, just click *Initia
 
 ## Connecting to a server (adding a new device)
 
-1. Click Add device and select AI API Connect engine*
+1. Click Add device and select *AI API Connect engine*
 
 2. Ignore post-init parameters and click *Next*
 
-3. Clik on *Add** and name your device (the name is just for you)
+3. Clik on *Add* and name your device (the name is just for you)
 
 4. Select the added device and click *Next*
 
@@ -149,5 +149,6 @@ Both of these variants can also be run from scenarios.
 5. You can receive the training result in the *Training resut* stream.
    
    ![aiapi-preinit.png](images/aiapi-train4.png)
+
 
 6. All of these actions can also be done from the scenarios.
