@@ -108,7 +108,9 @@ Both of these variants can also be run from scenarios.
 
 ### Prediction
 
-1. Assuming the server is in prediction mode, set the used model (which needs to be already present on the server - see *Uploading data*) and the prediction input size in number of samples (not bytes).![aiapi-preinit.png](images/aiapi-predict1.png)
+1. Assuming the server is in prediction mode, set the used model (which needs to be already present on the server - see *Uploading data*) and the prediction input size in number of samples (not bytes).
+
+   ![aiapi-preinit.png](images/aiapi-predict1.png)
 
 2. Click *Apply*.
 
@@ -122,7 +124,9 @@ Both of these variants can also be run from scenarios.
      
      ![aiapi-preinit.png](images/aiapi-predict-send.png)
 
-4. To run the prediction, you need to run the *Analyze* action. ![loading-ag-387](images/aiapi-predict2.png)
+4. To run the prediction, you need to run the *Analyze* action. 
+
+   ![loading-ag-387](images/aiapi-predict2.png)
 
 5. To receive the prediction result, you need to receive data from the *Prediction result* stream. You will receive one result per sent trace. If your format is *Text*, the results will be separated by a newline. Otherwise, you receive an array. You can, of xourse, turn on *Autoreceive*.
    
@@ -152,3 +156,4 @@ Both of these variants can also be run from scenarios.
 
 
 6. All of these actions can also be done from the scenarios.
+
