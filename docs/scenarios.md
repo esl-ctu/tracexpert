@@ -2,12 +2,9 @@
 
 # Scenarios
 
-**TraceXpert** allows you to create *scenarios*—automated workflows 
-represented as flow graphs. These scenarios can be used to automate 
-processes using all the tools the program provides.
+**TraceXpert** allows you to create *scenarios*—automated workflows represented as flow graphs. These scenarios can be used to automate processes using all the tools the program provides.
 
-A scenario is made up of **blocks**, each performing a specific task.  
-Blocks are connected using **input** and **output** connections:
+A scenario is made up of **blocks**, each performing a specific task. Blocks are connected using **input** and **output** connections:
 
 - Every block has a **flow input** and **flow output** port, these control the order of execution.
 - Most blocks also have **data input** and **data output** ports, their connections define how data is passed between blocks.
@@ -36,9 +33,7 @@ To create, edit, or remove scenarios in your project:
 
 ![Opening Scenario Manager](images/scenarios_open_manager.png)
 
-This opens the **Scenario Manager** window, 
-which displays a list of existing scenarios and 
-provides options to add, edit, rename or remove them.
+This opens the **Scenario Manager** window, which displays a list of existing scenarios and provides options to add, edit, rename or remove them.
 
 ![Scenario Manager window](images/scenarios_manager.png)
 
@@ -46,8 +41,7 @@ provides options to add, edit, rename or remove them.
 
 To create a new scenario, click **Add**.
 
-Provide a **name** and an optional **description** for the scenario, 
-then click **Add**.
+Provide a **name** and an optional **description** for the scenario, then click **Add**.
 
 ![Setting Scenario Details](images/scenarios_new_scenario.png)
 
@@ -67,8 +61,7 @@ Take a second to familiarize yourself with the **Scenario Editor** control eleme
 
 #### Toolbar (Top Left)
 
-A toolbar with icons to **Run**, **Stop**, and **Save** your scenario.
-The following icons allow you to **Push back**, **Bring to front**, and **Delete** scenario blocks.
+A toolbar with icons to **Run**, **Stop**, and **Save** your scenario. The following icons allow you to **Push back**, **Bring to front**, and **Delete** scenario blocks.
 
 ![Scenario toolbar](images/scenarios_toolbar.png)
 
@@ -148,8 +141,7 @@ Connections from multiple **flow output** ports can be joined into one **flow in
 
 When you're satisfied with the look of your scenario, it is time to run it.
 
-To run the scenario, click the green **Run** button in the top left toolbar.
-The output of the run will appear in the **Scenario run log** in the bottom of the editor window.
+To run the scenario, click the green **Run** button in the top left toolbar. The output of the run will appear in the **Scenario run log** in the bottom of the editor window.
 
 When the scenario finishes, the **Flow end** block through which the scenario has ended will be highlighted light blue.
 
@@ -163,8 +155,7 @@ To achieve this, we can modify the **Constant** and **Loop** blocks.
 
 > 💡 *You can modify any blocks with the wrench icon in the bottom right corner.*
 
-Start by editing the Constant block by double clicking it.
-You can now modify the **Value** field.
+Start by editing the Constant block by double clicking it. You can now modify the **Value** field.
 
 > 💡 *Notice that you can also modify the block's display name.*
 
@@ -230,11 +221,9 @@ In this block's settings, you can set:
 - *Input count* - the number of **data inputs** the block should have
 - *Output count* - the number of **data outputs** the block should have
 
-Values from **data input ports** is passed to the script in the `input_raw` array. 
-You can access this array directly, or you can use the `tstring, tint, treal...` convenience functions as outlined in the instructions.
+Values from **data input ports** is passed to the script in the `input_raw` array. You can access this array directly, or you can use the `tstring, tint, treal...` convenience functions as outlined in the instructions.
 
-The script's output data has to be returned from the `process_data` function.
-The return value has to be an array with the same number of elements as is set in the block settings. The values from individual array indexes will be passed to corresponding **data output ports**.
+The script's output data has to be returned from the `process_data` function. The return value has to be an array with the same number of elements as is set in the block settings. The values from individual array indexes will be passed to corresponding **data output ports**.
 
 ![Script block settings](images/scenarios_script_settings.png)
 
@@ -348,8 +337,7 @@ The **Oscilloscope: single capture** block shows an error state until an Oscillo
 
 The **Oscilloscope: start measurement** block also shows an error state until an Oscilloscope is assigned. The data ouput ports on the **Oscilloscope: download data** are identical as on the **single capture** block.
 
-The following image shows a part of an example scenario.
-The **Oscilloscope: start measurement** and **Oscilloscope: download data** have to be connected together through the purple "connection" ports in order to work.
+The following image shows a part of an example scenario. The **Oscilloscope: start measurement** and **Oscilloscope: download data** have to be connected together through the purple "connection" ports in order to work.
 
 ![Oscilloscope block](images/scenarios_oscilloscope_start_stop_example.png)
 ![Oscilloscope block](images/scenarios_oscilloscope_start_stop_example2.png)
