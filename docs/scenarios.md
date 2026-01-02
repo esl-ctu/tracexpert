@@ -147,7 +147,7 @@ When the scenario finishes, the **Flow end** block through which the scenario ha
 
 ![Run the scenario](images/scenarios_run_scenario.png)
 
-### Step 7: Edit the block settings
+### Step 8: Edit the block settings
 
 Let's say we want to print "I'm a TraceXpert!" five times.
 
