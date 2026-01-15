@@ -434,3 +434,28 @@ QColor TConfigParamWidget::stateColor(TConfigParam::TState state)
 
     return QString();
 }
+
+bool TConfigParamWidget::event(QEvent * event)
+{
+    if (event->type() == QEvent::PaletteChange) {
+        updateTooltips(m_param, topLevelItem(0));
+        return true;
+    }
+
+    return QWidget::event(event);
+}
+
+void TConfigParamWidget::updateTooltips(const TConfigParam & param, QTreeWidgetItem * parent)
+{
+    drawState(param, parent);
+
+    const QList<TConfigParam> & subParams = param.getSubParams();
+
+    if (subParams.length() != parent->childCount()) {
+        qWarning("Unmaching children count for param and its widget");
+    }
+
+    for (int i = 0; i < subParams.count(); i++) {
+        updateTooltips(subParams.at(i), parent->child(i));
+    }
+}

@@ -56,12 +56,16 @@ public slots:
     void setParam(const TConfigParam & param);
 
 protected:
+    bool event(QEvent * event) override;
+
     bool readParam(TConfigParam & param, QTreeWidgetItem * parent);
     void addParam(TConfigParam & param, QTreeWidgetItem * parent);
     void refreshParam();
 
 private:
     const int FIRST_COLUMN_OFFSET = 10;
+
+    void updateTooltips(const TConfigParam & param, QTreeWidgetItem * parent);
 
     void drawLabel(const TConfigParam & param, QTreeWidgetItem * parent);
     void drawInput(const TConfigParam & param, QTreeWidgetItem * parent);
