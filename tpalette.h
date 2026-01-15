@@ -14,7 +14,8 @@ public:
     enum ColorRole {
         ErrorTooltipText,
         WarningTooltipText,
-        InfoTooltipText
+        InfoTooltipText,
+        EditorCurrentLineHighlight
     };
     static QColor color(ColorRole colorRole);
 

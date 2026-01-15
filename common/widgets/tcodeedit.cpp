@@ -72,6 +72,8 @@
 #include <QPainter>
 #include <QTextBlock>
 
+#include "../../tpalette.h"
+
 TCodeEdit::TCodeEdit(QWidget *parent) : QPlainTextEdit(parent)
 {
     lineNumberArea = new LineNumberArea(this);
@@ -138,7 +140,7 @@ void TCodeEdit::highlightCurrentLine()
     if (!isReadOnly()) {
         QTextEdit::ExtraSelection selection;
 
-        QColor lineColor = QColor(Qt::yellow).lighter(160);
+        QColor lineColor = TPalette::color(TPalette::EditorCurrentLineHighlight);
 
         selection.format.setBackground(lineColor);
         selection.format.setProperty(QTextFormat::FullWidthSelection, true);
@@ -173,4 +175,14 @@ void TCodeEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
         bottom = top + qRound(blockBoundingRect(block).height());
         ++blockNumber;
     }
+}
+
+bool TCodeEdit::event(QEvent *event)
+{
+    if (event->type() == QEvent::PaletteChange) {
+        highlightCurrentLine();
+        return true;
+    }
+
+    return QPlainTextEdit::event(event);
 }

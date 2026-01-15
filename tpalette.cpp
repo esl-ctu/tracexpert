@@ -17,6 +17,9 @@ QColor TPalette::color(TPalette::ColorRole colorRole)
     if (colorRole == TPalette::ColorRole::InfoTooltipText)
         return dark ? QColor(85, 170, 255) : Qt::darkBlue;
 
+    if (colorRole == TPalette::ColorRole::EditorCurrentLineHighlight)
+        return dark ? QColor(80, 80, 40) : QColor(Qt::yellow).lighter(160);
+
     return QColor();
 }
 
