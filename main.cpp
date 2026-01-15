@@ -27,10 +27,6 @@
 
 int main(int argc, char * argv[])
 {
-#if defined(Q_OS_WIN)
-    qputenv("QT_QPA_PLATFORM", "windows:darkmode=0"); // disable dark mode on Windows until the wrong color palette is resolved
-#endif
-
     QApplication a(argc, argv);
 
     TLogHandler::installLogger();
