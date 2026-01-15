@@ -2,6 +2,7 @@
 #define TPALETTE_H
 
 #include <QColor>
+#include <QChart>
 
 class TPalette
 {
@@ -16,6 +17,8 @@ public:
         InfoTooltipText
     };
     static QColor color(ColorRole colorRole);
+
+    static QChart::ChartTheme chartTheme();
 };
 
 #endif // TPALETTE_H

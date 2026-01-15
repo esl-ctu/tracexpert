@@ -39,6 +39,7 @@
 #include "widgets/tconfigparamwidget.h"
 #include "../../eximport/texporthdfscopewizard.h"
 #include "../../eximport/thdfsession.h"
+#include "../../tpalette.h"
 
 TDynamicRadioDialog::TDynamicRadioDialog(const QStringList &options,
                                        QWidget *parent)
@@ -101,6 +102,7 @@ TScopeWidget::TScopeWidget(TScopeModel * scope, QWidget * parent) : QWidget(pare
     connect(scope, &TScopeModel::stopped, this, &TScopeWidget::stopped);
 
     m_chart = new QChart();
+    m_chart->setTheme(TPalette::chartTheme());
     QChartView * chartView = new QChartView(m_chart);
 
     m_axisX = new QValueAxis();
@@ -1039,4 +1041,15 @@ void TScopeWidget::createLineSeries(QLineSeries * lineSeries, TScope::TChannelSt
 
     lineSeries->attachAxis(m_axisX);
     lineSeries->attachAxis(m_axisY);
+}
+
+bool TScopeWidget::event(QEvent * event)
+{
+    if (event->type() == QEvent::PaletteChange) {
+        if (m_chart)
+            m_chart->setTheme(TPalette::chartTheme());
+        return true;
+    }
+
+    return QWidget::event(event);
 }

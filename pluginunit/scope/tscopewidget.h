@@ -79,6 +79,9 @@ public slots:
 
     void receiveTraces(size_t traces, size_t samples, TScope::TSampleType type, QList<QByteArray> buffers, bool overvoltage);
 
+protected:
+    bool event(QEvent * event) override;
+
 private slots:
     bool applyPostInitParam();
 

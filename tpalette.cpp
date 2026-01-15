@@ -19,3 +19,8 @@ QColor TPalette::color(TPalette::ColorRole colorRole)
 
     return QColor();
 }
+
+QChart::ChartTheme TPalette::chartTheme()
+{
+    return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark ? QChart::ChartThemeDark : QChart::ChartThemeLight;
+}
