@@ -74,6 +74,6 @@ private:
     bool m_readOnly;
 
     static QIcon stateIcon(TConfigParam::TState state, bool isLightened = false);
-    static QString stateColor(TConfigParam::TState state);
+    static QColor stateColor(TConfigParam::TState state);
 };
 #endif // TCONFIGPARAMWIDGET_H

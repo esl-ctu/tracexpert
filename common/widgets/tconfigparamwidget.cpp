@@ -33,6 +33,7 @@
 #include "ttimeedit.h"
 #include "tcombobox.h"
 #include "tfilenameedit.h"
+#include "../tpalette.h"
 
 TConfigParamWidget::TConfigParamWidget(const TConfigParam & param, QWidget * parent, bool readOnly)
     : QTreeWidget(parent), m_readOnly(readOnly)
@@ -148,7 +149,7 @@ void TConfigParamWidget::drawState(const TConfigParam & param, QTreeWidgetItem *
 {
     TConfigParam::TState state = param.getState();
     if (state != TConfigParam::TState::TOk) {
-        parent->setToolTip(2, QString("<span style=\"color:%1;font-weight:bold;\">%2</span>").arg(stateColor(state), tr(qPrintable(param.getStateMessage()))));
+        parent->setToolTip(2, QString("<span style=\"color:%1;font-weight:bold;\">%2</span>").arg(stateColor(state).name(), tr(qPrintable(param.getStateMessage()))));
     }
     else {
         parent->setToolTip(2, QString());
@@ -419,16 +420,16 @@ QIcon TConfigParamWidget::stateIcon(TConfigParam::TState state, bool isLightened
     return icon;
 }
 
-QString TConfigParamWidget::stateColor(TConfigParam::TState state)
+QColor TConfigParamWidget::stateColor(TConfigParam::TState state)
 {
     if (state == TConfigParam::TState::TError) {
-        return "DarkRed";
+        return TPalette::color(TPalette::ErrorTooltipText);
     }
     else if (state == TConfigParam::TState::TWarning) {
-        return "DarkOrange";
+        return TPalette::color(TPalette::WarningTooltipText);
     }
     else if (state == TConfigParam::TState::TInfo) {
-        return "DarkBlue";
+        return TPalette::color(TPalette::InfoTooltipText);
     }
 
     return QString();
