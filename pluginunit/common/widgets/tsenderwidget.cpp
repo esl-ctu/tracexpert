@@ -28,6 +28,7 @@
 #include "widgets/tfilenameedit.h"
 #include "../tdialog.h"
 #include "../../eximport/timporthdfdatawizard.h"
+#include "../../tpalette.h"
 
 TSenderWidget::TSenderWidget(TSenderModel * senderModel, TProtocolContainer * protocolContainer, QWidget * parent)
     : QWidget(parent), m_senderModel(senderModel), m_protocolContainer(protocolContainer)
@@ -127,7 +128,8 @@ bool TSenderWidget::validateRawInputValues() {
         iok = hexRegExp.match(m_rawMessageEdit->text()).hasMatch();
     }
 
-    m_rawMessageEdit->setStyleSheet(iok ? "background-color: white;" : "background-color: rgba(255, 0, 0, 0.3);");
+    QColor backgroundColor = iok ? QGuiApplication::palette().color(QPalette::Base) : TPalette::color(TPalette::ErrorBase);
+    m_rawMessageEdit->setStyleSheet(QString("background-color: %1;").arg(backgroundColor.name()));
     return iok;
 }
 
@@ -308,5 +310,16 @@ void TSenderWidget::importFile()
     m_senderModel->writeData(data);
 
     wiz->deleteLater();
+}
+
+bool TSenderWidget::event(QEvent *event)
+{
+    if (event->type() == QEvent::PaletteChange) {
+        validateRawInputValues();
+        m_messageFormManager->validateInputValues();
+        return true;
+    }
+
+    return QWidget::event(event);
 }
 

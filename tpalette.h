@@ -15,7 +15,10 @@ public:
         ErrorTooltipText,
         WarningTooltipText,
         InfoTooltipText,
-        EditorCurrentLineHighlight
+        EditorCurrentLineHighlight,
+        CommunicationLogReceivedHighlight,
+        CommunicationLogSentHighlight,
+        ErrorBase
     };
     static QColor color(ColorRole colorRole);
 

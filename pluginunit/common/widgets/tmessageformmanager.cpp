@@ -25,6 +25,7 @@
 #include <QObjectCleanupHandler>
 
 #include "../../tdialog.h"
+#include "../../tpalette.h"
 
 
 TMessageFormManager::TMessageFormManager(QFormLayout * formLayout, int insertOffset) {
@@ -198,7 +199,12 @@ bool TMessageFormManager::assignInputValues() {
     return true;
 }
 
-void TMessageFormManager::validateInputValues() {
+void TMessageFormManager::validateInputValues()
+{
+    std::function<void(QLineEdit *,bool)> setBackground = [&](QLineEdit * lineEdit, bool isOk) {
+        QColor backgroundColor = isOk ? QGuiApplication::palette().color(QPalette::Base) : TPalette::color(TPalette::ErrorBase);
+        lineEdit->setStyleSheet(QString("background-color: %1;").arg(backgroundColor.name()));
+    };
 
     QList<TMessagePart> & messageParts = m_message.getMessageParts();
     for(int i = 0; i < messageParts.size(); i++) {
@@ -226,13 +232,13 @@ void TMessageFormManager::validateInputValues() {
             bool isAscii = comboBox->currentIndex();
             messageParts[i].setValue(lineEdit->text(), &iok, !isAscii, isAscii);
 
-            lineEdit->setStyleSheet(iok ? "background-color: white;" : "background-color: rgba(255, 0, 0, 0.3);");
+            setBackground(lineEdit, iok);
         }
         else {
             lineEdit = (QLineEdit *)input;
             messageParts[i].setValue(lineEdit->text(), &iok);
 
-            lineEdit->setStyleSheet(iok ? "background-color: white;" : "background-color: rgba(255, 0, 0, 0.3);");
+            setBackground(lineEdit, iok);
         }
 
         // if this message part's length is determined by another message part
@@ -248,7 +254,7 @@ void TMessageFormManager::validateInputValues() {
             // value of length-determining field is static
             else if(!messageParts[lengthMessagePartIndex].isPayload()) {
                 iok = (messageParts[i].getDataLength() == messageParts[lengthMessagePartIndex].getValueAsLength());
-                lineEdit->setStyleSheet(iok ? "background-color: white;" : "background-color: rgba(255, 0, 0, 0.3);");
+                setBackground(lineEdit, iok);
             }
             // the value of length-determining field can change (isPayload) but an input field was not generated
             else {

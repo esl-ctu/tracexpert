@@ -27,6 +27,7 @@
 #include "../receiver/treceivermodel.h"
 #include "../sender/tsendermodel.h"
 #include "../protocol/tprotocol.h"
+#include "../../tpalette.h"
 
 #define DISPLAY_DATA_LENGTH_LIMIT 300
 
@@ -39,7 +40,7 @@ public:
 
     explicit TCommunicationLogWidget(QList<TSenderModel *> senderModels, QList<TReceiverModel *> receiverModels, QWidget * parent = nullptr);
 
-    void append(QString header, QString message = QString(), QColor color = QColorConstants::Black);
+    void append(QString header, QString message = QString(), QColor color = QGuiApplication::palette().color(QPalette::Text));
     void appendCommunication(Direction direction, QString data, qsizetype size = -1, QString origin = QString());
 
     QByteArray receivedData(TReceiverModel * receiverModel);
@@ -56,8 +57,12 @@ public slots:
     void messageSent(TMessage message, TSenderModel * sender);
     void protocolChanged(TProtocol protocol, TReceiverModel * receiver);
 
+protected:
+    bool event(QEvent * event);
+
 private:
     QString byteArraytoHumanReadableString(const QByteArray & byteArray);
+    void updateHtmlColors();
 
     QPlainTextEdit * m_textEdit;
     QComboBox * m_format;
@@ -67,6 +72,9 @@ private:
 
     QMap<TSenderModel *, TMessage> m_sentMessages;
     QMap<TReceiverModel *, TProtocol> m_protocols;
+
+    QColor receivedColor = TPalette::color(TPalette::CommunicationLogReceivedHighlight);
+    QColor sentColor = TPalette::color(TPalette::CommunicationLogSentHighlight);
 };
 
 #endif // TCOMMUNICATIONLOGWIDGET_H

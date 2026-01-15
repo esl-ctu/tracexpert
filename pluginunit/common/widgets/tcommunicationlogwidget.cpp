@@ -191,7 +191,7 @@ void TCommunicationLogWidget::append(QString header, QString message, QColor col
 }
 
 void TCommunicationLogWidget::appendCommunication(Direction direction, QString data, qsizetype size, QString origin) {
-    QColor color = direction == Direction::Received ? QColorConstants::Red : QColorConstants::Blue;
+    QColor color = direction == Direction::Received ? receivedColor : sentColor;
 
     QString formattedDirection = direction == Direction::Received ? "Received" : "Sent";
 
@@ -204,4 +204,66 @@ void TCommunicationLogWidget::appendCommunication(Direction direction, QString d
         formattedOrigin = QString(" (%1)").arg(origin);
 
     append(QString("%1%2%3").arg(formattedDirection, formattedSize, formattedOrigin), data, color);
+}
+
+bool TCommunicationLogWidget::event(QEvent * event)
+{
+    if (event->type() == QEvent::PaletteChange) {
+        updateHtmlColors();
+        return true;
+    }
+
+    return QWidget::event(event);
+}
+
+void TCommunicationLogWidget::updateHtmlColors()
+{
+    if (!m_textEdit)
+        return;
+
+    QColor newReceivedColor = TPalette::color(TPalette::CommunicationLogReceivedHighlight);
+    QColor newSentColor = TPalette::color(TPalette::CommunicationLogSentHighlight);
+
+    const QList<QPair<QColor, QColor>> & substitutions = {
+        { receivedColor, newReceivedColor },
+        { sentColor,  newSentColor }
+    };
+
+    QString html = m_textEdit->document()->toHtml();
+
+    for (const auto& pair : substitutions)
+    {
+        const QColor& from = pair.first;
+        const QColor& to   = pair.second;
+
+        // Normalize source formats
+        QString fromRgb = QString("rgb(%1,%2,%3)")
+                              .arg(from.red())
+                              .arg(from.green())
+                              .arg(from.blue());
+
+        QString fromHex = from.name(QColor::HexRgb);
+        QString toRgb   = QString("rgb(%1,%2,%3)")
+                            .arg(to.red())
+                            .arg(to.green())
+                            .arg(to.blue());
+
+        // Match both hex and rgb() inside style attributes
+        QRegularExpression hexRegex(
+            QStringLiteral("(color\\s*:\\s*)%1").arg(fromHex),
+            QRegularExpression::CaseInsensitiveOption);
+
+        QRegularExpression rgbRegex(
+            QStringLiteral("(color\\s*:\\s*)%1").arg(
+                QRegularExpression::escape(fromRgb)),
+            QRegularExpression::CaseInsensitiveOption);
+
+        html.replace(hexRegex, QString("\\1%1").arg(toRgb));
+        html.replace(rgbRegex, QString("\\1%1").arg(toRgb));
+    }
+
+    m_textEdit->document()->setHtml(html);
+
+    receivedColor = newReceivedColor;
+    sentColor = newSentColor;
 }

@@ -54,6 +54,9 @@ public slots:
 
     bool validateRawInputValues();
 
+protected:
+    bool event(QEvent * event) override;
+
 private slots:
     void protocolChanged(int index);
     void messageChanged(int index);
