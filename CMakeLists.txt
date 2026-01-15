@@ -77,6 +77,8 @@ add_executable(${PROJECT_NAME} WIN32
     tdialog.h
     tdockmanager.cpp
     tdockmanager.h
+    tpalette.cpp
+    tpalette.h
     tmainwindow.cpp
     tmainwindow.h
     twelcomescreen.h
