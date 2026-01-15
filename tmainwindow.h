@@ -54,6 +54,9 @@ public slots:
 
     void createGraphDockWidget(TGraph * graph);
 
+protected:
+    bool event(QEvent *event) override;
+
 private slots:
     void showDeviceWizard();
     void showHdfWizard();
@@ -79,6 +82,8 @@ private:
 
     void readSettings();
     void writeSettings();
+
+    static void repolishWidgetRecursive(QWidget * widget); //force ADS docks to update styles
 
     void closeEvent(QCloseEvent * event) override;
 

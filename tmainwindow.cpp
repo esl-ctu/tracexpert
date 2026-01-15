@@ -802,3 +802,36 @@ void TMainWindow::readSettings()
     m_projectDirectory = QDir(settings.value("projectDirectory").toString());
     settings.endGroup();
 }
+
+bool TMainWindow::event(QEvent * event)
+{
+    if (event->type() == QEvent::PaletteChange) {
+        repolishWidgetRecursive(m_dockManager);
+        return true;
+    }
+
+    return QMainWindow::event(event);
+}
+
+void TMainWindow::repolishWidgetRecursive(QWidget * widget)
+{
+    if (!widget) return;
+
+    // Force Qt to clear the resolved style/palette and reapply
+    QStyle* style = widget->style();
+    style->unpolish(widget);
+    style->polish(widget);
+
+    // Force immediate repaint
+    widget->update();
+
+    // Recursively polish all children
+    const QObjectList& children = widget->children();
+    for (QObject* child : children)
+    {
+        if (QWidget* w = qobject_cast<QWidget*>(child))
+        {
+            repolishWidgetRecursive(w);
+        }
+    }
+}
