@@ -89,6 +89,7 @@ TMessageEditor::TMessageEditor(const TMessage & message, const QList<TMessage> &
 
     setWindowTitle("Message wizard");
     setOption(QWizard::CancelButtonOnLeft);
+    setWizardStyle(QWizard::ModernStyle);
 
     QWizardPage * messagePartListPage = new QWizardPage;
     messagePartListPage->setTitle("Message parts");

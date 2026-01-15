@@ -322,6 +322,7 @@ bool TMessagePartEditorDetailsPage::validatePage() {
 
 TMessagePartEditor::TMessagePartEditor(const TMessagePart & messagePart, const QList<TMessagePart> & messagePartList, QWizard * parent) : QWizard(parent) {
     setWindowTitle("Message part wizard");
+    setWizardStyle(QWizard::ModernStyle);
     TMessagePartEditorDetailsPage * detailsPage = new TMessagePartEditorDetailsPage(messagePart, messagePartList, this);
     addPage(detailsPage);
 }

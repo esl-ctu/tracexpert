@@ -38,6 +38,8 @@ TDeviceWizard::TDeviceWizard(TComponentContainer * componentContainer, QWidget *
 
     setOptions(QWizard::NoCancelButtonOnLastPage);
 
+    setWizardStyle(QWizard::ModernStyle);
+
     if (!m_selectedComponent) {
         setPage(Page_SelectComponent, new TSelectComponentWizardPage(this));
         setPage(Page_InitComponent, new TInitComponentWizardPage(this));

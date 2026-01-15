@@ -1019,6 +1019,7 @@ TImportHDFDataWizard::TImportHDFDataWizard(QWidget *parent)
     : QWizard(parent)
 {
     setWindowTitle(tr("Import data"));
+    setWizardStyle(QWizard::ModernStyle);
 
     m_session = QSharedPointer<THdfSession>::create();
 

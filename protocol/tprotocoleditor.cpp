@@ -79,6 +79,7 @@ TProtocolEditorWizard::TProtocolEditorWizard(const TProtocolModel * protocolMode
 
     setWindowTitle("Protocol wizard");
     setOption(QWizard::CancelButtonOnLeft);
+    setWizardStyle(QWizard::ModernStyle);
 
     addPage(new TProtocolEditorDetailsPage(protocolModel->protocol(), protocolContainer));
 

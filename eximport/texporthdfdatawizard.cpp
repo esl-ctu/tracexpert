@@ -1082,6 +1082,7 @@ TExportHDFDataWizard::TExportHDFDataWizard(QWidget *parent)
     : QWizard(parent)
 {
     setWindowTitle(tr("Export data"));
+    setWizardStyle(QWizard::ModernStyle);
 
     m_session = QSharedPointer<THdfSession>::create();
 
