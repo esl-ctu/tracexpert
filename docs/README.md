@@ -1,4 +1,4 @@
-# TraceXpert 1.0 User Guide
+# TraceXpert 1.0.1 User Guide
 
 **An integrated environment for side-channel data acquisition and analysis**
 
