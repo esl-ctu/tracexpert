@@ -319,8 +319,8 @@ The **Oscilloscope: start measurement** and **Oscilloscope: download data** bloc
 
 The **Oscilloscope: single capture** block and **Oscilloscope: start measurement** have the same settings - Component and Oscilloscope selection, pre- and post- init parameters. Same rules apply for the parameters as with [IO Devices](#io-device-reading-and-writing).
 
-![Oscilloscope block](images/scenarios_oscilloscope_settings.png)
-![Oscilloscope block](images/scenarios_oscilloscope_settings2.png)
+![Oscilloscope block settings](images/scenarios_oscilloscope_settings.png)
+![Oscilloscope block settings](images/scenarios_oscilloscope_settings2.png)
 
 The **Oscilloscope: single capture** block shows an error state until an Oscilloscope is assigned. The data ouput ports are as follows:
 
@@ -332,16 +332,42 @@ The **Oscilloscope: single capture** block shows an error state until an Oscillo
 
 > 💡 The data type can be one of: *UInt8, Int8, UInt16, Int16, UInt32, Int32, Real32, Real64*
 
-![Oscilloscope block](images/scenarios_oscilloscope.png)
-![Oscilloscope block](images/scenarios_oscilloscope2.png)
+![Oscilloscope block: single capture](images/scenarios_oscilloscope.png)
+![Oscilloscope block: single capture](images/scenarios_oscilloscope2.png)
 
 The **Oscilloscope: start measurement** block also shows an error state until an Oscilloscope is assigned. The data ouput ports on the **Oscilloscope: download data** are identical as on the **single capture** block.
 
 The following image shows a part of an example scenario. The **Oscilloscope: start measurement** and **Oscilloscope: download data** have to be connected together through the purple "connection" ports in order to work.
 
-![Oscilloscope block](images/scenarios_oscilloscope_start_stop_example.png)
-![Oscilloscope block](images/scenarios_oscilloscope_start_stop_example2.png)
+![Oscilloscope block example](images/scenarios_oscilloscope_start_stop_example.png)
+![Oscilloscope block example](images/scenarios_oscilloscope_start_stop_example2.png)
 
+### Analytical Device interfacing
+
+Scenarios currently offer three blocks to interface Analytical Devices, the 
+**Analytic Device: read**, **Analytic Device: write** and **Analytic Device: action** blocks.
+
+The **Analytic Device: read** block performs a read operation using the pre-selected Input stream of the Analytical Device. It can either be set to read all available data, or a fixed length passed as a parameter. 
+
+![Analytical Device read block](images/scenarios_analytical_device_read.png)
+
+The **Analytic Device: write** block performs a write operation using the pre-selected Input stream of the Analytical Device. 
+
+![Analytical Device write block](images/scenarios_analytical_device_write.png)
+
+The **Analytic Device: action** is used to perform a pre-selected action of the Analytical Device.
+
+![Analytical Device action block](images/scenarios_analytical_device_action.png)
+
+### Create graph block
+
+The **Create graph** block can be used to interpret data passed to it in graphical form. Each graph has its own set of parameters.
+
+![Create graph block settings](images/scenarios_create_graph_settings.png)
+
+The resulting graph is opened as a separate widget when the block is executed. The following image is an example showing a CPA graph.
+
+![Create graph block widget](images/example-cpa-graph.png)
 
 ### Dynamic parameters
 
