@@ -94,11 +94,14 @@ protected:
     void closeEvent(QCloseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     void keyReleaseEvent(QKeyEvent *event) override;
+    bool event(QEvent *event) override;
 
 private:
     QString m_originalScenarioName;
     TProjectModel * m_projectModel;
     TScenarioContainer * m_scenarioContainer;
+
+    void updateIcons();
 
     void createToolBox();
     void createToolBoxDrawer(const QString & title, QList<TScenarioItem::TItemClass> itemClassList);

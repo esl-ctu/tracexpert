@@ -25,6 +25,8 @@
 
 #include <QGraphicsSceneMouseEvent>
 #include <QMessageBox>
+#include <QGuiApplication>
+#include <QPalette>
 
 TScenarioScene::TScenarioScene(TProjectModel * projectModel, QObject * parent) :
     QGraphicsScene(parent),
@@ -258,7 +260,7 @@ void TScenarioScene::mousePressEvent(QGraphicsSceneMouseEvent * mouseEvent) {
                     }
 
                     m_tmpLine = new QGraphicsLineItem(QLineF(lineStartPoint, lineStartPoint));
-                    m_tmpLine->setPen(QPen(Qt::black, 2));
+                    m_tmpLine->setPen(QPen(QGuiApplication::palette().color(QPalette::WindowText), 2));
                     m_tmpLine->setZValue(2);
                     addItem(m_tmpLine);
                     break;

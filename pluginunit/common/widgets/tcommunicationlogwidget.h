@@ -23,6 +23,7 @@
 
 #include <QPlainTextEdit>
 #include <QComboBox>
+#include <QGuiApplication>
 
 #include "../receiver/treceivermodel.h"
 #include "../sender/tsendermodel.h"

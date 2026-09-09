@@ -23,9 +23,12 @@
 #include <QGraphicsSceneContextMenuEvent>
 #include <QMenu>
 #include <QPainter>
+#include <QGuiApplication>
+#include <QPalette>
 
 #include "graphical_items/tscenariographicalembeddedsubtitleitem.h"
 #include "../tdialog.h"
+#include "../tpalette.h"
 #include "tscenariographicalitemport.h"
 #include "tscenariographicalconnection.h"
 #include "tscenarioitem.h"
@@ -35,31 +38,42 @@
 #include "graphical_items/tscenariographicalconditionitem.h"
 
 TScenarioGraphicalItem * TScenarioGraphicalItem::createScenarioGraphicalItem(TScenarioItem * scenarioItem, QGraphicsItem * parent) {
+    TScenarioGraphicalItem * graphicalItem = nullptr;
+
     switch(scenarioItem->getType()) {
         case TScenarioItem::TItemAppearance::TFlowStart:
-            return new TScenarioGraphicalFlowStartItem(scenarioItem, parent);
+            graphicalItem = new TScenarioGraphicalFlowStartItem(scenarioItem, parent);
+            break;
         case TScenarioItem::TItemAppearance::TFlowEnd:
-            return new TScenarioGraphicalFlowEndItem(scenarioItem, parent);
+            graphicalItem = new TScenarioGraphicalFlowEndItem(scenarioItem, parent);
+            break;
         case TScenarioItem::TItemAppearance::TFlowMerge:
-            return new TScenarioGraphicalFlowMergeItem(scenarioItem, parent);
+            graphicalItem = new TScenarioGraphicalFlowMergeItem(scenarioItem, parent);
+            break;
         case TScenarioItem::TItemAppearance::TCondition:
-            return new TScenarioGraphicalConditionItem(scenarioItem, parent);
+            graphicalItem = new TScenarioGraphicalConditionItem(scenarioItem, parent);
+            break;
         case TScenarioItem::TItemAppearance::TEmbeddedSubtitle:
-            return new TScenarioGraphicalEmbeddedSubtitleItem(scenarioItem, parent);
+            graphicalItem = new TScenarioGraphicalEmbeddedSubtitleItem(scenarioItem, parent);
+            break;
         default:
-            return new TScenarioGraphicalItem(scenarioItem, parent);
+            graphicalItem = new TScenarioGraphicalItem(scenarioItem, parent);
+            break;
     }
+
+    graphicalItem->updateColors();
+
+    return graphicalItem;
 }
 
 TScenarioGraphicalItem::TScenarioGraphicalItem(TScenarioItem * scenarioItem, QGraphicsItem * parent)
-    : QObject(), QGraphicsPathItem(parent), m_scenarioItem(scenarioItem), m_defaultBrush(QBrush(Qt::white, Qt::SolidPattern))
+    : QObject(), QGraphicsPathItem(parent), m_scenarioItem(scenarioItem)
 {
     setPos(scenarioItem->getPosition());
 
     setFlag(QGraphicsItem::ItemIsMovable, true);
     setFlag(QGraphicsItem::ItemIsSelectable, true);
     setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
-    setBrush(m_defaultBrush);
 
     if(scenarioItem->getType() == TScenarioItem::TItemAppearance::TDefault ||
         scenarioItem->getType() == TScenarioItem::TItemAppearance::TEmbeddedSubtitle)
@@ -76,7 +90,7 @@ TScenarioGraphicalItem::TScenarioGraphicalItem(TScenarioItem * scenarioItem, QGr
     }
 
     if(!m_scenarioItem->getParams().isEmpty()) {
-        m_editableIcon = new QGraphicsPixmapItem(QPixmap(":/icons/editable.png"));
+        m_editableIcon = new QGraphicsPixmapItem();
         m_editableIcon->setParentItem(this);
         m_editableIcon->setOpacity(0.25);
     }
@@ -85,7 +99,6 @@ TScenarioGraphicalItem::TScenarioGraphicalItem(TScenarioItem * scenarioItem, QGr
     connect(m_scenarioItem, &TScenarioItem::stateChanged, this, &TScenarioGraphicalItem::updateTooltip);
     connect(m_scenarioItem, &TScenarioItem::portsChanged, this, [this]() { updatePorts(); updateBlockAppearance(); });
 
-    updateTooltip();
     updatePorts();
 }
 
@@ -109,18 +122,18 @@ void TScenarioGraphicalItem::updateTooltip() {
     switch(state) {
         case TScenarioItem::TState::TError:
         case TScenarioItem::TState::TRuntimeError:
-            setBrush(QBrush(QColor::fromRgb(255, 200, 200), Qt::SolidPattern));
+            setBrush(QBrush(TPalette::color(TPalette::ErrorBase), Qt::SolidPattern));
             toolTipText.append("<span style=\"color:red\"><b><i>" + m_scenarioItem->getStateMessage() + "</i></b></span>");
             break;
         case TScenarioItem::TState::TWarning:
         case TScenarioItem::TState::TRuntimeWarning:
-            setBrush(QBrush(QColor::fromRgb(255, 255, 200), Qt::SolidPattern));
+            setBrush(QBrush(TPalette::color(TPalette::WarningBase), Qt::SolidPattern));
             toolTipText.append("<span style=\"color:orange\"><b><i>" + m_scenarioItem->getStateMessage() + "</i></b></span>");
             break;
         case TScenarioItem::TState::TInfo:
         case TScenarioItem::TState::TRuntimeInfo:
         case TScenarioItem::TState::TBeingExecuted:
-            setBrush(QBrush(QColor::fromRgb(225, 235, 255), Qt::SolidPattern));
+            setBrush(QBrush(TPalette::color(TPalette::InfoBase), Qt::SolidPattern));
             toolTipText.append("<span style=\"color:blue\"><b><i>" + m_scenarioItem->getStateMessage() + "</i></b></span>");
             break;
         default:
@@ -138,7 +151,7 @@ QPixmap TScenarioGraphicalItem::image() const
     pixmap.fill(Qt::transparent);
 
     QPainter painter(&pixmap);
-    painter.setPen(QPen(Qt::black, 8));
+    painter.setPen(QPen(QGuiApplication::palette().color(QPalette::WindowText), 8));
 
     const QString iconPath = m_scenarioItem->getIconResourcePath();
     if(iconPath.isEmpty()) {
@@ -147,7 +160,7 @@ QPixmap TScenarioGraphicalItem::image() const
         painter.drawLine(25, 85, 225, 85);
     }
     else {
-        QPixmap iconPixmap(iconPath);
+        const QPixmap iconPixmap = TPalette::themedPixmap(QPixmap(iconPath));
         painter.drawPixmap(50, 50, 150, 150, iconPixmap);
     }
 
@@ -325,6 +338,32 @@ void TScenarioGraphicalItem::updatePorts() {
             return ip1Rank < ip2Rank;
         }
     );    
+}
+
+void TScenarioGraphicalItem::updateColors() {
+    const QPalette palette = QGuiApplication::palette();
+
+    setPen(QPen(palette.color(QPalette::WindowText), 1));
+    m_defaultBrush = QBrush(palette.color(QPalette::Base), Qt::SolidPattern);
+
+    if(m_titleText) {
+        m_titleText->setBrush(palette.color(QPalette::Text));
+    }
+
+    if(m_subtitleText) {
+        m_subtitleText->setBrush(palette.color(QPalette::Text));
+    }
+
+    if(m_editableIcon) {
+        m_editableIcon->setPixmap(TPalette::themedPixmap(QPixmap(":/icons/editable.png")));
+    }
+
+    for(TScenarioGraphicalItemPort * port : m_graphicalItemPorts) {
+        port->updateColors();
+    }
+
+    // re-applies either the state brush or m_defaultBrush
+    updateTooltip();
 }
 
 void TScenarioGraphicalItem::setDefaultBrush(QBrush brush) {

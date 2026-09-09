@@ -4,6 +4,8 @@
 #include <QGraphicsPixmapItem>
 #include <QList>
 #include <QPainter>
+#include <QGuiApplication>
+#include <QPalette>
 
 #include "../tscenariographicalitem.h"
 
@@ -35,7 +37,7 @@ public:
         pixmap.fill(Qt::transparent);
 
         QPainter painter(&pixmap);
-        painter.setPen(QPen(Qt::black, 8));
+        painter.setPen(QPen(QGuiApplication::palette().color(QPalette::WindowText), 8));
         painter.translate(125, 125);
 
         QPolygonF polygon;

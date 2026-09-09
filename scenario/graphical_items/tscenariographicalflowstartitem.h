@@ -4,6 +4,8 @@
 #include <QGraphicsPixmapItem>
 #include <QList>
 #include <QPainter>
+#include <QGuiApplication>
+#include <QPalette>
 
 #include "../tscenariographicalitem.h"
 
@@ -28,8 +30,12 @@ public:
     TScenarioGraphicalFlowStartItem(
         TScenarioItem * scenarioItem,
         QGraphicsItem * parent = nullptr
-        ) : TScenarioGraphicalItem(scenarioItem, parent) {
-        setDefaultBrush(QBrush(Qt::black, Qt::SolidPattern));
+        ) : TScenarioGraphicalItem(scenarioItem, parent) { }
+
+    void updateColors() override {
+        TScenarioGraphicalItem::updateColors();
+        setDefaultBrush(QBrush(QGuiApplication::palette().color(QPalette::WindowText), Qt::SolidPattern));
+        updateTooltip();
     }
 
     QPixmap image() const override {
@@ -37,8 +43,8 @@ public:
         pixmap.fill(Qt::transparent);
 
         QPainter painter(&pixmap);
-        painter.setPen(QPen(Qt::black, 8));
-        painter.setBrush(QBrush(Qt::black, Qt::SolidPattern));
+        painter.setPen(QPen(QGuiApplication::palette().color(QPalette::WindowText), 8));
+        painter.setBrush(QBrush(QGuiApplication::palette().color(QPalette::WindowText), Qt::SolidPattern));
 
         QPainterPath path;
         path.addEllipse(50, 50, 150, 150);

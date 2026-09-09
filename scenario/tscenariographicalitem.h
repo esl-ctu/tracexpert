@@ -60,6 +60,8 @@ public:
 
     virtual QPixmap image() const;
 
+    virtual void updateColors();
+
     TScenarioGraphicalItemPort * getGraphicalItemPortByName(const QString & name);
     QList<TScenarioGraphicalItemPort *> & getGraphicalItemPorts();
 

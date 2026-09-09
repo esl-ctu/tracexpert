@@ -30,10 +30,13 @@
 #include <QFormLayout>
 #include <QHeaderView>
 #include <QCheckBox>
+#include <QEvent>
+#include <QPalette>
 
 #include "qtimer.h"
 #include "tmessageparteditor.h"
 #include "../tdialog.h"
+#include "../tpalette.h"
 
 TMessagePartEditorDetailsPage::TMessagePartEditorDetailsPage(const TMessagePart & messagePart, const QList<TMessagePart> & messagePartList, QWidget * parent)
     : QWizardPage(parent), m_originalName(messagePart.getName()), m_messagePartList(messagePartList) {
@@ -237,11 +240,13 @@ void TMessagePartEditorDetailsPage::updateDisplayedFields() {
             bool isFormattedAsHex;
             QString interpretedValue = tmpMessagePart.getHumanReadableValue(isFormattedAsHex, m_hexRadioButton->isChecked());
             m_interpretedValueLineEdit->setText(QString(isFormattedAsHex ? "0x" : "").append(interpretedValue));
-            m_valueLineEdit->setStyleSheet("background-color: white;");
+            m_valueLineEdit->setPalette(QPalette());
         }
         else {
             m_interpretedValueLineEdit->setText("Error interpreting value. Check type and length.");
-            m_valueLineEdit->setStyleSheet("background-color: rgba(255, 0, 0, 0.3);");
+            QPalette palette;
+            palette.setColor(QPalette::Base, TPalette::color(TPalette::ErrorBase));
+            m_valueLineEdit->setPalette(palette);
         }
 
         if(staticLengthEditingAllowed && valueEditingAllowed) {
@@ -250,9 +255,18 @@ void TMessagePartEditorDetailsPage::updateDisplayedFields() {
     }
     else {
         m_valueLineEdit->setText("");
-        m_valueLineEdit->setStyleSheet("background-color: white;");
+        m_valueLineEdit->setPalette(QPalette());
         m_interpretedValueLineEdit->setText("");
     }
+}
+
+bool TMessagePartEditorDetailsPage::event(QEvent * event)
+{
+    if (event->type() == QEvent::PaletteChange) {
+        updateDisplayedFields();
+    }
+
+    return QWizardPage::event(event);
 }
 
 bool TMessagePartEditorDetailsPage::validatePage() {

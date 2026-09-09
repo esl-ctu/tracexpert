@@ -41,8 +41,11 @@ signals:
 
 protected:
     void wheelEvent(QWheelEvent *event) override;
+    bool event(QEvent *event) override;
 
 private:
+    void updateColors();
+
     const qreal MIN_SCALE = 0.2f;
     const qreal MAX_SCALE = 2.0f;
     const qreal SCALE_UP = 0.9f;

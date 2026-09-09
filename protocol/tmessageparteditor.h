@@ -46,6 +46,9 @@ public:
     bool validatePage() override;
     void updateDisplayedFields();
 
+protected:
+    bool event(QEvent * event) override;
+
 private:
     QCheckBox * m_payloadCheckBox;
     QWidget   * m_radioWidget;

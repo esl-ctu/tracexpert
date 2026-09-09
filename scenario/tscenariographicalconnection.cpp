@@ -25,6 +25,8 @@
 
 #include <QPainter>
 #include <QPen>
+#include <QGuiApplication>
+#include <QPalette>
 #include <QtMath>
 
 TScenarioGraphicalConnection::TScenarioGraphicalConnection(TScenarioGraphicalItemPort * startItemPort,
@@ -237,7 +239,7 @@ void TScenarioGraphicalConnection::paint(QPainter * painter, const QStyleOptionG
         color = DATA_LINE_COLOR;
         painter->setPen(QPen(color, 5));
         painter->drawPolyline(m_polyline);
-        painter->setPen(QPen(Qt::white, 1));
+        painter->setPen(QPen(QGuiApplication::palette().color(QPalette::Window), 1));
         painter->drawPolyline(m_polyline);
     }
     else {

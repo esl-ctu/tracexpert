@@ -23,6 +23,7 @@
 #include <QLabel>
 #include <QComboBox>
 #include <QObjectCleanupHandler>
+#include <QPalette>
 
 #include "../../tdialog.h"
 #include "../../tpalette.h"
@@ -202,8 +203,10 @@ bool TMessageFormManager::assignInputValues() {
 void TMessageFormManager::validateInputValues()
 {
     std::function<void(QLineEdit *,bool)> setBackground = [&](QLineEdit * lineEdit, bool isOk) {
-        QColor backgroundColor = isOk ? QGuiApplication::palette().color(QPalette::Base) : TPalette::color(TPalette::ErrorBase);
-        lineEdit->setStyleSheet(QString("background-color: %1;").arg(backgroundColor.name()));
+        QPalette palette;
+        if(!isOk)
+            palette.setColor(QPalette::Base, TPalette::color(TPalette::ErrorBase));
+        lineEdit->setPalette(palette);
     };
 
     QList<TMessagePart> & messageParts = m_message.getMessageParts();

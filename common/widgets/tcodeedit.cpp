@@ -70,6 +70,7 @@
 #include "tcodeedit.h"
 
 #include <QPainter>
+#include <QPalette>
 #include <QTextBlock>
 
 #include "../../tpalette.h"
@@ -155,7 +156,8 @@ void TCodeEdit::highlightCurrentLine()
 void TCodeEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
 {
     QPainter painter(lineNumberArea);
-    painter.fillRect(event->rect(), Qt::lightGray);
+    const QPalette & palette = lineNumberArea->palette();
+    painter.fillRect(event->rect(), palette.color(QPalette::Window));
 
     QTextBlock block = firstVisibleBlock();
     int blockNumber = block.blockNumber();
@@ -165,7 +167,7 @@ void TCodeEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
     while (block.isValid() && top <= event->rect().bottom()) {
         if (block.isVisible() && bottom >= event->rect().top()) {
             QString number = QString::number(blockNumber + 1);
-            painter.setPen(Qt::black);
+            painter.setPen(palette.color(QPalette::WindowText));
             painter.drawText(0, top, lineNumberArea->width(), fontMetrics().height(),
                              Qt::AlignRight, number);
         }
@@ -181,7 +183,6 @@ bool TCodeEdit::event(QEvent *event)
 {
     if (event->type() == QEvent::PaletteChange) {
         highlightCurrentLine();
-        return true;
     }
 
     return QPlainTextEdit::event(event);

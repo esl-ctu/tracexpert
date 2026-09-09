@@ -23,6 +23,7 @@
 
 #include <QGroupBox>
 #include <QMessageBox>
+#include <QPalette>
 
 #include "../../protocol/tprotocol.h"
 #include "widgets/tfilenameedit.h"
@@ -128,8 +129,10 @@ bool TSenderWidget::validateRawInputValues() {
         iok = hexRegExp.match(m_rawMessageEdit->text()).hasMatch();
     }
 
-    QColor backgroundColor = iok ? QGuiApplication::palette().color(QPalette::Base) : TPalette::color(TPalette::ErrorBase);
-    m_rawMessageEdit->setStyleSheet(QString("background-color: %1;").arg(backgroundColor.name()));
+    QPalette palette;
+    if(!iok)
+        palette.setColor(QPalette::Base, TPalette::color(TPalette::ErrorBase));
+    m_rawMessageEdit->setPalette(palette);
     return iok;
 }
 
@@ -317,7 +320,6 @@ bool TSenderWidget::event(QEvent *event)
     if (event->type() == QEvent::PaletteChange) {
         validateRawInputValues();
         m_messageFormManager->validateInputValues();
-        return true;
     }
 
     return QWidget::event(event);

@@ -210,7 +210,6 @@ bool TCommunicationLogWidget::event(QEvent * event)
 {
     if (event->type() == QEvent::PaletteChange) {
         updateHtmlColors();
-        return true;
     }
 
     return QWidget::event(event);

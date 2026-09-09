@@ -21,7 +21,39 @@
 
 #include "qevent.h"
 
-TScenarioGraphicsView::TScenarioGraphicsView(QGraphicsScene *scene, QWidget *parent) : QGraphicsView(scene, parent) { }
+#include <QGraphicsScene>
+#include <QPalette>
+
+#include "tscenariographicalitem.h"
+
+TScenarioGraphicsView::TScenarioGraphicsView(QGraphicsScene *scene, QWidget *parent) : QGraphicsView(scene, parent)
+{
+    updateColors();
+}
+
+bool TScenarioGraphicsView::event(QEvent *event)
+{
+    if (event->type() == QEvent::PaletteChange) {
+        updateColors();
+    }
+
+    return QGraphicsView::event(event);
+}
+
+void TScenarioGraphicsView::updateColors()
+{
+    setBackgroundBrush(palette().color(QPalette::Window));
+
+    if(!scene()) {
+        return;
+    }
+
+    for(QGraphicsItem * item : scene()->items()) {
+        if(TScenarioGraphicalItem * graphicalItem = qgraphicsitem_cast<TScenarioGraphicalItem *>(item)) {
+            graphicalItem->updateColors();
+        }
+    }
+}
 
 void TScenarioGraphicsView::wheelEvent(QWheelEvent *event)
 {

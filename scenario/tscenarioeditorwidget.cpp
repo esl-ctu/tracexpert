@@ -25,6 +25,7 @@
 #include "tscenariographicsview.h"
 #include "tscenarioscene.h"
 #include "../tdialog.h"
+#include "../tpalette.h"
 #include "../scenario/tscenariomodel.h"
 
 #include <QBoxLayout>
@@ -78,6 +79,8 @@ TScenarioEditorWidget::TScenarioEditorWidget(TScenarioModel * scenarioModel, TPr
         TScenarioItem::TItemClass::TScenarioAnalDeviceActionItem,
         TScenarioItem::TItemClass::TScenarioProtocolEncodeItem
     });
+
+    updateIcons();
 
     QVBoxLayout * layout = new QVBoxLayout;
 
@@ -249,6 +252,52 @@ void TScenarioEditorWidget::sceneScaleChangedBySelection(const QString &scale)
     }
 }
 
+bool TScenarioEditorWidget::event(QEvent * event)
+{
+    if (event->type() == QEvent::PaletteChange) {
+        updateIcons();
+    }
+
+    return QWidget::event(event);
+}
+
+void TScenarioEditorWidget::updateIcons()
+{
+    if(m_pointerTypeGroup) {
+        if(QAbstractButton * button = m_pointerTypeGroup->button(TScenarioScene::MouseDrag)) {
+            button->setIcon(TPalette::themedIcon(":/icons/dragpointer.png"));
+        }
+        if(QAbstractButton * button = m_pointerTypeGroup->button(TScenarioScene::MousePointer)) {
+            button->setIcon(TPalette::themedIcon(":/icons/pointer.png"));
+        }
+        if(QAbstractButton * button = m_pointerTypeGroup->button(TScenarioScene::InsertLine)) {
+            button->setIcon(TPalette::themedIcon(":/icons/linepointer.png"));
+        }
+    }
+
+    if(itemGroup) {
+        for(QAbstractButton * button : itemGroup->buttons()) {
+            TScenarioItem * scenarioItem =
+                TScenarioItem::createScenarioItemByClass((TScenarioItem::TItemClass)itemGroup->id(button));
+
+            if(!scenarioItem) {
+                continue;
+            }
+
+            TScenarioGraphicalItem * graphicalItem =
+                TScenarioGraphicalItem::createScenarioGraphicalItem(scenarioItem);
+
+            if(!graphicalItem) {
+                delete scenarioItem;
+                continue;
+            }
+
+            button->setIcon(QIcon(graphicalItem->image()));
+            delete graphicalItem;
+        }
+    }
+}
+
 void TScenarioEditorWidget::createToolBox()
 {
     itemGroup = new QButtonGroup(this);
@@ -332,18 +381,15 @@ void TScenarioEditorWidget::createToolbars() {
     dragPointerButton->setToolTip(tr("Drag scene (toggle using Shift)"));
     dragPointerButton->setCheckable(true);
     dragPointerButton->setChecked(true);
-    dragPointerButton->setIcon(QIcon(":/icons/dragpointer.png"));
 
     QToolButton *pointerButton = new QToolButton;
     pointerButton->setToolTip(tr("Move/select items"));
     pointerButton->setCheckable(true);
     pointerButton->setChecked(true);
-    pointerButton->setIcon(QIcon(":/icons/pointer.png"));
 
     QToolButton *linePointerButton = new QToolButton;
     linePointerButton->setToolTip(tr("Create connection"));
     linePointerButton->setCheckable(true);
-    linePointerButton->setIcon(QIcon(":/icons/linepointer.png"));
 
     m_pointerTypeGroup = new QButtonGroup(this);
     m_pointerTypeGroup->addButton(dragPointerButton, TScenarioScene::MouseDrag);
@@ -376,17 +422,12 @@ QWidget * TScenarioEditorWidget::createCellWidget(TScenarioItem::TItemClass item
         return nullptr;
     }
 
-    TScenarioGraphicalItem * graphicalItem = TScenarioGraphicalItem::createScenarioGraphicalItem(scenarioItem);
-
-    QIcon icon(graphicalItem->image());
-
     QToolButton * button = new QToolButton;
-    button->setIcon(icon);
     button->setIconSize(QSize(50, 50));
     button->setCheckable(true);
     itemGroup->addButton(button, (int)itemClass);
 
-    QString labelText = graphicalItem->getScenarioItem()->getName();
+    QString labelText = scenarioItem->getName();
     if(labelText.contains(':')) {
         labelText.prepend("<b>");
         labelText.replace(": ", "</b><br>");
@@ -403,7 +444,7 @@ QWidget * TScenarioEditorWidget::createCellWidget(TScenarioItem::TItemClass item
     widget->setLayout(layout);
     widget->setFixedWidth(120);
 
-    delete graphicalItem;
+    delete scenarioItem;
 
     return widget;
 }

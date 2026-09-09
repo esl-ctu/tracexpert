@@ -40,8 +40,6 @@ TConfigParamWidget::TConfigParamWidget(const TConfigParam & param, QWidget * par
 {
     setColumnCount(3);
 
-    setAlternatingRowColors(true);
-
     headerItem()->setText(0, tr("Parameter"));
     headerItem()->setText(1, tr("Value"));
     headerItem()->setText(2, "");
@@ -439,10 +437,9 @@ bool TConfigParamWidget::event(QEvent * event)
 {
     if (event->type() == QEvent::PaletteChange) {
         updateTooltips(m_param, topLevelItem(0));
-        return true;
     }
 
-    return QWidget::event(event);
+    return QTreeWidget::event(event);
 }
 
 void TConfigParamWidget::updateTooltips(const TConfigParam & param, QTreeWidgetItem * parent)

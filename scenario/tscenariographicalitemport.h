@@ -51,6 +51,7 @@ public:
     TScenarioItemPort * getScenarioItemPort();
 
     void updateTooltip();
+    void updateColors();
 
     enum { Type = UserType + 32 };
     int type() const override { return Type; }

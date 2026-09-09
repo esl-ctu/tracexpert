@@ -1048,7 +1048,6 @@ bool TScopeWidget::event(QEvent * event)
     if (event->type() == QEvent::PaletteChange) {
         if (m_chart)
             m_chart->setTheme(TPalette::chartTheme());
-        return true;
     }
 
     return QWidget::event(event);

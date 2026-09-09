@@ -25,6 +25,8 @@
 #include <QGraphicsSceneContextMenuEvent>
 #include <QMenu>
 #include <QPainter>
+#include <QGuiApplication>
+#include <QPalette>
 
 TScenarioGraphicalItemPort::TScenarioGraphicalItemPort(TScenarioItemPort * scenarioItemPort, QGraphicsItem * parent)
     : QGraphicsPolygonItem(parent), m_scenarioItemPort(scenarioItemPort)
@@ -32,14 +34,15 @@ TScenarioGraphicalItemPort::TScenarioGraphicalItemPort(TScenarioItemPort * scena
     if(!scenarioItemPort->getLabelText().isEmpty()) {
         m_labelTextItem = new QGraphicsSimpleTextItem(scenarioItemPort->getLabelText(), this);
         m_labelTextItem->setParentItem(this);
+        m_labelTextItem->setBrush(QGuiApplication::palette().color(QPalette::Text));
         m_labelTextItem->setPos(scenarioItemPort->getDirection() == TScenarioItemPort::TItemPortDirection::TInputPort ? 15 : -15 - m_labelTextItem->boundingRect().width(), -8);
     }
 
     QPainterPath path;
     path.addRoundedRect(scenarioItemPort->getDirection() == TScenarioItemPort::TItemPortDirection::TInputPort ? -5 : -10, -7.5, 15, 15, 3, 3);
     setPolygon(path.toFillPolygon());
-    setPen(QPen(QColor::fromString("#000"), 1));
-    setBrush(QBrush(QColor::fromString("#fff"), Qt::SolidPattern));
+    setPen(QPen(QGuiApplication::palette().color(QPalette::WindowText), 1));
+    setBrush(QBrush(QGuiApplication::palette().color(QPalette::Base), Qt::SolidPattern));
     setFlag(QGraphicsItem::ItemSendsScenePositionChanges, true);
 
     m_colorStrip = new QGraphicsPolygonItem(this);
@@ -62,6 +65,17 @@ TScenarioGraphicalItemPort::TScenarioGraphicalItemPort(TScenarioItemPort * scena
     m_lastScenePos = scenePos();
 
     updateTooltip();
+}
+
+void TScenarioGraphicalItemPort::updateColors() {
+    const QPalette palette = QGuiApplication::palette();
+
+    setPen(QPen(palette.color(QPalette::WindowText), 1));
+    setBrush(QBrush(palette.color(QPalette::Base), Qt::SolidPattern));
+
+    if(m_labelTextItem) {
+        m_labelTextItem->setBrush(palette.color(QPalette::Text));
+    }
 }
 
 void TScenarioGraphicalItemPort::updateTooltip() {
